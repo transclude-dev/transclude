@@ -193,6 +193,15 @@ fs.writeFileSync(
         params: route.params,
         client: assets.get(route.id) ?? null,
       })),
+      // Every route, prerendered or not. A fragment is rendered on demand even
+      // where the document it belongs to was written to a file at build time —
+      // its data is a request away, and its URL is a query on the same path.
+      routes: manifest.routes.map((route) => ({
+        id: route.id,
+        pattern: route.pattern,
+        params: route.params,
+        client: assets.get(route.id) ?? null,
+      })),
       notFound: manifest.notFound ? { id: manifest.notFound.id } : null,
       stylesheet,
     },

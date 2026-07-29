@@ -22,6 +22,35 @@ export async function renderRoute(page, ctx, options = {}) {
   return renderDocument(chain, datas, options);
 }
 
+/**
+ * One region of a page, for swapping into a document that already exists.
+ *
+ * The layout loaders still run: a page's own loader is handed what they
+ * returned, so skipping them would change the data the region renders from.
+ * What is skipped is the layouts' *markup* — a fragment is a piece of the page,
+ * not a document.
+ *
+ * Returns null when the page has no region by that name, which is a 404 rather
+ * than an empty swap: asking for something that does not exist should say so.
+ */
+export async function renderFragment(page, ctx, { region = null } = {}) {
+  const target = region ? page.regions?.[region] : null;
+  if (region && !target) return null;
+
+  const chain = [...page.layouts, page];
+  let inherited = {};
+  let data = {};
+
+  for (const mod of chain) {
+    data = await mod.load({ ...ctx, layout: inherited });
+    if (mod !== page) inherited = { ...inherited, ...data };
+  }
+
+  // No region named: the page's whole body, still without its layouts.
+  if (!target) return page.render(data, {}, true).default ?? '';
+  return target(data, {}, true);
+}
+
 export function renderDocument(chain, datas, { clientEntry, stylesheet, lang = 'en' } = {}) {
   // Each level renders to a slot map and hands it to the level above, so a page
   // can fill more than one hole in its layout.

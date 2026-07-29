@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
-import { renderRoute } from '../src/document.js';
+import { renderRoute, renderFragment } from '../src/document.js';
 import { etagOf, loadAssets, loadStatic } from '../src/static-cache.js';
 import { pickEncoding } from '../src/negotiate.js';
 import { COMPRESSIBLE_FLOOR, compressResponse } from '../src/compress.js';
@@ -71,6 +71,37 @@ app.get('/assets/*', (c, next) => {
   const asset = assets.get(c.req.path);
   return asset ? send(c, asset, IMMUTABLE) : next();
 });
+
+/**
+ * Fragments come first, and for every route rather than only the dynamic ones:
+ * a page whose document was prerendered still has regions worth asking for, and
+ * the prerendered file below matches on path alone — it would happily answer a
+ * fragment request with the whole document.
+ */
+for (const route of manifest.routes ?? []) {
+  app.get(route.pattern, async (c, next) => {
+    const region = config.fragmentParam ? c.req.query(config.fragmentParam) : undefined;
+    if (region === undefined) return next();
+
+    try {
+      const html = await renderFragment(
+        pages[route.id],
+        {
+          url: c.req.url,
+          params: c.req.param(),
+          route: { id: route.id, pattern: route.pattern, path: c.req.path },
+          req: c.req,
+        },
+        { region: region || null },
+      );
+      if (html === null) return c.text(`no fragment "${region}"`, 404);
+      return sendRendered(c, html);
+    } catch (err) {
+      console.error(err);
+      return c.text('Internal error', 500);
+    }
+  });
+}
 
 // Prerendered pages. /about and /about/ are the same page.
 app.get('*', (c, next) => {

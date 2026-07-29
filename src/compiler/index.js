@@ -257,6 +257,7 @@ ${elementsExport(template.components)}
 export const hasTitle = ${template.hasTitle};
 export const layouts = [${layouts.map((_, i) => `__L${i}`).join(', ')}];
 export const client = ${JSON.stringify(client)};
+${regionsExport(template.regions)}
 
 export async function load(ctx) {
   if (typeof __load === 'function') return (await __load(ctx)) ?? {};
@@ -547,6 +548,22 @@ function headScript(blocks) {
 
 function elementsExport(used) {
   return `export const elements = [${used.map(({ ref }) => ref).join(', ')}];`;
+}
+
+/**
+ * Each `[fragment]` region as a function of the page's own data. The same markup
+ * the document got, so a swap cannot drift from the page it replaces part of.
+ */
+function regionsExport(regions) {
+  const entries = Object.entries(regions ?? {});
+  if (!entries.length) return 'export const regions = {};';
+
+  const bodies = entries.map(
+    ([name, body]) =>
+      `  ${JSON.stringify(name)}: (__d, __slots = {}, __fragment = true) => {\n` +
+      `    let __o = '';\n${indent(indent(body))}\n    return __o;\n  },`,
+  );
+  return `export const regions = {\n${bodies.join('\n')}\n};`;
 }
 
 function blockOf(node) {

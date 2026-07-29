@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { Hono } from 'hono';
 import { getRequestListener } from '@hono/node-server';
 import { createServer as createViteServer } from 'vite';
-import { renderRoute } from '../src/document.js';
+import { renderRoute, renderFragment } from '../src/document.js';
 import { clientEntryUrl, pageModuleId } from '../src/plugin.js';
 import { scanRoutes } from '../src/routes.js';
 import config from '../../html-first.config.js';
@@ -47,6 +47,35 @@ const renderPage = async (route, c, status = 200) => {
   return c.html(await vite.transformIndexHtml(c.req.path, html), status);
 };
 
+/**
+ * The region this request is asking for, or null for the whole document. An
+ * empty value (`?fragment`) is the page's own body without its layouts.
+ */
+const fragmentOf = (c) => {
+  if (!config.fragmentParam) return null;
+  const value = c.req.query(config.fragmentParam);
+  return value === undefined ? null : value;
+};
+
+const sendFragment = async (route, c, region) => {
+  const page = await vite.ssrLoadModule(pageModuleId(route.id));
+  const html = await renderFragment(
+    page,
+    {
+      url: c.req.url,
+      params: route.params.length ? c.req.param() : {},
+      route: { id: route.id, pattern: route.pattern, path: c.req.path },
+      req: c.req,
+    },
+    { region: region || null },
+  );
+
+  if (html === null) return c.text(`no fragment "${region}" on ${route.rel}`, 404);
+  // No Vite transform: a fragment is inserted into a document that already ran
+  // the client entry, and injecting the HMR preamble again would run it twice.
+  return c.html(html);
+};
+
 const onError = (c, err) => {
   vite.ssrFixStacktrace(err);
   console.error(err);
@@ -64,7 +93,8 @@ function buildApp() {
   for (const route of routes) {
     app.get(route.pattern, async (c) => {
       try {
-        return await renderPage(route, c);
+        const fragment = fragmentOf(c);
+        return fragment === null ? await renderPage(route, c) : await sendFragment(route, c, fragment);
       } catch (err) {
         return onError(c, err);
       }

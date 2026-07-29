@@ -58,7 +58,14 @@ class Codegen {
     page = false,
     layout = false,
     blocks = false,
+    fragments = true,
   } = {}) {
+    // Whether this template can be asked for a fragment. A page or a partial
+    // can; a shadow component cannot, because a fragment emits the element bare
+    // and never calls its render at all. That matters beyond tidiness: with
+    // `blocks` on, an `if` or `each` compiles to its own module-scope function,
+    // and a `__fragment` passed from render would not be in scope inside it.
+    this.fragments = fragments;
     // With `blocks` on, `if` and `each` at the top level compile to their own
     // function and are wrapped in comment anchors, so an update can re-render
     // one region instead of the whole shadow root. Only a component is ever
@@ -455,7 +462,7 @@ class Codegen {
       .filter((a) => !DIRECTIVES.has(a.name))
       .map((a) => `${JSON.stringify(a.name)}: ${this.attrValueJs(a, scope, el)}`)
       .join(', ');
-    this.c(out, `__o += __sh(${ref}, {${props}});`);
+    this.c(out, `__o += __sh(${ref}, {${props}}${this.fragments ? ', __fragment' : ''});`);
 
     // Light DOM children fill <slot>.
     this.emitChildren(childrenOf(el), out, scope, false);
@@ -491,7 +498,8 @@ class Codegen {
     this.c(
       out,
       `__o += ${ref}.render(${ref}.coerce({${props}}), ` +
-        `{ default: ${children.length ? `__sl${id}` : `''`} });`,
+        `{ default: ${children.length ? `__sl${id}` : `''`} }` +
+        `${this.fragments ? ', __fragment' : ''});`,
     );
 
     this.s(out, `</${tag}>`);

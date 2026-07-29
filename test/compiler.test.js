@@ -10,13 +10,13 @@ function compile(source, components = new Map()) {
   return compileFragment(blocks.nodes, { components, page: false });
 }
 
-function render(source, data = {}, components = new Map()) {
+function render(source, data = {}, components = new Map(), fragment = false) {
   const { body } = compile(source, components);
   const fn = new Function(
-    '__e', '__a', '__str', '__sh', 'html', '__d',
+    '__e', '__a', '__str', '__sh', 'html', '__d', '__fragment',
     `let __o = '';\n${body}\nreturn __o;`,
   );
-  return fn(rt.escape, rt.attr, rt.str, rt.shadow, rt.html, data);
+  return fn(rt.escape, rt.attr, rt.str, rt.shadow, rt.html, data, fragment);
 }
 
 // ---- escaping -------------------------------------------------------------
@@ -176,12 +176,12 @@ test('a component renders host attrs, a shadow root, and slotted children', () =
     coerce: (p) => rt.coerceProps({ name: '' }, p),
   };
   const fn = new Function(
-    '__e', '__a', '__ap', '__str', '__sh', 'html', '__C0', '__d',
+    '__e', '__a', '__ap', '__str', '__sh', 'html', '__C0', '__d', '__fragment',
     `let __o = '';\n${body}\nreturn __o;`,
   );
 
   assert.equal(
-    fn(rt.escape, rt.attr, rt.attrProp, rt.str, rt.shadow, rt.html, def, { who: 'Ada' }),
+    fn(rt.escape, rt.attr, rt.attrProp, rt.str, rt.shadow, rt.html, def, { who: 'Ada' }, false),
     '<user-card name="Ada">' +
       '<template shadowrootmode="open"><style>h3{color:red}</style><h3>Ada</h3><slot></slot></template>' +
       '<em>hi</em>' +

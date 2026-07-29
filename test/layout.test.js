@@ -18,10 +18,10 @@ const compile = (source, opts = {}) =>
 function render(source, data = {}, slots = {}) {
   const { body } = compileFragment(splitBlocks(source).nodes, { page: true, layout: true });
   const fn = new Function(
-    '__e', '__a', '__str', '__sh', 'html', '__d', '__slots',
+    '__e', '__a', '__str', '__sh', 'html', '__d', '__slots', '__fragment',
     `let __o = '';\n${body}\nreturn __o;`,
   );
-  return fn(rt.escape, rt.attr, rt.str, rt.shadow, rt.html, data, slots);
+  return fn(rt.escape, rt.attr, rt.str, rt.shadow, rt.html, data, slots, false);
 }
 
 /** The named regions a page or layout declares for the level above it. */
@@ -30,9 +30,10 @@ function slotsOf(source) {
   return Object.fromEntries(
     Object.entries(slots).map(([name, body]) => [
       name,
-      new Function('__e', '__a', '__str', '__sh', 'html', '__d', `let __o = '';\n${body}\nreturn __o;`)(
-        rt.escape, rt.attr, rt.str, rt.shadow, rt.html, {},
-      ),
+      new Function(
+        '__e', '__a', '__str', '__sh', 'html', '__d', '__fragment',
+        `let __o = '';\n${body}\nreturn __o;`,
+      )(rt.escape, rt.attr, rt.str, rt.shadow, rt.html, {}, false),
     ]),
   );
 }

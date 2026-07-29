@@ -676,11 +676,14 @@ export function adoptStyles(def) {
  *
  * A page's client entry defines what the page can render. A fragment swapped in
  * from another route can contain anything, and it arrives as plain markup —
- * unstyled if it is a partial, unupgraded if it is a component. Nothing about
- * the response says what it needs, and nothing about the swap can be counted on
- * either: innerHTML, morphing, setHTMLUnsafe, a hypermedia library. So this
- * watches the outcome instead of the mechanism. Whatever put the tag in the
- * document, it is in the document, and that is the signal.
+ * unstyled if it is a partial, unupgraded if it is a component.
+ *
+ * The framework does not do the swapping. Whoever does — htmx, Turbo, a hand
+ * written fetch — cannot be counted on to announce it, and half of them use
+ * plain innerHTML. So this watches the outcome rather than the mechanism:
+ * whatever put the tag in the document, it is in the document, and that is the
+ * signal. It is the one piece of client code that exists to make somebody
+ * else's swapper work.
  *
  * `loaders` is tag -> dynamic import, so a tag that never appears costs one
  * string. The observer disconnects once every tag it knows about has been seen.

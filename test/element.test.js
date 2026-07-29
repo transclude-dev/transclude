@@ -92,7 +92,7 @@ const defOf = (overrides = {}) => ({
   ...overrides,
 });
 
-test('<script element> members land on the prototype, not the instance', async () => {
+test('exported prototype members land on the prototype, not the instance', async () => {
   await withDom(async ({ defineComponent }, registry) => {
     defineComponent(
       defOf({ members: { shout() { return `hi ${this.name}`; } } }),
@@ -232,7 +232,7 @@ test('the returned cleanup still runs, alongside the signal', async () => {
   });
 });
 
-test('a partial with only <script element> still upgrades', async () => {
+test('a partial with only an exported prototype still upgrades', async () => {
   await withDom(async ({ defineLight }, registry) => {
     defineLight(defOf({ tag: 'x-note', members: { dismiss() { return this.name; } } }), null);
     const Class = registry.get('x-note');

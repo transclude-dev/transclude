@@ -17,6 +17,7 @@ import { parse, parseExpressionAt } from 'acorn';
 import { childrenOf } from './codegen.js';
 import { splitInterpolations } from './interp.js';
 import { splitBlocks } from './index.js';
+import { planLift } from './script.js';
 
 const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each']);
 
@@ -112,7 +113,7 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
   if (kind === 'component') {
     // Props and state share one namespace in the template, so they are one type
     // by the time anything reads them.
-    emitModule(blocks.props, out, null, '__Props', '__props');
+    emitModule(blocks.properties, out, null, '__Props', '__props');
     emitModule(blocks.state, out, null, '__State', '__stateDefaults');
     out.add('/** @typedef {__Props & __State} __Data */\n\n');
     // Each converter is tied to the prop it converts: `from` has to produce
@@ -127,7 +128,7 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
   } else {
     emitModule(blocks.server, out, contextType, '__Data', '__default');
   }
-  emitMembers(kind === 'component' ? blocks.element : null, out, shadow);
+  emitMembers(kind === 'component' ? blocks.client : [], out, shadow);
 
   // Helpers arrive as parameters rather than module-scope declarations: a
   // parameter shadows, so it cannot collide with something the author imported.
@@ -254,8 +255,8 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
 }
 
 /**
- * `<script element>` is checked the same way, with one addition: `this` inside
- * its methods has to mean the element.
+ * `export const prototype` is checked the same way as everything else, with one
+ * addition: `this` inside its members has to mean the element.
  *
  * `T & ThisType<Host & __Data & T>` is the whole trick. `T` infers from the
  * object literal, so the members keep their real types and hf-env.d.ts can be
@@ -266,40 +267,54 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
  * `shadowRoot` is narrowed rather than left as `ShadowRoot | null`: a component
  * always has one by the time any of this runs, and a partial never does. The
  * DOM's type cannot know that, but the directory the file is in does.
+ *
+ * Only the members and what they read come across. The rest of the block runs
+ * with `host`, `shadow` and `signal` in scope, which tsc has no way to know —
+ * and its imports may be browser-only, so they are copied only where a member
+ * actually uses them. Blocks that will not parse are skipped in silence here;
+ * the syntax pass below is what reports them, once.
  */
-function emitMembers(block, out, shadow) {
-  const none = () => out.add('/** @typedef {{}} __Members */\n\n');
-  if (!block) return none();
+function emitMembers(blocks, out, shadow) {
+  for (const block of blocks) {
+    let ast;
+    try {
+      ast = parse(block.code, {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        allowAwaitOutsideFunction: true,
+        allowReturnOutsideFunction: true,
+      });
+    } catch {
+      continue;
+    }
 
-  let ast;
-  try {
-    ast = parse(block.code, { ecmaVersion: 'latest', sourceType: 'module' });
-  } catch (error) {
-    out.failed(error, block);
-    return none();
+    const plan = planLift(ast, 'prototype');
+    if (!plan) continue;
+
+    for (const statement of ast.body) {
+      if (statement.type !== 'ImportDeclaration') continue;
+      if (!statement.specifiers.some((spec) => plan.reads.has(spec.local.name))) continue;
+      out.copy(block.code.slice(statement.start, statement.end), block.offset + statement.start);
+      out.add('\n');
+    }
+    for (const dependency of plan.deps) {
+      out.copy(block.code.slice(dependency.start, dependency.end), block.offset + dependency.start);
+      out.add('\n');
+    }
+
+    const host = `HTMLElement & { shadowRoot: ${shadow ? 'ShadowRoot' : 'null'} }`;
+    out.add(
+      '\n/**\n * @template T\n' +
+        ` * @param {T & ThisType<${host} & __Data & T>} m\n` +
+        ' * @returns {T}\n */\n' +
+        'function __self(m) { return m; }\n' +
+        'const __memberDefs = __self(',
+    );
+    out.copy(block.code.slice(plan.init.start, plan.init.end), block.offset + plan.init.start);
+    out.add(');\n/** @typedef {typeof __memberDefs} __Members */\n\n');
+    return;
   }
-
-  const statement = ast.body.find((node) => node.type === 'ExportDefaultDeclaration');
-  if (!statement) {
-    out.copy(block.code, block.offset);
-    out.add('\n');
-    return none();
-  }
-
-  const declaration = statement.declaration;
-  out.copy(block.code.slice(0, statement.start), block.offset);
-  const host = `HTMLElement & { shadowRoot: ${shadow ? 'ShadowRoot' : 'null'} }`;
-  out.add(
-    '\n/**\n * @template T\n' +
-      ` * @param {T & ThisType<${host} & __Data & T>} m\n` +
-      ' * @returns {T}\n */\n' +
-      'function __self(m) { return m; }\n' +
-      'const __memberDefs = __self(',
-  );
-  out.copy(block.code.slice(declaration.start, declaration.end), block.offset + declaration.start);
-  out.add(');\n');
-  out.copy(block.code.slice(statement.end), block.offset + statement.end);
-  out.add('\n/** @typedef {typeof __memberDefs} __Members */\n\n');
+  out.add('/** @typedef {{}} __Members */\n\n');
 }
 
 /** `export const <name> = …`, as a statement, or null. */

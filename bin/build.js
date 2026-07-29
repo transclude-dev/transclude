@@ -1,0 +1,227 @@
+// Production build.
+//
+//   dist/client   hashed, minified client entries — one per route that needs JS
+//   dist/server   the SSR bundle, plain ESM, no Vite at runtime
+//   dist/static   prerendered HTML for every route whose URLs are knowable
+//   dist/routes.json  what is left for the server to render on demand
+//
+// Page and layout CSS is inlined into <head> by the document assembler, and
+// component CSS lives inside each shadow root, so there are no stylesheet
+// assets to emit or link.
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { build } from 'vite';
+import htmlFirst from '../src/plugin.js';
+import config from '../../html-first.config.js';
+import { renderRoute } from '../src/document.js';
+import { pool } from '../src/pool.js';
+import { precompress } from '../src/compress.js';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const dist = path.join(root, config.outDir);
+
+const plugin = htmlFirst(config);
+plugin.api.configure({ root });
+const manifest = plugin.api.manifest();
+
+fs.rmSync(dist, { recursive: true, force: true });
+
+// ---- client ---------------------------------------------------------------
+
+const clientRoutes = [...manifest.routes, manifest.notFound]
+  .filter(Boolean)
+  .filter((route) => route.client.tags.length > 0 || route.client.hasScript);
+
+const assets = new Map();
+let stylesheet = null;
+
+const clientInput = Object.fromEntries(
+  clientRoutes.map((route) => [route.id, `virtual:hf-client/${route.id}`]),
+);
+// The site stylesheet is an entry of its own, so Vite processes it and rollup
+// hashes it — one cacheable file shared by every page.
+if (config.stylesheet) clientInput.__global = path.join(root, config.stylesheet);
+
+if (Object.keys(clientInput).length) {
+  const output = await build({
+    root,
+    logLevel: 'warn',
+    plugins: [htmlFirst(config)],
+    build: {
+      outDir: `${config.outDir}/client`,
+      emptyOutDir: true,
+      rollupOptions: { input: clientInput },
+    },
+  });
+
+  const chunks = (Array.isArray(output) ? output[0] : output).output;
+  for (const chunk of chunks) {
+    if (chunk.type === 'asset' && chunk.fileName.endsWith('.css')) {
+      stylesheet = `/${chunk.fileName}`;
+      continue;
+    }
+    if (chunk.isEntry && chunk.name && chunk.name !== '__global') {
+      assets.set(chunk.name, `/${chunk.fileName}`);
+    }
+  }
+}
+
+// ---- server ---------------------------------------------------------------
+
+await build({
+  root,
+  logLevel: 'warn',
+  plugins: [htmlFirst(config)],
+  build: {
+    outDir: `${config.outDir}/server`,
+    emptyOutDir: true,
+    // `ssr: true` rather than a path: Vite resolves a string entry against the
+    // project root before any plugin sees it, which a virtual id cannot survive.
+    ssr: true,
+    rollupOptions: {
+      input: { entry: 'virtual:hf-server' },
+      output: { entryFileNames: '[name].js' },
+    },
+  },
+});
+
+// ---- prerender ------------------------------------------------------------
+
+const { pages } = await import(pathToFileURL(path.join(dist, 'server/entry.js')).href);
+
+/**
+ * A static route has one URL. A dynamic route has as many as its `paths` export
+ * names — and none at all if it does not export one, in which case it stays a
+ * server render.
+ *
+ * `export const prerender = false` is the third case: a page whose output
+ * depends on something no build can know, which is almost always the query
+ * string. A prerendered file is one file for every URL that resolves to it, so
+ * `?q=` cannot change it.
+ */
+async function urlsFor(route) {
+  if (pages[route.id]?.prerender === false) return [];
+  if (!route.params.length) return [{ url: route.pattern, params: {} }];
+
+  const paths = pages[route.id]?.paths;
+  if (typeof paths !== 'function') return [];
+
+  const listed = (await paths()) ?? [];
+  return listed.map((params) => ({
+    url: route.pattern.replace(/:(\w+)(\{[^}]*\})?/g, (_, name) => String(params[name] ?? '')),
+    params,
+  }));
+}
+
+function render(route, { url, params }) {
+  return renderRoute(
+    pages[route.id],
+    {
+      url: `http://localhost${url}`,
+      params,
+      route: { id: route.id, pattern: route.pattern ?? '', path: url },
+      req: null,
+    },
+    { clientEntry: assets.get(route.id) ?? null, stylesheet },
+  );
+}
+
+const write = (relative, html) => {
+  const file = path.join(dist, 'static', relative);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, html);
+  return relative;
+};
+
+// Ask every route for its URLs first, so the render pass is one flat list and
+// can run wide rather than route by route.
+const dynamic = [];
+const targets = [];
+
+for (const route of manifest.routes) {
+  const urls = await urlsFor(route);
+  if (!urls.length) {
+    dynamic.push(route);
+    continue;
+  }
+  for (const target of urls) targets.push({ route, target });
+}
+
+if (manifest.notFound) {
+  targets.push({
+    route: { ...manifest.notFound, pattern: '' },
+    target: { url: '/404', params: {} },
+    file: '404.html',
+    label: '404.html  (not-found page)',
+  });
+}
+
+const CONCURRENCY = Number(process.env.HF_BUILD_CONCURRENCY ?? 8);
+
+const outcomes = await pool(targets, CONCURRENCY, async ({ route, target, file, label }) => {
+  const rel =
+    file ?? (target.url === '/' ? 'index.html' : `${target.url.replace(/^\//, '')}/index.html`);
+  try {
+    write(rel, await render(route, target));
+    return { url: label ?? target.url, ok: true };
+  } catch (err) {
+    // One bad page should not take the build down without saying which.
+    return { url: target.url, ok: false, error: err };
+  }
+});
+
+const failures = outcomes.filter((outcome) => !outcome.ok);
+const prerendered = outcomes.filter((outcome) => outcome.ok).map((outcome) => outcome.url);
+
+if (failures.length) {
+  console.error(`\n${failures.length} page${failures.length === 1 ? '' : 's'} failed to render:`);
+  for (const failure of failures) {
+    console.error(`  ${failure.url}\n    ${failure.error.message}`);
+  }
+  process.exitCode = 1;
+}
+
+fs.writeFileSync(
+  path.join(dist, 'routes.json'),
+  JSON.stringify(
+    {
+      dynamic: dynamic.map((route) => ({
+        id: route.id,
+        pattern: route.pattern,
+        params: route.params,
+        client: assets.get(route.id) ?? null,
+      })),
+      notFound: manifest.notFound ? { id: manifest.notFound.id } : null,
+      stylesheet,
+    },
+    null,
+    2,
+  ),
+);
+
+// ---- compress -------------------------------------------------------------
+
+const compressed = await precompress([path.join(dist, 'static'), path.join(dist, 'client')]);
+
+const summary = [
+  `${prerendered.length} page${prerendered.length === 1 ? '' : 's'} prerendered`,
+  `${CONCURRENCY} at a time`,
+  `${dynamic.length} route${dynamic.length === 1 ? '' : 's'} left to the server`,
+  `${assets.size} client entr${assets.size === 1 ? 'y' : 'ies'}`,
+];
+console.log(`\n${summary.join(', ')}`);
+for (const url of prerendered) console.log(`  ${url}`);
+for (const route of dynamic) console.log(`  ${route.pattern}  (server-rendered)`);
+
+if (compressed.files) {
+  const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
+  const pct = (n) => `${Math.round((1 - n / compressed.raw) * 100)}%`;
+  console.log(
+    `\n${compressed.files} files precompressed: ${kb(compressed.raw)} raw, ` +
+      `${kb(compressed.gzip)} gzip (−${pct(compressed.gzip)}), ` +
+      `${kb(compressed.brotli)} brotli (−${pct(compressed.brotli)})`,
+  );
+}
+if (!dynamic.length) console.log('\ndist/static is self-contained — any static host will serve it.');

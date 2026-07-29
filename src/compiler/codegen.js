@@ -21,7 +21,7 @@ const RAW_TEXT = new Set(['script', 'style']);
 // Hoisted out of a page body into <head>.
 const HEAD_TAGS = new Set(['title', 'meta', 'link', 'base']);
 
-const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each', 'key']);
+const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each', 'key', 'fragment']);
 const BRANCH = ['if', 'else-if', 'else'];
 
 export class CompileError extends Error {
@@ -41,6 +41,7 @@ export function compileFragment(nodes, opts = {}) {
     blockDefs: gen.blockDefs.join('\n'),
     blockOf: gen.blockOf,
     slots: Object.fromEntries([...gen.slots].map(([name, out]) => [name, joinOut(out)])),
+    regions: Object.fromEntries([...gen.regions].map(([name, out]) => [name, joinOut(out)])),
     consumed: [...gen.consumed],
     head: joinOut(gen.head),
     title: joinOut(gen.title),
@@ -95,6 +96,10 @@ class Codegen {
     // Slot names this level actually renders. Anything else it was handed
     // belongs to a level further out and has to travel on.
     this.consumed = new Set();
+    // `<ul id="results" fragment>` is a region of the page that can be asked for
+    // on its own. It renders inline like anything else *and* compiles to its own
+    // function, so the same markup serves the document and the swap.
+    this.regions = new Map();
     this.warnings = [];
     this.used = new Map();
     this.uid = 0;
@@ -274,8 +279,84 @@ class Codegen {
       );
     }
 
+    const region = this.regionOf(node, dirs);
+    if (region) {
+      // Emitted once, used twice: the items go into the region's own buffer and
+      // then straight into the page. Rendering it separately would be a second
+      // copy of the markup that could drift from the first.
+      const buffer = [];
+      this.emitElement(node, buffer, scope, topLevel);
+      this.regions.set(region, buffer);
+      for (const item of buffer) out.push(item);
+      return;
+    }
+
     if (dirs.has('each')) this.emitEach(node, out, scope, topLevel);
     else this.emitElement(node, out, scope, topLevel);
+  }
+
+  /**
+   * The name of the addressable region this element is, or null.
+   *
+   * The name is the element's `id`, deliberately, rather than a second one that
+   * could disagree with it. The URL that asks for the region and the selector
+   * that swaps it in are then the same word — `?fragment=results` targets
+   * `#results` — and there is nothing to keep in sync.
+   */
+  regionOf(node, dirs) {
+    const attr = node.attrs?.find((a) => a.name === 'fragment');
+    if (!attr) return null;
+
+    if (!this.page || this.layout) {
+      throw new CompileError(
+        `<${node.tagName}> carries "fragment", which addresses a region of a page over ` +
+          `HTTP. A component re-renders itself and has no URL to be asked for.`,
+        node,
+      );
+    }
+    const clash = ['if', 'else-if', 'else', 'each'].find((name) => dirs.has(name));
+    if (clash) {
+      throw new CompileError(
+        `<${node.tagName}> carries both "fragment" and "${clash}". A region is one ` +
+          `element with one id, so it cannot be conditional or repeated — put the ` +
+          `"${clash}" on something inside it.`,
+        node,
+      );
+    }
+    if (this.loops.length || this.inBlock) {
+      throw new CompileError(
+        `<${node.tagName}> carries "fragment" inside a loop, so it has no id of its own ` +
+          `and its markup depends on a loop variable the region could not be given.`,
+        node,
+      );
+    }
+
+    const id = node.attrs.find((a) => a.name === 'id')?.value;
+    if (!id) {
+      throw new CompileError(
+        `<${node.tagName}> carries "fragment" but has no id. The id is the region's ` +
+          `name — it is what the URL asks for and what a swap targets.`,
+        node,
+      );
+    }
+    if (/\$\{/.test(id)) {
+      throw new CompileError(
+        `<${node.tagName}> has an interpolated id, so its name is not knowable at ` +
+          `compile time and no URL could ask for it.`,
+        node,
+      );
+    }
+    if (attr.value !== '') {
+      throw new CompileError(
+        `"fragment" takes no value — the region is named by its id, which is ` +
+          `"${id}" here.`,
+        node,
+      );
+    }
+    if (this.regions.has(id)) {
+      throw new CompileError(`two regions are both named "${id}"`, node);
+    }
+    return id;
   }
 
   emitEach(el, out, scope, topLevel) {

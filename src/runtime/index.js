@@ -639,13 +639,81 @@ export function shadow(def, props, fragment = false) {
  * A partial rendered for insertion into a live document: its own light markup,
  * with any component inside it left bare for the client to paint.
  *
- * Its styles are not included. They are hoisted into <head> once per page, and
- * inlining them here would ship a copy on every swap — so a fragment naming a
- * partial the page has never rendered arrives unstyled. That is the next gap,
- * not this one.
+ * Its styles are not included, and deliberately: they are one `<style>` per tag
+ * in <head>, not per occurrence, so inlining them here would ship a copy on
+ * every swap. When the swapped markup names a partial the document has never
+ * rendered, `watch` notices the tag and `adoptStyles` puts them there — once.
  */
 export function fragment(def, props = {}, slots = {}) {
   return def.render(def.coerce(props), slots, true);
+}
+
+/**
+ * A light element's styles, in <head>, at most once per tag.
+ *
+ * The server writes the same `<style data-hf="tag">` for every light element the
+ * document rendered, so the marker is the whole handshake: if one is already
+ * there, these styles are already applied and this does nothing. That is why the
+ * attribute is on the server's output too — a page that renders <site-note> and
+ * a swap that brings one in must not end up with two copies.
+ *
+ * Inserted *before* the document's own <style>, not appended, because that is
+ * where the server would have put it: a page's rules override an element's.
+ */
+export function adoptStyles(def) {
+  if (typeof document === 'undefined') return;
+  if (!def.light || !def.css) return;
+  if (document.querySelector(`style[data-hf="${def.tag}"]`)) return;
+
+  const style = document.createElement('style');
+  style.setAttribute('data-hf', def.tag);
+  style.textContent = def.css;
+  document.head.insertBefore(style, document.querySelector('style[data-hf-page]'));
+}
+
+/**
+ * Loads element definitions for tags that arrive after the page did.
+ *
+ * A page's client entry defines what the page can render. A fragment swapped in
+ * from another route can contain anything, and it arrives as plain markup —
+ * unstyled if it is a partial, unupgraded if it is a component. Nothing about
+ * the response says what it needs, and nothing about the swap can be counted on
+ * either: innerHTML, morphing, setHTMLUnsafe, a hypermedia library. So this
+ * watches the outcome instead of the mechanism. Whatever put the tag in the
+ * document, it is in the document, and that is the signal.
+ *
+ * `loaders` is tag -> dynamic import, so a tag that never appears costs one
+ * string. The observer disconnects once every tag it knows about has been seen.
+ *
+ * It does not look inside shadow roots. It does not need to: a component's own
+ * `define` brings the elements it renders with it.
+ */
+export function watch(loaders, root = globalThis.document) {
+  if (!root || typeof MutationObserver === 'undefined') return () => {};
+
+  const pending = new Set(Object.keys(loaders));
+  if (!pending.size) return () => {};
+
+  const observer = new MutationObserver(() => sweep());
+  const stop = () => observer.disconnect();
+
+  function sweep() {
+    for (const tag of pending) {
+      if (!root.querySelector(tag)) continue;
+      pending.delete(tag);
+      // A failed chunk should say so and not take the sweep down with it —
+      // every other tag on the page is independent of this one.
+      Promise.resolve()
+        .then(loaders[tag])
+        .then((mod) => mod?.define?.())
+        .catch((err) => console.error(`[html-first] could not define <${tag}>`, err));
+    }
+    if (!pending.size) stop();
+  }
+
+  observer.observe(root.documentElement ?? root, { childList: true, subtree: true });
+  sweep();
+  return stop;
 }
 
 /**
@@ -659,6 +727,10 @@ export function fragment(def, props = {}, slots = {}) {
  * markup it was served is the markup it keeps.
  */
 export function defineLight(def, init) {
+  // Before every other exit below: styles are the half of this that a partial
+  // with no behaviour still has, and the half a swapped-in one arrives without.
+  adoptStyles(def);
+
   if (typeof customElements === 'undefined') return;
   if (customElements.get(def.tag)) return;
   // No behaviour to attach means nothing to register. A partial with neither a

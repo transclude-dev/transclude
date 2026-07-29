@@ -30,9 +30,11 @@ fs.rmSync(dist, { recursive: true, force: true });
 
 // ---- client ---------------------------------------------------------------
 
+// `needed` is decided in the plugin, which is also what the dev server asks —
+// two copies of that rule is two servers that disagree about which pages ship JS.
 const clientRoutes = [...manifest.routes, manifest.notFound]
   .filter(Boolean)
-  .filter((route) => route.client.tags.length > 0 || route.client.hasScript);
+  .filter((route) => route.client.needed);
 
 const assets = new Map();
 let stylesheet = null;

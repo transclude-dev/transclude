@@ -173,7 +173,7 @@ export function compileComponent(
 
   const code = `
 ${runtimeImport(runtime)}
-${componentImports(template.components)}
+${componentImports(template.components, { defines: true })}
 ${client.imports}
 ${props.code}
 ${state.code}
@@ -210,8 +210,19 @@ export async function init(host, shadow, signal) {
 ${client.body}
 }
 
+// Defining an element defines what it renders. A page's entry lists the whole
+// closure up front for first paint, but an element that arrives on its own — in
+// a fragment, found by the element watcher — has only itself to start from, and
+// a shadow root it paints is out of reach of anything watching the document.
+//
+// The flag is for the cycle: an element may render itself.
+let __defined = false;
+
 export function define() {
+  if (__defined) return;
+  __defined = true;
   ${shadow ? 'defineComponent' : 'defineLight'}(def, ${client.body.trim() ? 'init' : 'null'});
+${template.components.map(({ ref }) => `  ${ref}_define();`).join('\n')}
 }
 `;
 
@@ -232,7 +243,7 @@ export function compilePage(
     runtime,
     filename = 'page',
     layouts = [],
-    client = { tags: [], hasScript: false },
+    client = { tags: [], hasScript: false, needed: false },
   },
 ) {
   const blocks = splitBlocks(source);
@@ -384,22 +395,53 @@ export function usedComponents(source, registry) {
  * Browser entry: define every component, then run the page's own client code.
  * This one is a real module, so the client block keeps its imports and may use
  * top-level await — it only gets validated, not rewritten.
+ *
+ * `elements` adds the loader for everything else: the page's own tags are
+ * imported statically and defined before first paint, and any other tag in the
+ * app is one dynamic import away, taken only if it ever shows up in the DOM.
  */
-export function compileClientEntry(sources, { tags = [] } = {}) {
+export function compileClientEntry(sources, { tags = [] } = {}, { runtime, elements = false } = {}) {
   // Layouts first, page last: the same order they wrap in.
   const blocks = sources.map(({ source, filename }) =>
     assertModule(splitBlocks(source).client, `${filename} <script>`),
   );
 
+  const watcher = elements
+    ? `import { watch as __watch } from ${JSON.stringify(runtime)};\n` +
+      `import { elements as __elements } from ${JSON.stringify(ELEMENTS_ENTRY)};`
+    : '';
+
   return {
     code: `
+${watcher}
 ${tags.map((tag, i) => `import { define as __D${i} } from ${JSON.stringify(`virtual:hf-component/${tag}`)};`).join('\n')}
 
 ${tags.map((_, i) => `__D${i}();`).join('\n')}
+${elements ? '__watch(__elements);' : ''}
 
 ${blocks.join('\n')}
 `,
   };
+}
+
+/** The id of the module `compileClientEntry` reaches for when `elements` is on. */
+export const ELEMENTS_ENTRY = 'virtual:hf-elements';
+
+/**
+ * tag -> dynamic import, for every element in the app.
+ *
+ * A thunk rather than a URL: the bundler is the only thing that knows where the
+ * chunk lands, and `import()` is how you ask it. Nothing has to be written into
+ * a manifest, threaded through the server, or kept in sync with a hash.
+ */
+export function compileElementsEntry(tags) {
+  const entries = [...tags]
+    .sort()
+    .map(
+      (tag) =>
+        `  ${JSON.stringify(tag)}: () => import(${JSON.stringify(`virtual:hf-component/${tag}`)}),`,
+    );
+  return { code: `export const elements = {\n${entries.join('\n')}\n};\n` };
 }
 
 /**
@@ -530,9 +572,19 @@ function layoutImports(layouts) {
     .join('\n');
 }
 
-function componentImports(used) {
+/**
+ * `defines` pulls each nested element's `define` in alongside its def, so a
+ * component can register the elements it renders. Only a component needs that —
+ * a page or layout never renders itself into a document that has not already
+ * loaded its entry.
+ */
+function componentImports(used, { defines = false } = {}) {
   return used
-    .map(({ tag, ref }) => `import ${ref} from ${JSON.stringify(`virtual:hf-component/${tag}`)};`)
+    .map(({ tag, ref }) => {
+      const from = JSON.stringify(`virtual:hf-component/${tag}`);
+      const named = defines ? `, { define as ${ref}_define }` : '';
+      return `import ${ref}${named} from ${from};`;
+    })
     .join('\n');
 }
 

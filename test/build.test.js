@@ -96,12 +96,18 @@ describe('escaping survives the build', () => {
   assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
 });
 
-describe('client entries are hashed, and only emitted where needed', () => {
+describe('client entries are hashed', () => {
   assert.match(home, /<script type="module" src="\/assets\/[^"]+-[A-Za-z0-9_-]{8}\.js">/);
 
-  // /docs ships no components and no client script.
+  // /docs has no components and no client script of its own, and still gets one:
+  // `fragmentParam` is set, so any page can be swapped into and needs the loader
+  // that defines what arrives. Its entry is three imports and a call.
   const docs = manifest().dynamic.find((route) => route.id.startsWith('docs'));
-  assert.equal(docs.client, null);
+  assert.ok(docs.client, 'a page that can receive a fragment ships no way to define it');
+  assert.ok(
+    fs.statSync(path.join(dist, 'client', docs.client)).size < 400,
+    'the loader is supposed to be the smallest thing in the build',
+  );
 });
 
 describe('the site stylesheet is one hashed, cacheable file', () => {
@@ -112,7 +118,7 @@ describe('the site stylesheet is one hashed, cacheable file', () => {
   assert.match(links[0], /href="\/assets\/[^"]+-[A-Za-z0-9_-]{8}\.css"/);
 
   // Everything the compiler produces still travels inline: no second request.
-  assert.match(html, /<style>/);
+  assert.match(html, /<style data-hf-page>/);
 });
 
 describe('every page links the same stylesheet', () => {

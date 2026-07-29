@@ -76,23 +76,34 @@ export function renderDocument(chain, datas, { clientEntry, stylesheet, lang = '
   // Ahead of the stylesheet, because a <link> blocks the scripts after it and
   // the point of a head script is to run before anything else.
   const headScripts = chain.map((mod) => mod.headScript).filter(Boolean);
-  // Partial styles are @scope-d and belong in <head> exactly once, however many
-  // times the partial was rendered.
   // A light element's styles are @scope-d and belong in <head> exactly once,
   // however many times it was rendered. A shadow one carries its own.
+  //
+  // One <style> per tag rather than one block for all of them, each named. The
+  // name is what lets the client answer "are these already here?" for an element
+  // that arrives later in a fragment — the document says what it has, so nothing
+  // has to be tracked alongside it.
   const seen = new Set();
   const scoped = [];
   const collect = (defs) => {
     for (const def of defs ?? []) {
       if (seen.has(def.tag)) continue;
       seen.add(def.tag);
-      if (def.light && def.css) scoped.push(def.css);
+      if (def.light && def.css) {
+        scoped.push(`<style data-hf="${def.tag}">\n${def.css}\n</style>`);
+      }
       collect(def.elements);
     }
   };
   for (const mod of chain) collect(mod.elements);
 
-  const css = [...scoped, ...chain.map((mod) => mod.css)].filter(Boolean);
+  // Marked, and last: a page's own rules override an element's, and a style
+  // adopted later has to know where to insert itself to keep that true.
+  const own = chain.map((mod) => mod.css).filter(Boolean);
+  const css = [
+    ...scoped,
+    ...(own.length ? [`<style data-hf-page>\n${own.join('\n')}\n</style>`] : []),
+  ];
 
   return `<!doctype html>
 <html lang="${lang}">
@@ -103,7 +114,7 @@ ${title}
 ${headScripts.join('\n')}
 ${stylesheet ? `<link rel="stylesheet" href="${stylesheet}">` : ''}
 ${head.join('\n')}
-${css.length ? `<style>\n${css.join('\n')}\n</style>` : ''}
+${css.join('\n')}
 </head>
 <body>
 ${body}

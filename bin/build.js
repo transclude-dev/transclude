@@ -51,6 +51,9 @@ if (Object.keys(clientInput).length) {
     root,
     logLevel: 'warn',
     plugins: [htmlFirst(config)],
+    // Copied once, by us, into dist/public — Vite would otherwise put a copy in
+    // both the client and the SSR output, and neither is where it is served from.
+    publicDir: false,
     build: {
       outDir: `${config.outDir}/client`,
       emptyOutDir: true,
@@ -76,6 +79,7 @@ await build({
   root,
   logLevel: 'warn',
   plugins: [htmlFirst(config)],
+  publicDir: false,
   build: {
     outDir: `${config.outDir}/server`,
     emptyOutDir: true,
@@ -237,15 +241,43 @@ fs.writeFileSync(
   ),
 );
 
+// ---- public ---------------------------------------------------------------
+
+const publicSrc = config.publicDir
+  ? path.join(root, config.appDir, config.publicDir)
+  : null;
+const publicOut = path.join(dist, 'public');
+let publicFiles = 0;
+
+if (publicSrc && fs.existsSync(publicSrc)) {
+  fs.cpSync(publicSrc, publicOut, { recursive: true });
+  publicFiles = countFiles(publicOut);
+}
+
+function countFiles(dir) {
+  let total = 0;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    total += entry.isDirectory() ? countFiles(path.join(dir, entry.name)) : 1;
+  }
+  return total;
+}
+
 // ---- compress -------------------------------------------------------------
 
-const compressed = await precompress([path.join(dist, 'static'), path.join(dist, 'client')]);
+// `precompress` only touches extensions it knows are worth compressing, so a
+// public directory full of images costs nothing here.
+const compressed = await precompress([
+  path.join(dist, 'static'),
+  path.join(dist, 'client'),
+  publicOut,
+]);
 
 const summary = [
   `${prerendered.length} page${prerendered.length === 1 ? '' : 's'} prerendered`,
   `${CONCURRENCY} at a time`,
   `${dynamic.length} route${dynamic.length === 1 ? '' : 's'} left to the server`,
   `${assets.size} client entr${assets.size === 1 ? 'y' : 'ies'}`,
+  ...(publicFiles ? [`${publicFiles} public file${publicFiles === 1 ? '' : 's'}`] : []),
 ];
 console.log(`\n${summary.join(', ')}`);
 for (const url of prerendered) console.log(`  ${url}`);

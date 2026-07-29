@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { scanRoutes, toRoute } from '../src/routes.js';
+import { resolveRoutesDir, scanRoutes, toRoute } from '../src/routes.js';
 
 const route = (rel) => toRoute(rel.split('/').join(path.sep), rel);
 
@@ -152,4 +152,42 @@ test('404.js is not the not-found handler — that is a page', () => {
   const { endpoints, notFound } = scanRoutes(fixture(['404.js']));
   assert.equal(notFound, null);
   assert.deepEqual(endpoints.map((r) => r.pattern), ['/404']);
+});
+
+// ---- the rename ------------------------------------------------------------
+
+test('the routes directory resolves when it exists', () => {
+  const app = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-app-'));
+  fs.mkdirSync(path.join(app, 'routes'));
+  assert.equal(resolveRoutesDir(app, 'routes'), path.join(app, 'routes'));
+});
+
+test('the old name is a migration error, not an empty route table', () => {
+  // Silence here means every URL 404s and nothing says why — which is a poor way
+  // to find out a directory was renamed.
+  const app = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-app-'));
+  fs.mkdirSync(path.join(app, 'pages'));
+
+  assert.throws(
+    () => resolveRoutesDir(app, 'routes'),
+    (error) => /pages\/ is now routes\//.test(error.message) && /routesDir/.test(error.message),
+  );
+});
+
+test('a custom routesDir still reports the old directory if it is the one there', () => {
+  const app = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-app-'));
+  fs.mkdirSync(path.join(app, 'pages'));
+  assert.throws(() => resolveRoutesDir(app, 'urls'), /is now urls\//);
+});
+
+test('neither directory is not an error — an empty app is allowed', () => {
+  const app = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-app-'));
+  assert.equal(resolveRoutesDir(app, 'routes'), path.join(app, 'routes'));
+});
+
+test('both present means the new one wins, with nothing thrown', () => {
+  const app = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-app-'));
+  fs.mkdirSync(path.join(app, 'pages'));
+  fs.mkdirSync(path.join(app, 'routes'));
+  assert.equal(resolveRoutesDir(app, 'routes'), path.join(app, 'routes'));
 });

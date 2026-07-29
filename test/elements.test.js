@@ -173,7 +173,7 @@ test('a page does not pull in nested defines — its entry already listed them',
 //
 // Two globals and a querySelector is the whole surface it touches, which is why
 // it can be exercised here at all. What it does with a real document is checked
-// in the browser, by app/pages/check.html.
+// in the browser, by app/routes/check.html.
 
 function fakeDom(present = []) {
   const tags = new Set(present);

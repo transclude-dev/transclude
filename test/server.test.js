@@ -4,6 +4,9 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 import { renderFragment, renderRoute, responseOf } from '../src/document.js';
 import { baseApp, endpointMethods, runEndpoint } from '../src/server.js';
@@ -255,4 +258,131 @@ test('middleware sees every route registered after it', async () => {
 test('no middleware is not an error', () => {
   assert.doesNotThrow(() => baseApp({ middleware: null }));
   assert.doesNotThrow(() => baseApp({ middleware: 'not a function' }));
+});
+
+// ---- one canonical URL -----------------------------------------------------
+
+const canonical = (mode) => {
+  const app = baseApp({ trailingSlash: mode, csrf: false });
+  app.get('/check', (c) => c.text('page'));
+  app.get('/', (c) => c.text('root'));
+  return app;
+};
+
+test("'never' redirects a trailing slash to the canonical form", async () => {
+  const out = await canonical('never').request('http://x/check/');
+  assert.equal(out.status, 301, '302 would let a client keep using the other URL');
+  assert.equal(out.headers.get('location'), 'http://x/check');
+});
+
+test('the query string survives the redirect', async () => {
+  const out = await canonical('never').request('http://x/check/?q=ada');
+  assert.equal(out.headers.get('location'), 'http://x/check?q=ada');
+});
+
+test('the root is not redirected to the empty string', async () => {
+  assert.equal((await canonical('never').request('http://x/')).status, 200);
+});
+
+test('the canonical form itself is untouched', async () => {
+  assert.equal((await canonical('never').request('http://x/check')).status, 200);
+});
+
+test("'ignore' answers both, which is two URLs for one page", async () => {
+  assert.equal((await canonical('ignore').request('http://x/check/')).status, 200);
+  assert.equal((await canonical('ignore').request('http://x/check')).status, 200);
+});
+
+test('the loose router strips the slash before anything can act on it', async () => {
+  // This is why `trailingSlash` is one key and not a router option plus a
+  // middleware: under 'ignore' the slash is gone from `c.req.path` before any
+  // middleware runs, so a redirect middleware added alongside could never fire.
+  // The two exclude each other rather than composing.
+  let seen = null;
+  const app = baseApp({ trailingSlash: 'ignore', csrf: false });
+  app.use('*', async (c, next) => ((seen = c.req.path), next()));
+  app.get('/check', (c) => c.text('x'));
+
+  await app.request('http://x/check/');
+  assert.equal(seen, '/check', 'if this were "/check/" the two options could compose');
+});
+
+test('a catch-all route does not get to answer the slashed form first', async () => {
+  // Hono's default only redirects a request that already 404'd, and `:path{.+}`
+  // matches `intro/` happily — so without `alwaysRedirect` the slashed URL
+  // serves content and the duplicate survives.
+  const app = baseApp({ trailingSlash: 'never', csrf: false });
+  app.get('/docs/:path{.+}', (c) => c.text(`doc:${c.req.param('path')}`));
+
+  const out = await app.request('http://x/docs/intro/');
+  assert.equal(out.status, 301, 'the catch-all swallowed it');
+  assert.equal(out.headers.get('location'), 'http://x/docs/intro');
+});
+
+test('a nonsense value is refused rather than silently ignored', () => {
+  assert.throws(() => baseApp({ trailingSlash: 'always' }), /'never' or 'ignore'/);
+  assert.throws(() => baseApp({ trailingSlash: true }), /'never' or 'ignore'/);
+});
+
+// ---- public files ----------------------------------------------------------
+
+test('a public root is served, and a miss falls through to the routes', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-public-'));
+  fs.writeFileSync(path.join(dir, 'robots.txt'), 'User-agent: *\n');
+
+  const app = baseApp({ csrf: false, publicRoot: dir });
+  app.get('/robots.txt', (c) => c.text('a route, which should never be reached'));
+  app.get('/missing.txt', (c) => c.text('fell through'));
+
+  const file = await app.request('http://x/robots.txt');
+  assert.equal(await file.text(), 'User-agent: *\n', 'a real file has to beat a route');
+
+  const miss = await app.request('http://x/missing.txt');
+  assert.equal(await miss.text(), 'fell through');
+});
+
+test("the app's middleware sees public file requests too", async () => {
+  // Mounted after the middleware, so a guard covers these as well — a file being
+  // public by default is not the same as being unguardable.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-public-'));
+  fs.writeFileSync(path.join(dir, 'secret.txt'), 'shh');
+
+  const seen = [];
+  const app = baseApp({
+    csrf: false,
+    publicRoot: dir,
+    middleware: (a) => a.use('*', async (c, next) => (seen.push(c.req.path), next())),
+  });
+
+  const out = await app.request('http://x/secret.txt');
+  assert.equal(await out.text(), 'shh');
+  assert.deepEqual(seen, ['/secret.txt'], 'middleware registered after this could not guard it');
+});
+
+test('a guard can refuse a public file', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-public-'));
+  fs.writeFileSync(path.join(dir, 'private.txt'), 'shh');
+
+  const app = baseApp({
+    csrf: false,
+    publicRoot: dir,
+    middleware: (a) => a.use('/private.txt', (c) => c.text('nope', 403)),
+  });
+
+  const out = await app.request('http://x/private.txt');
+  assert.equal(out.status, 403);
+});
+
+test('no public root, and nothing is mounted', async () => {
+  const app = baseApp({ csrf: false, publicRoot: null });
+  app.get('/robots.txt', (c) => c.text('the route answers'));
+  assert.equal(await (await app.request('http://x/robots.txt')).text(), 'the route answers');
+});
+
+test('a public root that does not exist is not mounted either', async () => {
+  // Hono's serveStatic logs to stderr for a missing root; not mounting it at all
+  // is quieter and means the same thing.
+  const app = baseApp({ csrf: false, publicRoot: path.join(os.tmpdir(), 'hf-nope-does-not-exist') });
+  app.get('/robots.txt', (c) => c.text('the route answers'));
+  assert.equal(await (await app.request('http://x/robots.txt')).text(), 'the route answers');
 });

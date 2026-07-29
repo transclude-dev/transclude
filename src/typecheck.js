@@ -17,7 +17,7 @@ import path from 'node:path';
 import ts from 'typescript';
 import { buildShim, originalOffset } from './compiler/shim.js';
 import { splitBlocks } from './compiler/index.js';
-import { scanRoutes } from './routes.js';
+import { resolveRoutesDir, scanRoutes } from './routes.js';
 
 /**
  * Annotations are optional, so `noImplicitAny` is off: an unannotated parameter
@@ -57,7 +57,7 @@ export function createChecker({
   appDir = 'app',
   componentsDir = 'components',
   partialsDir = 'partials',
-  pagesDir = 'pages',
+  routesDir = 'routes',
   strict = false,
 }) {
   const app = path.resolve(root, appDir);
@@ -135,13 +135,13 @@ export function createChecker({
   // decides what `this.shadowRoot` means inside <script element>.
   const isShadow = (file) => file.startsWith(path.resolve(app, componentsDir));
 
-  const layoutFiles = (dir = path.resolve(app, pagesDir), out = new Map()) => {
+  const layoutFiles = (dir = resolveRoutesDir(app, routesDir), out = new Map()) => {
     if (!fs.existsSync(dir)) return out;
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) layoutFiles(full, out);
       else if (entry.name === LAYOUT_FILE) {
-        const relative = path.relative(path.resolve(app, pagesDir), dir);
+        const relative = path.relative(resolveRoutesDir(app, routesDir), dir);
         out.set(relative ? relative.split(path.sep).join('-') : 'root', full);
       }
     }
@@ -241,7 +241,7 @@ export function createChecker({
       layoutData.set(id, dataTypeOf(file));
     }
 
-    const { routes, notFound } = scanRoutes(path.resolve(app, pagesDir));
+    const { routes, notFound } = scanRoutes(resolveRoutesDir(app, routesDir));
     const pages = new Map();
     for (const route of [...routes, notFound].filter(Boolean)) {
       const above = mergeTypes(chainFor(route.rel, layouts).map((id) => layoutData.get(id)));
@@ -260,7 +260,7 @@ export function createChecker({
 
   const contextFor = (file) => {
     if (path.basename(file) === LAYOUT_FILE) {
-      const relative = path.relative(path.resolve(app, pagesDir), path.dirname(file));
+      const relative = path.relative(resolveRoutesDir(app, routesDir), path.dirname(file));
       const id = relative ? relative.split(path.sep).join('-') : 'root';
       return contextLiteral(
         [],
@@ -295,7 +295,7 @@ export function createChecker({
   return {
     files() {
       const found = [...componentFiles(), ...partialFiles()];
-      walkHtml(path.resolve(app, pagesDir), found);
+      walkHtml(resolveRoutesDir(app, routesDir), found);
       return found;
     },
 

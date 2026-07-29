@@ -74,7 +74,15 @@ const statics = loadStatic(path.join(dist, 'static'));
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 const REVALIDATE = 'public, max-age=0, must-revalidate';
 
-const app = baseApp({ csrf: config.csrf, middleware });
+// `dist/public`, not the source `public/`: this server reads dist and nothing
+// else, which is what makes its "your source is newer than this build" warning
+// true.
+const app = baseApp({
+  csrf: config.csrf,
+  trailingSlash: config.trailingSlash,
+  publicRoot: path.join(dist, 'public'),
+  middleware,
+});
 
 // Hashed filenames, so these are safe to cache forever.
 app.get('/assets/*', (c, next) => {

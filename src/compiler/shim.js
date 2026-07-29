@@ -202,25 +202,36 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
     return;
   }
 
-  const statement = ast.body.find((node) => node.type === 'ExportDefaultDeclaration');
-  if (!statement) {
-    out.copy(block.code, block.offset);
-    out.add(`\n/** @typedef {{}} ${name} */\n\n`);
-    return;
-  }
-
-  // The block is copied whole, with only `export default` spliced out. Copying
-  // statement by statement would drop everything that is not a statement — a
-  // floating `@typedef`, or a JSDoc comment attached to the export — and those
-  // are exactly how an author says what an empty array holds.
-  const declaration = statement.declaration;
-
   // The block is copied whole with pieces spliced in at exact offsets, so every
-  // position still maps back to the .html file. Two things get spliced: the
-  // default export, and — in a props block — an annotation on `attributes`.
-  const edits = [{ at: statement.start, statement }];
+  // position still maps back to the .html file. Copying statement by statement
+  // would drop everything that is not a statement — a floating `@typedef`, or a
+  // JSDoc comment attached to an export — and those are exactly how an author
+  // says what an empty array holds.
+  const edits = [];
+
+  // A props block annotates `attributes`; a server block annotates `actions`,
+  // which types every handler's own `ctx` from the same route context the
+  // loader gets. Neither depends on there being a default export.
   const attrs = binding === '__props' ? namedExport(ast, 'attributes') : null;
   if (attrs) edits.push({ at: attrs.start, insert: '/** @type {__Attrs} */\n' });
+
+  const actions = contextType ? namedExport(ast, 'actions') : null;
+  if (actions) {
+    // The same route context, except that `request` is not nullable here. It is
+    // null only while prerendering, and prerendering never runs an action — so
+    // the intersection narrows `Request | null` to `Request` and an author does
+    // not have to answer a question that cannot come up.
+    edits.push({
+      at: actions.start,
+      insert:
+        `/** @satisfies {Record<string, ` +
+        `(ctx: ${contextType} & { request: Request }) => unknown>} */\n`,
+    });
+  }
+
+  const statement = ast.body.find((node) => node.type === 'ExportDefaultDeclaration');
+  const declaration = statement?.declaration;
+  if (statement) edits.push({ at: statement.start, statement });
   edits.sort((a, b) => a.at - b.at);
 
   let cursor = 0;
@@ -235,7 +246,19 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
     // `satisfies` is doing real work: it contextually types the loader's own
     // parameter *and* leaves the return type intact for the template below. An
     // annotation would flatten one or the other.
-    if (contextType) out.add(`\n/** @satisfies {(ctx: ${contextType}) => unknown} */\n`);
+    //
+    // The loader's `ctx.action` is whatever this page's own actions return —
+    // `unknown` in the route context, narrowed here by intersection to the
+    // union of their return types. A `Response` is excluded because returning
+    // one short-circuits: the loader never runs, so it can never see it.
+    if (contextType) {
+      const action = actions
+        ? `Exclude<Awaited<ReturnType<(typeof actions)[keyof typeof actions]>>, Response>`
+        : 'null';
+      out.add(
+        `\n/** @satisfies {(ctx: ${contextType} & { action: ${action} | null }) => unknown} */\n`,
+      );
+    }
     out.add(`const ${binding} = (`);
     out.copy(
       block.code.slice(declaration.start, declaration.end),
@@ -246,6 +269,13 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
   }
   out.copy(block.code.slice(cursor), block.offset + cursor);
   out.add('\n');
+
+  // No default export is a block that only does other things — `paths`,
+  // `prerender`, `actions`. It renders from nothing, so its data shape is empty.
+  if (!statement) {
+    out.add(`/** @typedef {{}} ${name} */\n\n`);
+    return;
+  }
 
   out.add(
     contextType

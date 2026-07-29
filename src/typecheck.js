@@ -177,10 +177,17 @@ export function createChecker({
         '{}',
       );
 
+  // `request` is the platform's `Request`, not a router's wrapper — reading a
+  // form is `await request.formData()` and nothing to look up. It is null while
+  // prerendering, where there is no request to read.
+  //
+  // `action` is whatever the page's handler for this method returned, so a POST
+  // and a GET render through the same loader.
   const contextLiteral = (params, layoutType) =>
     `{ url: string; params: { ${params.map((name) => `${name}: string`).join('; ')} }; ` +
     `route: { id: string; pattern: string; path: string }; ` +
-    `layout: ${layoutType}; req: unknown }`;
+    `layout: ${layoutType}; request: Request | null; fragment: string | null; ` +
+    `action: unknown }`;
 
   /**
    * Builds every shim in dependency order: components depend on nothing, a

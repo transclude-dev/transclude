@@ -39,7 +39,9 @@ const serverRender = (id, url) => {
       url: `http://localhost${url}`,
       params: {},
       route: { id, pattern: route.pattern, path: url },
-      req: null,
+      request: null,
+      fragment: null,
+      action: null,
     },
     { clientEntry: route.client, stylesheet },
   );
@@ -169,4 +171,47 @@ describe('a query value is escaped like any other interpolation', async () => {
   const html = await serverRender('index', '/?q=%3Cscript%3Ealert(1)%3C/script%3E');
   assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.doesNotMatch(html, /<code><script>/);
+});
+
+// ---- post/redirect/get -----------------------------------------------------
+//
+// The bug this guards: a mutating action that answers with a rendered page
+// instead of a redirect leaves the browser on a POST, so every reload submits
+// the form again. It was reported by holding down refresh and watching the list
+// grow, which no unit test was going to notice.
+
+const postTo = (page, body, over = {}) =>
+  pages[page].actions.post({
+    url: `http://localhost/${page}`,
+    fragment: null,
+    request: new Request(`http://localhost/${page}`, {
+      method: 'POST',
+      body: new URLSearchParams(body),
+    }),
+    ...over,
+  });
+
+describe('a mutation answers with a redirect, so a reload repeats a GET', async () => {
+  const result = await postTo('notes', { text: 'from a test' });
+
+  assert.ok(result instanceof Response, 'a rendered page here means reload re-submits');
+  assert.equal(result.status, 303, '303 turns the POST into a GET; 302 may not');
+  assert.match(result.headers.get('location') ?? '', /\/notes\?added=from\+a\+test$/);
+});
+
+describe('a rejected submission does not redirect, because nothing changed', async () => {
+  const before = (await pages.notes.load({ url: 'http://localhost/notes', action: null })).notes.length;
+  const result = await postTo('notes', { text: '   ' });
+
+  assert.ok(!(result instanceof Response), 'nothing was mutated, so there is nothing to redirect away from');
+  assert.match(result.error, /needs some text/);
+
+  const after = (await pages.notes.load({ url: 'http://localhost/notes', action: null })).notes.length;
+  assert.equal(after, before);
+});
+
+describe('a fragment caller gets markup back, never a redirect', async () => {
+  // A swap asked for HTML. A 303 would navigate the whole page instead.
+  const result = await postTo('notes', { text: 'for a fragment' }, { fragment: 'list' });
+  assert.ok(!(result instanceof Response));
 });

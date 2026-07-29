@@ -6,7 +6,14 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
-import { renderRoute, renderFragment } from '../src/document.js';
+import {
+  ACTION_METHODS,
+  hasRegion,
+  methodsOf,
+  renderFragment,
+  renderRoute,
+  runAction,
+} from '../src/document.js';
 import { etagOf, loadAssets, loadStatic } from '../src/static-cache.js';
 import { pickEncoding } from '../src/negotiate.js';
 import { COMPRESSIBLE_FLOOR, compressResponse } from '../src/compress.js';
@@ -73,10 +80,35 @@ app.get('/assets/*', (c, next) => {
 });
 
 /**
- * Fragments come first, and for every route rather than only the dynamic ones:
- * a page whose document was prerendered still has regions worth asking for, and
- * the prerendered file below matches on path alone — it would happily answer a
- * fragment request with the whole document.
+ * What every loader and action is handed. `request` is the platform's own
+ * `Request` rather than the server's wrapper — the framework should not be the
+ * reason an author learns a router's API to read a form.
+ */
+const contextFor = (route, c, extra = {}) => ({
+  url: c.req.url,
+  params: c.req.param(),
+  route: { id: route.id, pattern: route.pattern, path: c.req.path },
+  request: c.req.raw,
+  // The region this request asked for, or null for a whole document. An action
+  // needs it to decide whether a redirect is even an answer: post/redirect/get
+  // is right for a form, and wrong for a caller that asked for markup.
+  fragment: fragmentOf(c),
+  action: null,
+  ...extra,
+});
+
+/** The region this request is asking for, or null for the whole document. */
+function fragmentOf(c) {
+  if (!config.fragmentParam) return null;
+  const value = c.req.query(config.fragmentParam);
+  return value === undefined ? null : value;
+}
+
+/**
+ * Fragments and actions come first, and for every route rather than only the
+ * dynamic ones: a page whose document was prerendered still has regions worth
+ * asking for and mutations worth accepting, and the prerendered file below
+ * matches on path alone — it would happily answer either with a static document.
  */
 for (const route of manifest.routes ?? []) {
   app.get(route.pattern, async (c, next) => {
@@ -84,17 +116,39 @@ for (const route of manifest.routes ?? []) {
     if (region === undefined) return next();
 
     try {
-      const html = await renderFragment(
-        pages[route.id],
-        {
-          url: c.req.url,
-          params: c.req.param(),
-          route: { id: route.id, pattern: route.pattern, path: c.req.path },
-          req: c.req,
-        },
-        { region: region || null },
-      );
+      const html = await renderFragment(pages[route.id], contextFor(route, c), {
+        region: region || null,
+      });
       if (html === null) return c.text(`no fragment "${region}"`, 404);
+      return sendRendered(c, html);
+    } catch (err) {
+      console.error(err);
+      return c.text('Internal error', 500);
+    }
+  });
+
+  app.on(ACTION_METHODS, route.pattern, async (c) => {
+    const page = pages[route.id];
+    const region = config.fragmentParam ? c.req.query(config.fragmentParam) : undefined;
+    try {
+      // Before the action, not after: a request nobody can answer should not
+      // have mutated anything on its way to saying so.
+      if (region !== undefined && !hasRegion(page, region)) {
+        return c.text(`no fragment "${region}"`, 404);
+      }
+
+      const outcome = await runAction(page, contextFor(route, c), c.req.method);
+      if (!outcome) {
+        return c.text(`${c.req.method} not allowed`, 405, { Allow: methodsOf(page).join(', ') });
+      }
+      if (outcome.response) return outcome.response;
+
+      const ctx = contextFor(route, c, { action: outcome.action });
+      const html =
+        region === undefined
+          ? await renderRoute(page, ctx, { clientEntry: route.client, stylesheet: manifest.stylesheet })
+          : await renderFragment(page, ctx, { region: region || null });
+
       return sendRendered(c, html);
     } catch (err) {
       console.error(err);
@@ -113,16 +167,10 @@ app.get('*', (c, next) => {
 for (const route of manifest.dynamic) {
   app.get(route.pattern, async (c) => {
     try {
-      const html = await renderRoute(
-        pages[route.id],
-        {
-          url: c.req.url,
-          params: c.req.param(),
-          route: { id: route.id, pattern: route.pattern, path: c.req.path },
-          req: c.req,
-        },
-        { clientEntry: route.client, stylesheet: manifest.stylesheet },
-      );
+      const html = await renderRoute(pages[route.id], contextFor(route, c), {
+        clientEntry: route.client,
+        stylesheet: manifest.stylesheet,
+      });
       return sendRendered(c, html);
     } catch (err) {
       console.error(err);

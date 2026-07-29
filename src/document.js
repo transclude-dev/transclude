@@ -51,6 +51,56 @@ export async function renderFragment(page, ctx, { region = null } = {}) {
   return target(data, {}, true);
 }
 
+/**
+ * The methods a server routes to `runAction`. Both servers register all of them
+ * for every route: a page that answers none of them should say 405 with an
+ * `Allow` header rather than fall through to the not-found page, because the URL
+ * is not what was wrong.
+ *
+ * A `<form>` only ever sends GET or POST. The rest are here for the callers that
+ * are not forms.
+ */
+export const ACTION_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+
+/**
+ * Runs the page's handler for a request that is not a GET.
+ *
+ * A `Response` is the author's own answer and goes out as it is — a redirect
+ * after a POST, JSON, a 404. Anything else becomes `ctx.action`, and the page
+ * then renders exactly the way it does for a GET: `load` stays the one thing
+ * that decides what a page renders, whatever method asked for it. So a form
+ * that re-renders with an error reads the same as a form that redirects, and
+ * neither has to restate the page's data.
+ *
+ * `null` is "this page does not answer that method", which is a 405 rather than
+ * a 404 — the URL exists.
+ */
+export async function runAction(page, ctx, method) {
+  const action = page.actions?.[method.toLowerCase()];
+  if (typeof action !== 'function') return null;
+
+  const result = await action(ctx);
+  return result instanceof Response ? { response: result } : { action: result ?? {} };
+}
+
+/**
+ * Whether a page can answer for a region name. An empty name is the page's own
+ * body, which always exists.
+ *
+ * Asked *before* an action runs. A misspelled region is a 404 either way, but a
+ * request that cannot be answered should not have mutated anything on its way to
+ * saying so.
+ */
+export function hasRegion(page, region) {
+  return !region || Boolean(page?.regions?.[region]);
+}
+
+/** What a page answers, for an `Allow` header. GET is not optional. */
+export function methodsOf(page) {
+  const declared = Object.keys(page?.actions ?? {}).map((method) => method.toUpperCase());
+  return ['GET', ...declared.filter((method) => method !== 'GET')];
+}
+
 export function renderDocument(chain, datas, { clientEntry, stylesheet, lang = 'en' } = {}) {
   // Each level renders to a slot map and hands it to the level above, so a page
   // can fill more than one hole in its layout.

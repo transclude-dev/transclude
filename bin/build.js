@@ -124,7 +124,9 @@ function render(route, { url, params }) {
       url: `http://localhost${url}`,
       params,
       route: { id: route.id, pattern: route.pattern ?? '', path: url },
-      req: null,
+      request: null,
+      fragment: null,
+      action: null,
     },
     { clientEntry: assets.get(route.id) ?? null, stylesheet },
   );

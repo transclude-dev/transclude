@@ -2,20 +2,21 @@
 // matching. Pure functions only — the plugin and the server both scan, and they
 // must not be able to disagree.
 //
-//   pages/index.html            ->  /
-//   pages/about.html            ->  /about
-//   pages/blog/index.html       ->  /blog
-//   pages/blog/[slug].html      ->  /blog/:slug
-//   pages/docs/[...path].html   ->  /docs/:path{.+}
-//   pages/404.html              ->  the not-found handler, not a route
-//   pages/_partial.html         ->  ignored, as is anything under an _ directory
+//   routes/index.html            ->  /
+//   routes/about.html            ->  /about
+//   routes/blog/index.html       ->  /blog
+//   routes/blog/[slug].html      ->  /blog/:slug
+//   routes/docs/[...path].html   ->  /docs/:path{.+}
+//   routes/api/people.js         ->  /api/people, an endpoint rather than a page
+//   routes/404.html              ->  the not-found handler, not a route
+//   routes/_partial.html         ->  ignored, as is anything under an _ directory
 
 import fs from 'node:fs';
 import path from 'node:path';
 
 const EXT = '.html';
 /**
- * A `.js` file in the pages tree is an endpoint: a route with no template, no
+ * A `.js` file in the routes tree is an endpoint: a route with no template, no
  * layout and no regions, which answers with a `Response` of its own. Same
  * filename conventions as a page — `[param]`, `[...rest]`, `index` — because it
  * is the same route table.
@@ -143,4 +144,27 @@ function walk(dir, base = dir, out = []) {
     }
   }
   return out;
+}
+
+/**
+ * The routes directory, or a migration error.
+ *
+ * It was `pages/` until it started holding `.js` endpoints as well as `.html`
+ * pages — at which point the name was telling you something false. A missing
+ * directory otherwise produces an empty route table and a site of 404s, which is
+ * a confusing way to learn about a rename.
+ */
+export function resolveRoutesDir(app, routesDir) {
+  const dir = path.resolve(app, routesDir);
+  if (fs.existsSync(dir)) return dir;
+
+  const legacy = path.resolve(app, 'pages');
+  if (fs.existsSync(legacy)) {
+    throw new Error(
+      `[html-first] ${path.relative(app, legacy)}/ is now ${routesDir}/ — it holds .js ` +
+        `endpoints as well as .html pages. Rename the directory, or set ` +
+        `\`routesDir\` in html-first.config.js.`,
+    );
+  }
+  return dir;
 }

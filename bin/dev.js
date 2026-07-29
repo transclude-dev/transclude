@@ -17,18 +17,26 @@ import {
   runAction,
 } from '../src/document.js';
 import { clientEntryUrl, pageModuleId } from '../src/plugin.js';
-import { scanRoutes } from '../src/routes.js';
+import { resolveRoutesDir, scanRoutes } from '../src/routes.js';
 import { baseApp, endpointMethods, runEndpoint, SERVER_FILE } from '../src/server.js';
 import config from '../../html-first.config.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const pagesDir = path.join(root, config.appDir, config.pagesDir);
+const routesDir = resolveRoutesDir(path.join(root, config.appDir), config.routesDir);
 const PORT = Number(process.env.PORT ?? 5173);
+
+const publicRoot = config.publicDir
+  ? path.join(root, config.appDir, config.publicDir)
+  : null;
 
 const vite = await createViteServer({
   root,
   appType: 'custom',
   server: { middlewareMode: true },
+  // Vite would serve these itself, ahead of Hono, and production would serve
+  // them a different way — which is how dev and production come to disagree.
+  // One mechanism instead: `baseApp` mounts Hono's static middleware in both.
+  publicDir: false,
 });
 
 /**
@@ -159,8 +167,13 @@ async function loadMiddleware() {
 }
 
 async function buildApp() {
-  const { routes, endpoints, notFound } = scanRoutes(pagesDir);
-  const app = baseApp({ csrf: config.csrf, middleware: await loadMiddleware() });
+  const { routes, endpoints, notFound } = scanRoutes(routesDir);
+  const app = baseApp({
+    csrf: config.csrf,
+    trailingSlash: config.trailingSlash,
+    publicRoot,
+    middleware: await loadMiddleware(),
+  });
 
   // Already ordered most-specific first, so registration order is deterministic
   // rather than something to reason about per-router.
@@ -225,7 +238,7 @@ let app = await buildApp();
 
 // Adding or removing a page changes the route table, not just a module.
 vite.watcher.on('all', async (event, file) => {
-  const routing = file.startsWith(pagesDir) && file.endsWith('.html') && event !== 'change';
+  const routing = file.startsWith(routesDir) && file.endsWith('.html') && event !== 'change';
   // Middleware is registered once when the app is built, so a change to it needs
   // the app rebuilt — unlike a page, which is loaded per request.
   if (!routing && file !== serverFile) return;

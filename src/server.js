@@ -5,8 +5,12 @@
 // does not guard a prerendered page. Two copies of that order is two servers
 // that disagree, which has happened twice in this codebase already.
 
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { Hono } from 'hono';
 import { csrf } from 'hono/csrf';
+import { trimTrailingSlash } from 'hono/trailing-slash';
+import { serveStatic } from '@hono/node-server/serve-static';
 
 /**
  * `strict: false` so /about and /about/ are the same page.
@@ -21,23 +25,76 @@ import { csrf } from 'hono/csrf';
  * `middleware` is the app's own `server.js`, run after — so it can add anything
  * and cannot accidentally register itself ahead of the guard.
  */
-export function baseApp({ csrf: csrfOption = true, middleware = null } = {}) {
-  const app = new Hono({ strict: false });
+export function baseApp({
+  csrf: csrfOption = true,
+  trailingSlash = 'never',
+  publicRoot = null,
+  middleware = null,
+} = {}) {
+  if (trailingSlash !== 'never' && trailingSlash !== 'ignore') {
+    throw new Error(
+      `[html-first] trailingSlash must be 'never' or 'ignore', not ${JSON.stringify(trailingSlash)}`,
+    );
+  }
+
+  /**
+   * One decision, two halves — which is why this is a single config key and not
+   * a router option plus a middleware the author remembers to add.
+   *
+   * `strict: false` does not merely match /about/ as well as /about: it strips
+   * the slash from `c.req.path` before any middleware runs. Measured — with it
+   * on, `trimTrailingSlash` never fires, because the thing it looks for is gone
+   * by the time it looks. The two do not compose; they exclude each other.
+   *
+   * So 'never' means strict routing plus a 301 to the canonical form, and every
+   * URL this framework generates is already that form: `routes/about.html` is
+   * `/about`. 'ignore' is the loose router, which answers both with 200 — two
+   * URLs for one page, and nothing emits <link rel="canonical">.
+   *
+   * `alwaysRedirect` matters because Hono's default only redirects a request that
+   * already 404'd — and a catch-all route answers before it can. `/docs/intro/`
+   * would match `/docs/:path{.+}` as `intro/` and return 200, which is the exact
+   * duplicate this setting exists to remove. Redirecting ahead of the router also
+   * spares a doomed request the route table and every middleware after this one.
+   */
+  const app = new Hono({ strict: trailingSlash === 'never' });
+  if (trailingSlash === 'never') app.use('*', trimTrailingSlash({ alwaysRedirect: true }));
 
   if (csrfOption) app.use('*', csrf(csrfOption === true ? undefined : csrfOption));
   if (typeof middleware === 'function') middleware(app);
 
+  // After the app's middleware, so a guard can cover these too, and before the
+  // route table, so a real file always beats a `[...path]` catch-all.
+  //
+  // Hono's rather than the in-memory cache the build output uses: these are the
+  // author's files, they can be large, and they can be media — which needs byte
+  // ranges (206), and the in-memory path does not do them.
+  if (publicRoot && existsSync(publicRoot)) {
+    app.use('*', serveStatic({ root: relativeToCwd(publicRoot), precompressed: true }));
+  }
+
   return app;
+}
+
+/**
+ * `serveStatic` joins `root` onto the request path, so a root is resolved against
+ * the working directory. Both servers compute paths from their own location
+ * instead, precisely so they do not depend on where they were started from — this
+ * converts one to the other.
+ */
+function relativeToCwd(absolute) {
+  const relative = path.relative(process.cwd(), absolute);
+  return relative === '' ? '.' : relative;
 }
 
 /** Where an app puts its middleware. Relative to `appDir`. */
 export const SERVER_FILE = 'server.js';
 
 /**
- * An endpoint is a `.js` file in the pages tree: a route with no template, no
+ * An endpoint is a `.js` file in the routes tree: a route with no template, no
  * layout and no regions, which answers with a `Response` of its own.
  *
- *   // app/pages/api/notes.js
+ *   // app/routes/api/notes.js
  *   export const GET = () => Response.json(notes);
  *   export const DELETE = ({ params }) => { … };
  *

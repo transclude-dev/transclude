@@ -116,7 +116,7 @@ test('a component prop key is mapped, or its type error would be dropped', () =>
 
 function project(files, options = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-check-'));
-  fs.mkdirSync(path.join(dir, 'app/pages'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'app/routes'), { recursive: true });
   for (const [rel, body] of Object.entries(files)) {
     const full = path.join(dir, rel);
     fs.mkdirSync(path.dirname(full), { recursive: true });
@@ -136,9 +136,9 @@ export interface UserCardProps { name: string; tags: string[] }
 test('a typo against loader data is an error at the right place', () => {
   const source = `<script server>export default () => ({ heading: 'x' });</script>
 <h1>\${headng}</h1>`;
-  const { dir, checker } = project({ 'app/pages/index.html': source });
+  const { dir, checker } = project({ 'app/routes/index.html': source });
 
-  const [diagnostic] = checker.check(path.join(dir, 'app/pages/index.html'));
+  const [diagnostic] = checker.check(path.join(dir, 'app/routes/index.html'));
   assert.match(diagnostic.message, /'headng' does not exist/);
   assert.equal(positionAt(source, diagnostic.offset).line, 2);
   assert.equal(source.slice(diagnostic.offset, diagnostic.offset + 6), 'headng');
@@ -146,32 +146,32 @@ test('a typo against loader data is an error at the right place', () => {
 
 test('a typo against route context is caught inside the loader', () => {
   const { dir, checker } = project({
-    'app/pages/index.html': `<script server>export default ({ layout }) => ({ a: layout.sight });</script><p>x</p>`,
+    'app/routes/index.html': `<script server>export default ({ layout }) => ({ a: layout.sight });</script><p>x</p>`,
   });
-  const [diagnostic] = checker.check(path.join(dir, 'app/pages/index.html'));
+  const [diagnostic] = checker.check(path.join(dir, 'app/routes/index.html'));
   assert.match(diagnostic.message, /'sight' does not exist/);
 });
 
 test('a misspelled built-in method is caught, with a suggestion', () => {
   const { dir, checker } = project({
-    'app/pages/index.html': `<script server>export default () => ({ t: 'x' });</script><p>\${t.toUpperCse()}</p>`,
+    'app/routes/index.html': `<script server>export default () => ({ t: 'x' });</script><p>\${t.toUpperCse()}</p>`,
   });
-  const [diagnostic] = checker.check(path.join(dir, 'app/pages/index.html'));
+  const [diagnostic] = checker.check(path.join(dir, 'app/routes/index.html'));
   assert.match(diagnostic.message, /toUpperCse.*Did you mean 'toUpperCase'/s);
 });
 
 test('correct files produce nothing', () => {
   const { dir, checker } = project({
-    'app/pages/index.html': `<script server>export default () => ({ items: ['a'] });</script>
+    'app/routes/index.html': `<script server>export default () => ({ items: ['a'] });</script>
 <li each="i of items">\${i.toUpperCase()}</li>`,
   });
-  assert.deepEqual(checker.check(path.join(dir, 'app/pages/index.html')), []);
+  assert.deepEqual(checker.check(path.join(dir, 'app/routes/index.html')), []);
 });
 
 test('an editor buffer is checked without touching disk', () => {
   const clean = `<script server>export default () => ({ a: 1 });</script><p>\${a}</p>`;
-  const { dir, checker } = project({ 'app/pages/index.html': clean });
-  const file = path.join(dir, 'app/pages/index.html');
+  const { dir, checker } = project({ 'app/routes/index.html': clean });
+  const file = path.join(dir, 'app/routes/index.html');
 
   assert.deepEqual(checker.check(file), []);
 
@@ -182,9 +182,9 @@ test('an editor buffer is checked without touching disk', () => {
 
 test('hover reports the type of an expression in the template', () => {
   const source = `<script server>export default () => ({ count: 2 });</script><p>\${count}</p>`;
-  const { dir, checker } = project({ 'app/pages/index.html': source });
+  const { dir, checker } = project({ 'app/routes/index.html': source });
 
-  const info = checker.quickInfo(path.join(dir, 'app/pages/index.html'), source.indexOf('count}'));
+  const info = checker.quickInfo(path.join(dir, 'app/routes/index.html'), source.indexOf('count}'));
   assert.match(info.text, /count: number/);
 });
 
@@ -324,12 +324,12 @@ const withCard = (markup) => ({
 export default { name: '' };
 </script>
 <h3>\${name}</h3>`,
-  'app/pages/index.html': `<script server>export default () => ({ id: 1 });</script>\n${markup}`,
+  'app/routes/index.html': `<script server>export default () => ({ id: 1 });</script>\n${markup}`,
 });
 
 const errorsFor = (markup) => {
   const { dir, checker } = project(withCard(markup));
-  return checker.check(path.join(dir, 'app/pages/index.html'));
+  return checker.check(path.join(dir, 'app/routes/index.html'));
 };
 
 for (const prefix of ['hx-get', 'data-key', 'aria-label']) {

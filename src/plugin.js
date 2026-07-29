@@ -15,7 +15,7 @@ import {
   splitBlocks,
   usedComponents,
 } from './compiler/index.js';
-import { scanRoutes } from './routes.js';
+import { resolveRoutesDir, scanRoutes } from './routes.js';
 import { SERVER_FILE } from './server.js';
 
 const P_COMPONENT = 'virtual:hf-component/';
@@ -31,7 +31,7 @@ export default function htmlFirst({
   appDir = 'app',
   componentsDir = 'components',
   partialsDir = 'partials',
-  pagesDir = 'pages',
+  routesDir = 'routes',
   fragmentParam = 'fragment',
 } = {}) {
   // Fragment routing on means markup can arrive after the page did, from any
@@ -57,7 +57,7 @@ export default function htmlFirst({
     const light = readDir(path.resolve(app, partialsDir));
     components = new Map([...light, ...shadow]);
 
-    const scanned = scanRoutes(path.resolve(app, pagesDir));
+    const scanned = scanRoutes(resolveRoutesDir(app, routesDir));
     pages = new Map(
       [...scanned.routes, scanned.notFound]
         .filter(Boolean)
@@ -86,12 +86,12 @@ export default function htmlFirst({
       );
     }
 
-    layouts = scanLayouts(path.resolve(app, pagesDir));
+    layouts = scanLayouts(resolveRoutesDir(app, routesDir));
 
   };
 
   /**
-   * Layouts that wrap a page, outermost first: every _layout.html from the pages
+   * Layouts that wrap a page, outermost first: every _layout.html from the routes
    * root down to the page's own directory.
    */
   const chainFor = (route) => {
@@ -182,7 +182,7 @@ export default function htmlFirst({
     api: {
       manifest() {
         if (!root) throw new Error('[html-first] plugin not configured yet');
-        const scanned = scanRoutes(path.resolve(app, pagesDir));
+        const scanned = scanRoutes(resolveRoutesDir(app, routesDir));
         return {
           routes: scanned.routes.map((route) => ({
             id: route.id,
@@ -316,7 +316,7 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
       if (virt.startsWith(P_PAGE)) {
         const name = virt.slice(P_PAGE.length);
         const route = pages.get(name);
-        if (!route) throw new Error(`[html-first] no page "${name}" in ${pagesDir}`);
+        if (!route) throw new Error(`[html-first] no page "${name}" in ${routesDir}`);
         origin.set(id, route.file);
         const out = compilePage(read(route.file), {
           components,
@@ -332,7 +332,7 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
 
       const name = virt.slice(P_CLIENT.length);
       const route = pages.get(name);
-      if (!route) throw new Error(`[html-first] no page "${name}" in ${pagesDir}`);
+      if (!route) throw new Error(`[html-first] no page "${name}" in ${routesDir}`);
       origin.set(id, route.file);
       const sources = [
         ...chainFor(route).map((l) => ({ source: read(l.file), filename: `${l.id}/_layout.html` })),
@@ -416,7 +416,7 @@ function resolveBare(fromDir, specifier) {
  * alternatives, and `null` to block a path. Conditions nest arbitrarily, so
  * picking one is recursive rather than a couple of `??`s.
  */
-/** `pages/_layout.html` -> "root", `pages/people/_layout.html` -> "people". */
+/** `routes/_layout.html` -> "root", `routes/people/_layout.html` -> "people". */
 function scanLayouts(dir, base = dir, out = new Map()) {
   if (!fs.existsSync(dir)) return out;
 

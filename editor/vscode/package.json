@@ -1,0 +1,32 @@
+{
+  "name": "html-first",
+  "displayName": "html-first",
+  "description": "Diagnostics, hovers and highlighting for html-first .html files",
+  "version": "0.1.0",
+  "private": true,
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Programming Languages"],
+  "activationEvents": ["onLanguage:html"],
+  "main": "./extension.js",
+  "contributes": {
+    "grammars": [
+      {
+        "scopeName": "html-first.injection",
+        "path": "./syntaxes/html-first.injection.json",
+        "injectTo": ["text.html.basic", "text.html.derivative"],
+        "embeddedLanguages": { "meta.embedded.expression.html-first": "javascript" }
+      }
+    ],
+    "configuration": {
+      "title": "html-first",
+      "properties": {
+        "htmlFirst.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Type check .html files in an html-first project."
+        }
+      }
+    }
+  },
+  "dependencies": { "vscode-languageclient": "^9.0.1" }
+}

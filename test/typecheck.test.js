@@ -1,0 +1,284 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+import { buildShim, originalOffset } from '../src/compiler/shim.js';
+import { createChecker, positionAt } from '../src/typecheck.js';
+
+const CONTEXT = '{ params: { name: string }; layout: { site: string } }';
+
+const shim = (source, options = {}) =>
+  buildShim(source, { kind: 'page', contextType: CONTEXT, ...options });
+
+// ---- the shim --------------------------------------------------------------
+
+test('a shim is a module, so its types cannot leak into another file', () => {
+  // Without an import or export, TypeScript treats a file as a global script and
+  // every shim's __Data collides in one shared scope.
+  assert.match(shim('<p>x</p>').code, /^export \{\};/m);
+});
+
+test('data identifiers are prefixed, loop variables are not', () => {
+  const { code } = shim('<li each="p of people">${p.name} ${heading}</li>');
+  assert.match(code, /for \(const p of __d\.people\)/);
+  assert.match(code, /__expr\(p\.name\)/);
+  assert.match(code, /__expr\(__d\.heading\)/);
+});
+
+test('runtime globals are parameters, so an import of the same name cannot clash', () => {
+  const { code } = shim('<p>${html(body)}</p>');
+  assert.match(code, /@param \{\(value: unknown\) => string\} html/);
+  assert.match(code, /__expr\(html\(__d\.body\)\)/);
+});
+
+test('the loader keeps its inferred return type while its parameter is typed', () => {
+  const { code } = shim(
+    `<script server>export default ({ params }) => ({ a: params.x });</script><p>\${a}</p>`,
+  );
+  // The context is inlined rather than imported: hf-env.d.ts is generated *from*
+  // these shims, so it cannot also be an input to them.
+  assert.match(code, /@satisfies \{\(ctx: \{ params: \{ name: string \}/);
+  assert.match(code, /@typedef \{__Shape<Awaited<ReturnType<typeof __default>>>\} __Data/);
+});
+
+test('imports and named exports of a block stay put', () => {
+  const { code } = shim(
+    `<script server>
+import { db } from './db.js';
+export const paths = () => [];
+export default () => ({ a: 1 });
+</script><p>x</p>`,
+  );
+  assert.match(code, /import \{ db \} from '\.\/db\.js';/);
+  assert.match(code, /export const paths = \(\) => \[\];/);
+});
+
+test('a props block is a module body too, not an expression', () => {
+  const { code } = shim(`<script props>export default { a: 1 };</script><p>\${a}</p>`, {
+    kind: 'component',
+    contextType: null,
+  });
+  assert.match(code, /const __props = \(\{ a: 1 \}\)/);
+  assert.match(code, /@typedef \{__Shape<typeof __props>\} __Props/);
+  assert.match(code, /@typedef \{__Props & __State\} __Data/);
+});
+
+test('JSDoc in a props block survives into the shim', () => {
+  // The reason shims are .js: a JSDoc @type is ignored in a .ts file.
+  const { code } = shim(
+    `<script props>export default { /** @type {string[]} */ tags: [] };</script><p>x</p>`,
+    { kind: 'component', contextType: null },
+  );
+  assert.match(code, /@type \{string\[\]\}/);
+});
+
+test('an empty shape is {}, not an index signature', () => {
+  // Record<string, never> reads as "no properties", but it carries an index
+  // signature: intersecting with one makes every misspelling legal, which
+  // silently disabled the check this whole file exists for.
+  const { code } = shim('<p>x</p>', { kind: 'component', contextType: null });
+  assert.doesNotMatch(code, /Record<string, never>/);
+  assert.match(code, /@typedef \{\{\}\} __State/);
+});
+
+test('a syntax error in a block does not produce a broken shim', () => {
+  const { code } = shim(`<script server>export default ( => ;</script><p>x</p>`);
+  assert.match(code, /@typedef \{\{\}\} __Data/);
+});
+
+// ---- source mapping --------------------------------------------------------
+
+test('offsets map back to the exact token in the .html file', () => {
+  const source = '<p>${heading}</p>';
+  const { code, chunks } = shim(source);
+
+  const inShim = code.indexOf('heading', code.indexOf('__expr'));
+  assert.equal(originalOffset(chunks, inShim), source.indexOf('heading'));
+});
+
+test('generated scaffolding maps to nothing, so it can be discarded', () => {
+  const { code, chunks } = shim('<p>${heading}</p>');
+  assert.equal(originalOffset(chunks, code.indexOf('export {}')), null);
+});
+
+test('a component prop key is mapped, or its type error would be dropped', () => {
+  const source = '<user-card name="${who}"></user-card>';
+  const { code, chunks } = shim(source, {
+    componentProps: new Map([['user-card', '{ name: string }']]),
+  });
+  const key = code.indexOf('name:', code.indexOf('__props_user_card'));
+  assert.equal(originalOffset(chunks, key), source.indexOf('name='));
+});
+
+// ---- checking a real project ----------------------------------------------
+
+function project(files, options = {}) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-check-'));
+  fs.mkdirSync(path.join(dir, 'app/pages'), { recursive: true });
+  for (const [rel, body] of Object.entries(files)) {
+    const full = path.join(dir, rel);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, body);
+  }
+  fs.mkdirSync(path.join(dir, 'app'), { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, 'app/hf-env.d.ts'),
+    `export {};
+export interface IndexContext { params: Record<string, string>; layout: { site: string }; }
+export interface UserCardProps { name: string; tags: string[] }
+`,
+  );
+  return { dir, checker: createChecker({ root: dir, ...options }) };
+}
+
+test('a typo against loader data is an error at the right place', () => {
+  const source = `<script server>export default () => ({ heading: 'x' });</script>
+<h1>\${headng}</h1>`;
+  const { dir, checker } = project({ 'app/pages/index.html': source });
+
+  const [diagnostic] = checker.check(path.join(dir, 'app/pages/index.html'));
+  assert.match(diagnostic.message, /'headng' does not exist/);
+  assert.equal(positionAt(source, diagnostic.offset).line, 2);
+  assert.equal(source.slice(diagnostic.offset, diagnostic.offset + 6), 'headng');
+});
+
+test('a typo against route context is caught inside the loader', () => {
+  const { dir, checker } = project({
+    'app/pages/index.html': `<script server>export default ({ layout }) => ({ a: layout.sight });</script><p>x</p>`,
+  });
+  const [diagnostic] = checker.check(path.join(dir, 'app/pages/index.html'));
+  assert.match(diagnostic.message, /'sight' does not exist/);
+});
+
+test('a misspelled built-in method is caught, with a suggestion', () => {
+  const { dir, checker } = project({
+    'app/pages/index.html': `<script server>export default () => ({ t: 'x' });</script><p>\${t.toUpperCse()}</p>`,
+  });
+  const [diagnostic] = checker.check(path.join(dir, 'app/pages/index.html'));
+  assert.match(diagnostic.message, /toUpperCse.*Did you mean 'toUpperCase'/s);
+});
+
+test('correct files produce nothing', () => {
+  const { dir, checker } = project({
+    'app/pages/index.html': `<script server>export default () => ({ items: ['a'] });</script>
+<li each="i of items">\${i.toUpperCase()}</li>`,
+  });
+  assert.deepEqual(checker.check(path.join(dir, 'app/pages/index.html')), []);
+});
+
+test('an editor buffer is checked without touching disk', () => {
+  const clean = `<script server>export default () => ({ a: 1 });</script><p>\${a}</p>`;
+  const { dir, checker } = project({ 'app/pages/index.html': clean });
+  const file = path.join(dir, 'app/pages/index.html');
+
+  assert.deepEqual(checker.check(file), []);
+
+  checker.update(file, clean.replace('${a}', '${b}'));
+  assert.match(checker.check(file)[0].message, /'b' does not exist/);
+  assert.equal(fs.readFileSync(file, 'utf8'), clean, 'the file on disk was not modified');
+});
+
+test('hover reports the type of an expression in the template', () => {
+  const source = `<script server>export default () => ({ count: 2 });</script><p>\${count}</p>`;
+  const { dir, checker } = project({ 'app/pages/index.html': source });
+
+  const info = checker.quickInfo(path.join(dir, 'app/pages/index.html'), source.indexOf('count}'));
+  assert.match(info.text, /count: number/);
+});
+
+// ---- what the author writes survives ---------------------------------------
+
+test('a JSDoc typedef and a whole-object @type both reach tsc', () => {
+  // Neither is a statement, so copying the block statement-by-statement would
+  // silently drop them — and they are exactly how an author says what `[]` holds.
+  const { code } = shim(
+    `<script props>
+/** @typedef {{ columns: string[] }} Props */
+/** @type {Props} */
+export default { columns: [] };
+</script><th each="c of columns">\${c}</th>`,
+    { kind: 'component', contextType: null },
+  );
+  assert.match(code, /@typedef \{\{ columns: string\[\] \}\} Props/);
+  assert.match(code, /@type \{Props\} \*\/\nconst __props/);
+});
+
+test('an empty array without an annotation is usable, not never[]', () => {
+  // Annotations are optional. A bare [] used to infer never[], which turned
+  // "no annotation" from less checking into a page of errors about a type
+  // nobody wrote.
+  const { dir, checker } = project({
+    'app/components/data-table.html': `<script props>export default { columns: [] };</script>
+<th each="c of columns">\${c.length}</th>`,
+  });
+  assert.deepEqual(checker.check(path.join(dir, 'app/components/data-table.html')), []);
+});
+
+test('an unannotated parameter is plain JavaScript, not an error', () => {
+  // The whole point: JSDoc is optional. A parameter with no declared type is
+  // `any`, the same as it would be in any other .js file.
+  const { dir, checker } = project({
+    'app/components/data-table.html': `<script props>export default { columns: [] };</script>
+<script element>
+  export default {
+    add(column) { this.columns = [...this.columns, column]; },
+  };
+</script>
+<script>
+  host.addEventListener('click', (event) => void event, { signal });
+</script>
+<th each="c of columns">\${c}</th>`,
+  });
+  assert.deepEqual(checker.check(path.join(dir, 'app/components/data-table.html')), []);
+});
+
+test('strict: true puts the annotations back on the critical path', () => {
+  const { dir, checker } = project(
+    {
+      'app/components/data-table.html': `<script props>export default { columns: [] };</script>
+<script element>
+  export default { add(column) { void column; } };
+</script>
+<th>x</th>`,
+    },
+    { strict: true },
+  );
+  const [diagnostic] = checker.check(path.join(dir, 'app/components/data-table.html'));
+  assert.match(diagnostic.message, /implicitly has an 'any' type/);
+});
+
+test('a misspelled prop is still caught with no annotations anywhere', () => {
+  // What the mapping buys back: TypeScript would otherwise allow reading an
+  // undeclared property off a type that came from an object literal in a .js
+  // file, and that is the one check this framework most needs.
+  const { dir, checker } = project({
+    'app/components/data-table.html': `<script props>export default { columns: [] };</script>
+<th>\${colums.length}</th>`,
+  });
+  const [diagnostic] = checker.check(path.join(dir, 'app/components/data-table.html'));
+  assert.match(diagnostic.message, /colums/);
+});
+
+test('the same file with an annotation checks clean', () => {
+  const { dir, checker } = project({
+    'app/components/data-table.html': `<script props>
+/** @type {{ columns: string[] }} */
+export default { columns: [] };
+</script><th each="c of columns">\${c.length}</th>`,
+  });
+  assert.deepEqual(checker.check(path.join(dir, 'app/components/data-table.html')), []);
+});
+
+test('a dash-case attribute is checked under its camelCase prop name', () => {
+  const source = '<data-table empty-label="${label}"></data-table>';
+  const { code, chunks } = shim(source, {
+    componentProps: new Map([['data-table', '{ emptyLabel: string }']]),
+  });
+
+  assert.match(code, /emptyLabel: __d\.label/);
+  // still anchored to the attribute in the source, or its diagnostic is dropped
+  const key = code.indexOf('emptyLabel:', code.indexOf('__props_data_table'));
+  assert.equal(originalOffset(chunks, key), source.indexOf('empty-label'));
+});

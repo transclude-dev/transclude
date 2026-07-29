@@ -1,0 +1,31 @@
+{
+  "name": "html-first",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Single-file .html routes, layouts, partials and components. Compiles once to server-rendered markup, optionally a declarative shadow root and a custom element.",
+  "exports": {
+    ".": "./src/plugin.js",
+    "./runtime": "./src/runtime/index.js",
+    "./document": "./src/document.js",
+    "./routes": "./src/routes.js",
+    "./typecheck": "./src/typecheck.js"
+  },
+  "bin": {
+    "html-first-dev": "./bin/dev.js",
+    "html-first-build": "./bin/build.js",
+    "html-first-serve": "./bin/serve.js",
+    "html-first-check": "./bin/check.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.0.12",
+    "acorn": "^8.18.0",
+    "hono": "^4.12.32",
+    "jsep": "^1.4.0",
+    "parse5": "^8.0.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9",
+    "vite": "^8"
+  }
+}

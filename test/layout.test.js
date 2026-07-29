@@ -349,7 +349,7 @@ test('no head block means nothing emitted', () => {
   assert.doesNotMatch(html, /<script>/);
 });
 
-// ---- properties, generated from <script props> -----------------------------
+// ---- properties, generated from <script properties> -----------------------------
 
 test('a camelCase prop maps to a dash-case attribute, as HTML requires', () => {
   assert.equal(rt.attrName('name'), 'name');

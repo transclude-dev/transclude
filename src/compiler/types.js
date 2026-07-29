@@ -14,7 +14,7 @@ export function emitTypes({ components = [], partials = [], layouts = [], pages 
   ];
 
   for (const { tag, type, members, state } of [...components, ...partials]) {
-    out.push(`/** Props of \`<${tag}>\`, from its <script props> block. */`);
+    out.push(`/** Properties of \`<${tag}>\`, from its <script properties> block. */`);
     out.push(`export type ${interfaceName(tag)}Props = ${pretty(type)};`);
     out.push('');
     if (state) {
@@ -23,7 +23,7 @@ export function emitTypes({ components = [], partials = [], layouts = [], pages 
       out.push('');
     }
     if (members) {
-      out.push(`/** Methods of \`<${tag}>\`, from its <script element> block. */`);
+      out.push(`/** Members of \`<${tag}>\`, from its \`export const prototype\`. */`);
       out.push(`export type ${interfaceName(tag)}Members = ${pretty(members)};`);
       out.push('');
     }

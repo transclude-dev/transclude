@@ -150,6 +150,61 @@ test('multiple client blocks merge', () => {
   assert.match(body, /more\(\);/);
 });
 
+// ---- the lifted prototype -------------------------------------------------
+
+test('the lifted export and what it reads leave the function body', () => {
+  const source = `const FORMAT = 1;
+const other = 2;
+export const prototype = { go() { return FORMAT; } };
+host.x = other;`;
+  const { hoisted, body, lifted } = toFunctionBody([at(source)], 'x', { lift: 'prototype' });
+
+  assert.match(hoisted, /const FORMAT = 1;/);
+  assert.match(hoisted, /const __members = \{ go\(\) \{ return FORMAT; \} \};/);
+  // `other` is setup's, not the prototype's, so it stays per element.
+  assert.doesNotMatch(hoisted, /const other = 2;/);
+  assert.match(body, /const other = 2;/);
+  assert.match(body, /host\.x = other;/);
+  assert.ok(lifted);
+});
+
+test('a transitive dependency comes along too', () => {
+  const source = `const A = 1;
+const B = A + 1;
+export const prototype = { go() { return B; } };`;
+  const { hoisted } = toFunctionBody([at(source)], 'x', { lift: 'prototype' });
+  assert.match(hoisted, /const A = 1;/);
+  assert.match(hoisted, /const B = A \+ 1;/);
+});
+
+test('lifting preserves line and column positions in what stays behind', () => {
+  const { body } = toFunctionBody([at(`export const prototype = {};\nhost.x = 1;`)], 'x', {
+    lift: 'prototype',
+  });
+  const [first, second] = body.split('\n');
+  assert.equal(first.trim(), '');
+  assert.equal(second, 'host.x = 1;');
+});
+
+test('a prototype reaching per-element scope is refused', () => {
+  assert.throws(
+    () => toFunctionBody([at('export const prototype = { go() { return shadow; } };')], 'x', { lift: 'prototype' }),
+    /per element/,
+  );
+});
+
+test('shadowing is tracked, so a local named signal is not a reach', () => {
+  assert.doesNotThrow(() =>
+    toFunctionBody([at('export const prototype = { go() { const signal = 1; return signal; } };')], 'x', {
+      lift: 'prototype',
+    }),
+  );
+});
+
+test('without a lift option every export is still refused', () => {
+  assert.throws(() => toFunctionBody([at('export const prototype = {};')], 'x'), /cannot export/);
+});
+
 test('page client entries keep their imports and top-level await', () => {
   const code = assertModule([at(`import a from 'a';\nawait a();`)], 'x');
   assert.match(code, /import a from 'a';/);

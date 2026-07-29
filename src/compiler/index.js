@@ -22,27 +22,41 @@ const COMPONENT_EXPORTS = new Set([
 /**
  * Top-level <script>/<style> blocks are pulled out; everything else is template.
  *
- *   <script server>  data loading, page only
- *   <script props>   prop defaults + implied types, component only
- *   <script>         client code
- *   <style>          scoped to the shadow root (component) or the page
+ *   <script server>      data loading, page only
+ *   <script properties>  defaults + implied types for the element's properties
+ *   <script state>       internal reactive state, component only
+ *   <script>             client code, and `export const prototype` with it
+ *   <style>              scoped to the shadow root (component) or the page
  *
  * Each block carries the line it starts on so parse errors can point back into
  * the .html file rather than into generated output.
  */
 export function splitBlocks(source) {
   const doc = parseFragment(source, { sourceCodeLocationInfo: true });
-  const out = { server: null, props: null, state: null, element: null, client: [], head: [], styles: [], nodes: [] };
+  const out = { server: null, properties: null, state: null, client: [], head: [], styles: [], nodes: [] };
 
   for (const node of doc.childNodes) {
     if (node.nodeName === 'script') {
       const attrs = new Set((node.attrs ?? []).map((a) => a.name));
       const block = blockOf(node);
       if (attrs.has('server')) out.server = block;
-      else if (attrs.has('props')) out.props = block;
-      // `<script element>` is the element's public API: methods and derived
-      // getters, mixed onto the prototype.
-      else if (attrs.has('element')) out.element = block;
+      else if (attrs.has('properties')) out.properties = block;
+      else if (attrs.has('props')) {
+        throw new CompileError(
+          '`<script props>` is now `<script properties>` — a property is what the ' +
+            'platform calls it, and what the element actually gets.',
+          node,
+        );
+      }
+      // Members used to have a block of their own. They belong with the setup
+      // code that calls them, so they moved into it.
+      else if (attrs.has('element')) {
+        throw new CompileError(
+          '`<script element>` is gone. Move its members into `<script>` as ' +
+            '`export const prototype = { … }` — the same object, next to the code that uses it.',
+          node,
+        );
+      }
       // `<script state>` is the component's own, not in the document.
       else if (attrs.has('state')) out.state = block;
       // `<script head>` is emitted verbatim into <head>, ahead of everything
@@ -82,10 +96,10 @@ export function compileComponent(
   const blocks = splitBlocks(source);
   const where = (kind) => `${filename || tag}.html <script${kind ? ` ${kind}` : ''}>`;
 
-  const props = blocks.props
-    ? bindDefaultExport(blocks.props, '__propDefs', where('props'))
+  const props = blocks.properties
+    ? bindDefaultExport(blocks.properties, '__propDefs', where('properties'))
     : { code: 'const __propDefs = {};', exports: [], defaultNode: null };
-  assertNoCollisions(props.exports, COMPONENT_EXPORTS, where('props'));
+  assertNoCollisions(props.exports, COMPONENT_EXPORTS, where('properties'));
 
   const state = blocks.state
     ? bindDefaultExport(blocks.state, '__stateDefs', where('state'))
@@ -102,13 +116,11 @@ export function compileComponent(
   }
   assertDistinct(props.defaultNode, state.defaultNode, tag);
 
-  const members = blocks.element
-    ? bindDefaultExport(blocks.element, '__members', where('element'))
-    : { code: 'const __members = {};', exports: [], defaultNode: null };
-  assertNoCollisions(members.exports, COMPONENT_EXPORTS, where('element'));
-  assertNoLifecycle(members.defaultNode, where('element'));
-
-  const client = toFunctionBody(blocks.client, where(''));
+  // Members ride along in the client block: `export const prototype`, hoisted to
+  // module scope with anything it reads, because a prototype is shared and the
+  // setup body is per element.
+  const client = toFunctionBody(blocks.client, where(''), { lift: 'prototype' });
+  assertNoLifecycle(client.lifted, where(''));
   const template = compileFragment(blocks.nodes, {
     components,
     shadowTags,
@@ -158,10 +170,10 @@ export function compileComponent(
   const code = `
 ${runtimeImport(runtime)}
 ${componentImports(template.components)}
+${client.imports}
 ${props.code}
 ${state.code}
-${members.code}
-${client.imports}
+${client.lifted ? client.hoisted : 'const __members = {};'}
 
 export const tag = ${JSON.stringify(tag)};
 export const light = ${!shadow};
@@ -426,8 +438,8 @@ function bindingsCode(bindings) {
 // element silently stops rendering. `adoptedCallback` is not among them: nothing
 // implements it, so there is nothing to break.
 const RESERVED_LIFECYCLE = {
-  connectedCallback: 'setup belongs in a plain <script> block, which runs on connect',
-  disconnectedCallback: 'return a cleanup function from <script> instead',
+  connectedCallback: 'setup belongs in the <script> body, which runs on connect',
+  disconnectedCallback: 'return a cleanup function from the <script> body instead',
   attributeChangedCallback: 'an attribute change already re-renders; use updated() for the side effect',
 };
 
@@ -448,7 +460,7 @@ function assertDistinct(propsNode, stateNode, tag) {
   for (const key of objectKeys(stateNode)) {
     if (declared.has(key)) {
       throw new CompileError(
-        `<${tag}>: \`${key}\` is declared in both <script props> and <script state>. ` +
+        `<${tag}>: \`${key}\` is declared in both <script properties> and <script state>. ` +
           `A template reads them from one namespace, so the name has to be one or the other.`,
         stateNode,
       );

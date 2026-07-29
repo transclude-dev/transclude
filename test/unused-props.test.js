@@ -10,7 +10,7 @@ const compile = (source) =>
 
 test('a prop nobody reads is reported', () => {
   const warnings = compile(`
-    <script props>export default { name: 'x', nmae: 'y' };</script>
+    <script properties>export default { name: 'x', nmae: 'y' };</script>
     <h3>\${name}</h3>
   `);
   assert.equal(warnings.length, 1);
@@ -20,7 +20,7 @@ test('a prop nobody reads is reported', () => {
 test('a prop used only in <style> is not reported', () => {
   // `compact` drives :host([compact]) and never appears in the template.
   const warnings = compile(`
-    <script props>export default { compact: false };</script>
+    <script properties>export default { compact: false };</script>
     <style>:host([compact]) { padding: 0 }</style>
     <p>hi</p>
   `);
@@ -29,7 +29,7 @@ test('a prop used only in <style> is not reported', () => {
 
 test('a prop used only in the client <script> is not reported', () => {
   const warnings = compile(`
-    <script props>export default { compact: false };</script>
+    <script properties>export default { compact: false };</script>
     <p>hi</p>
     <script>host.toggleAttribute('compact');</script>
   `);
@@ -38,7 +38,7 @@ test('a prop used only in the client <script> is not reported', () => {
 
 test('a prop read through a loop counts as used', () => {
   const warnings = compile(`
-    <script props>export default { tags: ['a'] };</script>
+    <script properties>export default { tags: ['a'] };</script>
     <li each="t of tags">\${t}</li>
   `);
   assert.deepEqual(warnings, []);
@@ -46,7 +46,7 @@ test('a prop read through a loop counts as used', () => {
 
 test('an inexact props object disables the check', () => {
   const warnings = compile(`
-    <script props>export default { ...base, unused: 1 };</script>
+    <script properties>export default { ...base, unused: 1 };</script>
     <p>hi</p>
   `);
   assert.deepEqual(warnings, []);

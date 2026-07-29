@@ -203,10 +203,14 @@ export function createChecker({
       // A partial with neither block registers no custom element, so it has no
       // accessors and no members — saying otherwise in hf-env.d.ts would be a
       // lie the browser does not back up.
+      // Members live in the client block now, so the shim is what knows whether
+      // there are any — an empty `__Members` means the block exported no
+      // `prototype`, and a client block at all is reason enough to upgrade.
+      const members = memberTypeOf(file);
       componentMembers.set(tag, {
-        members: blocks.element ? memberTypeOf(file) : null,
+        members: members && members !== '{}' ? members : null,
         state: blocks.state ? stateTypeOf(file) : null,
-        upgrades: Boolean(blocks.element || blocks.state || blocks.client.length),
+        upgrades: Boolean(blocks.state || blocks.client.length),
       });
     }
 

@@ -47,7 +47,7 @@ async function transition(source, before, after, opts) {
   };
 }
 
-const props = (defaults) => `<script props>export default ${JSON.stringify(defaults)};</script>`;
+const props = (defaults) => `<script properties>export default ${JSON.stringify(defaults)};</script>`;
 
 // ---- the invariant --------------------------------------------------------
 
@@ -628,7 +628,7 @@ test('a light child renders its own markup, so its props force a repaint', () =>
 
 // ---- per-prop converters ---------------------------------------------------
 
-const converted = `<script props>
+const converted = `<script properties>
   export default { since: new Date(0), tags: new Set() };
   export const attributes = {
     since: { from: (text) => new Date(text), to: (date) => date.toISOString().slice(0, 10) },
@@ -657,7 +657,7 @@ test('an absent attribute is the declared default, untouched by the converter', 
 
 test('a converter that throws falls back rather than taking the page down', async () => {
   const mod = await load(
-    `<script props>
+    `<script properties>
        export default { n: 0 };
        export const attributes = { n: { from: () => { throw new Error('nope'); } } };
      </script><p>\${n}</p>`,
@@ -688,7 +688,7 @@ test("a parent serializes a child's attribute the way that child reads it back",
 
 test('a parent emits the child converter for both render and update', () => {
   const source =
-    `<script props>export default { when: new Date(0) };</script>` +
+    `<script properties>export default { when: new Date(0) };</script>` +
     `<x-child since="\${when}"></x-child>`;
   const opts = {
     components: new Map([['x-child', '/x-child.js']]),
@@ -701,7 +701,7 @@ test('a parent emits the child converter for both render and update', () => {
 
 test('without a converter the old rules still apply', async () => {
   const mod = await load(
-    `<script props>export default { n: 0, on: false, list: [] };</script><p>x</p>`,
+    `<script properties>export default { n: 0, on: false, list: [] };</script><p>x</p>`,
   );
   assert.deepEqual(mod.coerce({ n: '3', on: '', list: '["a"]' }), { n: 3, on: true, list: ['a'] });
 });

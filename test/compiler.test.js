@@ -191,16 +191,16 @@ test('a component renders host attrs, a shadow root, and slotted children', () =
 
 // ---- blocks ---------------------------------------------------------------
 
-test('splitBlocks separates server, props, client and style', () => {
+test('splitBlocks separates server, properties, client and style', () => {
   const blocks = splitBlocks(`
     <script server>export default () => ({ a: 1 });</script>
-    <script props>export default { a: 0 };</script>
+    <script properties>export default { a: 0 };</script>
     <style>p{color:red}</style>
     <p>hi</p>
     <script>console.log(1);</script>
   `);
   assert.match(blocks.server.code, /export default \(\) =>/);
-  assert.match(blocks.props.code, /export default \{ a: 0 \}/);
+  assert.match(blocks.properties.code, /export default \{ a: 0 \}/);
   assert.deepEqual(blocks.styles, ['p{color:red}']);
   assert.equal(blocks.client.length, 1);
   assert.match(blocks.client[0].code, /console\.log\(1\)/);
@@ -226,27 +226,74 @@ test('attribute strings coerce to the shape of the declared default', () => {
   assert.equal(rt.coerceProps(defs, { open: 'false' }).open, false);
 });
 
-// ---- <script element> -----------------------------------------------------
+// ---- export const prototype -----------------------------------------------
 
 const component = (source) =>
   compileComponent(source, { tag: 'x-card', shadow: true, runtime: '/rt.js' }).code;
 
-test('<script element> is split out from the client block', () => {
-  const blocks = splitBlocks('<script element>export default {};</script><script>1;</script>');
-  assert.ok(blocks.element);
-  assert.equal(blocks.client.length, 1);
-  assert.ok(!blocks.element.code.includes('1;'));
+const INIT = /export async function init/;
+
+test('the retired <script element> block says where its members went', () => {
+  assert.throws(
+    () => splitBlocks('<script element>export default {};</script>'),
+    /export const prototype/,
+  );
 });
 
-test('members reach the def, and are absent when the block is', () => {
-  assert.match(component('<script element>export default { go() {} };</script><p>a</p>'), /go\(\)/);
+test('members reach the def, and are absent when nothing exports them', () => {
+  assert.match(component('<script>export const prototype = { go() {} };</script><p>a</p>'), /go\(\)/);
   assert.match(component('<p>a</p>'), /const __members = \{\};/);
 });
 
+test('the prototype is hoisted out of the per-element setup body', () => {
+  const code = component('<script>export const prototype = { go() {} };\nhost.x = 1;</script><p>a</p>');
+  const members = code.indexOf('const __members =');
+  const init = code.search(INIT);
+
+  assert.ok(members !== -1 && members < init, 'members belong to the module, not to init');
+  assert.doesNotMatch(code.slice(init), /go\(\)/);
+  assert.match(code.slice(init), /host\.x = 1;/);
+});
+
+test('a helper the prototype reads is hoisted along with it', () => {
+  // Otherwise the hoisted members would refer to a name that stayed behind.
+  const code = component(
+    `<script>const FORMAT = new Intl.NumberFormat();
+export const prototype = { show() { return FORMAT.format(1); } };</script><p>a</p>`,
+  );
+  const helper = code.indexOf('const FORMAT =');
+  assert.ok(helper !== -1 && helper < code.search(INIT), 'the helper came along');
+});
+
+test('setup code the prototype does not read stays per element', () => {
+  const code = component(
+    '<script>const id = 1;\nexport const prototype = { go() {} };</script><p>a</p>',
+  );
+  assert.match(code.slice(code.search(INIT)), /const id = 1;/);
+});
+
+test('a prototype reaching for host is an error, not a silently shared value', () => {
+  assert.throws(
+    () => component('<script>export const prototype = { go() { return host; } };</script><p>a</p>'),
+    /per element/,
+  );
+});
+
+test('a parameter named host is not a reach for the element', () => {
+  // Scopes are tracked, so shadowing is shadowing and not a false alarm.
+  assert.doesNotThrow(() =>
+    component('<script>export const prototype = { go(host) { return host; } };</script><p>a</p>'),
+  );
+});
+
+test('a client block still cannot export anything else', () => {
+  assert.throws(() => component('<script>export const other = 1;</script><p>a</p>'), /cannot export/);
+});
+
 for (const name of ['connectedCallback', 'disconnectedCallback', 'attributeChangedCallback']) {
-  test(`${name} in <script element> is a compile error`, () => {
+  test(`${name} in the prototype is a compile error`, () => {
     assert.throws(
-      () => component(`<script element>export default { ${name}() {} };</script><p>a</p>`),
+      () => component(`<script>export const prototype = { ${name}() {} };</script><p>a</p>`),
       (error) => error instanceof CompileError && error.message.includes(name),
     );
   });
@@ -254,7 +301,7 @@ for (const name of ['connectedCallback', 'disconnectedCallback', 'attributeChang
 
 test('adoptedCallback is left alone — nothing implements it, so nothing breaks', () => {
   assert.match(
-    component('<script element>export default { adoptedCallback() {} };</script><p>a</p>'),
+    component('<script>export const prototype = { adoptedCallback() {} };</script><p>a</p>'),
     /adoptedCallback/,
   );
 });

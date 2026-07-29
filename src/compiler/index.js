@@ -130,6 +130,10 @@ export function compileComponent(
     layout: !shadow,
     // Only a component is ever updated, so only a component pays for anchors.
     blocks: shadow,
+    // A fragment emits a component bare and lets it paint itself, so a
+    // component's own render is never the thing being asked for a fragment.
+    // A partial's is.
+    fragments: !shadow,
   });
 
   const styles = blocks.styles.join('\n').trim();
@@ -184,7 +188,7 @@ export const stateDefs = __stateDefs;
 export const members = __members;
 ${elementsExport(template.components)}
 
-export function render(__d, __slots = {}) {
+export function render(__d, __slots = {}, __fragment = false) {
   let __o = '';
 ${indent(template.body)}
   return __o;
@@ -271,7 +275,7 @@ ${indent(template.head)}
   return __o;
 }
 
-export function render(__d, __slots = {}) {
+export function render(__d, __slots = {}, __fragment = false) {
   const __out = {};
 ${slotBodies(template)}
   return __out;
@@ -333,7 +337,7 @@ ${indent(template.head)}
   return __o;
 }
 
-export function render(__d, __slots = {}) {
+export function render(__d, __slots = {}, __fragment = false) {
   const __out = {};
 ${slotBodies(template)}
   return __out;

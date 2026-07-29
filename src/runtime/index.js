@@ -616,10 +616,36 @@ export function setAttrProp(def, element, name, value) {
 /**
  * Server side of the component: the shadow root, inline, so the page is correct
  * before any JS runs. Nested DSD works because the HTML parser handles it.
+ *
+ * Except in a fragment. A fragment is swapped into a document that is already
+ * live, and nothing that does the swapping — innerHTML, DOMParser, any of the
+ * hypermedia libraries built on them — processes a declarative shadow root. The
+ * template would land inert and the component would never exist.
+ *
+ * So a fragment ships the element bare: the tag and its attributes, nothing
+ * inside. `connectedCallback` finds no shadow root, attaches one and paints,
+ * and that paint goes through setHTMLUnsafe, which *does* process the nested
+ * declarative roots underneath it. Nothing is lost by leaving it out either —
+ * server rendering buys a correct first paint, and a fragment arrives long
+ * after first paint.
  */
-export function shadow(def, props) {
+export function shadow(def, props, fragment = false) {
+  if (fragment) return '';
   const styles = def.css ? `<style>${def.css}</style>` : '';
   return `<template shadowrootmode="open">${styles}${def.render(def.coerce(props))}</template>`;
+}
+
+/**
+ * A partial rendered for insertion into a live document: its own light markup,
+ * with any component inside it left bare for the client to paint.
+ *
+ * Its styles are not included. They are hoisted into <head> once per page, and
+ * inlining them here would ship a copy on every swap — so a fragment naming a
+ * partial the page has never rendered arrives unstyled. That is the next gap,
+ * not this one.
+ */
+export function fragment(def, props = {}, slots = {}) {
+  return def.render(def.coerce(props), slots, true);
 }
 
 /**

@@ -21,6 +21,19 @@ import { planLift } from './script.js';
 
 const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each']);
 
+/**
+ * Attributes that are not props, whatever they land on. `data-*` and `aria-*`
+ * are the platform's own, and `hx-*` belongs to whichever hypermedia library the
+ * author brought. None of them are declared in `<script properties>`, so
+ * checking them as props makes a correct page a type error — which is exactly
+ * what `hx-get="/notes?id=${id}"` on a component used to be.
+ *
+ * They are still checked, just as expressions rather than as props: a typo in
+ * the `${…}` is an error the same as anywhere else. Only the claim that the name
+ * is a declared prop goes away.
+ */
+const PASS_THROUGH = /^(?:data|aria|hx)-/;
+
 class Builder {
   constructor() {
     this.chunks = [];
@@ -416,7 +429,9 @@ function emitNodes(nodes, out, scope, components, depth) {
         out.add(');\n');
         continue;
       }
-      if (isComponent && /\$\{/.test(attr.value)) continue;
+      // A pass-through attribute is not a prop, so it is checked here like any
+      // other interpolation rather than below with the props.
+      if (isComponent && !PASS_THROUGH.test(attr.name) && /\$\{/.test(attr.value)) continue;
       emitInterpolations(attr.value, offset, out, inner, body);
     }
 
@@ -434,7 +449,8 @@ function emitNodes(nodes, out, scope, components, depth) {
 /** Only interpolated props are checked; a literal attribute is coerced at runtime. */
 function emitComponentProps(node, out, scope, components, depth) {
   const dynamic = (node.attrs ?? []).filter(
-    (attr) => !DIRECTIVES.has(attr.name) && /\$\{/.test(attr.value),
+    (attr) =>
+      !DIRECTIVES.has(attr.name) && !PASS_THROUGH.test(attr.name) && /\$\{/.test(attr.value),
   );
   if (!dynamic.length) return;
 

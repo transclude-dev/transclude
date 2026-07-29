@@ -310,3 +310,51 @@ test('a dash-case attribute is checked under its camelCase prop name', () => {
   const key = code.indexOf('emptyLabel:', code.indexOf('__props_data_table'));
   assert.equal(originalOffset(chunks, key), source.indexOf('empty-label'));
 });
+
+// ---- attributes that are not props ----------------------------------------
+//
+// `hx-*` belongs to whichever hypermedia library the author brought, `data-*`
+// and `aria-*` to the platform. None of them are declared in <script
+// properties>, so treating an interpolated one as a prop turned a correct page
+// into a type error — which is what `hx-get="/notes?id=${id}"` on a component
+// used to be.
+
+const withCard = (markup) => ({
+  'app/components/user-card.html': `<script properties>
+export default { name: '' };
+</script>
+<h3>\${name}</h3>`,
+  'app/pages/index.html': `<script server>export default () => ({ id: 1 });</script>\n${markup}`,
+});
+
+const errorsFor = (markup) => {
+  const { dir, checker } = project(withCard(markup));
+  return checker.check(path.join(dir, 'app/pages/index.html'));
+};
+
+for (const prefix of ['hx-get', 'data-key', 'aria-label']) {
+  test(`an interpolated ${prefix} on a component is not a prop`, () => {
+    assert.deepEqual(
+      errorsFor(`<user-card ${prefix}="/n?id=\${id}" name="x"></user-card>`).map((d) => d.message),
+      [],
+    );
+  });
+}
+
+test('the expression inside one is still checked', () => {
+  // Not an escape hatch — only the claim that the name is a declared prop goes
+  // away. A typo in the `${…}` is an error the same as anywhere else.
+  const [diagnostic] = errorsFor('<user-card hx-get="/n?id=${idd}" name="x"></user-card>');
+  assert.match(diagnostic.message, /'idd' does not exist/);
+});
+
+test('an undeclared attribute that is not pass-through is still a prop error', () => {
+  const [diagnostic] = errorsFor('<user-card nope="${id}" name="x"></user-card>');
+  assert.match(diagnostic.message, /'nope' does not exist/);
+});
+
+test('a prefix that merely starts the same way is still a prop', () => {
+  // `database` is not `data-`.
+  const [diagnostic] = errorsFor('<user-card database="${id}" name="x"></user-card>');
+  assert.match(diagnostic.message, /'database' does not exist/);
+});

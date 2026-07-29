@@ -406,18 +406,22 @@ export function compileClientEntry(sources, { tags = [] } = {}, { runtime, eleme
     assertModule(splitBlocks(source).client, `${filename} <script>`),
   );
 
-  const watcher = elements
+  // Markup can arrive after the page did — from a swapper this framework does
+  // not provide — and whatever it names has to be able to define itself.
+  const imports = elements
     ? `import { watch as __watch } from ${JSON.stringify(runtime)};\n` +
       `import { elements as __elements } from ${JSON.stringify(ELEMENTS_ENTRY)};`
     : '';
 
+  const start = elements ? '__watch(__elements);' : '';
+
   return {
     code: `
-${watcher}
+${imports}
 ${tags.map((tag, i) => `import { define as __D${i} } from ${JSON.stringify(`virtual:hf-component/${tag}`)};`).join('\n')}
 
 ${tags.map((_, i) => `__D${i}();`).join('\n')}
-${elements ? '__watch(__elements);' : ''}
+${start}
 
 ${blocks.join('\n')}
 `,

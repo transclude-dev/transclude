@@ -10,6 +10,8 @@ import {
   compileLayout,
   compilePage,
   compileClientEntry,
+  compileElementsEntry,
+  ELEMENTS_ENTRY,
   splitBlocks,
   usedComponents,
 } from './compiler/index.js';
@@ -29,7 +31,12 @@ export default function htmlFirst({
   componentsDir = 'components',
   partialsDir = 'partials',
   pagesDir = 'pages',
+  fragmentParam = 'fragment',
 } = {}) {
+  // Fragment routing on means markup can arrive after the page did, from any
+  // route — so every page carries the loader that defines what shows up. Off,
+  // and a page ships exactly what it renders, which is the content-site case.
+  const watchElements = Boolean(fragmentParam);
   let root;
   let app;
   let runtime;
@@ -145,7 +152,18 @@ export default function htmlFirst({
       const blocks = safely(() => splitBlocks(source));
       if (blocks?.client?.some((block) => block.code.trim())) hasScript = true;
     }
-    return { tags: componentClosure(seeds), hasScript };
+    const tags = componentClosure(seeds);
+    return {
+      tags,
+      hasScript,
+      // Asked by the dev server and by the build, which is the point: two copies
+      // of this rule is two servers that disagree about which pages ship JS.
+      //
+      // Elements to define or script to run, and otherwise nothing at all —
+      // except with fragments on, where any page can be swapped into and needs
+      // the loader that defines whatever arrives.
+      needed: watchElements || tags.length > 0 || hasScript,
+    };
   };
 
   const report = (label, warnings) => {
@@ -191,7 +209,7 @@ export default function htmlFirst({
     },
 
     resolveId(id, importer) {
-      if (id === SERVER_ENTRY) return '\0' + id;
+      if (id === SERVER_ENTRY || id === ELEMENTS_ENTRY) return '\0' + id;
       if (
         id.startsWith(P_COMPONENT) ||
         id.startsWith(P_PAGE) ||
@@ -212,6 +230,10 @@ export default function htmlFirst({
     load(id) {
       if (!id.startsWith('\0virtual:hf-')) return null;
       const virt = id.slice(1);
+
+      // Every element in the app, not only the ones some page renders: a
+      // fragment can name any of them, and which one it names is a runtime fact.
+      if (virt === ELEMENTS_ENTRY) return compileElementsEntry(components.keys()).code;
 
       // One module that pulls in every page, so the SSR build is a single graph.
       if (virt === SERVER_ENTRY) {
@@ -282,7 +304,10 @@ ${ids.map((pageId, i) => `  ${JSON.stringify(pageId)}: __P${i},`).join('\n')}
         ...chainFor(route).map((l) => ({ source: read(l.file), filename: `${l.id}/_layout.html` })),
         { source: read(route.file), filename: route.rel },
       ];
-      return compileClientEntry(sources, clientManifest(route)).code;
+      return compileClientEntry(sources, clientManifest(route), {
+        runtime,
+        elements: watchElements,
+      }).code;
     },
 
     configureServer(server) {

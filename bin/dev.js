@@ -34,12 +34,8 @@ const renderPage = async (route, c, status = 200) => {
     req: c.req,
   };
 
-  // A page that uses no components and ships no client script gets no module
-  // script at all.
-  const needsClient = page.client.tags.length > 0 || page.client.hasScript;
-
   const html = await renderRoute(page, ctx, {
-    clientEntry: needsClient ? clientEntryUrl(route.id) : null,
+    clientEntry: page.client.needed ? clientEntryUrl(route.id) : null,
     // No query param: Vite content-negotiates, and a <link> sends
     // `Accept: text/css`, so the plain path returns the stylesheet.
     stylesheet: config.stylesheet ? `/${config.stylesheet}` : null,

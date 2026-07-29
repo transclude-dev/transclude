@@ -14,20 +14,30 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const EXT = '.html';
+/**
+ * A `.js` file in the pages tree is an endpoint: a route with no template, no
+ * layout and no regions, which answers with a `Response` of its own. Same
+ * filename conventions as a page — `[param]`, `[...rest]`, `index` — because it
+ * is the same route table.
+ */
+const ENDPOINT_EXT = '.js';
 const NOT_FOUND = '404';
 
 export function scanRoutes(dir) {
   const routes = [];
+  const endpoints = [];
   let notFound = null;
 
   const seen = new Map();
   for (const rel of walk(dir)) {
     const route = toRoute(rel, path.join(dir, rel));
 
-    if (route.id === NOT_FOUND) {
+    if (route.kind === 'page' && route.id === NOT_FOUND) {
       notFound = route;
       continue;
     }
+    // One pattern, one answer. A page and an endpoint claiming the same URL is
+    // the same mistake as two pages claiming it.
     const clash = seen.get(route.pattern) ?? seen.get(route.id);
     if (clash) {
       throw new Error(
@@ -36,15 +46,18 @@ export function scanRoutes(dir) {
     }
     seen.set(route.pattern, rel);
     seen.set(route.id, rel);
-    routes.push(route);
+    (route.kind === 'page' ? routes : endpoints).push(route);
   }
 
   routes.sort(bySpecificity);
-  return { routes, notFound };
+  endpoints.sort(bySpecificity);
+  return { routes, endpoints, notFound };
 }
 
 export function toRoute(rel, file) {
-  const parts = rel.slice(0, -EXT.length).split(path.sep);
+  const kind = rel.endsWith(ENDPOINT_EXT) ? 'endpoint' : 'page';
+  const ext = kind === 'endpoint' ? ENDPOINT_EXT : EXT;
+  const parts = rel.slice(0, -ext.length).split(path.sep);
 
   // `blog/index.html` and `blog.html` both mean /blog; the trailing `index`
   // is addressing, not a path segment.
@@ -52,6 +65,7 @@ export function toRoute(rel, file) {
   const segments = named.map(parseSegment);
 
   return {
+    kind,
     id: idOf(parts),
     file,
     rel,
@@ -124,7 +138,9 @@ function walk(dir, base = dir, out = []) {
 
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(full, base, out);
-    else if (entry.name.endsWith(EXT)) out.push(path.relative(base, full));
+    else if (entry.name.endsWith(EXT) || entry.name.endsWith(ENDPOINT_EXT)) {
+      out.push(path.relative(base, full));
+    }
   }
   return out;
 }

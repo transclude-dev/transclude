@@ -4,7 +4,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import {
   ACTION_METHODS,
@@ -12,11 +11,13 @@ import {
   methodsOf,
   renderFragment,
   renderRoute,
+  responseOf,
   runAction,
 } from '../src/document.js';
 import { etagOf, loadAssets, loadStatic } from '../src/static-cache.js';
 import { pickEncoding } from '../src/negotiate.js';
 import { COMPRESSIBLE_FLOOR, compressResponse } from '../src/compress.js';
+import { baseApp, endpointMethods, runEndpoint } from '../src/server.js';
 import config from '../../html-first.config.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -63,7 +64,9 @@ const newest = newestSource();
 const stale = newest.time > builtAt;
 
 const manifest = JSON.parse(fs.readFileSync(path.join(dist, 'routes.json'), 'utf8'));
-const { pages } = await import(pathToFileURL(path.join(dist, 'server/entry.js')).href);
+const { pages, endpoints, middleware } = await import(
+  pathToFileURL(path.join(dist, 'server/entry.js')).href,
+);
 
 const assets = loadAssets(path.join(dist, 'client'));
 const statics = loadStatic(path.join(dist, 'static'));
@@ -71,7 +74,7 @@ const statics = loadStatic(path.join(dist, 'static'));
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 const REVALIDATE = 'public, max-age=0, must-revalidate';
 
-const app = new Hono({ strict: false });
+const app = baseApp({ csrf: config.csrf, middleware });
 
 // Hashed filenames, so these are safe to cache forever.
 app.get('/assets/*', (c, next) => {
@@ -94,6 +97,7 @@ const contextFor = (route, c, extra = {}) => ({
   // is right for a form, and wrong for a caller that asked for markup.
   fragment: fragmentOf(c),
   action: null,
+  response: responseOf(),
   ...extra,
 });
 
@@ -116,11 +120,12 @@ for (const route of manifest.routes ?? []) {
     if (region === undefined) return next();
 
     try {
-      const html = await renderFragment(pages[route.id], contextFor(route, c), {
-        region: region || null,
-      });
+      const ctx = contextFor(route, c);
+      const html = await renderFragment(pages[route.id], ctx, { region: region || null });
+
+      if (html instanceof Response) return html;
       if (html === null) return c.text(`no fragment "${region}"`, 404);
-      return sendRendered(c, html);
+      return sendRendered(c, html, ctx);
     } catch (err) {
       console.error(err);
       return c.text('Internal error', 500);
@@ -149,7 +154,27 @@ for (const route of manifest.routes ?? []) {
           ? await renderRoute(page, ctx, { clientEntry: route.client, stylesheet: manifest.stylesheet })
           : await renderFragment(page, ctx, { region: region || null });
 
-      return sendRendered(c, html);
+      if (html instanceof Response) return html;
+      return sendRendered(c, html, ctx);
+    } catch (err) {
+      console.error(err);
+      return c.text('Internal error', 500);
+    }
+  });
+}
+
+// Before the static handler, like fragments and actions: an endpoint's path has
+// no file behind it, but `/api/notes` and a prerendered `/api/notes/index.html`
+// would be indistinguishable to the matcher below.
+for (const route of manifest.endpoints ?? []) {
+  app.all(route.pattern, async (c) => {
+    const mod = endpoints[route.id];
+    try {
+      const out = await runEndpoint(mod, contextFor(route, c), c.req.method);
+      if (out) return out;
+      return c.text(`${c.req.method} not allowed`, 405, {
+        Allow: endpointMethods(mod).join(', '),
+      });
     } catch (err) {
       console.error(err);
       return c.text('Internal error', 500);
@@ -163,15 +188,27 @@ app.get('*', (c, next) => {
   return page ? send(c, page, REVALIDATE) : next();
 });
 
-// Everything the build could not enumerate.
-for (const route of manifest.dynamic) {
+/**
+ * Every route, not only the ones the build could not enumerate.
+ *
+ * A prerendered URL never gets here — the static handler above answered it. What
+ * does get here is a URL the route matches but `paths` never listed:
+ * `/people/nobody`. Leaving those to the not-found handler is what made dev and
+ * production disagree — dev matched the route and rendered the page's own "not
+ * found" body with a 200, production answered the 404 page. Now both render the
+ * page, and the page's loader is what decides the status.
+ */
+for (const route of manifest.routes) {
   app.get(route.pattern, async (c) => {
     try {
-      const html = await renderRoute(pages[route.id], contextFor(route, c), {
+      const ctx = contextFor(route, c);
+      const html = await renderRoute(pages[route.id], ctx, {
         clientEntry: route.client,
         stylesheet: manifest.stylesheet,
       });
-      return sendRendered(c, html);
+
+      if (html instanceof Response) return html;
+      return sendRendered(c, html, ctx);
     } catch (err) {
       console.error(err);
       return c.text('Internal error', 500);
@@ -215,7 +252,7 @@ function send(c, entry, cacheControl, status = 200) {
  * and the conditional check happens first, so a revalidating client pays for a
  * hash and nothing else.
  */
-async function sendRendered(c, html) {
+async function sendRendered(c, html, ctx = null) {
   const body = Buffer.from(html);
   const base = etagOf(body);
 
@@ -227,13 +264,18 @@ async function sendRendered(c, html) {
   c.header('Cache-Control', REVALIDATE);
   c.header('ETag', etag);
 
+  // Whatever the loaders put on `ctx.response`, after the defaults above so a
+  // page can override its own Cache-Control, and before the conditional check
+  // so a 304 still carries them.
+  for (const [name, value] of ctx?.response?.headers ?? []) c.header(name, value);
+
   if (c.req.header('if-none-match') === etag) return c.body(null, 304);
 
   const out = encoding ? await compressResponse(body, encoding) : body;
   if (encoding) c.header('Content-Encoding', encoding);
   c.header('Content-Type', 'text/html; charset=utf-8');
   c.header('Content-Length', String(out.length));
-  return c.body(out);
+  return c.body(out, ctx?.response?.status ?? 200);
 }
 
 function readEntry(file) {

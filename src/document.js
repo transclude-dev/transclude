@@ -8,6 +8,32 @@
  * first, each receiving what the ones above returned — so this is sequential by
  * necessity, not by omission.
  */
+/**
+ * The part of the answer that is not markup: a status and some headers.
+ *
+ * One object, handed to every loader in the chain and mutated in place. Loaders
+ * are called with `{ ...ctx, layout }`, so a scalar assigned onto `ctx` would be
+ * lost on the copy — this survives because the copy carries the same reference.
+ * Built here rather than in each server, because there are three of them and
+ * that is exactly how two servers end up disagreeing.
+ */
+export function responseOf() {
+  return { status: 200, headers: new Headers() };
+}
+
+/**
+ * Loads a page's chain and renders the document, or returns the `Response` a
+ * loader answered with instead.
+ *
+ * Returning one is how a loader redirects, or serves something that is not this
+ * page at all — the same convention an action already uses, so there is one rule
+ * rather than two. A layout can do it too, which is what makes an auth redirect
+ * a layout's job: nothing below it runs.
+ *
+ * For everything else the page still renders, and `ctx.response` decides what it
+ * is wrapped in — a 404 status on a page that renders its own "not found" body,
+ * an `HX-Trigger` header, a `Set-Cookie`.
+ */
 export async function renderRoute(page, ctx, options = {}) {
   const chain = [...page.layouts, page];
   const datas = [];
@@ -15,6 +41,7 @@ export async function renderRoute(page, ctx, options = {}) {
 
   for (const mod of chain) {
     const data = await mod.load({ ...ctx, layout: inherited });
+    if (data instanceof Response) return data;
     datas.push(data);
     if (mod !== page) inherited = { ...inherited, ...data };
   }
@@ -43,6 +70,8 @@ export async function renderFragment(page, ctx, { region = null } = {}) {
 
   for (const mod of chain) {
     data = await mod.load({ ...ctx, layout: inherited });
+    // A loader answering with a Response outranks the region that was asked for.
+    if (data instanceof Response) return data;
     if (mod !== page) inherited = { ...inherited, ...data };
   }
 

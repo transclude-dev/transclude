@@ -183,11 +183,15 @@ export function createChecker({
   //
   // `action` is whatever the page's handler for this method returned, so a POST
   // and a GET render through the same loader.
+  //
+  // `response` is the part of the answer that is not markup. Mutate it — the
+  // object is shared with every loader in the chain and with the server — or
+  // return a `Response` to answer for yourself and skip rendering.
   const contextLiteral = (params, layoutType) =>
     `{ url: string; params: { ${params.map((name) => `${name}: string`).join('; ')} }; ` +
     `route: { id: string; pattern: string; path: string }; ` +
     `layout: ${layoutType}; request: Request | null; fragment: string | null; ` +
-    `action: unknown }`;
+    `action: unknown; response: { status: number; headers: Headers } }`;
 
   /**
    * Builds every shim in dependency order: components depend on nothing, a

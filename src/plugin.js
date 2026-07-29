@@ -16,6 +16,7 @@ import {
   usedComponents,
 } from './compiler/index.js';
 import { scanRoutes } from './routes.js';
+import { SERVER_FILE } from './server.js';
 
 const P_COMPONENT = 'virtual:hf-component/';
 const P_PAGE = 'virtual:hf-page/';
@@ -43,6 +44,7 @@ export default function htmlFirst({
   let components = new Map();
   let shadowTags = new Set();
   let pages = new Map();
+  let endpoints = new Map();
   let layouts = new Map();
   // Virtual module id -> the .html file it came from, so relative imports inside
   // a <script> block resolve against the author's file rather than nowhere.
@@ -61,6 +63,7 @@ export default function htmlFirst({
         .filter(Boolean)
         .map((route) => [route.id, route]),
     );
+    endpoints = new Map(scanned.endpoints.map((route) => [route.id, route]));
     // A dash keeps these valid custom element names — which is what makes a
     // partial an *undefined* custom element rather than an unknown one, and what
     // lets its styles be scoped to its own tag with no class or hash.
@@ -188,6 +191,14 @@ export default function htmlFirst({
             params: route.params,
             client: clientManifest(route),
           })),
+          // No client entry, no prerendering, no layouts — an endpoint is a
+          // route and nothing else.
+          endpoints: scanned.endpoints.map((route) => ({
+            id: route.id,
+            pattern: route.pattern,
+            rel: route.rel,
+            params: route.params,
+          })),
           notFound: scanned.notFound
             ? { id: scanned.notFound.id, rel: scanned.notFound.rel, params: [], client: clientManifest(scanned.notFound) }
             : null,
@@ -236,14 +247,37 @@ export default function htmlFirst({
       if (virt === ELEMENTS_ENTRY) return compileElementsEntry(components.keys()).code;
 
       // One module that pulls in every page, so the SSR build is a single graph.
+      // The app's middleware comes through here too rather than being imported
+      // from source at runtime: the production server reads `dist` and nothing
+      // else, which is what makes its "your source is newer than this build"
+      // warning true.
       if (virt === SERVER_ENTRY) {
         const ids = [...pages.keys()];
+        const serverFile = path.resolve(app, SERVER_FILE);
+        const hasMiddleware = fs.existsSync(serverFile);
+        const specifier = '/' + path.relative(root, serverFile).split(path.sep).join('/');
+
+        // An endpoint is already a module. It needs no compiling — only pulling
+        // into the same graph, so production reads it from `dist` like everything
+        // else rather than importing app source at runtime.
+        const apiIds = [...endpoints.keys()];
+        const apiSpec = (route) =>
+          JSON.stringify('/' + path.relative(root, route.file).split(path.sep).join('/'));
+
         return `
 ${ids.map((pageId, i) => `import * as __P${i} from ${JSON.stringify(`${P_PAGE}${pageId}`)};`).join('\n')}
+${apiIds.map((apiId, i) => `import * as __E${i} from ${apiSpec(endpoints.get(apiId))};`).join('\n')}
+${hasMiddleware ? `import __middleware from ${JSON.stringify(specifier)};` : ''}
 
 export const pages = {
 ${ids.map((pageId, i) => `  ${JSON.stringify(pageId)}: __P${i},`).join('\n')}
 };
+
+export const endpoints = {
+${apiIds.map((apiId, i) => `  ${JSON.stringify(apiId)}: __E${i},`).join('\n')}
+};
+
+export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
 `;
       }
 

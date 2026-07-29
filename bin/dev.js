@@ -1,10 +1,10 @@
 // Hono routes; Vite compiles. The route table is the directory tree — see
 // src/routes.js for the conventions.
 
+import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Hono } from 'hono';
 import { getRequestListener } from '@hono/node-server';
 import { createServer as createViteServer } from 'vite';
 import {
@@ -13,10 +13,12 @@ import {
   methodsOf,
   renderFragment,
   renderRoute,
+  responseOf,
   runAction,
 } from '../src/document.js';
 import { clientEntryUrl, pageModuleId } from '../src/plugin.js';
 import { scanRoutes } from '../src/routes.js';
+import { baseApp, endpointMethods, runEndpoint, SERVER_FILE } from '../src/server.js';
 import config from '../../html-first.config.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -46,10 +48,17 @@ const contextFor = (route, c, extra = {}) => ({
   // is right for a form, and wrong for a caller that asked for markup.
   fragment: fragmentOf(c),
   action: null,
+  response: responseOf(),
   ...extra,
 });
 
-const renderPage = async (route, c, status = 200, extra = {}) => {
+/** Whatever the loaders and actions put on `ctx.response`, on the way out. */
+const sendWith = (c, { response }, html, status) => {
+  for (const [name, value] of response.headers) c.header(name, value);
+  return c.html(html, status ?? response.status);
+};
+
+const renderPage = async (route, c, status = null, extra = {}) => {
   const page = await vite.ssrLoadModule(pageModuleId(route.id));
   const ctx = contextFor(route, c, extra);
 
@@ -59,7 +68,10 @@ const renderPage = async (route, c, status = 200, extra = {}) => {
     // `Accept: text/css`, so the plain path returns the stylesheet.
     stylesheet: config.stylesheet ? `/${config.stylesheet}` : null,
   });
-  return c.html(await vite.transformIndexHtml(c.req.path, html), status);
+  // A loader answered for itself: a redirect, or something that is not a page.
+  if (html instanceof Response) return html;
+
+  return sendWith(c, ctx, await vite.transformIndexHtml(c.req.path, html), status);
 };
 
 /**
@@ -74,14 +86,14 @@ const fragmentOf = (c) => {
 
 const sendFragment = async (route, c, region, extra = {}) => {
   const page = await vite.ssrLoadModule(pageModuleId(route.id));
-  const html = await renderFragment(page, contextFor(route, c, extra), {
-    region: region || null,
-  });
+  const ctx = contextFor(route, c, extra);
+  const html = await renderFragment(page, ctx, { region: region || null });
 
+  if (html instanceof Response) return html;
   if (html === null) return c.text(`no fragment "${region}" on ${route.rel}`, 404);
   // No Vite transform: a fragment is inserted into a document that already ran
   // the client entry, and injecting the HMR preamble again would run it twice.
-  return c.html(html);
+  return sendWith(c, ctx, html);
 };
 
 /**
@@ -123,11 +135,32 @@ const onError = (c, err) => {
   return c.text(`${err.name}: ${err.message}\n\n${err.stack ?? ''}`, 500);
 };
 
-function buildApp() {
-  const { routes, notFound } = scanRoutes(pagesDir);
+const serverFile = path.join(root, config.appDir, SERVER_FILE);
 
-  // strict: false so /about and /about/ are the same page.
-  const app = new Hono({ strict: false });
+/**
+ * The app's own middleware, through Vite so an edit to it is picked up the same
+ * way an edit to a page is. Production gets the same module out of the SSR
+ * bundle instead, because that server reads `dist` and nothing else.
+ *
+ * Invalidated first, and not for tidiness: the watcher below and Vite's own
+ * invalidation are separate handlers on the same event, and if this runs before
+ * Vite's, `ssrLoadModule` hands back the module as it was. Measured — the first
+ * edit was silently ignored and the second appeared to work.
+ */
+async function loadMiddleware() {
+  if (!fs.existsSync(serverFile)) return null;
+
+  const url = `/${config.appDir}/${SERVER_FILE}`;
+  const node = await vite.moduleGraph.getModuleByUrl(url, true);
+  if (node) vite.moduleGraph.invalidateModule(node);
+
+  const mod = await vite.ssrLoadModule(url);
+  return mod.default ?? null;
+}
+
+async function buildApp() {
+  const { routes, endpoints, notFound } = scanRoutes(pagesDir);
+  const app = baseApp({ csrf: config.csrf, middleware: await loadMiddleware() });
 
   // Already ordered most-specific first, so registration order is deterministic
   // rather than something to reason about per-router.
@@ -153,6 +186,24 @@ function buildApp() {
     });
   }
 
+  // `app.all`, because "every verb" is the point: the module decides which it
+  // answers, and anything it does not is a 405 rather than a 404.
+  for (const route of endpoints) {
+    const url = '/' + path.relative(root, route.file).split(path.sep).join('/');
+    app.all(route.pattern, async (c) => {
+      try {
+        const mod = await vite.ssrLoadModule(url);
+        const out = await runEndpoint(mod, contextFor(route, c), c.req.method);
+        if (out) return out;
+        return c.text(`${c.req.method} not allowed on ${route.rel}`, 405, {
+          Allow: endpointMethods(mod).join(', '),
+        });
+      } catch (err) {
+        return onError(c, err);
+      }
+    });
+  }
+
   app.notFound(async (c) => {
     if (!notFound) return c.text('not found', 404);
     try {
@@ -163,20 +214,23 @@ function buildApp() {
   });
 
   console.log(
-    `[routes]\n${routes.map((r) => `  ${r.pattern.padEnd(24)} ${r.rel}`).join('\n')}` +
+    `[routes]\n${[...routes, ...endpoints].map((r) => `  ${r.pattern.padEnd(24)} ${r.rel}`).join('\n')}` +
       (notFound ? `\n  ${'(not found)'.padEnd(24)} ${notFound.rel}` : ''),
   );
 
   return app;
 }
 
-let app = buildApp();
+let app = await buildApp();
 
 // Adding or removing a page changes the route table, not just a module.
-vite.watcher.on('all', (event, file) => {
-  if (event === 'change' || !file.startsWith(pagesDir) || !file.endsWith('.html')) return;
+vite.watcher.on('all', async (event, file) => {
+  const routing = file.startsWith(pagesDir) && file.endsWith('.html') && event !== 'change';
+  // Middleware is registered once when the app is built, so a change to it needs
+  // the app rebuilt — unlike a page, which is loaded per request.
+  if (!routing && file !== serverFile) return;
   try {
-    app = buildApp();
+    app = await buildApp();
   } catch (err) {
     console.error(err.message);
   }

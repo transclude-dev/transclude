@@ -1,0 +1,258 @@
+// The three things a backend has to be able to do that this could not:
+// answer with something other than markup, run somebody's middleware, and be an
+// endpoint rather than a page.
+
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import { renderFragment, renderRoute, responseOf } from '../src/document.js';
+import { baseApp, endpointMethods, runEndpoint } from '../src/server.js';
+
+const pageOf = (over = {}) => ({
+  layouts: [],
+  css: '',
+  headScript: '',
+  hasTitle: false,
+  renderTitle: () => '',
+  renderHead: () => '',
+  elements: [],
+  load: async () => ({}),
+  render: () => ({ default: '<p>page</p>' }),
+  regions: { list: () => '<ul></ul>' },
+  ...over,
+});
+
+const layoutOf = (over = {}) => ({
+  load: async () => ({}),
+  render: (_d, slots) => ({ default: slots.default ?? '' }),
+  css: '',
+  headScript: '',
+  hasTitle: false,
+  renderTitle: () => '',
+  renderHead: () => '',
+  elements: [],
+  ...over,
+});
+
+// ---- the response envelope ------------------------------------------------
+
+test('a fresh envelope is a 200 and no headers', () => {
+  const response = responseOf();
+  assert.equal(response.status, 200);
+  assert.deepEqual([...response.headers], []);
+});
+
+test('the envelope survives being handed through the chain', async () => {
+  // Loaders are called with `{ ...ctx, layout }`. A scalar assigned onto that
+  // copy would be lost; the envelope is shared because the copy carries the same
+  // reference, and this is the test that says so.
+  const ctx = { response: responseOf() };
+  const page = pageOf({
+    load: async (inner) => {
+      inner.response.status = 404;
+      inner.response.headers.set('HX-Trigger', 'missing');
+      return {};
+    },
+  });
+
+  await renderRoute(page, ctx);
+  assert.equal(ctx.response.status, 404, 'the loader wrote to a copy nobody reads');
+  assert.equal(ctx.response.headers.get('HX-Trigger'), 'missing');
+});
+
+test('every loader in the chain writes to the same envelope', async () => {
+  const ctx = { response: responseOf() };
+  const page = pageOf({
+    layouts: [layoutOf({ load: async (i) => (i.response.headers.set('X-Layout', '1'), {}) })],
+    load: async (i) => (i.response.headers.set('X-Page', '1'), {}),
+  });
+
+  await renderRoute(page, ctx);
+  assert.equal(ctx.response.headers.get('X-Layout'), '1');
+  assert.equal(ctx.response.headers.get('X-Page'), '1');
+});
+
+test('a loader answering with a Response is the answer, and nothing renders', async () => {
+  const redirect = new Response(null, { status: 303, headers: { Location: '/in' } });
+  let rendered = false;
+  const page = pageOf({
+    load: async () => redirect,
+    render: () => ((rendered = true), { default: 'x' }),
+  });
+
+  const out = await renderRoute(page, { response: responseOf() });
+  assert.equal(out, redirect);
+  assert.equal(rendered, false);
+});
+
+test('a layout can answer for the page, which is what makes auth a layout', async () => {
+  // Nothing below it runs — not the page's loader, not its render.
+  let pageLoaded = false;
+  const page = pageOf({
+    layouts: [layoutOf({ load: async () => new Response(null, { status: 302 }) })],
+    load: async () => ((pageLoaded = true), {}),
+  });
+
+  const out = await renderRoute(page, { response: responseOf() });
+  assert.equal(out.status, 302);
+  assert.equal(pageLoaded, false, 'a guard that runs after the thing it guards is not a guard');
+});
+
+test('a region request can be answered with a Response too', async () => {
+  const page = pageOf({ load: async () => new Response(null, { status: 401 }) });
+  const out = await renderFragment(page, { response: responseOf() }, { region: 'list' });
+  assert.equal(out.status, 401);
+});
+
+test('rendering still returns markup when nobody answered', async () => {
+  const out = await renderRoute(pageOf(), { response: responseOf() });
+  assert.equal(typeof out, 'string');
+  assert.match(out, /<p>page<\/p>/);
+});
+
+// ---- endpoints ------------------------------------------------------------
+
+test('a handler is found by the method, spelled the way HTTP spells it', async () => {
+  const mod = { GET: () => Response.json({ ok: true }) };
+  const out = await runEndpoint(mod, {}, 'GET');
+  assert.equal(out.status, 200);
+  assert.deepEqual(await out.json(), { ok: true });
+});
+
+test('the method is matched case-insensitively, because a router may not shout', async () => {
+  const mod = { POST: () => new Response('made', { status: 201 }) };
+  assert.equal((await runEndpoint(mod, {}, 'post')).status, 201);
+});
+
+test('DELETE is a legal export name, which is why these are not an object', async () => {
+  // `export const delete` is a syntax error; this is not. A page's `actions` had
+  // to be keyed by string for exactly that reason.
+  const mod = { DELETE: () => new Response(null, { status: 204 }) };
+  assert.equal((await runEndpoint(mod, {}, 'DELETE')).status, 204);
+});
+
+test('a method the module does not export is null, so the caller can say 405', async () => {
+  assert.equal(await runEndpoint({ GET: () => new Response('x') }, {}, 'PUT'), null);
+});
+
+test('a handler that forgets to return a Response says so', async () => {
+  // There is no template to fall back to, so guessing would be worse than this.
+  await assert.rejects(
+    () => runEndpoint({ GET: () => ({ people: [] }) }, {}, 'GET'),
+    /not a Response/,
+  );
+  await assert.rejects(() => runEndpoint({ GET: () => {} }, {}, 'GET'), /answered with nothing/);
+});
+
+test('the methods it answers are readable, for an Allow header', () => {
+  const mod = { GET: () => {}, DELETE: () => {}, shape: () => {}, count: 3 };
+  assert.deepEqual(endpointMethods(mod), ['DELETE', 'GET'], 'a helper is not a verb');
+  assert.deepEqual(endpointMethods(null), []);
+});
+
+test('an endpoint is handed the same context a loader is', async () => {
+  let saw = null;
+  const ctx = { url: 'http://x/api', params: { id: '1' }, request: new Request('http://x/api') };
+  await runEndpoint({ GET: (c) => ((saw = c), new Response('x')) }, ctx, 'GET');
+  assert.equal(saw, ctx);
+});
+
+// ---- the app both servers start from --------------------------------------
+
+const request = (app, url, init) => app.request(url, init);
+
+test('CSRF is on by default and refuses a cross-origin form post', async () => {
+  const app = baseApp();
+  app.post('/notes', (c) => c.text('mutated'));
+
+  const out = await request(app, 'http://x/notes', {
+    method: 'POST',
+    headers: { Origin: 'https://evil.example', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'text=x',
+  });
+  assert.equal(out.status, 403);
+});
+
+test('a same-origin form post is not refused', async () => {
+  const app = baseApp();
+  app.post('/notes', (c) => c.text('mutated'));
+
+  const out = await request(app, 'http://x/notes', {
+    method: 'POST',
+    headers: { Origin: 'http://x', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'text=x',
+  });
+  assert.equal(out.status, 200);
+});
+
+test('a GET is never refused, whatever origin it claims', async () => {
+  const app = baseApp();
+  app.get('/', (c) => c.text('read'));
+  const out = await request(app, 'http://x/', { headers: { Origin: 'https://evil.example' } });
+  assert.equal(out.status, 200);
+});
+
+test('csrf: false turns it off', async () => {
+  const app = baseApp({ csrf: false });
+  app.post('/notes', (c) => c.text('mutated'));
+
+  const out = await request(app, 'http://x/notes', {
+    method: 'POST',
+    headers: { Origin: 'https://evil.example', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'text=x',
+  });
+  assert.equal(out.status, 200);
+});
+
+test('an object is passed through as options, which is how another origin is allowed', async () => {
+  const app = baseApp({ csrf: { origin: 'https://admin.example' } });
+  app.post('/notes', (c) => c.text('mutated'));
+
+  const allowed = await request(app, 'http://x/notes', {
+    method: 'POST',
+    headers: { Origin: 'https://admin.example', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'text=x',
+  });
+  const refused = await request(app, 'http://x/notes', {
+    method: 'POST',
+    headers: { Origin: 'https://evil.example', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'text=x',
+  });
+  assert.equal(allowed.status, 200);
+  assert.equal(refused.status, 403);
+});
+
+test("the app's own middleware runs, and runs after the guard", async () => {
+  // After, deliberately: middleware cannot register itself ahead of CSRF and
+  // accidentally answer a forged request before it is checked.
+  const order = [];
+  const app = baseApp({
+    middleware: (a) =>
+      a.use('*', async (c, next) => {
+        order.push('middleware');
+        await next();
+      }),
+  });
+  app.post('/notes', (c) => (order.push('route'), c.text('ok')));
+
+  const forged = await request(app, 'http://x/notes', {
+    method: 'POST',
+    headers: { Origin: 'https://evil.example', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'x=1',
+  });
+  assert.equal(forged.status, 403);
+  assert.deepEqual(order, [], 'the guard has to be first or it guards nothing');
+});
+
+test('middleware sees every route registered after it', async () => {
+  const app = baseApp({ middleware: (a) => a.use('*', async (c, next) => { await next(); c.header('X-Ran', '1'); }) });
+  app.get('/', (c) => c.text('x'));
+
+  const out = await request(app, 'http://x/');
+  assert.equal(out.headers.get('X-Ran'), '1');
+});
+
+test('no middleware is not an error', () => {
+  assert.doesNotThrow(() => baseApp({ middleware: null }));
+  assert.doesNotThrow(() => baseApp({ middleware: 'not a function' }));
+});

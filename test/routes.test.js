@@ -113,3 +113,43 @@ test('a missing pages directory is empty, not a crash', () => {
   assert.deepEqual(routes, []);
   assert.equal(notFound, null);
 });
+
+// ---- endpoints -------------------------------------------------------------
+//
+// A `.js` file in the pages tree is a route with no template. Same filename
+// conventions, because it is the same route table.
+
+test('a .js file is an endpoint, a .html file is a page', () => {
+  const dir = fixture(['index.html', 'api/people.js', 'api/people/[id].js']);
+  const { routes, endpoints } = scanRoutes(dir);
+
+  assert.deepEqual(routes.map((r) => r.pattern), ['/']);
+  assert.deepEqual(endpoints.map((r) => r.pattern), ['/api/people', '/api/people/:id']);
+  assert.ok(endpoints.every((r) => r.kind === 'endpoint'));
+  assert.ok(routes.every((r) => r.kind === 'page'));
+});
+
+test('an endpoint gets the same filename conventions as a page', () => {
+  const dir = fixture(['api/index.js', 'api/[id].js', 'api/files/[...path].js']);
+  const { endpoints } = scanRoutes(dir);
+  assert.deepEqual(endpoints.map((r) => r.pattern), ['/api', '/api/:id', '/api/files/:path{.+}']);
+});
+
+test('a page and an endpoint cannot claim the same URL', () => {
+  assert.throws(
+    () => scanRoutes(fixture(['about.html', 'about.js'])),
+    /collide/,
+  );
+});
+
+test('an _ prefixed .js file is a helper, not an endpoint', () => {
+  // Which is the only reason a `.js` next to your pages is still safe to keep.
+  const { endpoints } = scanRoutes(fixture(['index.html', '_helpers.js']));
+  assert.deepEqual(endpoints, []);
+});
+
+test('404.js is not the not-found handler — that is a page', () => {
+  const { endpoints, notFound } = scanRoutes(fixture(['404.js']));
+  assert.equal(notFound, null);
+  assert.deepEqual(endpoints.map((r) => r.pattern), ['/404']);
+});

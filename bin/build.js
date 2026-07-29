@@ -15,7 +15,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { build } from 'vite';
 import htmlFirst from '../src/plugin.js';
 import config from '../../html-first.config.js';
-import { renderRoute } from '../src/document.js';
+import { renderRoute, responseOf } from '../src/document.js';
 import { pool } from '../src/pool.js';
 import { precompress } from '../src/compress.js';
 
@@ -117,19 +117,35 @@ async function urlsFor(route) {
   }));
 }
 
-function render(route, { url, params }) {
-  return renderRoute(
-    pages[route.id],
-    {
-      url: `http://localhost${url}`,
-      params,
-      route: { id: route.id, pattern: route.pattern ?? '', path: url },
-      request: null,
-      fragment: null,
-      action: null,
-    },
-    { clientEntry: assets.get(route.id) ?? null, stylesheet },
-  );
+/**
+ * A prerendered file has no status and no headers — it is a file. So a loader
+ * that answered with a Response, or set a status other than 200, is saying this
+ * URL is not a page you can write down, and the build says so rather than
+ * writing a file that lies about it.
+ */
+async function render(route, { url, params }) {
+  const ctx = {
+    url: `http://localhost${url}`,
+    params,
+    route: { id: route.id, pattern: route.pattern ?? '', path: url },
+    request: null,
+    fragment: null,
+    action: null,
+    response: responseOf(),
+  };
+
+  const html = await renderRoute(pages[route.id], ctx, {
+    clientEntry: assets.get(route.id) ?? null,
+    stylesheet,
+  });
+
+  if (html instanceof Response) {
+    throw new Error(`answered with ${html.status} instead of markup — it cannot be prerendered`);
+  }
+  if (ctx.response.status !== 200) {
+    throw new Error(`answered ${ctx.response.status}, which no file can carry`);
+  }
+  return html;
 }
 
 const write = (relative, html) => {
@@ -205,6 +221,13 @@ fs.writeFileSync(
         pattern: route.pattern,
         params: route.params,
         client: assets.get(route.id) ?? null,
+      })),
+      // Never prerendered: an endpoint answers with a Response, and a file
+      // cannot carry one.
+      endpoints: manifest.endpoints.map((route) => ({
+        id: route.id,
+        pattern: route.pattern,
+        params: route.params,
       })),
       notFound: manifest.notFound ? { id: manifest.notFound.id } : null,
       stylesheet,

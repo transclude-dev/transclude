@@ -221,7 +221,9 @@ describe('a mutation answers with a redirect, so a reload repeats a GET', async 
 
   assert.ok(result instanceof Response, 'a rendered page here means reload re-submits');
   assert.equal(result.status, 303, '303 turns the POST into a GET; 302 may not');
-  assert.match(result.headers.get('location') ?? '', /\/notes\?added=from\+a\+test$/);
+  // A clean URL. The message used to ride here as `?added=…`, which meant any GET
+  // of that URL claimed a note had been added — see the flash tests below.
+  assert.match(result.headers.get('location') ?? '', /\/notes$/);
 });
 
 describe('a rejected submission does not redirect, because nothing changed', async () => {
@@ -252,4 +254,63 @@ describe('500.html is prerendered to a file, like the not-found page', () => {
 
 describe('the error page is in the manifest so the server can find it', () => {
   assert.equal(manifest().error?.id, '500');
+});
+
+
+// ---- a flash message is read once ------------------------------------------
+//
+// Reported: after a server restart and a reload, the page said "Added This is a
+// test" for a note that was never added and did not exist. The message was in the
+// URL — `?added=x` — which is replayable, shareable, and outlives the thing it
+// describes.
+
+describe('a successful mutation redirects to a clean URL', async () => {
+  const out = await postTo('notes', { text: 'flash test' });
+
+  assert.ok(out instanceof Response);
+  assert.equal(new URL(out.headers.get('location')).search, '', 'the message is back in the URL');
+});
+
+describe('the message travels in a cookie that expires quickly', async () => {
+  const response = responseOf();
+  const cookies = cookiesOf(null, response, 'a-secret-for-tests');
+  await postTo('notes', { text: 'flash cookie' }, { response, cookies });
+
+  const flash = response.headers.getSetCookie().find((c) => c.startsWith('flash='));
+  assert.ok(flash, 'nothing carries the message across the redirect');
+  assert.match(flash, /Max-Age=10\b/, 'a long-lived flash is not a flash');
+  assert.match(flash, /HttpOnly/);
+});
+
+describe('reading it clears it, so a reload does not repeat it', async () => {
+  // Two loads with the same cookie jar: the first says it, the second does not.
+  const carried = responseOf();
+  await postTo('notes', { text: 'once only' }, {
+    response: carried,
+    cookies: cookiesOf(null, carried, 'a-secret-for-tests'),
+  });
+  const header = carried.headers.getSetCookie().find((c) => c.startsWith('flash=')).split(';')[0];
+  const request = new Request('http://localhost/notes', { headers: { Cookie: header } });
+
+  const first = responseOf();
+  const shown = await pages.notes.load({
+    ...loadCtx('notes'),
+    request,
+    response: first,
+    cookies: cookiesOf(request, first, 'a-secret-for-tests'),
+  });
+  assert.equal(shown.added, 'once only');
+  assert.ok(
+    first.headers.getSetCookie().some((c) => /^flash=/.test(c) && /Max-Age=0/.test(c)),
+    'it was not cleared, so the next load repeats it',
+  );
+
+  // The browser would have dropped the cookie by now; without it, nothing is said.
+  const second = responseOf();
+  const again = await pages.notes.load({
+    ...loadCtx('notes'),
+    response: second,
+    cookies: cookiesOf(new Request('http://localhost/notes'), second, 'a-secret-for-tests'),
+  });
+  assert.equal(again.added, null);
 });

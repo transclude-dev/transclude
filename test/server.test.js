@@ -407,11 +407,27 @@ test('no handler, and nothing is mounted', async () => {
 // happened and no adapter grew logic of its own.
 
 test('production.js exports an app and nothing runtime-specific runs on import', async () => {
-  // Importing it must not bind a port; that is the adapter's job.
-  const mod = await import('../src/production.js');
-  assert.equal(typeof mod.app?.fetch, 'function');
-  assert.equal(typeof mod.summary, 'function');
-  assert.equal(typeof mod.noBuild, 'boolean');
+  // It loads the config of whatever project it is run in, so a project is what
+  // this has to give it. Before the framework moved out of the app it served,
+  // there was always one two directories up and this needed no fixture.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'transclude-'));
+  fs.writeFileSync(
+    path.join(dir, 'transclude.config.js'),
+    "export default { appDir: 'app', routesDir: 'routes', outDir: 'dist' };\n",
+  );
+
+  const was = process.cwd();
+  process.chdir(dir);
+  try {
+    // Importing it must not bind a port; that is the adapter's job.
+    const mod = await import('../src/production.js');
+    assert.equal(typeof mod.app?.fetch, 'function');
+    assert.equal(typeof mod.summary, 'function');
+    assert.equal(typeof mod.noBuild, 'boolean');
+  } finally {
+    process.chdir(was);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('each adapter is a listener and nothing else', () => {

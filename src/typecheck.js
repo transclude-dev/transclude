@@ -9,7 +9,7 @@
 // `<script props>` is honoured in a .js file and silently ignored in a .ts one.
 //
 // Shims are self-contained: route contexts and component props are inlined as
-// type literals rather than imported. hf-env.d.ts is written *from* the shims,
+// type literals rather than imported. transclude-env.d.ts is written *from* the shims,
 // so it cannot also be an input to them.
 
 import fs from 'node:fs';
@@ -228,7 +228,7 @@ export function createChecker({
       const blocks = splitBlocks(sourceOf(file));
       componentProps.set(tag, propTypeOf(file));
       // A partial with neither block registers no custom element, so it has no
-      // accessors and no members. Saying otherwise in hf-env.d.ts would be a claim
+      // accessors and no members. Saying otherwise in transclude-env.d.ts would be a claim
       // the browser does not back up.
       // Members live in the client block now, so the shim is what knows whether
       // there are any. An empty `__Members` means the block exported no
@@ -409,7 +409,7 @@ export function createChecker({
       };
     },
 
-    /** Everything hf-env.d.ts is written from. */
+    /** Everything transclude-env.d.ts is written from. */
     describe() {
       const partialTags = new Set(partialFiles().map((file) => path.basename(file, '.html')));
       return {

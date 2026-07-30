@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-  "scopeName": "html-first.injection",
+  "scopeName": "transclude.injection",
   "injectionSelector": "L:text.html -comment",
   "patterns": [
     { "include": "#interpolation" },
@@ -9,16 +9,16 @@
   ],
   "repository": {
     "interpolation": {
-      "name": "meta.embedded.expression.html-first",
+      "name": "meta.embedded.expression.transclude",
       "begin": "(?<!\\\\)\\$\\{",
       "end": "\\}",
-      "beginCaptures": { "0": { "name": "punctuation.section.embedded.begin.html-first" } },
-      "endCaptures": { "0": { "name": "punctuation.section.embedded.end.html-first" } },
+      "beginCaptures": { "0": { "name": "punctuation.section.embedded.begin.transclude" } },
+      "endCaptures": { "0": { "name": "punctuation.section.embedded.end.transclude" } },
       "patterns": [{ "include": "source.js" }]
     },
     "directive": {
       "match": "(?<=\\s)(each|if|else-if|else)(?=[\\s=>/])",
-      "name": "keyword.control.directive.html-first"
+      "name": "keyword.control.directive.transclude"
     },
     "server-block": {
       "begin": "(<)(script)\\s+(server|props)\\s*(>)",

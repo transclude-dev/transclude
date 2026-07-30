@@ -1,21 +1,22 @@
 {
-  "name": "html-first",
+  "name": "transclude",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Single-file .html routes, layouts, partials and components. Compiles once to server-rendered markup, optionally a declarative shadow root and a custom element.",
   "exports": {
     ".": "./src/plugin.js",
+    "./app": "./src/app.js",
+    "./worker": "./src/worker.js",
     "./runtime": "./src/runtime/index.js",
     "./document": "./src/document.js",
     "./routes": "./src/routes.js",
     "./typecheck": "./src/typecheck.js"
   },
   "bin": {
-    "html-first-dev": "./bin/dev.js",
-    "html-first-build": "./bin/build.js",
-    "html-first-serve": "./bin/serve.js",
-    "html-first-check": "./bin/check.js"
+    "transclude-dev": "./bin/dev.js",
+    "transclude-build": "./bin/build.js",
+    "transclude-serve": "./bin/serve.js",
+    "transclude-check": "./bin/check.js"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.12",
@@ -27,5 +28,10 @@
   "peerDependencies": {
     "typescript": "^5.9",
     "vite": "^8"
-  }
+  },
+  "files": [
+    "bin",
+    "src",
+    "editor"
+  ]
 }

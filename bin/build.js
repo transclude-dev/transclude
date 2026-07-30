@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Production build.
 //
 //   dist/client   hashed, minified client entries, one per route that needs JS
@@ -11,20 +12,20 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { build } from 'vite';
-import htmlFirst from '../src/plugin.js';
-import config from '../../html-first.config.js';
+import transclude from '../src/plugin.js';
+import { loadProject } from '../src/project.js';
 import { renderRoute, responseOf } from '../src/document.js';
 import { loadAssets, loadStatic } from '../src/static-cache.js';
 import { cookiesOf } from '../src/cookies.js';
 import { pool } from '../src/pool.js';
 import { precompress } from '../src/compress.js';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const { root, config } = await loadProject();
 const dist = path.join(root, config.outDir);
 
-const plugin = htmlFirst(config);
+const plugin = transclude(config);
 plugin.api.configure({ root });
 const manifest = plugin.api.manifest();
 
@@ -42,7 +43,7 @@ const assets = new Map();
 let stylesheet = null;
 
 const clientInput = Object.fromEntries(
-  clientRoutes.map((route) => [route.id, `virtual:hf-client/${route.id}`]),
+  clientRoutes.map((route) => [route.id, `virtual:transclude-client/${route.id}`]),
 );
 // The site stylesheet is an entry of its own, so Vite processes it and rollup
 // hashes it. One cacheable file shared by every page.
@@ -52,7 +53,7 @@ if (Object.keys(clientInput).length) {
   const output = await build({
     root,
     logLevel: 'warn',
-    plugins: [htmlFirst(config)],
+    plugins: [transclude(config)],
     // Copied once, here, into dist/public. Vite would otherwise put a copy in both
     // the client and the SSR output, and neither is where it is served from.
     publicDir: false,
@@ -80,7 +81,7 @@ if (Object.keys(clientInput).length) {
 await build({
   root,
   logLevel: 'warn',
-  plugins: [htmlFirst(config)],
+  plugins: [transclude(config)],
   publicDir: false,
   build: {
     outDir: `${config.outDir}/server`,
@@ -89,7 +90,7 @@ await build({
     // project root before any plugin sees it, which a virtual id cannot survive.
     ssr: true,
     rollupOptions: {
-      input: { entry: 'virtual:hf-server' },
+      input: { entry: 'virtual:transclude-server' },
       output: { entryFileNames: '[name].js' },
     },
   },
@@ -201,7 +202,7 @@ if (manifest.error) {
   });
 }
 
-const CONCURRENCY = Number(process.env.HF_BUILD_CONCURRENCY ?? 8);
+const CONCURRENCY = Number(process.env.TRANSCLUDE_BUILD_CONCURRENCY ?? 8);
 
 const outcomes = await pool(targets, CONCURRENCY, async ({ route, target, file, label }) => {
   const rel =

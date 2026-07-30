@@ -1,7 +1,7 @@
 {
-  "name": "html-first",
-  "displayName": "html-first",
-  "description": "Diagnostics, hovers and highlighting for html-first .html files",
+  "name": "transclude",
+  "displayName": "transclude",
+  "description": "Diagnostics, hovers and highlighting for transclude .html files",
   "version": "0.1.0",
   "private": true,
   "engines": { "vscode": "^1.85.0" },
@@ -11,19 +11,19 @@
   "contributes": {
     "grammars": [
       {
-        "scopeName": "html-first.injection",
-        "path": "./syntaxes/html-first.injection.json",
+        "scopeName": "transclude.injection",
+        "path": "./syntaxes/transclude.injection.json",
         "injectTo": ["text.html.basic", "text.html.derivative"],
-        "embeddedLanguages": { "meta.embedded.expression.html-first": "javascript" }
+        "embeddedLanguages": { "meta.embedded.expression.transclude": "javascript" }
       }
     ],
     "configuration": {
-      "title": "html-first",
+      "title": "transclude",
       "properties": {
-        "htmlFirst.enable": {
+        "transclude.enable": {
           "type": "boolean",
           "default": true,
-          "description": "Type check .html files in an html-first project."
+          "description": "Type check .html files in an transclude project."
         }
       }
     }

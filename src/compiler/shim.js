@@ -295,7 +295,7 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
   }
 
   // The one export the type extractor reads: whatever __Data resolved to is the
-  // file's data shape, and asking tsc for it is how hf-env.d.ts gets written.
+  // file's data shape, and asking tsc for it is how transclude-env.d.ts gets written.
   out.add('\n/** @type {__Data} */\n');
   out.add('export let __data;\n');
   out.add('/** @type {__Members} */\n');
@@ -422,7 +422,7 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
  * addition: `this` inside its members has to mean the element.
  *
  * `T & ThisType<Host & __Data & T>` is the whole trick. `T` infers from the
- * object literal, so the members keep their real types and hf-env.d.ts can be
+ * object literal, so the members keep their real types and transclude-env.d.ts can be
  * written from them; `ThisType` contextually types `this` without changing what
  * the value is. Including `T` in the intersection is what lets one member call
  * another.

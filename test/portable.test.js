@@ -219,47 +219,59 @@ test('a conditional request is answered before anything is compressed', async ()
   assert.equal(compressed, 1, 'a revalidating client should pay for a hash and nothing else');
 });
 
-// ---- the worker adapter ----------------------------------------------------
-//
-// The one that proves the split was worth making: no filesystem, no node:crypto,
-// no zlib, and `app.js` unchanged. Verified against workerd with `wrangler dev`.
+// ---- the package boundary --------------------------------------------------
 
-test('the worker adapter imports nothing from node:', () => {
-  const file = path.resolve(src, '../bin/serve.worker.js');
-  const source = fs.readFileSync(file, 'utf8');
+test('nothing in the package imports anything outside it', () => {
+  // This is what makes it a package. It used to import `../../transclude.config.js`
+  // from six files and work out the project root as two directories up from its
+  // own, which is only true while it lives inside the app it serves. Installed,
+  // two directories up is another package.
+  const offenders = [];
+
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.js')) {
+        const code = fs
+          .readFileSync(full, 'utf8')
+          .replace(/\/\*[\s\S]*?\*\//g, '')
+          .replace(/\/\/.*$/gm, '');
+        // Module specifiers only. `cookies.js` names the config file in an error
+        // message, which is the right thing for it to say.
+        const specifiers = [
+          ...code.matchAll(/from\s+'([^']+)'/g),
+          ...code.matchAll(/import\('([^']+)'\)/g),
+        ];
+        for (const [, specifier] of specifiers) {
+          const out = specifier.startsWith('../../') || /transclude\.config/.test(specifier);
+          if (out) offenders.push(`${full}: ${specifier}`);
+        }
+      }
+    }
+  };
+
+  for (const dir of ['src', 'bin', 'editor']) walk(path.resolve(src, '..', dir));
+  assert.deepEqual(offenders, [], `the package reaches out of itself:\n${offenders.join('\n')}`);
+});
+
+test('the project root is found from the working directory', () => {
+  // The one place that decides where the app is. Everything else takes it as an
+  // argument, so there is no second answer to get wrong.
+  const source = fs.readFileSync(path.join(src, 'project.js'), 'utf8');
+  assert.match(source, /process\.cwd\(\)/);
+});
+
+// ---- the worker helpers ----------------------------------------------------
+
+test('the worker helpers import nothing from node:', () => {
+  // The half of a worker entry that is not about one app. If this needs Node,
+  // the split it exists for has stopped being real.
+  const source = fs.readFileSync(path.join(src, 'worker.js'), 'utf8');
 
   assert.doesNotMatch(source, /from 'node:/, 'this file must not need Node');
   const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   assert.doesNotMatch(code, /\b(Buffer|process|__dirname|require)\b/);
-});
-
-test('the worker adapter uses the shared app rather than its own', () => {
-  const source = fs.readFileSync(path.resolve(src, '../bin/serve.worker.js'), 'utf8');
-  assert.match(source, /createApp\(/);
-  // Anything reimplemented here is something four runtimes keep in sync by hand.
-  for (const leaked of ['renderRoute', 'runAction', 'baseApp', 'ACTION_METHODS']) {
-    assert.doesNotMatch(source, new RegExp(leaked), `it reimplements ${leaked}`);
-  }
-});
-
-test('the worker adapter builds the app per request, not at import', () => {
-  // `env` arrives with the request. A secret read at import time is undefined, and
-  // signing then refuses while the variable is set. That is what happened.
-  const source = fs.readFileSync(path.resolve(src, '../bin/serve.worker.js'), 'utf8');
-  assert.match(source, /fetch:\s*\(request, env/, 'it never sees env');
-  assert.match(source, /env\.COOKIE_SECRET/, 'it does not read config from env');
-});
-
-test('the config never touches `process` at import', () => {
-  // The worker build imports this module, and a runtime with no Node
-  // compatibility has no `process`, and a bare reference throws before anything runs.
-  const source = fs.readFileSync(path.resolve(src, '../../html-first.config.js'), 'utf8');
-  // Comments are allowed to name it, and the one explaining this rule does. Code
-  // is not, and checking the raw text failed on the comment rather than the code.
-  const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-
-  assert.doesNotMatch(code, /(?<!globalThis\.)\bprocess\.env/);
-  assert.match(code, /globalThis\.process\?\.env/);
 });
 
 // ---- a header may name a region --------------------------------------------

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Node adapter. The app is in src/production.js; this listens with it.
 
 import { serve } from '@hono/node-server';

@@ -1,17 +1,17 @@
+#!/usr/bin/env node
 // `npm run check`. Type checks every .html file through TypeScript.
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { createChecker, positionAt } from '../src/typecheck.js';
 import { emitTypes } from '../src/compiler/types.js';
-import config from '../../html-first.config.js';
+import { loadProject } from '../src/project.js';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const { root, config } = await loadProject();
 const checker = createChecker({ root, ...config });
 
-// hf-env.d.ts is an output, not an input: the shims are self-contained, so the
+// transclude-env.d.ts is an output, not an input: the shims are self-contained, so the
 // types can be written from what tsc made of them rather than the other way
 // round. Nothing downstream reads it. It exists for the author and the editor.
 const types = path.join(root, config.typesFile);

@@ -651,7 +651,7 @@ export function fragment(def, props = {}, slots = {}) {
 /**
  * A light element's styles, in <head>, at most once per tag.
  *
- * The server writes the same `<style data-hf="tag">` for every light element the
+ * The server writes the same `<style data-transclude="tag">` for every light element the
  * document rendered, so the marker is the whole agreement. If one is already
  * there, these styles are applied and this does nothing. That is why the
  * attribute is on the server's output too. A page that renders <site-note> and a
@@ -663,12 +663,12 @@ export function fragment(def, props = {}, slots = {}) {
 export function adoptStyles(def) {
   if (typeof document === 'undefined') return;
   if (!def.light || !def.css) return;
-  if (document.querySelector(`style[data-hf="${def.tag}"]`)) return;
+  if (document.querySelector(`style[data-transclude="${def.tag}"]`)) return;
 
   const style = document.createElement('style');
-  style.setAttribute('data-hf', def.tag);
+  style.setAttribute('data-transclude', def.tag);
   style.textContent = def.css;
-  document.head.insertBefore(style, document.querySelector('style[data-hf-page]'));
+  document.head.insertBefore(style, document.querySelector('style[data-transclude-page]'));
 }
 
 /**
@@ -708,7 +708,7 @@ export function watch(loaders, root = globalThis.document) {
       Promise.resolve()
         .then(loaders[tag])
         .then((mod) => mod?.define?.())
-        .catch((err) => console.error(`[html-first] could not define <${tag}>`, err));
+        .catch((err) => console.error(`[transclude] could not define <${tag}>`, err));
     }
     if (!pending.size) stop();
   }

@@ -18,16 +18,16 @@ import {
 import { resolveRoutesDir, scanRoutes } from './routes.js';
 import { SERVER_FILE } from './server.js';
 
-const P_COMPONENT = 'virtual:hf-component/';
-const P_PAGE = 'virtual:hf-page/';
-const P_CLIENT = 'virtual:hf-client/';
-const P_LAYOUT = 'virtual:hf-layout/';
-const SERVER_ENTRY = 'virtual:hf-server';
+const P_COMPONENT = 'virtual:transclude-component/';
+const P_PAGE = 'virtual:transclude-page/';
+const P_CLIENT = 'virtual:transclude-client/';
+const P_LAYOUT = 'virtual:transclude-layout/';
+const SERVER_ENTRY = 'virtual:transclude-server';
 const LAYOUT_FILE = '_layout.html';
 
 const RUNTIME_FILE = fileURLToPath(new URL('./runtime/index.js', import.meta.url));
 
-export default function htmlFirst({
+export default function transclude({
   appDir = 'app',
   componentsDir = 'components',
   partialsDir = 'partials',
@@ -70,7 +70,7 @@ export default function htmlFirst({
     for (const tag of [...components.keys()]) {
       if (!tag.includes('-')) {
         components.delete(tag);
-        console.warn(`[html-first] ignoring ${tag}.html. Element names need a dash`);
+        console.warn(`[transclude] ignoring ${tag}.html. Element names need a dash`);
       }
     }
 
@@ -81,7 +81,7 @@ export default function htmlFirst({
     for (const tag of shadow.keys()) {
       if (!light.has(tag)) continue;
       throw new Error(
-        `[html-first] <${tag}> is both a component and a partial ` +
+        `[transclude] <${tag}> is both a component and a partial ` +
           `(${componentsDir}/${tag}.html and ${partialsDir}/${tag}.html). Rename one`,
       );
     }
@@ -170,18 +170,18 @@ export default function htmlFirst({
   };
 
   const report = (label, warnings) => {
-    for (const w of warnings ?? []) console.warn(`[html-first] ${label}: ${w}`);
+    for (const w of warnings ?? []) console.warn(`[transclude] ${label}: ${w}`);
   };
 
   return {
-    name: 'html-first',
+    name: 'transclude',
     enforce: 'pre',
 
     // Read by the build script: it needs the route table and which routes ship
     // client JS before it can decide the rollup inputs.
     api: {
       manifest() {
-        if (!root) throw new Error('[html-first] plugin not configured yet');
+        if (!root) throw new Error('[transclude] plugin not configured yet');
         const scanned = scanRoutes(resolveRoutesDir(app, routesDir));
         return {
           routes: scanned.routes.map((route) => ({
@@ -234,7 +234,7 @@ export default function htmlFirst({
       }
       // A virtual module has no directory, so Vite cannot resolve `../data/x.js`
       // on its own. The block was authored in a real file; use that file's dir.
-      if (importer?.startsWith('\0virtual:hf-') && /^\.\.?\//.test(id)) {
+      if (importer?.startsWith('\0virtual:transclude-') && /^\.\.?\//.test(id)) {
         const source = origin.get(importer);
         if (source) return path.resolve(path.dirname(source), id);
       }
@@ -242,7 +242,7 @@ export default function htmlFirst({
     },
 
     load(id) {
-      if (!id.startsWith('\0virtual:hf-')) return null;
+      if (!id.startsWith('\0virtual:transclude-')) return null;
       const virt = id.slice(1);
 
       // Every element in the app, not only the ones some page renders: a
@@ -287,7 +287,7 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
       if (virt.startsWith(P_COMPONENT)) {
         const tag = virt.slice(P_COMPONENT.length);
         const file = components.get(tag);
-        if (!file) throw new Error(`[html-first] no component <${tag}> in ${componentsDir}`);
+        if (!file) throw new Error(`[transclude] no component <${tag}> in ${componentsDir}`);
         origin.set(id, file);
         // The donut: a light element's styles stop at any light element nested
         // inside it.
@@ -309,7 +309,7 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
       if (virt.startsWith(P_LAYOUT)) {
         const layoutId = virt.slice(P_LAYOUT.length);
         const file = layouts.get(layoutId);
-        if (!file) throw new Error(`[html-first] no layout "${layoutId}"`);
+        if (!file) throw new Error(`[transclude] no layout "${layoutId}"`);
         origin.set(id, file);
         const out = compileLayout(read(file), { id: layoutId, components, shadowTags, runtime });
         report(`${layoutId} layout`, out.warnings);
@@ -319,7 +319,7 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
       if (virt.startsWith(P_PAGE)) {
         const name = virt.slice(P_PAGE.length);
         const route = pages.get(name);
-        if (!route) throw new Error(`[html-first] no page "${name}" in ${routesDir}`);
+        if (!route) throw new Error(`[transclude] no page "${name}" in ${routesDir}`);
         origin.set(id, route.file);
         const out = compilePage(read(route.file), {
           components,
@@ -335,7 +335,7 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
 
       const name = virt.slice(P_CLIENT.length);
       const route = pages.get(name);
-      if (!route) throw new Error(`[html-first] no page "${name}" in ${routesDir}`);
+      if (!route) throw new Error(`[transclude] no page "${name}" in ${routesDir}`);
       origin.set(id, route.file);
       const sources = [
         ...chainFor(route).map((l) => ({ source: read(l.file), filename: `${l.id}/_layout.html` })),
@@ -354,7 +354,7 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
 
         scan();
         for (const mod of server.moduleGraph.idToModuleMap.values()) {
-          if (mod.id?.startsWith('\0virtual:hf-')) server.moduleGraph.invalidateModule(mod);
+          if (mod.id?.startsWith('\0virtual:transclude-')) server.moduleGraph.invalidateModule(mod);
         }
         const hot = server.hot ?? server.ws;
         hot?.send({ type: 'full-reload' });

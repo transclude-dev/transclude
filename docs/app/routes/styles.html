@@ -11,6 +11,22 @@
     margin: 0;
   }
 </style>`,
+      selectors: [
+        `/* app/elements/site-note.html, light */
+:scope {
+  display: block;
+}
+
+/* app/elements/user-card.html, shadow = true */
+:host {
+  display: block;
+}
+
+:host([compact]) {
+  padding: 0;
+}`,
+        'css',
+      ],
       transition: [
         `@view-transition {
   navigation: auto;
@@ -37,7 +53,7 @@
 
 <doc-page
   heading="Styles"
-  lede="One global stylesheet, linked once. A style block in a file belongs to that file."
+  lede="One global stylesheet for the site. A style block in a file styles that file."
 >
   <p>
     <code>stylesheet</code> names one file, served through Vite, so nesting,
@@ -86,6 +102,29 @@
     An element that arrives with a fragment brings its styles with it. They are
     added to <code>&lt;head&gt;</code> once, on their own. There is nothing to
     set up.
+  </p>
+
+  <h3>The element itself</h3>
+
+  <p>
+    A light element is styled with
+    <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/:scope"
+      ><code>:scope</code></a
+    >, a shadow one with
+    <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/:host"
+      ><code>:host</code></a
+    >. Both mean the same thing: the element this stylesheet belongs to.
+  </p>
+
+  ${html(s.selectors)}
+
+  <p>
+    They differ in what can reach them. <code>:scope</code> rules are hoisted
+    into <code>&lt;head&gt;</code> and lose to page CSS of equal specificity, so
+    a page can override a light element it did not write.
+    <code>:host</code> lives inside the shadow root and page CSS cannot reach it
+    at all, though <code>:host</code> itself has very low specificity, so a rule
+    inside the element beats it.
   </p>
 
   <h2>View transitions</h2>

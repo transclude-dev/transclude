@@ -560,8 +560,8 @@ function defineProps(Class, defs, specs) {
 }
 
 /**
- * `<script element>` exports an object; its members land on the prototype so
- * they are shared, inherited, and visible to `in`.
+ * `export const prototype` is an object; its members land on the class prototype
+ * so they are shared, inherited, and visible to `in`.
  *
  * Descriptors, not `Object.assign`. Assigning would call every getter once at
  * define time and copy the results as plain values.
@@ -577,8 +577,8 @@ function defineMembers(Class, members, tag) {
   for (const name of Object.keys(descriptors)) {
     if (name in Class.prototype) {
       throw new Error(
-        `<${tag}>: \`${name}\` in <script element> would shadow something that ` +
-          `already exists on the element. Pick another name.`,
+        `<${tag}>: \`${name}\` in \`export const prototype\` would shadow ` +
+          `something the element already has. Pick another name.`,
       );
     }
     Object.defineProperty(Class.prototype, name, {
@@ -735,9 +735,9 @@ export function defineLight(def, init) {
 
   if (typeof customElements === 'undefined') return;
   if (customElements.get(def.tag)) return;
-  // No behaviour to attach means nothing to register. A partial with neither a
-  // <script> nor a <script element> is markup that was already rendered, and it
-  // ships no JavaScript at all, accessors included. That is the trade the
+  // No behaviour to attach means nothing to register. A light element with no
+  // <script> is markup that was already rendered, and it ships no JavaScript at
+  // all, accessors included. That is the trade the
   // zero-JS default makes.
   //
   // Being a form control counts as behaviour: a shadow root is not required to be

@@ -94,7 +94,15 @@
   heading="Elements"
   lede="An .html file in app/elements/ becomes a custom element. It renders into the page's own DOM unless it asks for a shadow root."
 >
-  <p>The file name is the tag name, and it needs a dash.</p>
+  <p>
+    The file name is the tag name, and it needs a dash, because that is what
+    makes it a valid
+    <a
+      href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements"
+      >custom element</a
+    >
+    name.
+  </p>
 
   ${html(s.light)}
 
@@ -153,6 +161,26 @@
           <td>Inline in the page</td>
           <td>As a declarative shadow root</td>
         </tr>
+        <tr>
+          <td><code>&lt;slot&gt;</code></td>
+          <td>Filled on the server. No <code>&lt;slot&gt;</code> is sent</td>
+          <td>A real slot, projected by the browser</td>
+        </tr>
+        <tr>
+          <td><code>slotchange</code></td>
+          <td>Never fires</td>
+          <td>Fires</td>
+        </tr>
+        <tr>
+          <td><code>assignedNodes()</code></td>
+          <td>Nothing to call it on</td>
+          <td>Works</td>
+        </tr>
+        <tr>
+          <td>The element itself, in CSS</td>
+          <td><code>:scope</code></td>
+          <td><code>:host</code></td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -163,6 +191,22 @@
     one fragment of it. Reach for a shadow root when you want the element's
     styles and DOM sealed off from the page, or when it has to re-render on its
     own.
+  </p>
+
+  <h3>What <code>&lt;slot&gt;</code> means in each</h3>
+
+  <p>
+    In a light element the server fills the slot and sends the result. No
+    <code>&lt;slot&gt;</code> reaches the browser, so afterwards there is no
+    link between the element and what went in it. It is markup that ended up
+    nested. Fallback content still works, and so do named slots.
+  </p>
+
+  <p>
+    In a shadow element the slot is real. The children stay in the light DOM and
+    the browser projects them through it, which is what makes
+    <code>slotchange</code> and <code>assignedNodes()</code> mean something, and
+    what lets content added later find its place.
   </p>
 
   <doc-note label="A shadow root in a fragment paints on connect" tone="warn">

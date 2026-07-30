@@ -15,7 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
-import { buildShim, originalOffset } from './compiler/shim.js';
+import { buildEndpointShim, buildShim, originalOffset } from './compiler/shim.js';
 import { splitBlocks } from './compiler/index.js';
 import { resolveRoutesDir, scanRoutes } from './routes.js';
 
@@ -187,11 +187,27 @@ export function createChecker({
   // `response` is the part of the answer that is not markup. Mutate it — the
   // object is shared with every loader in the chain and with the server — or
   // return a `Response` to answer for yourself and skip rendering.
+  //
+  // `cookies` reads the request and writes into that same envelope. `__Cookies`
+  // is defined by the shim, which is the only thing that reads this string.
+  /**
+   * What an endpoint's handler is handed. The same route context a loader gets,
+   * without the two parts that only exist because a page renders: `layout` is
+   * added by the chain walk, and `request` is never null because prerendering
+   * never runs an endpoint.
+   */
+  const endpointLiteral = (params) =>
+    `{ url: string; params: { ${params.map((name) => `${name}: string`).join('; ')} }; ` +
+    `route: { id: string; pattern: string; path: string }; ` +
+    `request: Request; fragment: string | null; ` +
+    `response: { status: number; headers: Headers }; cookies: __Cookies }`;
+
   const contextLiteral = (params, layoutType) =>
     `{ url: string; params: { ${params.map((name) => `${name}: string`).join('; ')} }; ` +
     `route: { id: string; pattern: string; path: string }; ` +
     `layout: ${layoutType}; request: Request | null; fragment: string | null; ` +
-    `action: unknown; response: { status: number; headers: Headers } }`;
+    `action: unknown; response: { status: number; headers: Headers }; ` +
+    `cookies: __Cookies }`;
 
   /**
    * Builds every shim in dependency order: components depend on nothing, a
@@ -241,7 +257,14 @@ export function createChecker({
       layoutData.set(id, dataTypeOf(file));
     }
 
-    const { routes, notFound } = scanRoutes(resolveRoutesDir(app, routesDir));
+    const { routes, endpoints, notFound } = scanRoutes(resolveRoutesDir(app, routesDir));
+
+    for (const route of endpoints) {
+      install(route.file, buildEndpointShim(sourceOf(route.file), {
+        contextType: endpointLiteral(route.params),
+      }));
+    }
+
     const pages = new Map();
     for (const route of [...routes, notFound].filter(Boolean)) {
       const above = mergeTypes(chainFor(route.rel, layouts).map((id) => layoutData.get(id)));
@@ -257,6 +280,11 @@ export function createChecker({
   };
 
   let project = build();
+
+  const endpointFor = (file) => {
+    const { endpoints } = scanRoutes(resolveRoutesDir(app, routesDir));
+    return endpoints.find((route) => route.file === file) ?? null;
+  };
 
   const contextFor = (file) => {
     if (path.basename(file) === LAYOUT_FILE) {
@@ -280,6 +308,12 @@ export function createChecker({
   };
 
   const refresh = (file) => {
+    if (file.endsWith('.js')) {
+      const route = endpointFor(file);
+      return install(file, buildEndpointShim(sourceOf(file), {
+        contextType: endpointLiteral(route?.params ?? []),
+      }));
+    }
     const kind = kindOf(file);
     return install(
       file,
@@ -295,7 +329,9 @@ export function createChecker({
   return {
     files() {
       const found = [...componentFiles(), ...partialFiles()];
-      walkHtml(resolveRoutesDir(app, routesDir), found);
+      const dir = resolveRoutesDir(app, routesDir);
+      walkHtml(dir, found);
+      for (const route of scanRoutes(dir).endpoints) found.push(route.file);
       return found;
     },
 

@@ -34,6 +34,34 @@ const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each']);
  */
 const PASS_THROUGH = /^(?:data|aria|hx)-/;
 
+/**
+ * `ctx.cookies`, named rather than inlined into the route context — that context
+ * is a string built in typecheck.js and would otherwise carry this whole shape
+ * into every shim that mentions it.
+ *
+ * Emitted by *every* shim whose context references it. An unresolved type name in
+ * JSDoc is not an error, it is `any` — so a shim that referenced `__Cookies`
+ * without defining it type-checked happily and caught nothing. The endpoint shim
+ * did exactly that.
+ */
+const COOKIES_TYPEDEF =
+  '/**\n' +
+  ' * @typedef {{ path?: string; domain?: string; maxAge?: number; expires?: Date;\n' +
+  ' *   httpOnly?: boolean; secure?: boolean; sameSite?: "Strict" | "Lax" | "None" }} __CookieOptions\n' +
+  ' */\n' +
+  '/**\n' +
+  ' * @typedef {{\n' +
+  ' *   get(name: string): string | undefined;\n' +
+  ' *   all(): Record<string, string>;\n' +
+  ' *   set(name: string, value: string, options?: __CookieOptions): void;\n' +
+  ' *   delete(name: string, options?: __CookieOptions): void;\n' +
+  ' *   signed: {\n' +
+  ' *     get(name: string): Promise<string | undefined>;\n' +
+  ' *     all(): Promise<Record<string, string>>;\n' +
+  ' *     set(name: string, value: string, options?: __CookieOptions): Promise<void>;\n' +
+  ' *   };\n' +
+  ' * }} __Cookies\n */\n\n';
+
 class Builder {
   constructor() {
     this.chunks = [];
@@ -66,6 +94,21 @@ class Builder {
     this.length += text.length;
   }
 
+  /**
+   * Generated text that still has somewhere true to point: every offset inside it
+   * maps to one source position.
+   *
+   * For the annotations. A `@satisfies` is ours, not the author's, but the errors
+   * it produces are about their code — `TS1360: type '() => void' does not satisfy`
+   * is reported *at the comment*, so with `add` it mapped to nothing and was
+   * dropped. A handler that returned no Response type-checked silently.
+   */
+  pin(text, sourceOffset) {
+    if (!text) return;
+    this.chunks.push({ start: this.length, text, source: sourceOffset, pinned: true });
+    this.length += text.length;
+  }
+
   build() {
     return {
       code: this.chunks.map((chunk) => chunk.text).join(''),
@@ -88,9 +131,84 @@ export function originalOffset(chunks, offset) {
     const chunk = chunks[mid];
     if (offset < chunk.start) high = mid - 1;
     else if (offset >= chunk.start + chunk.text.length) low = mid + 1;
-    else return chunk.source === null ? null : chunk.source + (offset - chunk.start);
+    else if (chunk.source === null) return null;
+    else return chunk.pinned ? chunk.source : chunk.source + (offset - chunk.start);
   }
   return null;
+}
+
+/**
+ * An endpoint is already a module — there is nothing to compile, only something
+ * to annotate. So the shim is the file, verbatim, with a `@satisfies` spliced in
+ * front of each verb export.
+ *
+ * That buys two things a page's shim also buys: the handler's own `ctx` is typed
+ * from the route context rather than being an implicit `any`, and the return type
+ * is held to `Response`, which is the one rule an endpoint has.
+ *
+ * Copied with offsets like every other shim, so a diagnostic points at the real
+ * line in the real file.
+ */
+export function buildEndpointShim(source, { contextType }) {
+  const out = new Builder();
+  out.add('export {};\n');
+  out.add(COOKIES_TYPEDEF);
+
+  let ast;
+  try {
+    ast = parse(source, {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      allowAwaitOutsideFunction: true,
+    });
+  } catch (error) {
+    out.failed(error, { offset: 0 });
+    return out.build();
+  }
+
+  const signature = `(ctx: ${contextType}) => Response | Promise<Response>`;
+  const edits = [];
+  const declarations = [];
+
+  for (const node of ast.body) {
+    if (node.type !== 'ExportNamedDeclaration') continue;
+    const declared = node.declaration;
+
+    // Anything not spelled like a method is a helper and gets no signature.
+    if (declared?.type === 'VariableDeclaration') {
+      const name = declared.declarations[0]?.id?.name;
+      // `@satisfies` on the initialiser: it contextually types the handler's own
+      // `ctx` *and* holds the return type, which an annotation would flatten.
+      if (isVerb(name)) edits.push({ at: node.start, insert: `/** @satisfies {${signature}} */\n` });
+      continue;
+    }
+
+    if (declared?.type === 'FunctionDeclaration' && isVerb(declared.id?.name)) {
+      // TypeScript ignores `@satisfies` on a function *declaration* — measured, it
+      // reports nothing at all. An assignment after the fact is checked, so the
+      // return type still cannot be wrong. What is lost is contextual typing of
+      // the parameter, which is why `export const` is the better spelling.
+      declarations.push({ name: declared.id.name, at: node.start });
+    }
+  }
+
+  let cursor = 0;
+  for (const edit of edits) {
+    out.copy(source.slice(cursor, edit.at), cursor);
+    out.pin(edit.insert, edit.at);
+    cursor = edit.at;
+  }
+  out.copy(source.slice(cursor), cursor);
+
+  for (const { name, at } of declarations) {
+    out.pin(`\n/** @type {${signature}} */\nconst __verb_${name} = ${name};\n`, at);
+  }
+  return out.build();
+}
+
+/** A handler is named for its method, the way HTTP spells it. */
+function isVerb(name) {
+  return Boolean(name) && /^[A-Z]+$/.test(name);
 }
 
 /**
@@ -120,6 +238,8 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
     '/**\n * @template T\n' +
       ' * @typedef {{ [K in keyof T]: T[K] extends never[] ? any[] : T[K] }} __Shape\n */\n',
   );
+
+  out.add(COOKIES_TYPEDEF);
 
   const used = [...collectUsedTags(blocks.nodes, componentProps)];
 
@@ -253,7 +373,7 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
     cursor = edit.at;
 
     if (edit.insert) {
-      out.add(edit.insert);
+      out.pin(edit.insert, block.offset + edit.at);
       continue;
     }
     // `satisfies` is doing real work: it contextually types the loader's own

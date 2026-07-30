@@ -16,6 +16,7 @@ import { build } from 'vite';
 import htmlFirst from '../src/plugin.js';
 import config from '../../html-first.config.js';
 import { renderRoute, responseOf } from '../src/document.js';
+import { cookiesOf } from '../src/cookies.js';
 import { pool } from '../src/pool.js';
 import { precompress } from '../src/compress.js';
 
@@ -32,7 +33,7 @@ fs.rmSync(dist, { recursive: true, force: true });
 
 // `needed` is decided in the plugin, which is also what the dev server asks —
 // two copies of that rule is two servers that disagree about which pages ship JS.
-const clientRoutes = [...manifest.routes, manifest.notFound]
+const clientRoutes = [...manifest.routes, manifest.notFound, manifest.error]
   .filter(Boolean)
   .filter((route) => route.client.needed);
 
@@ -128,6 +129,7 @@ async function urlsFor(route) {
  * writing a file that lies about it.
  */
 async function render(route, { url, params }) {
+  const response = responseOf();
   const ctx = {
     url: `http://localhost${url}`,
     params,
@@ -135,7 +137,8 @@ async function render(route, { url, params }) {
     request: null,
     fragment: null,
     action: null,
-    response: responseOf(),
+    response,
+    cookies: cookiesOf(null, response, config.cookieSecret),
   };
 
   const html = await renderRoute(pages[route.id], ctx, {
@@ -148,6 +151,12 @@ async function render(route, { url, params }) {
   }
   if (ctx.response.status !== 200) {
     throw new Error(`answered ${ctx.response.status}, which no file can carry`);
+  }
+  // A file carries no headers either — a Set-Cookie or a Cache-Control written
+  // here would be dropped on the floor, which is worse than being told.
+  const [header] = [...ctx.response.headers.keys()];
+  if (header) {
+    throw new Error(`set a ${header} header, which no file can carry`);
   }
   return html;
 }
@@ -179,6 +188,15 @@ if (manifest.notFound) {
     target: { url: '/404', params: {} },
     file: '404.html',
     label: '404.html  (not-found page)',
+  });
+}
+
+if (manifest.error) {
+  targets.push({
+    route: { ...manifest.error, pattern: '' },
+    target: { url: '/500', params: {} },
+    file: '500.html',
+    label: '500.html  (error page)',
   });
 }
 
@@ -234,6 +252,7 @@ fs.writeFileSync(
         params: route.params,
       })),
       notFound: manifest.notFound ? { id: manifest.notFound.id } : null,
+      error: manifest.error ? { id: manifest.error.id } : null,
       stylesheet,
     },
     null,

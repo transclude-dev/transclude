@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { renderFragment, renderRoute, responseOf } from '../src/document.js';
 import { baseApp, endpointMethods, runEndpoint } from '../src/server.js';
@@ -385,4 +386,41 @@ test('a public root that does not exist is not mounted either', async () => {
   const app = baseApp({ csrf: false, publicRoot: path.join(os.tmpdir(), 'hf-nope-does-not-exist') });
   app.get('/robots.txt', (c) => c.text('the route answers'));
   assert.equal(await (await app.request('http://x/robots.txt')).text(), 'the route answers');
+});
+
+// ---- the adapters ----------------------------------------------------------
+//
+// Three files that only listen. The app is `app.fetch`, which is
+// (Request) => Response — so what is worth asserting here is that the split
+// actually happened and no adapter grew logic of its own.
+
+test('production.js exports an app and nothing runtime-specific runs on import', async () => {
+  // Importing it must not bind a port; that is the adapter's job.
+  const mod = await import('../src/production.js');
+  assert.equal(typeof mod.app?.fetch, 'function');
+  assert.equal(typeof mod.summary, 'function');
+  assert.equal(typeof mod.noBuild, 'boolean');
+});
+
+test('each adapter is a listener and nothing else', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  for (const file of ['bin/serve.js', 'bin/serve.bun.js', 'bin/serve.deno.js']) {
+    const source = fs.readFileSync(path.join(root, file), 'utf8');
+
+    assert.match(source, /from '\.\.\/src\/production\.js'/, `${file} does not use the shared app`);
+    // Logic here is logic three runtimes have to keep in sync by hand.
+    for (const leaked of ['loadStatic', 'renderRoute', 'runAction', 'baseApp', 'manifest']) {
+      assert.doesNotMatch(source, new RegExp(leaked), `${file} has ${leaked} in it`);
+    }
+    assert.ok(source.split('\n').length < 20, `${file} is too long to be only a listener`);
+  }
+});
+
+test('the summary is shared, so three adapters cannot disagree about it', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  for (const file of ['bin/serve.js', 'bin/serve.bun.js', 'bin/serve.deno.js']) {
+    const source = fs.readFileSync(path.join(root, file), 'utf8');
+    assert.match(source, /summary\(/, `${file} prints its own thing`);
+    assert.doesNotMatch(source, /prerendered/, `${file} reimplements the summary`);
+  }
 });

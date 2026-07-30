@@ -1,78 +1,18 @@
 <script server>
+  import { all } from '../lib/code.js';
+
   export default async () => ({
-    transition: [
-      '<a',
-      '  each="person of people"',
-      '  href="/people/${person.slug}"',
-      '  style="view-transition-name: person-${person.slug}"',
-      '>…</a>',
-    ].join('\n'),
-  });
-</script>
-
-<title>Styles · transclude</title>
-<meta name="description" content="One global stylesheet, per-file styles, and what crosses a shadow boundary." />
-
-<doc-page
-  heading="Styles"
-  lede="One global stylesheet, linked once. A style block in a file belongs to that file."
->
-  <p>
-    <code>stylesheet</code> in the config names one file, served through Vite, so
-    nesting, <code>@import</code> and PostCSS all work. Set it to
-    <code>null</code> for none.
-  </p>
-
-  <h2>What crosses a boundary</h2>
-
-  <ul>
-    <li>
-      Custom properties inherit, so <code>--rule</code> declared on
-      <code>:root</code> reaches inside a component.
-    </li>
-    <li>
-      Selectors do not. A class in the global stylesheet lands on a page and on a
-      partial, and stops at a component's shadow root.
-    </li>
-  </ul>
-
-  <p>So a global stylesheet can theme a component, and cannot style one.</p>
-
-  <h2>Styles in a page</h2>
-
-  <p>
-    A <code>&lt;style&gt;</code> block in a page or layout is hoisted into
-    <code>&lt;head&gt;</code>. In a partial it is scoped to that tag with
-    <code>:scope</code> and hoisted once, however many times the partial appears.
-  </p>
-
-  <pre><code>&lt;style&gt;
+    s: await all({
+      scoped: `<style>
   :scope {
     display: block;
   }
   p {
     margin: 0;
   }
-&lt;/style&gt;</code></pre>
-
-  <h2>Adopted styles</h2>
-
-  <p>
-    <code>&lt;style data-transclude="tag"&gt;</code> in <code>&lt;head&gt;</code>
-    records which light elements the document already has styles for. A partial
-    swapped in from another route reads that record before adding its own, so it
-    does not get a second copy of its rules.
-  </p>
-
-  <h2>View transitions</h2>
-
-  <p>
-    Cross-document view transitions are CSS-only and opt-in. They need full-page
-    navigation, which is what this framework does. Both documents must carry the
-    rule.
-  </p>
-
-  <pre><code>@view-transition {
+</style>`,
+      transition: [
+        `@view-transition {
   navigation: auto;
 }
 
@@ -80,12 +20,76 @@
   @view-transition {
     navigation: none;
   }
-}</code></pre>
+}`,
+        'css',
+      ],
+      name: `<a
+  each="person of people"
+  href="/people/\${person.slug}"
+  style="view-transition-name: person-\${person.slug}"
+>…</a>`,
+    }),
+  });
+</script>
 
+<title>Styles · transclude</title>
+<meta name="description" content="One global stylesheet, and what crosses a shadow boundary." />
+
+<doc-page
+  heading="Styles"
+  lede="One global stylesheet, linked once. A style block in a file belongs to that file."
+>
   <p>
-    A name has to be unique in a document, so derive one from the data when the
-    same element appears in a list and on a detail page.
+    <code>stylesheet</code> names one file, served through Vite, so nesting,
+    <code>@import</code> and PostCSS work. Set it to <code>null</code> for none.
   </p>
 
-  <pre><code>${transition}</code></pre>
+  <h2>What crosses a boundary</h2>
+
+  <ul>
+    <li>
+      Custom properties inherit, so <code>--rule</code> on <code>:root</code>
+      reaches inside a component.
+    </li>
+    <li>
+      Selectors do not. A global class lands on a page and on a partial, and
+      stops at a component's shadow root.
+    </li>
+  </ul>
+
+  <p>So a global stylesheet can theme a component, and cannot style one.</p>
+
+  <h2>Styles in a file</h2>
+
+  <p>
+    A <code>&lt;style&gt;</code> block in a page or layout is hoisted into
+    <code>&lt;head&gt;</code>. In a partial it is scoped to that tag with
+    <code>:scope</code>.
+  </p>
+
+  ${html(s.scoped)}
+
+  <h2>Adopted styles</h2>
+
+  <p>
+    <code>&lt;style data-transclude="tag"&gt;</code> in <code>&lt;head&gt;</code>
+    records which light elements already have styles. A partial swapped in from
+    another route reads it before adding its own, so its rules land once.
+  </p>
+
+  <h2>View transitions</h2>
+
+  <p>
+    Cross-document view transitions are CSS-only and opt-in. Both documents must
+    carry the rule.
+  </p>
+
+  ${html(s.transition)}
+
+  <p>
+    A name has to be unique in a document. Derive one from the data when the same
+    element appears in a list and on a detail page.
+  </p>
+
+  ${html(s.name)}
 </doc-page>

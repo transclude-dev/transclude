@@ -1,3 +1,33 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      whole: [
+        `export default {
+  appDir: 'app',
+  routesDir: 'routes',
+  componentsDir: 'components',
+  partialsDir: 'partials',
+  publicDir: 'public',
+  stylesheet: 'app/styles/global.css',
+
+  strict: false,
+  fragmentParam: 'fragment',
+  fragmentHeader: null,
+  csrf: true,
+  trailingSlash: 'never',
+  cookieSecret: globalThis.process?.env?.COOKIE_SECRET ?? null,
+
+  outDir: 'dist',
+  typesFile: 'app/transclude-env.d.ts',
+};`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
 <title>Configuration · transclude</title>
 <meta name="description" content="Every key in transclude.config.js." />
 
@@ -5,10 +35,7 @@
   heading="Configuration"
   lede="transclude.config.js is the whole interface to the framework. Every path it needs is here, and the package names none of its own."
 >
-  <p>
-    An unknown key throws. A misspelled one that was quietly ignored would be a
-    setting that looks applied and is not.
-  </p>
+  <p>An unknown key throws.</p>
 
   <div class="scroller">
     <table>
@@ -116,22 +143,5 @@
 
   <h2>A whole file</h2>
 
-  <pre><code>export default {
-  appDir: 'app',
-  routesDir: 'routes',
-  componentsDir: 'components',
-  partialsDir: 'partials',
-  publicDir: 'public',
-  stylesheet: 'app/styles/global.css',
-
-  strict: false,
-  fragmentParam: 'fragment',
-  fragmentHeader: null,
-  csrf: true,
-  trailingSlash: 'never',
-  cookieSecret: globalThis.process?.env?.COOKIE_SECRET ?? null,
-
-  outDir: 'dist',
-  typesFile: 'app/transclude-env.d.ts',
-};</code></pre>
+  ${html(s.whole)}
 </doc-page>

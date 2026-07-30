@@ -5,6 +5,19 @@
 />
 
 <style>
+  /* The wordmark is the heading here. A class, so it beats the bare `h1` rule
+     in the site stylesheet whatever order they land in. */
+  .wordmark {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: clamp(2.1rem, 6.5vw, 3.4rem);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+  }
+  .wordmark .hash {
+    color: var(--link);
+  }
+
   .pitch {
     font-family: var(--serif);
     font-size: 1.35rem;
@@ -60,7 +73,7 @@
   }
 </style>
 
-<h1>transclude</h1>
+<h1 class="wordmark"><span class="hash">#</span>transclude</h1>
 
 <p class="pitch">HTML is the product.</p>
 
@@ -124,8 +137,10 @@
   <p>
     Transclusion means putting part of one document inside another by pointing at
     it, instead of copying it. Ted Nelson named the idea in
-    <em>Literary Machines</em>, the book that described his Project Xanadu. He had
-    already given us the word hypertext.
+    <a href="https://archive.org/details/literarymachines00nels"
+      ><em>Literary Machines</em></a
+    >, the book that described his Project Xanadu. He had already given us the
+    word hypertext.
   </p>
 
   <p>

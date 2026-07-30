@@ -97,9 +97,14 @@ export function compileComponent(
   const blocks = splitBlocks(source);
   const where = (kind) => `${filename || tag}.html <script${kind ? ` ${kind}` : ''}>`;
 
+  // `formAssociated` may be declared here as well as in `<script>`. It is a fact
+  // about the element rather than a prop, and a form control with no behavior
+  // would otherwise need a `<script>` block holding nothing else.
   const props = blocks.properties
-    ? bindDefaultExport(blocks.properties, '__propDefs', where('properties'))
-    : { code: 'const __propDefs = {};', exports: [], defaultNode: null };
+    ? bindDefaultExport(blocks.properties, '__propDefs', where('properties'), {
+        flag: 'formAssociated',
+      })
+    : { code: 'const __propDefs = {};', exports: [], defaultNode: null, formAssociated: null };
   assertNoCollisions(props.exports, COMPONENT_EXPORTS, where('properties'));
 
   const state = blocks.state
@@ -122,6 +127,16 @@ export function compileComponent(
   // setup body is per element.
   const client = toFunctionBody(blocks.client, where(''), { lift: 'prototype' });
   assertNoLifecycle(client.lifted, where(''));
+
+  // One declaration per component. Two homes for one fact leaves nothing to say
+  // which is right when they disagree.
+  if (props.formAssociated !== null && client.formAssociated !== null) {
+    throw new ScriptError(
+      `<${tag}> declares \`formAssociated\` in both <script properties> and ` +
+        `<script>. Keep the one that reads better and delete the other.`,
+    );
+  }
+  const formAssociated = props.formAssociated ?? client.formAssociated ?? false;
   const template = compileFragment(blocks.nodes, {
     components,
     shadowTags,
@@ -182,7 +197,7 @@ ${client.lifted ? client.hoisted : 'const __members = {};'}
 
 export const tag = ${JSON.stringify(tag)};
 export const light = ${!shadow};
-export const formAssociated = ${client.formAssociated === true};
+export const formAssociated = ${formAssociated === true};
 export const css = ${JSON.stringify(shadow ? styles : scopeCss(styles, tag, nested))};
 export const propDefs = __propDefs;
 export const propAttrs = ${props.exports.includes('attributes') ? 'attributes' : '{}'};

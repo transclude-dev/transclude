@@ -1,0 +1,154 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  // What the framework depends on, and what this site adds on top. Written out
+  // rather than read from package.json, because a docs page that fails to build
+  // when a dependency moves is worse than one that is checked by hand.
+  export default async () => ({
+    framework: [
+      { name: 'Hono', href: 'https://hono.dev/', what: 'The server. Routing, middleware, cookies and CSRF.' },
+      { name: 'parse5', href: 'https://github.com/inikulin/parse5', what: 'Parses each .html file the way a browser would.' },
+      { name: 'acorn', href: 'https://github.com/acornjs/acorn', what: 'Parses every script block, so no rewrite is a regular expression.' },
+      { name: 'jsep', href: 'https://ericsmekens.github.io/jsep/', what: 'Parses the expressions inside ${} and directives.' },
+      { name: 'Vite', href: 'https://vite.dev/', what: 'Builds the client output and serves it in dev.' },
+      { name: 'TypeScript', href: 'https://www.typescriptlang.org/', what: 'What transclude-check runs over your templates.' },
+    ],
+    site: [
+      { name: 'Shiki', href: 'https://shiki.style/', what: 'Highlights every code sample, in the loader, at build time.' },
+      { name: 'Inter', href: 'https://rsms.me/inter/', what: 'The interface. One variable file.' },
+      { name: 'Noto Serif', href: 'https://fonts.google.com/noto/specimen/Noto+Serif', what: 'Headings and prose. One variable file.' },
+      { name: 'IBM Plex Mono', href: 'https://www.ibm.com/plex/', what: 'The logo and the code. Two static weights, because Plex Mono has no variable release.' },
+    ],
+    s: await all({
+      build: ['npm run build', 'shell'],
+    }),
+  });
+</script>
+
+<title>Colophon · transclude</title>
+<meta name="description" content="What this site is built with, and what it ships." />
+
+<style>
+  .credits {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 0 0 1.6em;
+    max-width: var(--measure);
+  }
+  .credit {
+    display: grid;
+    grid-template-columns: 10rem minmax(0, 1fr);
+    gap: 1rem;
+    padding: 0.7rem 0;
+    border-top: 1px solid var(--rule);
+  }
+  .credit:last-child {
+    border-bottom: 1px solid var(--rule);
+  }
+  .credit a {
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .credit span {
+    font-family: var(--serif);
+    font-size: 0.97rem;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  @media (max-width: 40rem) {
+    .credit {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.2rem;
+    }
+  }
+</style>
+
+<doc-page
+  heading="Colophon"
+  lede="This site is a transclude app. Every page is one .html file in docs/app/routes/, built with the framework it documents."
+>
+  <h2>What the framework uses</h2>
+
+  <div class="credits">
+    <div class="credit" each="dep of framework">
+      <a href="${dep.href}">${dep.name}</a>
+      <span>${dep.what}</span>
+    </div>
+  </div>
+
+  <p>
+    That is the whole list. Nothing else is installed, and the browser downloads
+    none of it.
+  </p>
+
+  <h2>What this site adds</h2>
+
+  <div class="credits">
+    <div class="credit" each="dep of site">
+      <a href="${dep.href}">${dep.name}</a>
+      <span>${dep.what}</span>
+    </div>
+  </div>
+
+  <p>
+    The three families are served from <code>app/public/fonts/</code> rather than
+    a font CDN. Latin subsets, 112&nbsp;KB in total.
+  </p>
+
+  <h2>What it ships</h2>
+
+  ${html(s.build)}
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Pages</td>
+          <td>18, every one rendered to a file at build time</td>
+        </tr>
+        <tr>
+          <td>JavaScript</td>
+          <td>None. <code>fragmentParam</code> is <code>null</code> here</td>
+        </tr>
+        <tr>
+          <td>Fonts</td>
+          <td>112&nbsp;KB, four files, cached on their own</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Shiki runs in the loader, so highlighting happens once at build time and the
+    browser gets plain markup.
+  </p>
+
+  <h2>Colors and type</h2>
+
+  <p>
+    Contrast is measured with
+    <a href="https://github.com/Myndex/apca-w3">APCA</a> rather than WCAG
+    ratios. The two disagree most on a dark theme, where a pairing can clear
+    WCAG AA and still be hard to read. Body text clears Lc 90, everything else
+    that is read clears Lc 75, and code tokens clear Lc 60. A test measures
+    every pairing against the background it is used on.
+  </p>
+
+  <p>
+    The syntax themes are GitHub's high-contrast pair for the same reason:
+    github-dark draws comments at Lc 28 on this background.
+  </p>
+
+  <p>
+    The link color is <code>#0000EE</code>, which is the unvisited-link color
+    from the browser's own default stylesheet.
+  </p>
+</doc-page>

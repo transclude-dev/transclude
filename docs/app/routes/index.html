@@ -66,50 +66,68 @@
 
 <div class="body">
   <p>
-    A page is an <code>.html</code> file, the server renders it, and what arrives
-    is markup a browser already knows how to display. Nothing has to run for the
-    page to be correct.
+    You write a page as an <code>.html</code> file. The server renders it and
+    sends back plain HTML. There is no client framework to start up, and nothing
+    has to run before the page works.
   </p>
 
   <p>
-    The directory tree is the route table. A page answers GET, its
-    <code>actions</code> answer POST and the other verbs, and a
-    <code>.js</code> file in the same tree is an endpoint that returns a
-    <code>Response</code>. The server is Hono.
+    Your folder structure is your routing. A page handles GET. Export
+    <code>actions</code> from it to handle POST, PUT and DELETE. Put a
+    <code>.js</code> file in the same folder and it becomes an API endpoint. Hono
+    runs the server.
   </p>
 
   <p>
-    This site is built with it. Every page here is an <code>.html</code> file in
-    <code>docs/app/routes/</code>.
+    This site is built with it. Every page you are reading is one
+    <code>.html</code> file in <code>docs/app/routes/</code>.
   </p>
 </div>
 
 <div class="grid">
   <div class="cell">
-    <h2>One file is one route</h2>
+    <h2>Everything in one file</h2>
     <p>
-      A loader, the markup, the styles and the behavior, in the file the URL
-      names.
+      Data loading, markup, styles and behavior live together in the file the URL
+      points at.
     </p>
   </div>
   <div class="cell">
-    <h2>A fragment is a resource</h2>
+    <h2>Fetch any part of a page</h2>
     <p>
-      Any element with an id can be asked for on its own URL, from the same
+      Give an element an id and you can request just that piece, from the same
       compiled markup.
     </p>
   </div>
   <div class="cell">
     <h2>Partials before components</h2>
     <p>
-      A partial has no boundary, page CSS reaches it, and it ships no
-      JavaScript.
+      A partial is plain HTML inside your page. Your CSS reaches it and it ships
+      no JavaScript.
     </p>
   </div>
   <div class="cell">
-    <h2>Four runtimes</h2>
-    <p>The same app runs on Node, Bun, Deno and workerd.</p>
+    <h2>Runs anywhere</h2>
+    <p>Node, Bun, Deno and Cloudflare Workers, from the same code.</p>
   </div>
+</div>
+
+<h2>Where the name comes from</h2>
+
+<div class="body">
+  <p>
+    Transclusion means putting part of one document inside another by pointing at
+    it, instead of copying it. Ted Nelson named the idea in
+    <em>Literary Machines</em>, the book that described his Project Xanadu. He had
+    already given us the word hypertext.
+  </p>
+
+  <p>
+    This framework does it twice. A <strong>partial</strong> is markup pulled into
+    the page that calls it. A <strong>fragment</strong> is a piece of a page that
+    keeps a URL of its own, so you can render it in place or fetch it by itself.
+    Either way there is one copy of the markup.
+  </p>
 </div>
 
 <a class="next" href="/getting-started">Getting started &rarr;</a>

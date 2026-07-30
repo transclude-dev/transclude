@@ -47,11 +47,11 @@
 
   ${html(s.named)}
 
-  <h2>A layout can answer the request</h2>
+  <h2>A layout can respond on its own</h2>
 
   <p>
-    A layout loader that returns a <code>Response</code> stops the chain, and
-    nothing below it runs.
+    Return a <code>Response</code> from a layout loader and it stops there.
+    Nothing below it runs, which is how you write a login redirect once.
   </p>
 
   ${html(s.guard)}

@@ -13,8 +13,7 @@
       [...path].html  /docs/*
     404.html
     500.html
-  partials/           light DOM
-  components/         shadow root
+  elements/           custom elements, light DOM unless a file asks for a shadow root
   public/             copied to the site root
   styles/
     global.css
@@ -34,8 +33,8 @@ transclude.config.js`),
 
   <p>
     In <code>routes/</code>, <code>.html</code> is a page and <code>.js</code> is
-    an endpoint. Elsewhere, <code>partials/</code> is light DOM and
-    <code>components/</code> gets a shadow root.
+    an endpoint. Everything in <code>elements/</code> is a custom element,
+    light DOM unless its own file exports <code>shadow</code>.
   </p>
 
   <doc-note label="A helper in routes/ needs a prefix" tone="warn">

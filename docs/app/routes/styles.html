@@ -49,29 +49,29 @@
   <ul>
     <li>
       Custom properties inherit, so <code>--rule</code> on <code>:root</code>
-      reaches inside a component.
+      reaches inside a shadow root.
     </li>
     <li>
-      Selectors do not. A global class lands on a page and on a partial, and
-      stops at a component's shadow root.
+      Selectors do not. A global class lands on a page and on a light element,
+      and stops at a shadow root.
     </li>
   </ul>
 
   <p>
-    So a global stylesheet themes a component through custom properties. To let
-    it style something inside, the component marks that element with a
+    So a global stylesheet themes a shadow element through custom properties. To
+    let it style something inside, the element marks that node with a
     <code>part</code> attribute, which
     <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/::part"
       ><code>::part()</code></a
     >
-    then selects. The component decides what it exposes.
+    then selects. The element decides what it exposes.
   </p>
 
   <h2>Styles in a file</h2>
 
   <p>
     A <code>&lt;style&gt;</code> block in a page or layout is hoisted into
-    <code>&lt;head&gt;</code>. In a partial it is scoped to that tag, and
+    <code>&lt;head&gt;</code>. In an element it is scoped to that tag, and
     <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/:scope"
       ><code>:scope</code></a
     >
@@ -83,7 +83,7 @@
   <h2>Styles for swapped-in markup</h2>
 
   <p>
-    A partial that arrives with a fragment brings its styles with it. They are
+    An element that arrives with a fragment brings its styles with it. They are
     added to <code>&lt;head&gt;</code> once, on their own. There is nothing to
     set up.
   </p>

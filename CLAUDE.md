@@ -13,11 +13,12 @@ part: a region is a resource, and the same compiled markup serves it inline and
 alone. This framework ships nothing that swaps one in. htmx, Turbo or a short
 `fetch` does that.
 
-Reuse has two kinds and the plain one is the default. A partial is markup pulled
-into its caller: no boundary, page CSS reaches it, `<label for>` works, no
-JavaScript shipped. A component gets a shadow root and re-renders on an attribute
-change. Components matter and are the harder half of the compiler, but they answer
-a narrower question than most pages ask. Reach for a partial first.
+An `.html` file in `elements/` becomes a custom element. Light DOM by default:
+no boundary, page CSS reaches it, `<label for>` works, no JavaScript shipped.
+`export const shadow = true` gives it a shadow root and a re-render on an
+attribute change. The shadow half is the harder half of the compiler and answers
+a narrower question than most pages ask, so stay light unless you want the
+boundary.
 
 The same app runs on Node, Bun, Deno and workerd. The browser downloads no runtime
 dependencies.
@@ -35,7 +36,7 @@ cannot. Leave it out otherwise.
 Words: short and plain. No jargon. No em dashes. Write so that someone reading
 English as a second language gets it on the first pass. This applies to comments,
 commit messages, the README, and anything else written here. `hypermedia`,
-`partial` and `component` are the exceptions: they name things this framework is
+`element` and `fragment` are the exceptions: they name things this framework is
 about, so use them and say what they mean the first time.
 
 Tone: declarative. State what is true and stop. Do not sell the design, and do not
@@ -61,12 +62,12 @@ when to merge.
   package by name, and a test says nothing in the package reaches into `examples/`.
   Its own rules are in its CLAUDE.md.
 
-Directory decides kind: `components/` gets a shadow root, `partials/` is light DOM.
-Nothing in the file says which. In `routes/`, extension decides: `.html` is a page,
-`.js` is an endpoint.
+`elements/` holds every custom element, and the file says which kind it is:
+`export const shadow = true` for a shadow root, nothing for light. In `routes/`,
+extension decides: `.html` is a page, `.js` is an endpoint.
 
 An app owns `transclude.config.js`, its `worker.js`, its own tests, and `app/`
-with the routes, partials, components and public files. The browser checks live
+with the routes, elements and public files. The browser checks live
 in `examples/showcase/app/routes/check.html`, because they need an app to run
 against.
 
@@ -110,7 +111,7 @@ against.
   down.** A fragment is swapped into a live document, and nothing that swaps HTML
   processes declarative shadow DOM, so `shadow()` returns `''` and the element
   paints itself on connect. `__fragment` threads through both `emitShadow` and
-  `emitLight`. Drop it from the second one and a component inside a partial emits
+  `emitLight`. Drop it from the second one and a shadow element inside a light one emits
   a shadow root nobody will process.
 - **The form value is reported before the render, not after.** A form can be
   submitted between an attribute changing and the microtask that repaints, and what
@@ -174,7 +175,7 @@ against.
 - **`<style data-transclude="tag">` in `<head>` is an agreement, not decoration.** It is
   the only record of which light elements the document already has styles for, and
   `adoptStyles` reads it with exactly that selector before adding any. Change how
-  `renderDocument` writes it without changing the selector and a swapped-in partial
+  `renderDocument` writes it without changing the selector and a swapped-in light element
   quietly gets a second copy of its rules. `data-transclude-page` marks the page's own
   block, which is where an adopted one is inserted before. Appending would let an
   element override the page.
@@ -313,6 +314,19 @@ against.
   is a type error for a page that works. They are still checked as expressions.
   Only the claim that the name is declared goes away. The regular expression needs
   the trailing dash: `database` is not `data-`.
+- **How an element renders is read from the file, before anything is compiled.**
+  `shadow` used to be the directory a file sat in, which the scan knew for free.
+  Now `plugin.js` calls `readFlags` on every element first, because how a tag
+  renders decides how every *other* file that mentions it compiles: `shadowTags`
+  is passed to every page, layout and element compile. Read it lazily and a page
+  compiled before its element would emit the wrong thing for that tag, with
+  nothing said. `readFlags` and `compileComponent` share `ELEMENT_FLAGS` and the
+  same extractors, so there is one answer to what a file declares.
+- **`loadProject` refuses `partialsDir` and `componentsDir`.** Both are one
+  `elementsDir` now. Left alone the old keys would be ignored, the app would look
+  in `app/elements/`, find nothing, and every tag would render as an unmatched
+  custom element with no styles and no error. Same guard as the old `pages`
+  directory name.
 - **A literal `${` cannot be written in a template.** There is no escape for it.
   The compiler reads every one as an interpolation, so `${}` in prose fails with
   `bad expression "": empty expression` and a line number in the compiled file

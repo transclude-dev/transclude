@@ -7,11 +7,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { compileComponent } from '../src/compiler/index.js';
+import { compileComponent, readFlags, ELEMENT_FLAGS } from '../src/compiler/index.js';
 import { toFunctionBody } from '../src/compiler/script.js';
 
 const block = (code) => [{ code, offset: 0, line: 1 }];
-const bodyOf = (code) => toFunctionBody(block(code), 'a-a.html <script>', { lift: 'prototype' });
+const bodyOf = (code) =>
+  toFunctionBody(block(code), 'a-a.html <script>', { lift: 'prototype', flags: ELEMENT_FLAGS });
 
 const componentOf = (source, over = {}) =>
   compileComponent(source, {
@@ -25,7 +26,7 @@ const componentOf = (source, over = {}) =>
 // ---- opting in -------------------------------------------------------------
 
 test('a component opts in with the platform’s own name', () => {
-  assert.equal(bodyOf('export const formAssociated = true;').formAssociated, true);
+  assert.equal(bodyOf('export const formAssociated = true;').flags.formAssociated, true);
 });
 
 test('the export is lifted out of the setup code, not run per element', () => {
@@ -47,13 +48,13 @@ test('opting out explicitly compiles the same as not opting in', () => {
 test('a block still reports which of those two it was', () => {
   // The compiled module cannot tell them apart and does not need to. The block
   // can, which is what makes "declared in both blocks" something to report.
-  assert.equal(bodyOf('export const formAssociated = false;').formAssociated, false);
-  assert.equal(bodyOf('host.id;').formAssociated, null, 'silence is not a `false`');
+  assert.equal(bodyOf('export const formAssociated = false;').flags.formAssociated, false);
+  assert.equal(bodyOf('host.id;').flags.formAssociated, null, 'silence is not a `false`');
 });
 
 test('it coexists with an exported prototype', () => {
   const out = bodyOf('export const prototype = { a() {} };\nexport const formAssociated = true;');
-  assert.equal(out.formAssociated, true);
+  assert.equal(out.flags.formAssociated, true);
   assert.ok(out.lifted, 'the prototype still got lifted');
 });
 
@@ -115,7 +116,7 @@ test('a computed value is refused, because a static field cannot be one', () => 
 test('any other export is still refused, and the message says what is allowed', () => {
   assert.throws(
     () => bodyOf('export const nope = true;'),
-    (error) => /`prototype` and `formAssociated`/.test(error.message),
+    (error) => /`prototype`, `shadow`, `formAssociated`/.test(error.message),
   );
 });
 
@@ -178,4 +179,55 @@ export const prototype = { check() { return handle; } };`),
 test('reaching it through `this` is how a member is meant to', () => {
   const out = bodyOf('export const prototype = { check() { return this.internals; } };');
   assert.ok(out.lifted, 'this.internals is per element and needs no lifting');
+});
+
+// ---- shadow is a flag too ---------------------------------------------------
+
+test('an element is light unless its file says otherwise', () => {
+  const code = componentOf('<p>x</p>', { shadow: false });
+  assert.match(code, /export const light = true;/);
+});
+
+test('the file decides, whatever the caller passed', () => {
+  // The plugin reads the flag and passes it back in. A file that says which it
+  // is has to win, or the types and the render could describe different things.
+  const declared =
+    '<script properties>\nexport default {};\nexport const shadow = true;\n</script>\n<p>x</p>';
+
+  assert.match(componentOf(declared, { shadow: false }), /export const light = false;/);
+});
+
+test('shadow can be declared in the client block as well', () => {
+  const code = componentOf('<p>x</p>\n<script>\nexport const shadow = true;\n</script>', {
+    shadow: false,
+  });
+  assert.match(code, /export const light = false;/);
+});
+
+test('declaring shadow in both blocks is refused', () => {
+  assert.throws(
+    () =>
+      componentOf(
+        '<script properties>\nexport default {};\nexport const shadow = true;\n</script>\n<p>x</p>\n<script>\nexport const shadow = false;\n</script>',
+      ),
+    /declares `shadow` in both/,
+  );
+});
+
+test('readFlags sees what the compile sees', () => {
+  // Two readers of one file. They disagreeing is a page compiled for a tag that
+  // renders the other way, which nothing would report.
+  const source =
+    '<script properties>\nexport default {};\nexport const shadow = true;\nexport const formAssociated = true;\n</script>\n<p>x</p>';
+
+  assert.deepEqual(readFlags(source, 'a-a.html'), { shadow: true, formAssociated: true });
+  assert.match(componentOf(source, { shadow: false }), /export const light = false;/);
+  assert.match(componentOf(source, { shadow: false }), /export const formAssociated = true;/);
+});
+
+test('state still needs a shadow root, and the message says how to get one', () => {
+  assert.throws(
+    () => componentOf('<script state>\nexport default { n: 0 };\n</script>\n<p>x</p>', { shadow: false }),
+    /export const shadow = true/,
+  );
 });

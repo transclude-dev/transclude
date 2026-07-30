@@ -15,12 +15,11 @@ one piece and swap it in, and the same markup renders inline for a full page
 load. The framework ships nothing that does the swapping. htmx, Turbo or a short
 `fetch` drives it.
 
-Reuse comes in two kinds, and the plain one is the default. A **partial** is
-markup pulled into its caller: no boundary, page CSS reaches it, `<label for>`
-works, and it ships no JavaScript. A **component** gets a shadow root, a real
-`<slot>` and re-renders when its attributes change. Components matter, and they
-are what makes an element that survives being moved around a live page, but they
-are the answer to a narrower question than most pages ask.
+An `.html` file in `app/elements/` becomes a custom element. It renders into the
+page's own DOM by default: no boundary, page CSS reaches it, `<label for>` works,
+and it ships no JavaScript. `export const shadow = true` gives it a shadow root, a
+real `<slot>` and a re-render when its attributes change. Stay light unless you
+want the boundary.
 
 The same app runs on Node, Bun, Deno and workerd. A page ships no client
 JavaScript unless it uses a component, and the browser downloads no runtime
@@ -398,55 +397,59 @@ Returning a `Response` is required. There is no template to fall back to, and a
 handler that returns a plain object has forgotten `Response.json`. The `ctx` is
 type checked like a page's, without the parts only a page has.
 
-## Partials and components
+## Elements
 
-Two directories, because they are two things you reach for at different moments.
-Both resolve by filename with no import line, and both need a dash in the name.
+One directory. Every `.html` file in it becomes a custom element, resolved by
+filename with no import line, and every name needs a dash.
 
 ```
-app/partials/site-note.html     ->  <site-note>    light DOM
-app/components/user-card.html   ->  <user-card>    shadow DOM
+app/elements/site-note.html    ->  <site-note>    light DOM
+app/elements/user-card.html    ->  <user-card>    shadow DOM, opted in
 ```
 
-The words are the traditional ones. A partial has always meant "render this
-markup into my context". Statamic, Rails, Blade, Liquid, Twig and Hugo all have
-partials, and all of them take parameters, so props are not what separates the
-two. This is: a partial is inlined into its caller, a component is kept apart
-from it. Elsewhere that is a convention. Here it is a fact about the DOM.
+An element renders into the page's own DOM unless its file asks for a shadow
+root:
 
-A **partial** is markup reuse. Styles are scoped to the tag with `@scope` and
-hoisted into `<head>` once; markup renders inline; page CSS reaches it; form
-controls and `<label for>` work because there is no boundary.
+```html
+<script properties>
+  export default { name: '' };
+  export const shadow = true;
+</script>
+```
 
-A **component** is a widget with its own boundary. It gets a shadow root, a real
-`<slot>`, and re-renders when its attributes change.
+Light is the default because it is the cheaper of the two and covers most reuse.
+Styles are scoped to the tag with `@scope` and hoisted into `<head>` once; markup
+renders inline; page CSS reaches it; form controls and `<label for>` work because
+there is no boundary.
 
-| | partial | component |
+A shadow root is a boundary: a real `<slot>`, styles sealed off from the page, and
+a re-render when attributes change.
+
+| | light | `shadow = true` |
 | --- | --- | --- |
 | styles | `@scope (tag)`, hoisted once | inline, per instance |
-| page CSS reaches it | yes | no |
+| page CSS reaches it | yes | inherited properties and `::part()` |
 | forms and `<label for>` | work | need `ElementInternals` |
 | `<slot>` | compile-time hole | real, live projection |
 | `<script>` | runs on connect | runs, plus re-render on attribute change |
-| no `<script>` at all | ships no JS | ships no JS |
+| no `<script>` at all | ships no JS | ships a definition |
+| in a fragment | renders inline | sent bare, paints on connect |
 
-Which rendering a usage gets follows the **child's** own directory, not its
-parent's, so a partial can contain a component and the reverse.
+Which rendering a usage gets follows the **child's** own file, not its parent's,
+so a light element can contain a shadow one and the reverse.
 
-**Reach for a partial first.** A shadow root costs a copy of the stylesheet for
-every instance. `adoptedStyleSheets` is JS-only, so a server render cannot share
-one. Before partials existed here, component CSS was 41% of the home page, and 56%
-of that was the same rules repeated. A boundary is worth that when you hand
-something to a page you do not control. Inside a page you own, you pay it and get
-nothing back.
+**Stay light unless you need a boundary.** A shadow root costs a copy of the
+stylesheet for every instance. `adoptedStyleSheets` is JS-only, so a server render
+cannot share one. Before light elements existed here, component CSS was 41% of the
+home page, and 56% of that was the same rules repeated. A boundary is worth that
+when you hand something to a page you do not control. Inside a page you own, you
+pay it and get nothing back.
 
-**A partial is an undefined custom element, not an unknown one.** The dash makes
-`<site-note>` a valid custom element name, so it is an `HTMLElement` waiting to be
-defined. Define a class for that tag later and every instance upgrades in place,
-with its server-rendered DOM intact.
-
-One tag cannot be both. The scan refuses it by name, because the component would
-silently win and the partial would never render.
+**A light element with no script is an undefined custom element, not an unknown
+one.** The dash makes `<site-note>` a valid custom element name, so it is an
+`HTMLElement` waiting to be defined. Nothing is shipped for it. Define a class for
+that tag later and every instance upgrades in place, with its server-rendered DOM
+intact.
 
 ## Layouts
 
@@ -536,7 +539,7 @@ It is also where the shadow boundary becomes visible:
 
 ```
 .tinted on a plain element     applies
-.tinted on a partial           applies       light DOM, no boundary
+.tinted on a light element     applies       no boundary
 .tinted on a component host    applies       the host is in light DOM
 .tinted inside its shadow root does not      the boundary
 
@@ -546,9 +549,9 @@ It is also where the shadow boundary becomes visible:
 **A global stylesheet can theme a component, but it cannot style one.** Custom
 properties inherit across the boundary; selectors do not. So tokens belong here
 and reach everything, while a reset, base typography and utility classes reach
-pages and partials only.
+pages and light elements only.
 
-Order in `<head>` is head scripts, stylesheet, then partial `@scope` blocks, then
+Order in `<head>` is head scripts, stylesheet, then light `@scope` blocks, then
 layout and page styles, outermost first, so anything closer to the markup wins.
 
 ### View transitions
@@ -702,7 +705,7 @@ most:
 | check | why it proves something |
 | --- | --- |
 | a region renders the same inline and on its own URL | the swap cannot drift from the page it replaces part of |
-| an adopted partial's styles land before the page's own | so a page still overrides an element it did not render |
+| an adopted element's styles land before the page's own | so a page still overrides an element it did not render |
 | the parser attached a real shadow root from the DSD template | asserted with `customElements.get(...) === undefined`, so nothing had upgraded yet |
 | upgrade adopted the shadow root instead of repainting | compares DOM node identity across the upgrade, not markup |
 | re-render keeps nested shadow roots alive | swapping `setHTMLUnsafe` for `innerHTML` makes exactly this one fail, with 2 dead `<template>` nodes left behind |
@@ -720,8 +723,8 @@ step in between.
 
 ## Giving an element behaviour
 
-A `<script>` block in a partial or a component is its behaviour. `host` and
-`shadow` are in scope. `shadow` is `null` for a partial, which has no shadow root.
+A `<script>` block in any element is its behaviour. `host` and `shadow` are in
+scope. `shadow` is `null` for a light element, which has no shadow root.
 
 ```html
 <script>
@@ -748,7 +751,7 @@ Two things worth knowing:
 
 **A component re-renders; its shadow content does not survive.** Attach listeners
 to `host`, or delegate. A listener bound to something inside the shadow root is
-lost the next time an attribute changes. A partial never re-renders, so its
+lost the next time an attribute changes. A light element never re-renders, so its
 children are stable.
 
 **No script means no registration.** An element without a `<script>` is never
@@ -781,7 +784,7 @@ back to the default while the raw string leaked through under the lowercased key
 
 **The attribute is the only state.** A getter reads and coerces it; a setter
 writes it, which for a component triggers `attributeChangedCallback` and a
-re-render, and for a partial drives attribute selectors in CSS. Nothing is
+re-render, and for a light element drives attribute selectors in CSS. Nothing is
 copied, so nothing can drift. The server only ever sees attributes, and the client
 reads the same ones.
 
@@ -790,7 +793,7 @@ reflects to the attribute on request. Here reflection is not a setting because
 there is nothing to reflect.
 
 **Accessors exist wherever the element is defined**, which means it has a
-`<script>`, or it is a component. A partial with no script is markup that was
+`<script>`, or it has a shadow root. A light element with no script is markup that was
 already rendered and ships no JavaScript. There is no class, so there are no
 properties.
 Read its attributes directly, or give it a `<script>` if it needs an API.
@@ -1024,7 +1027,7 @@ examples/showcase/
     routes/                pages, endpoints, layouts, the 404 and 500
     server.js              its own Hono middleware
     public/                served as-is at the root: favicon, robots.txt
-    partials/              light DOM, @scope styles
+    elements/              custom elements, light unless `shadow`
     components/            shadow DOM, with their own boundary
     styles/global.css      tokens, reset, base typography. One linked file
     transclude-env.d.ts    generated by transclude-check
@@ -1240,10 +1243,10 @@ Three things that are not type errors, so tsc has no opinion on them:
   cache is a fact about the application's data, not about the framework.
 - Layout loaders run in sequence, not in parallel, because each one can read what
   the ones above it returned.
-- A partial upgrades so its script runs, but it never re-renders. Repainting would
+- A light element upgrades so its script runs, but it never re-renders. Repainting would
   destroy the children the page put inside it. Re-rendering on an attribute change
   needs a shadow root.
-- `@scope` is soft scoping. A partial's styles can be overridden by page CSS of
+- `@scope` is soft scoping. A light element's styles can be overridden by page CSS of
   equal specificity: a feature for content, a hazard for widgets.
 - Entry scripts live in `bin/` because a `check.js` at an app's root hides its
   `/check` route. Vite matches a bare path against root files by extension.

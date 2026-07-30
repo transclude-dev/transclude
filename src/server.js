@@ -100,7 +100,7 @@ export const SERVER_FILE = 'server.js';
  *
  * Handlers are named for the method, spelled the way HTTP spells it. Uppercase
  * is not decoration: `export const delete` is a syntax error and `DELETE` is not,
- * which is why a page's `actions` had to be an object and this does not.
+ * not. A page's handlers are spelled the same way.
  *
  * Returning a `Response` is required rather than encouraged. There is no
  * template to fall back to, and a handler that returns a bare object has almost

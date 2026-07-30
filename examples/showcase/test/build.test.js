@@ -204,7 +204,7 @@ const loadCtx = (page, over = {}) => {
 
 const postTo = (page, body, over = {}) => {
   const response = responseOf();
-  return pages[page].actions.post({
+  return pages[page].POST({
     url: `http://localhost/${page}`,
     fragment: null,
     request: new Request(`http://localhost/${page}`, {

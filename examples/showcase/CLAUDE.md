@@ -128,7 +128,7 @@ when to merge.
   `check.html` that finished in a second when focused hung for minutes when not.
   Wait on a `MutationObserver`, which is not slowed, and use a timer only to give
   up.
-- **`ctx.action` is the union of what the page's own actions return.** So handlers
+- **`ctx.action` is the union of what the page's own verb exports return.** So handlers
   that return different shapes leave the loader unable to read either. Return one
   shape from all of them. `Response` is left out of the union on purpose: returning
   one answers the request, so the loader never sees it.
@@ -149,8 +149,7 @@ when to merge.
 - **An endpoint must return a `Response`.** There is no template to fall back to,
   and a handler returning a plain object has forgotten `Response.json`. Verb
   handlers are uppercase because `export const delete` is a syntax error and
-  `export const DELETE` is not, which is also why a page's `actions` had to be an
-  object and these do not.
+  `export const DELETE` is not. A page's handlers are spelled the same way.
 - **A `.js` file in `routes/` is a route.** A helper that lives there needs the `_`
   prefix, or it becomes a URL. The dev watcher rebuilds the route table for `.js`
   as well as `.html`. It only watched pages at first, so adding an endpoint needed

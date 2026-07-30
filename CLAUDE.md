@@ -4,7 +4,7 @@ HTML is the product. A page is an `.html` file, the server renders it, and what
 arrives is markup a browser already knows how to display. Nothing has to run for
 the page to be correct.
 
-The directory tree is the route table. A page answers GET, its `actions` answer
+The directory tree is the route table. A page answers GET, its verb exports answer
 POST and the other verbs, and a `.js` file in the same tree is an endpoint that
 returns a `Response`. The server is Hono.
 
@@ -191,11 +191,20 @@ against.
   used to change data and then 404. Anything that can refuse a request has to
   refuse it before `runAction`, not after. `hasRegion` is that check, in both
   servers.
-- **`export const actions` is keyed by method because `delete` is a reserved
-  word.** `export const delete` is a syntax error; an object key is not. The shim
-  types every handler's `ctx` from the same route context as the loader, and adds
-  `{ request: Request }`. The request is null only while prerendering, and
-  prerendering never runs an action.
+- **A page's handlers are verb exports, the same as an endpoint's.** `export
+  const POST`, and the same for PUT, PATCH and DELETE. They used to be an
+  `actions` object, because `export const delete` is a syntax error and an object
+  key is not, but `export const DELETE` is legal and endpoints already relied on
+  that. `assertNoActionsObject` refuses a leftover `actions` export, because
+  nothing reads one now and a page that kept it would answer 405 to every form
+  and say nothing about why. The shim types each handler's `ctx` from the same
+  route context as the loader, and adds `{ request: Request }`: the request is
+  null only while prerendering, and prerendering never runs an action.
+- **The page shim keys on `ACTION_METHODS`, not on `isVerb`.** The endpoint shim
+  treats any all-caps export as a verb, which is right there and wrong on a page:
+  `export const LIMIT = 10` beside a loader would be given a handler signature and
+  reported as an error about code that is fine. One list, imported from
+  `document.js`, so dispatch and the types cannot disagree.
 - **`ctx.response` is shared by reference, and has to be.** Loaders are called with
   `{ ...ctx, layout }`, so `ctx.status = 404` would be written to a copy nobody
   reads. `responseOf()` returns the one object every loader in the chain and the

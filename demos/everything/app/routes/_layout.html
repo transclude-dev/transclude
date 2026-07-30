@@ -1,0 +1,177 @@
+<script server>
+  // Layouts load their own data. This one only needs the current path, so it can
+  // mark the active link. That comes from ctx, the same way a page gets it.
+  export default async ({ route }) => ({
+    path: route.path,
+    links: [
+      { href: "/", label: "Home" },
+      { href: "/people/ada-lovelace", label: "Dynamic route" },
+      { href: "/docs/guide/getting-started", label: "Catch-all" },
+      { href: "/check", label: "Client checks" },
+      { href: "/nope", label: "404" },
+    ],
+  });
+</script>
+
+<title>transclude</title>
+
+<style>
+  /* Layout chrome only. Tokens, reset and base typography live in the site
+     stylesheet. This file styles the shell it renders. */
+  .shell {
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: 2rem clamp(1rem, 4vw, 3rem) 3rem;
+  }
+
+  header nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    font-size: 0.85rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 2rem;
+  }
+  header nav a[aria-current] {
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .columns {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: minmax(0, 1fr) 14rem;
+    align-items: start;
+  }
+  @media (max-width: 52rem) {
+    .columns {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  aside {
+    font-size: 0.85rem;
+    border-left: 1px solid var(--line);
+    padding-left: 1rem;
+  }
+  .quiet {
+    color: var(--muted);
+  }
+
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+</style>
+
+<!-- An external head script. `src` and every other attribute survive now; they
+     used to be dropped, which emitted `<script></script>` and loaded nothing. -->
+<script head src="/theme.js" type="module"></script>
+
+<script head>
+  // View transition diagnostics. Off unless asked for:
+  //   ?vtdebug   once, or   localStorage.vtdebug = 1   to keep it on.
+  //
+  // The outgoing page's logs are wiped by the navigation unless DevTools has
+  // "Preserve log" ticked, so pageswap records to sessionStorage and the
+  // arriving page prints both halves together. One console read, whole story.
+  if (location.search.includes("vtdebug") || localStorage.getItem("vtdebug")) {
+    const log = (...args) =>
+      console.log("%c[vt]", "color:#3b3bb0;font-weight:bold", ...args);
+
+    addEventListener("pageswap", (event) => {
+      sessionStorage.setItem(
+        "vt:swap",
+        JSON.stringify({
+          from: location.pathname,
+          to: event.activation?.entry?.url ?? null,
+          startedOnLeaving: Boolean(event.viewTransition),
+          names: named(),
+        }),
+      );
+    });
+
+    addEventListener("pagereveal", async (event) => {
+      const swap = JSON.parse(sessionStorage.getItem("vt:swap") ?? "null");
+      sessionStorage.removeItem("vt:swap");
+
+      log(
+        "navigation",
+        swap
+          ? `${swap.from} -> ${location.pathname}`
+          : `(fresh load) ${location.pathname}`,
+      );
+      if (swap)
+        log(
+          "  leaving:  started =",
+          swap.startedOnLeaving,
+          "| names:",
+          swap.names.join(", ") || "none",
+        );
+      log(
+        "  arriving: started =",
+        Boolean(event.viewTransition),
+        "| names:",
+        named().join(", ") || "none",
+      );
+
+      if (!event.viewTransition) {
+        log(
+          "  -> no transition. If the leaving side started one, the arriving document declined it.",
+        );
+        return;
+      }
+      try {
+        await event.viewTransition.ready;
+        log("  -> ready, animating");
+      } catch (error) {
+        log("  -> SKIPPED:", error?.message ?? error);
+      }
+    });
+
+    function named() {
+      const found = [];
+      for (const el of document.querySelectorAll("*")) {
+        const name = getComputedStyle(el).viewTransitionName;
+        if (name && name !== "none") found.push(name);
+      }
+      return found;
+    }
+  }
+</script>
+
+<!-- Hold the transition until the content it will animate has parsed.
+     Without this the incoming snapshot can be taken of a half-built page, and
+     the transition runs on the wrong thing. Must be in <head>, which is
+     where a top-level <link> is hoisted to. -->
+<link rel="expect" href="#lead-content" blocking="render" />
+
+<div class="shell">
+  <header>
+    <nav>
+      <a
+        each="link of links"
+        href="${link.href}"
+        aria-current="${link.href === path}"
+        >${link.label}</a
+      >
+    </nav>
+  </header>
+
+  <div class="columns">
+    <main id="lead-content">
+      <slot></slot>
+    </main>
+    <aside>
+      <slot name="aside">
+        <p class="quiet">Pages can fill this by declaring a named slot.</p>
+      </slot>
+    </aside>
+  </div>
+
+  <footer>Rendered on the server. <code>${path}</code></footer>
+</div>

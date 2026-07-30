@@ -1,0 +1,56 @@
+<script properties>
+  export default {
+    tone: "neutral",
+  };
+</script>
+
+<style>
+  /* Hoisted into <head> once, however many times this partial appears, and
+     scoped to its own tag. Page CSS reaches in, because there is no shadow root. */
+  :scope {
+    display: block;
+    border-left: 3px solid var(--line);
+    padding: 0.5rem 0.9rem;
+    margin: 1.5rem 0;
+  }
+  :scope[tone="warn"] {
+    border-color: #b4232c;
+  }
+  p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+</style>
+
+<p><slot>Nothing to say.</slot></p>
+
+<script>
+  // The element's public API. These land on the prototype, so
+  // `document.querySelector('site-note').dismiss()` works from anywhere.
+  export const prototype = {
+    dismiss() {
+      this.hidden = true;
+      this.dispatchEvent(new CustomEvent('dismiss', { bubbles: true }));
+    },
+    /** @returns {boolean} */
+    get dismissed() {
+      return this.hidden;
+    },
+  };
+
+  // A partial upgrades for behaviour. `host` is the element; there is no shadow
+  // root, so `shadow` is null.
+  //
+  // `signal` aborts when the element leaves the document, so a listener given
+  // it removes itself. Nothing here has to name the teardown, and nothing can
+  // forget it. For anything without a signal of its own, return a function
+  // instead. That is the other half of the same agreement.
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key === 'Escape') host.dismiss();
+    },
+    { signal },
+  );
+</script>

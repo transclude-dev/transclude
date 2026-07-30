@@ -1,0 +1,24 @@
+{
+  "name": "transclude-demo-everything",
+  "private": true,
+  "type": "module",
+  "description": "Every feature, and the browser checks. Built against the framework beside it.",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env node_modules/.bin/transclude-dev",
+    "build": "transclude-build",
+    "start": "node --env-file-if-exists=.env node_modules/.bin/transclude-serve",
+    "check": "transclude-check",
+    "test": "node --test \"test/**/*.test.js\"",
+    "preview": "npm run build && npm start",
+    "start:bun": "bun node_modules/transclude/bin/serve.bun.js",
+    "start:deno": "deno run -A --env-file node_modules/transclude/bin/serve.deno.js",
+    "start:worker": "wrangler dev"
+  },
+  "dependencies": {
+    "transclude": "file:../.."
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5"
+  }
+}

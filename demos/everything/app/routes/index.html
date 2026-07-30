@@ -1,0 +1,173 @@
+<script server>
+  import { people } from "../data/people.js";
+
+  // This page reads `?q`, and a prerendered file is one file for every URL that
+  // resolves to it, so it has to be rendered per request.
+  export const prerender = false;
+
+  export default async ({ url }) => {
+    const query = url ? new URL(url).searchParams.get("q") : null;
+
+    // Filtering belongs here, not in the template. A template expression is not a
+    // whole language, on purpose, and this is the loader's job anyway.
+    const matches = query
+      ? people.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
+      : people;
+
+    return {
+    heading: "Single-file components",
+    // A hostile string on purpose. It must arrive escaped.
+    note: '<script>alert(1)<\/script> & "quotes"',
+    trusted: "<strong>trusted markup<\/strong>",
+    people,
+    table: {
+      columns: ["Name", "Joined", "Tags"],
+      rows: people.map((p) => [
+        p.name,
+        String(p.since),
+        p.tags.join(", ") || "none",
+      ]),
+    },
+    query,
+    matches,
+    matchRows: matches.map((p) => [p.name, p.role || "none"]),
+    };
+  };
+</script>
+
+<title>${heading} · transclude</title>
+<meta
+  name="description"
+  content="One .html file compiles to SSR markup, declarative shadow DOM, and a v1 custom element."
+/>
+
+<style>
+  /* The whole card is the link. `color: inherit` and `text-decoration: none`
+     are inherited properties, so they cross into the shadow root. That is the
+     only reason this works without reaching inside the component. */
+  .card-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .lede {
+    color: var(--muted);
+    margin: 0 0 2rem;
+    max-width: 52ch;
+  }
+
+  @scope (.cards) {
+    :scope {
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    }
+  }
+</style>
+
+<h1>${heading}</h1>
+<p class="lede">
+  Every card below was rendered on the server with its shadow root inline, then
+  upgraded to a custom element. Click one and the attribute change re-renders the
+  same compiled template in the browser.
+</p>
+
+<site-note tone="warn">
+  A partial: light DOM, styles scoped with <code>@scope</code>, rendered on the
+  server only. It inherits the page's own CSS variables.
+</site-note>
+
+<h2>Global styles</h2>
+<p class="lede">
+  The site stylesheet is one cacheable file, linked once. What it reaches shows
+  where the shadow boundary is.
+</p>
+
+<div class="tinted">
+  <p>A plain element. <code>.tinted</code> from the site stylesheet applies.</p>
+</div>
+
+<site-note class="tinted">
+  A partial, also wearing <code>.tinted</code>. Light DOM, so a global class lands
+  on it.
+</site-note>
+
+<user-card class="tinted" name="Boundary" role="the class stops here" tags='["shadow"]'>
+  <em>The host got the class; nothing inside its shadow root did.</em>
+</user-card>
+
+<h2>Escaping</h2>
+<p>Untrusted: ${note}</p>
+<p>Opted out with <code>html()</code>: ${html(trusted)}</p>
+
+<h2>Components in a loop</h2>
+<section class="cards">
+  <!-- A view-transition-name has to be unique per document, so it is derived
+       from the data. The detail page names its heading the same way, and the
+       browser morphs one into the other across the navigation. -->
+  <a
+    each="person of people"
+    href="/people/${person.slug}"
+    class="card-link"
+    style="view-transition-name: person-${person.slug}"
+  >
+    <user-card
+      name="${person.name}"
+      role="${person.role}"
+      tags="${person.tags}"
+    >
+      <em>member since ${person.since}</em>
+    </user-card>
+  </a>
+</section>
+
+<h2>Nested templates</h2>
+<data-table
+  caption="${people.length} people"
+  columns="${table.columns}"
+  rows="${table.rows}"
+  empty-label="nothing to show"
+></data-table>
+
+<site-note>A second instance, sharing the one hoisted stylesheet.</site-note>
+
+<h2>Conditionals</h2>
+<p if="query">Searching for <code>${query}</code></p>
+<p else-if="people.length > 2">
+  More than two people. Try <code>?q=hello</code>.
+</p>
+<p else>Not many people here.</p>
+
+<h2>Fragments</h2>
+
+<!-- An addressable region. It renders here as part of the document, and the
+     same markup is served on its own from `/?fragment=matches`. One compiled
+     region, so the swap cannot drift from the page it replaces part of.
+
+     The id is the name: the URL asks for `matches` and a swap targets
+     `#matches`. Nothing to keep in sync, because there is only one word. -->
+<div id="matches" fragment>
+  <p if="query">
+    ${matches.length} of ${people.length} match <code>${query}</code>.
+  </p>
+  <p else>All ${people.length} people. Add <code>?q=ada</code> to narrow it.</p>
+
+  <!-- A partial inside the region, on purpose. Swapped into a page that has
+       never rendered a <data-table>, this markup would arrive with no styles, so the
+       element loader on that page notices the tag, imports it, and its styles
+       land in <head> once. /check does exactly that and asserts it. -->
+  <data-table
+    caption="matches"
+    columns='["Name", "Role"]'
+    rows="${matchRows}"
+    empty-label="no one by that name"
+  ></data-table>
+</div>
+
+<script>
+  document.addEventListener("click", (event) => {
+    const card = event.target.closest("user-card");
+    if (card) console.log("toggled", card.getAttribute("name"));
+  });
+</script>

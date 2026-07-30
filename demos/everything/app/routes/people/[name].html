@@ -1,0 +1,66 @@
+<script server>
+  import { bySlug, people } from '../../data/people.js';
+
+  // Named exports of a <script server> block survive onto the page module. The
+  // build calls this to learn which URLs this route stands for.
+  export const paths = () => people.map((person) => ({ name: person.slug }));
+
+  // bySlug is an imported helper. Its return type is inferred by reading its
+  // body in its own module scope, so `person` below is a known shape.
+  export default async ({ params, layout, response }) => {
+    const person = bySlug(params.name);
+
+    // The template below already renders a "not found" body for this. Saying so
+    // in the status is the other half, and without it dev answered 200 while
+    // production 404'd with a different page entirely.
+    //
+    // `response` is shared with every loader in the chain and with the server,
+    // so assigning to it here is what the response is built from.
+    if (!person) response.status = 404;
+
+    return {
+      person,
+      slug: params.name,
+      others: people.filter((p) => p.slug !== params.name),
+      // ctx.layout is what the layouts above returned, merged.
+      rank: `${people.length - layout.total + 1} of ${layout.total}`,
+    };
+  };
+</script>
+
+<title>${person ? person.name : 'Not found'} · transclude</title>
+
+<style>
+  .role { color: var(--muted); margin: 0 0 1rem; }
+  .note { max-width: 55ch; }
+  .missing { color: #b4232c; }
+  .rank { color: var(--muted); font-size: .8rem; }
+  ul.others { list-style: none; padding: 0; display: flex; gap: .75rem; flex-wrap: wrap; }
+</style>
+
+<template if="person">
+  <h1 style="view-transition-name: person-${person.slug}">${person.name}</h1>
+  <p class="role" if="person.role">${person.role}, since ${person.since}</p>
+  <p class="role" else>Joined ${person.since}</p>
+  <p class="note">${person.note}</p>
+  <p class="rank">Entry ${rank} · loaded by the layout above.</p>
+</template>
+<template else>
+  <h1 class="missing">No such person</h1>
+  <p>Nobody here has the slug <code>${slug}</code>.</p>
+</template>
+
+<template slot="aside">
+  <h2>On this page</h2>
+  <p class="quiet" if="person">${person.name} joined in ${person.since}.</p>
+  <p class="quiet" else>Nobody matched that slug.</p>
+</template>
+
+<h2>Everyone else</h2>
+<card-list heading="Also here" people="${others}"></card-list>
+
+<ul class="others">
+  <li each="other of others">
+    <a href="/people/${other.slug}">${other.name}</a>
+  </li>
+</ul>

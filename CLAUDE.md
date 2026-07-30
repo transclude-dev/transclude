@@ -22,8 +22,10 @@ a narrower question than most pages ask. Reach for a partial first.
 The same app runs on Node, Bun, Deno and workerd. The browser downloads no runtime
 dependencies.
 
-This repository is the package. The demo app is its own repository and installs
-this one. `npm test` runs 515 tests here and needs no app.
+This repository is the package. `demos/everything` is an app built against it,
+installed from `file:../..` like any other project would install it. `npm test`
+runs 515 tests here and needs no app. `npm run test:demos` runs the demo's, and
+`npm run demo` starts it, which is where the browser checks are.
 
 ## House style
 
@@ -55,15 +57,18 @@ when to merge.
   that answers where the app is.
 - `test/`. 515 tests. They need no app, and a change that makes them need one is
   the boundary breaking.
+- `demos/everything/`. An app, on the far side of the boundary. It depends on the
+  package by name, and a test says nothing in the package reaches into `demos/`.
+  Its own rules are in its CLAUDE.md.
 
 Directory decides kind: `components/` gets a shadow root, `partials/` is light DOM.
 Nothing in the file says which. In `routes/`, extension decides: `.html` is a page,
 `.js` is an endpoint.
 
-The app is a separate repository. It owns `transclude.config.js`, its `worker.js`,
-its own tests, and `app/` with the routes, partials, components and public files.
-The browser checks live there, in `app/routes/check.html`, because they need an
-app to run against.
+An app owns `transclude.config.js`, its `worker.js`, its own tests, and `app/`
+with the routes, partials, components and public files. The browser checks live
+in `demos/everything/app/routes/check.html`, because they need an app to run
+against.
 
 ## Gotchas
 

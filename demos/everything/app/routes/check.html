@@ -1,0 +1,970 @@
+<script server>
+  export default async () => ({
+    people: [
+      {
+        name: 'Ada Lovelace',
+        role: 'Analyst',
+        tags: ['notes', 'engines'],
+        joined: new Date(Date.UTC(1843, 11, 10)),
+      },
+      {
+        name: 'Grace Hopper',
+        role: 'Rear Admiral',
+        tags: ['compilers'],
+        joined: new Date(Date.UTC(1952, 4, 6)),
+      },
+    ],
+  });
+</script>
+
+<title>transclude · client checks</title>
+
+<style>
+  #summary { font-weight: 600; margin: 0 0 1rem; }
+  #summary.pass { color: #1a7f37; }
+  #summary.fail { color: #b4232c; }
+  ol { margin: 0 0 2rem; padding: 0; list-style: none; }
+  li { padding: .5rem .7rem; border-left: 3px solid transparent; background: #fff; margin-bottom: 2px; }
+  li.ok { border-color: #1a7f37; }
+  li.no { border-color: #b4232c; background: #fff5f5; }
+  .name { font-weight: 500; }
+  .why { color: var(--muted); font-size: .85rem; }
+  .fixtures { opacity: .55; }
+</style>
+
+<h1>Client-side checks</h1>
+<p id="summary">running…</p>
+<ol id="results"></ol>
+
+<div class="fixtures">
+  <user-card id="solo" name="Ada Lovelace" role="Analyst" tags='["notes","engines"]'>
+    <em>slotted light DOM</em>
+  </user-card>
+
+  <card-list id="nested" heading="Nested" people="${people}"></card-list>
+
+  <!-- Present in the markup so the partial is actually shipped: the build sends
+       only the elements a page uses, and createElement in a script is invisible
+       to that. -->
+  <site-note id="note">a partial, for the lifecycle checks below</site-note>
+
+  <state-probe
+    id="probe"
+    label="Start"
+    open
+    rows='[{"id":1,"label":"a","flagged":false},{"id":2,"label":"b","flagged":false},{"id":3,"label":"c","flagged":false}]'
+  ></state-probe>
+
+  <!-- Where a fetched fragment gets swapped in. Empty in the markup, so nothing
+       it ends up containing is in this page's element closure. -->
+  <div id="swap"></div>
+
+  <!-- A form-associated custom element, in a real form. Nothing submits this
+       form; the checks read what the browser *would* send. -->
+  <form id="control-form">
+    <input type="text" name="plain" value="ordinary" />
+    <tag-picker id="picker" name="tags" options='["a","b","c"]'></tag-picker>
+  </form>
+</div>
+
+<div hidden>
+  <!-- A classic inline script runs during parsing; the client entry is a module
+       and therefore deferred. This is the only way to observe the page *before*
+       any custom element is defined, which is the whole question. Nested inside
+       an element so the block splitter leaves it in the template. -->
+  <script>
+    var solo = document.getElementById('solo');
+    var nested = document.getElementById('nested');
+    var innerCard = nested.shadowRoot && nested.shadowRoot.querySelector('user-card');
+
+    window.__pre = {
+      anyDefined: !!customElements.get('user-card'),
+      soloHasShadow: !!solo.shadowRoot,
+      soloMode: solo.shadowRoot && solo.shadowRoot.mode,
+      soloHeading: solo.shadowRoot && solo.shadowRoot.querySelector('h3'),
+      soloText: solo.shadowRoot && solo.shadowRoot.querySelector('h3').textContent,
+      nestedHasShadow: !!nested.shadowRoot,
+      innerHasShadow: !!(innerCard && innerCard.shadowRoot),
+      innerText: innerCard && innerCard.shadowRoot && innerCard.shadowRoot.querySelector('h3').textContent,
+      leftoverTemplates: document.querySelectorAll('template[shadowrootmode]').length,
+    };
+  </script>
+</div>
+
+<script>
+  const results = [];
+
+  // A browser that cannot parse or run this file reports nothing at all, which
+  // reads the same as a browser that never opened the page. These say which.
+  const reportUrl = new URL(location.href).searchParams.has('report') ? '/api/checks' : null;
+  const send = (body) =>
+    reportUrl && navigator.sendBeacon(reportUrl, new Blob([JSON.stringify(body)], { type: 'application/json' }));
+  const crashed = (why) => send({ agent: navigator.userAgent, passed: 0, total: 0, crash: why });
+  addEventListener('error', (event) => crashed(String(event.message ?? event.error)));
+  addEventListener('unhandledrejection', (event) => crashed(String(event.reason)));
+
+  // Renders are batched into a microtask, so a check that changes something and
+  // then looks at the DOM has to be able to await.
+  const check = async (name, fn) => {
+    try {
+      results.push({ name, ok: true, why: (await fn()) ?? '' });
+    } catch (err) {
+      results.push({ name, ok: false, why: err.message });
+    }
+  };
+  const is = (actual, expected, label) => {
+    if (actual !== expected) throw new Error(`${label}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  };
+  const ok = (value, label) => {
+    if (!value) throw new Error(label);
+    return true;
+  };
+
+  const pre = window.__pre;
+  const solo = document.getElementById('solo');
+  const nested = document.getElementById('nested');
+
+  await check('the observation script ran before any component was defined', () => {
+    is(pre.anyDefined, false, 'user-card was already defined');
+    return 'so everything below about "before upgrade" is real';
+  });
+
+  await check('the parser attached a real shadow root from the DSD template', () => {
+    is(pre.soloHasShadow, true, 'no shadowRoot before upgrade');
+    is(pre.soloMode, 'open', 'mode');
+    is(pre.soloText, 'Ada Lovelace', 'server-rendered heading');
+    return 'correct before a single line of component JS ran';
+  });
+
+  await check('no inert <template shadowrootmode> was left in the document', () => {
+    is(pre.leftoverTemplates, 0, 'leftover templates');
+    return 'the parser consumed every one';
+  });
+
+  await check('upgrade adopted the existing shadow root instead of repainting it', () => {
+    ok(customElements.get('user-card'), 'user-card is not defined');
+    ok(solo.shadowRoot.querySelector('h3') === pre.soloHeading, 'the <h3> node was replaced');
+    return 'same DOM node identity across the upgrade';
+  });
+
+  await check('slotted light DOM survived the upgrade', () => {
+    is(solo.querySelector('em')?.textContent, 'slotted light DOM', 'slotted content');
+    ok(solo.shadowRoot.querySelector('slot'), 'no <slot> in the shadow root');
+    return '';
+  });
+
+  await check('nested declarative shadow roots parsed, outer and inner', () => {
+    is(pre.nestedHasShadow, true, 'card-list had no shadow root');
+    is(pre.innerHasShadow, true, 'the nested user-card had no shadow root');
+    is(pre.innerText, 'Ada Lovelace', 'nested heading');
+    return 'a component inside a component, server-rendered all the way down';
+  });
+
+  await check('an attribute change reaches the template, whichever way it was set', async () => {
+    const before = solo.shadowRoot.querySelector('h3');
+    solo.setAttribute('name', 'Changed');
+    await solo.updateComplete;
+    is(solo.shadowRoot.querySelector('h3').textContent, 'Changed', 'heading after the change');
+    ok(solo.shadowRoot.querySelector('h3') === before, 'a bound prop must not rebuild anything');
+    solo.setAttribute('name', 'Ada Lovelace');
+    await solo.updateComplete;
+    return 'attributeChangedCallback -> update(bindings, props)';
+  });
+
+  await check('a repaint keeps nested shadow roots alive (setHTMLUnsafe, not innerHTML)', async () => {
+    // `people` drives an each, so it is volatile and this really does rebuild.
+    // `heading` would not: it is bound, and binding is the thing being avoided
+    // here, so the assertion below would prove nothing.
+    nested.people = [
+      { name: 'Ada Lovelace', role: 'Analyst', tags: ['notes'], joined: new Date(0) },
+    ];
+    await nested.updateComplete;
+
+    const inner = nested.shadowRoot.querySelector('user-card');
+    ok(inner, 'no nested user-card after re-render');
+    ok(inner.shadowRoot, 'the nested user-card lost its shadow root, which is what innerHTML does');
+    is(inner.shadowRoot.querySelector('h3').textContent, 'Ada Lovelace', 'nested heading');
+    is(nested.shadowRoot.querySelectorAll('template[shadowrootmode]').length, 0, 'inert templates left behind');
+    return 'the assertion innerHTML would fail';
+  });
+
+  await check('the component client block ran and is wired to the host', async () => {
+    // The attribute is written synchronously; only the render is deferred.
+    ok(!solo.hasAttribute('compact'), 'compact was already set');
+    solo.click();
+    ok(solo.hasAttribute('compact'), 'click did not toggle compact');
+    solo.click();
+    await solo.updateComplete;
+    ok(!solo.hasAttribute('compact'), 'second click did not untoggle');
+    solo.clicks = 0;
+    return 'host.addEventListener from <script> in user-card.html';
+  });
+
+  await check('a partial upgrades for behaviour, with no shadow root', () => {
+    ok(customElements.get('site-note'), 'site-note was never defined');
+    ok(document.getElementById('note').shadowRoot === null, 'a partial grew a shadow root');
+    return 'defineLight: <script> with an exported prototype, no rendering';
+  });
+
+  await check('exported prototype members are shared by every instance', () => {
+    const proto = Object.getPrototypeOf(document.getElementById('note'));
+    ok(Object.hasOwn(proto, 'dismiss'), 'dismiss() landed on the instance, not the prototype');
+    ok(Object.hasOwn(Object.getPrototypeOf(document.getElementById('solo')), 'toggle'));
+    return 'Object.defineProperties on Class.prototype';
+  });
+
+  await check('a member getter is defined rather than invoked at define time', () => {
+    const card = document.getElementById('solo');
+    const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(card), 'tagCount');
+    ok(typeof descriptor.get === 'function', 'Object.assign would have left a plain value here');
+    ok(card.tagCount === card.tags.length);
+    return 'getOwnPropertyDescriptors, not Object.assign';
+  });
+
+  await check('updated() runs on connect and again after every re-render', async () => {
+    const card = document.getElementById('solo');
+    // It ran once already, on connect, against the server-rendered shadow root.
+    ok(card.shadowRoot.querySelector('h3').title === `${card.tagCount} tag(s)`, 'not stamped on connect');
+
+    card.addTag('added-by-a-check');
+    ok(card.tagCount === 3, 'the property write is synchronous even though the render is not');
+    await card.updateComplete;
+    ok(
+      card.shadowRoot.querySelector('h3').title === '3 tag(s)',
+      'updated() did not re-run against the new shadow root',
+    );
+    return 'called after the paint, so it sees current content';
+  });
+
+  await check('a <script> block runs on connect, and its signal aborts on disconnect', () => {
+    const note = document.createElement('site-note');
+    note.textContent = 'temporary';
+    document.body.append(note);
+
+    const escape = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+
+    escape();
+    ok(note.hidden, 'the keydown listener from <script> never ran');
+
+    note.remove();
+    note.hidden = false;
+    escape();
+    ok(!note.hidden, 'the listener outlived the element, so the signal did not abort');
+
+    // A moved element is disconnected and reconnected, so connect has to be
+    // repeatable, not once-only.
+    document.body.append(note);
+    escape();
+    ok(note.hidden, 'reconnecting did not re-arm the listener');
+    note.remove();
+
+    return 'AbortController per connect, aborted on disconnect';
+  });
+
+  await check('a bound prop writes into the existing node instead of replacing it', async () => {
+    const card = document.getElementById('solo');
+    const heading = card.shadowRoot.querySelector('h3');
+    const before = heading.textContent;
+
+    card.name = 'Grace Hopper';
+    await card.updateComplete;
+
+    ok(card.shadowRoot.querySelector('h3') === heading, 'the <h3> was replaced');
+    ok(heading.textContent === 'Grace Hopper', 'the text did not update');
+    ok(before !== heading.textContent);
+
+    card.name = 'Ada Lovelace';
+    await card.updateComplete;
+    return 'compiled binding: one text node written, nothing rebuilt';
+  });
+
+  await check('focus inside the shadow root survives a bound update', async () => {
+    const card = document.getElementById('solo');
+    const heading = card.shadowRoot.querySelector('h3');
+    heading.tabIndex = 0;
+    heading.focus();
+    ok(card.shadowRoot.activeElement === heading, 'could not focus to begin with');
+
+    card.name = 'Focused';
+    await card.updateComplete;
+
+    // This is the whole reason for the binding pass. Replacing the shadow root
+    // destroys the focused node, and with it selection, scroll position,
+    // uncontrolled input values and any running animation.
+    ok(card.shadowRoot.activeElement === heading, 'focus was lost');
+    heading.blur();
+    heading.removeAttribute('tabindex');
+    card.name = 'Ada Lovelace';
+    await card.updateComplete;
+    return 'the focused node was never destroyed';
+  });
+
+  await check('a structural change rebuilds its own region and nothing else', async () => {
+    const card = document.getElementById('solo');
+    const heading = card.shadowRoot.querySelector('h3');
+
+    // `tags` drives an each. Before anchors this repainted the whole shadow root.
+    card.tags = ['one', 'two', 'three'];
+    await card.updateComplete;
+
+    ok(card.shadowRoot.querySelector('h3') === heading, 'the whole shadow root was repainted');
+    is(
+      [...card.shadowRoot.querySelectorAll('li')].map((li) => li.textContent).join(),
+      'one,two,three',
+      'list after the change',
+    );
+    return 'the block owns everything between its anchors';
+  });
+
+  await check('a keyed reorder moves the existing nodes rather than rebuilding them', async () => {
+    // card-list's each is at the top level of its shadow root, so it is
+    // addressable and reconciles. user-card's sits inside an `if`, and a nested
+    // block is rebuilt with its parent. See below.
+    const people = [
+      { name: 'Ada Lovelace', role: 'Analyst', tags: ['notes'], joined: new Date(0) },
+      { name: 'Grace Hopper', role: 'Rear Admiral', tags: ['compilers'], joined: new Date(0) },
+      { name: 'Radia Perlman', role: 'Engineer', tags: ['spanning-tree'], joined: new Date(0) },
+    ];
+    nested.people = people;
+    await nested.updateComplete;
+
+    const before = [...nested.shadowRoot.querySelectorAll('user-card')];
+    is(before.length, 3, 'three cards to start');
+    before.forEach((card, i) => (card.dataset.mark = String(i)));
+
+    nested.people = [people[2], people[0], people[1]];
+    await nested.updateComplete;
+
+    const after = [...nested.shadowRoot.querySelectorAll('user-card')];
+    is(after.map((card) => card.name).join(), 'Radia Perlman,Ada Lovelace,Grace Hopper', 'order');
+    is(after.map((card) => card.dataset.mark).join(), '2,0,1', 'the nodes were rebuilt, not moved');
+    ok(after.every((card) => before.includes(card)), 'a node was replaced');
+    ok(after.every((card) => card.shadowRoot), 'a reused card lost its shadow root');
+
+    return typeof Element.prototype.moveBefore === 'function'
+      ? 'moveBefore: reordered without resetting anything'
+      : 'insertBefore fallback (no moveBefore in this browser)';
+  });
+
+  await check('a block inside another block is addressable in its own right', async () => {
+    const card = document.getElementById('solo');
+    card.tags = ['a', 'b'];
+    await card.updateComplete;
+    const first = card.shadowRoot.querySelector('li');
+
+    card.tags = ['a', 'b', 'c'];
+    await card.updateComplete;
+
+    // user-card's each lives inside `if="tags.length"`. Anchors nest, so the
+    // inner block is reconciled rather than swept away with its parent.
+    ok(card.shadowRoot.querySelector('li') === first, 'the inner block was rebuilt');
+    is(
+      [...card.shadowRoot.querySelectorAll('li')].map((li) => li.textContent).join(),
+      'a,b,c',
+      'the list is wrong',
+    );
+    card.tags = ['shadow'];
+    await card.updateComplete;
+    return 'nesting is no longer a wall';
+  });
+
+  await check('an anchor pair is the only client-side markup in the served HTML', () => {
+    const card = document.getElementById('solo');
+    const anchors = [...card.shadowRoot.childNodes].filter((n) => n.nodeType === Node.COMMENT_NODE);
+    ok(anchors.length > 0, 'no anchors, so blocks could not be found at all');
+    ok(anchors.every((n) => n.data === '[' || n.data === ']'), 'unexpected comment in the output');
+    return `${anchors.length} comment nodes, ${anchors.length * 7} bytes`;
+  });
+
+  await check('state is on the instance and never in the document', async () => {
+    const card = document.getElementById('solo');
+    card.clicks = 3;
+
+    is(card.clicks, 3, 'reads back synchronously');
+    is(card.getAttribute('clicks'), null, 'state was written to an attribute');
+    ok(!card.outerHTML.includes('clicks='), 'state leaked into the markup');
+
+    await card.updateComplete;
+    is(card.shadowRoot.querySelector('.clicks').textContent, 'clicked 3×', 'template after');
+    return 'a field, not an attribute, and the template still reads it';
+  });
+
+  await check('several changes in one tick are a single render', async () => {
+    const card = document.getElementById('solo');
+    card.clicks = 1;
+    await card.updateComplete;
+
+    let renders = 0;
+    const observer = new MutationObserver(() => renders++);
+    observer.observe(card.shadowRoot, { childList: true, subtree: true, characterData: true });
+
+    card.clicks = 9;
+    card.name = 'Batched';
+    card.role = 'Coalesced';
+    is(card.shadowRoot.querySelector('h3').textContent, 'Ada Lovelace', 'rendered too early');
+
+    await card.updateComplete;
+    is(card.shadowRoot.querySelector('h3').textContent, 'Batched', 'did not render at all');
+    is(card.shadowRoot.querySelector('.clicks').textContent, 'clicked 9×', 'state did not render');
+
+    observer.disconnect();
+    card.name = 'Ada Lovelace';
+    card.role = 'Analyst';
+    card.clicks = 0;
+    await card.updateComplete;
+    return 'three assignments, one microtask, one pass';
+  });
+
+  await check('state driving structure is compared by value, not by attribute', async () => {
+    const card = document.getElementById('solo');
+    card.clicks = 0;
+    await card.updateComplete;
+    ok(!card.shadowRoot.querySelector('.clicks'), 'the block should be empty at zero');
+
+    card.clicks = 2;
+    await card.updateComplete;
+
+    // `clicks` drives an `if`, so it is volatile. There is no attribute to
+    // compare, which is the case a props-only comparison would have missed.
+    ok(card.shadowRoot.querySelector('.clicks'), 'the volatile state change did not take');
+    card.clicks = 0;
+    await card.updateComplete;
+    return 'volatile names are looked up in state before attributes';
+  });
+
+  await check('each instance keeps its own state', async () => {
+    const [first, second] = nested.shadowRoot.querySelectorAll('user-card');
+    ok(first && second, 'need two cards for this');
+    first.clicks = 4;
+    await first.updateComplete;
+
+    is(first.clicks, 4);
+    is(second.clicks, 0, 'state was shared between instances');
+    first.clicks = 0;
+    await first.updateComplete;
+    return 'a WeakMap per element, not a shared object';
+  });
+
+  await check('a prop with a converter arrives as its declared type', async () => {
+    const people = [
+      { name: 'Ada Lovelace', role: 'Analyst', tags: ['notes'], joined: new Date(Date.UTC(1843, 11, 10)) },
+    ];
+    nested.people = people;
+    await nested.updateComplete;
+
+    const card = nested.shadowRoot.querySelector('user-card');
+    ok(card.since instanceof Date, 'since came back as ' + typeof card.since);
+    is(card.since.getUTCFullYear(), 1843, 'the year the converter parsed');
+
+    // The attribute is the converter's output, not JSON. Quotes and all would be
+    // what `from` had to parse otherwise.
+    is(card.getAttribute('since'), '1843-12-10', 'attribute as served');
+    return 'from() on the way in, to() on the way out';
+  });
+
+  await check('a converter revives what JSON cannot carry', async () => {
+    // Dates inside an array prop are JSON strings by the time they cross. The
+    // component's own `from` is what turns them back into Dates.
+    nested.people = [
+      { name: 'Grace Hopper', role: 'Rear Admiral', tags: [], joined: new Date(Date.UTC(1952, 4, 6)) },
+    ];
+    await nested.updateComplete;
+
+    ok(nested.getAttribute('people').includes('1952-05-06'), 'the attribute is JSON');
+    ok(nested.people[0].joined instanceof Date, 'joined came back a string');
+    is(nested.people[0].joined.getUTCFullYear(), 1952);
+    return 'JSON has no date; the converter puts it back';
+  });
+
+  await check('setting a converted prop writes the converted attribute', async () => {
+    const card = nested.shadowRoot.querySelector('user-card');
+    card.since = new Date(Date.UTC(1985, 0, 22));
+
+    is(card.getAttribute('since'), '1985-01-22', 'the setter did not use to()');
+    await card.updateComplete;
+    is(card.shadowRoot.querySelector('.since').textContent, 'since 1985', 'template after');
+    return 'the setter and the getter use the same pair';
+  });
+
+  // ---- what survives an update, measured rather than assumed ---------------
+
+  const probe = document.getElementById('probe');
+  const field = (id) => probe.shadowRoot.getElementById(id);
+  const rowFields = () => [...probe.shadowRoot.querySelectorAll('li input')];
+
+  const typeInto = (input, value) => {
+    input.value = value;
+    input.focus();
+    input.setSelectionRange(1, 1);
+  };
+  const survived = (input, value) =>
+    input.isConnected &&
+    input.value === value &&
+    probe.shadowRoot.activeElement === input &&
+    input.selectionStart === 1;
+
+  await check('a bound update leaves a stable field completely alone', async () => {
+    const input = field('stable');
+    typeInto(input, 'typed');
+
+    probe.label = 'Changed';
+    await probe.updateComplete;
+
+    ok(field('stable') === input, 'the node was replaced');
+    ok(survived(input, 'typed'), 'value, focus or caret was lost');
+    return 'value, focus and caret all intact, with no morphing needed';
+  });
+
+  await check('a keyed reorder carries its fields with it', async () => {
+    const [first] = rowFields();
+    typeInto(first, 'kept');
+
+    probe.rows = [
+      { id: 3, label: 'c', flagged: false },
+      { id: 1, label: 'a', flagged: false },
+      { id: 2, label: 'b', flagged: false },
+    ];
+    await probe.updateComplete;
+
+    const moved = rowFields()[1];
+    ok(moved === first, 'the node was rebuilt rather than moved');
+    ok(survived(first, 'kept'), 'value, focus or caret was lost');
+    return 'moveBefore() moves the field without resetting it';
+  });
+
+  await check('a field inside a block survives a change to the block content', async () => {
+    const input = field('in-block');
+    typeInto(input, 'kept');
+
+    // `open` stays true, so the branch is unchanged. Only ${label} inside it
+    // moved. The branch has its own bindings, so nothing is rebuilt.
+    probe.label = 'Rebound';
+    await probe.updateComplete;
+
+    ok(field('in-block') === input, 'the block was rebuilt for a content change');
+    ok(survived(input, 'kept'), 'value, focus or caret was lost');
+    is(probe.shadowRoot.querySelector('div span').textContent, 'Rebound', 'the text did update');
+    return 'a branch is written into; only a change of branch rebuilds';
+  });
+
+  await check('changing which branch is showing does rebuild it', async () => {
+    const input = field('in-block');
+    typeInto(input, 'goes away');
+
+    probe.open = false;
+    await probe.updateComplete;
+    ok(!field('in-block'), 'the branch should be gone');
+
+    probe.open = true;
+    await probe.updateComplete;
+    ok(field('in-block') !== input, 'a new branch means new nodes');
+    is(field('in-block').value, '', 'the replacement starts empty');
+    return 'structure changing is the one thing that rebuilds';
+  });
+
+  await check('a row is written into when its own content changes', async () => {
+    probe.rows = [
+      { id: 1, label: 'a', flagged: false },
+      { id: 2, label: 'b', flagged: false },
+      { id: 3, label: 'c', flagged: false },
+    ];
+    await probe.updateComplete;
+
+    const [first] = rowFields();
+    typeInto(first, 'still here');
+
+    // Same keys, different content behind them. The key is the id, so this is
+    // a content change and not a new row.
+    probe.rows = [
+      { id: 1, label: 'a!', flagged: false },
+      { id: 2, label: 'b', flagged: false },
+      { id: 3, label: 'c', flagged: false },
+    ];
+    await probe.updateComplete;
+
+    const after = rowFields();
+    ok(after[0] === first, 'the row was rebuilt rather than written into');
+    is(after[0].placeholder, 'a!', 'the row did not actually update');
+    ok(survived(first, 'still here'), 'value, focus or caret was lost');
+    return 'per-item bindings: the row keeps its identity';
+  });
+
+  await check('a block inside a loop item is a function of its row', async () => {
+    const rows = (flagged) => [
+      { id: 1, label: 'a', flagged },
+      { id: 2, label: 'b', flagged: false },
+    ];
+    probe.rows = rows(false);
+    await probe.updateComplete;
+
+    const [first] = rowFields();
+    typeInto(first, 'row state');
+    ok(!probe.shadowRoot.querySelector('li b'), 'nothing should be flagged yet');
+
+    // Structure changing *inside* one row. Before loop arguments, a block here
+    // could not be a function of the item, so the item part gave up and the
+    // whole list was re-rendered on any change.
+    probe.rows = rows(true);
+    await probe.updateComplete;
+
+    is(probe.shadowRoot.querySelectorAll('li b').length, 1, 'the flag did not appear');
+    ok(rowFields()[0] === first, 'the row was rebuilt rather than written into');
+    ok(survived(first, 'row state'), 'value, focus or caret was lost');
+    return 'the block takes the row as an argument, so the row survives';
+  });
+
+  await check('a multi-node item is moved as a region, keeping its field', async () => {
+    const rows = [
+      { id: 1, label: 'a', flagged: false },
+      { id: 2, label: 'b', flagged: false },
+      { id: 3, label: 'c', flagged: false },
+    ];
+    probe.rows = rows;
+    await probe.updateComplete;
+
+    const pairs = () => [...probe.shadowRoot.querySelectorAll('dd input')];
+    const [first] = pairs();
+    is(pairs().length, 3, 'three rows to start');
+    typeInto(first, 'in a template each');
+
+    probe.rows = [rows[2], rows[0], rows[1]];
+    await probe.updateComplete;
+
+    const after = pairs();
+    is(
+      [...probe.shadowRoot.querySelectorAll('dt')].map((dt) => dt.textContent).join(),
+      'c,a,b',
+      'order after the move',
+    );
+    ok(after[1] === first, 'the row was rebuilt rather than moved');
+    ok(survived(first, 'in a template each'), 'value, focus or caret was lost');
+    return 'per-item anchors: the whole region moves together';
+  });
+
+  /** Runs `fn` as a browser without moveBefore would. */
+  const withoutMoveBefore = async (fn) => {
+    const onElement = Element.prototype.moveBefore;
+    const onFragment = DocumentFragment.prototype.moveBefore;
+    if (!onElement) return fn();
+    delete Element.prototype.moveBefore;
+    delete DocumentFragment.prototype.moveBefore;
+    try {
+      return await fn();
+    } finally {
+      Element.prototype.moveBefore = onElement;
+      DocumentFragment.prototype.moveBefore = onFragment;
+    }
+  };
+
+  await check('a move without moveBefore keeps everything but focus, which is put back', () =>
+    withoutMoveBefore(async () => {
+      const rows = [
+        { id: 1, label: 'a', flagged: false },
+        { id: 2, label: 'b', flagged: false },
+        { id: 3, label: 'c', flagged: false },
+      ];
+      probe.rows = rows;
+      await probe.updateComplete;
+
+      // [a,b,c] -> [b,c,a] moves `b`, so the focused row is the one that moves.
+      const moved = rowFields()[1];
+      typeInto(moved, 'carried');
+
+      probe.rows = [rows[1], rows[2], rows[0]];
+      await probe.updateComplete;
+
+      const after = rowFields();
+      ok(after[0] === moved, 'the row was rebuilt rather than moved');
+      is(after.map((input) => input.placeholder).join(), 'b,c,a', 'order after the move');
+      ok(survived(moved, 'carried'), 'value, focus or caret was lost');
+      return 'insertBefore drops focus; the runtime carries it across';
+    }));
+
+  await check('focus inside a nested shadow root is found and restored', () =>
+    withoutMoveBefore(async () => {
+      const people = [
+        { name: 'Ada Lovelace', role: 'Analyst', tags: ['notes'], joined: new Date(0) },
+        { name: 'Grace Hopper', role: 'Rear Admiral', tags: ['x'], joined: new Date(0) },
+        { name: 'Radia Perlman', role: 'Engineer', tags: ['y'], joined: new Date(0) },
+      ];
+      nested.people = people;
+      await nested.updateComplete;
+
+      // Two shadow roots deep: document.activeElement only ever names <card-list>.
+      const card = nested.shadowRoot.querySelectorAll('user-card')[1];
+      const heading = card.shadowRoot.querySelector('h3');
+      heading.tabIndex = 0;
+      heading.focus();
+
+      nested.people = [people[1], people[2], people[0]];
+      await nested.updateComplete;
+
+      ok(nested.shadowRoot.querySelectorAll('user-card')[0] === card, 'the card was rebuilt');
+      ok(card.shadowRoot.activeElement === heading, 'focus was not restored');
+      heading.blur();
+      heading.removeAttribute('tabindex');
+      return 'activeElement is followed down through every shadow root';
+    }));
+
+  // ---- fragments ----------------------------------------------------------
+  //
+  // /check renders no <data-table>, so its entry never imported one and its
+  // <head> carries no styles for one. Everything below is about what happens
+  // when one arrives anyway.
+
+  // Waits for a node to show up. A poll loop would read better, but a tab that
+  // is not in front slows setTimeout to roughly once a second, so the
+  // waiting is done by the mutation itself, which is not throttled, and the
+  // timer only decides when to give up.
+  const appears = (selector, ms = 2000) =>
+    new Promise((resolve) => {
+      const found = () => document.querySelector(selector);
+      if (found()) return resolve(found());
+
+      const done = (value) => {
+        observer.disconnect();
+        clearTimeout(timer);
+        resolve(value);
+      };
+      const observer = new MutationObserver(() => found() && done(found()));
+      const timer = setTimeout(() => done(null), ms);
+
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+    });
+
+  const swap = document.getElementById('swap');
+
+  await check('the page starts with no styles for an element it never rendered', () => {
+    ok(!document.querySelector('style[data-transclude="data-table"]'), 'they were already here');
+    ok(document.querySelector('style[data-transclude="site-note"]'), 'the one it does render is missing');
+    return 'one <style data-transclude> per light element the document actually used';
+  });
+
+  await check('a region is served alone, without its document', async () => {
+    const response = await fetch('/?fragment=matches');
+    is(response.status, 200, 'status');
+    const html = await response.text();
+
+    ok(!/<!doctype/i.test(html), 'the whole document came back');
+    ok(html.includes('<data-table'), 'the region did not contain a <data-table>');
+    swap.dataset.html = html;
+    return `${html.length} bytes, no <head>, no layout`;
+  });
+
+  await check('an element that arrives in a swap brings its styles with it', async () => {
+    // innerHTML on purpose, which is the crudest swap there is: no scripts run,
+    // no declarative shadow roots are processed, nothing in the response gets a
+    // say. If it works here it works for anything that puts HTML in a document.
+    swap.innerHTML = swap.dataset.html;
+
+    const style = await appears('style[data-transclude="data-table"]');
+    ok(style, 'nothing ever loaded data-table');
+    ok(style.textContent.includes('border-collapse'), 'the styles arrived empty');
+    return 'the DOM was the signal: MutationObserver, dynamic import, one <style>';
+  });
+
+  await check('the adopted styles go where the server would have put them', () => {
+    const styles = [...document.head.querySelectorAll('style')];
+    const adopted = styles.findIndex((s) => s.dataset.transclude === 'data-table');
+    const page = styles.findIndex((s) => s.hasAttribute('data-transclude-page'));
+    ok(page !== -1, 'the page has no style block of its own');
+    ok(adopted !== -1, 'nothing was adopted, so this proves nothing either way');
+    ok(adopted < page, 'appended after the page styles, which would let it win');
+    return 'inserted before [data-transclude-page], so a page still overrides an element';
+  });
+
+  await check('swapping the same element again adds no second copy', async () => {
+    swap.innerHTML = swap.dataset.html;
+    // Long enough for a second load to have started and finished: the module is
+    // in memory by now, so a duplicate would be a microtask away, not a request.
+    await appears('nothing-will-ever-match', 60);
+    is(document.querySelectorAll('style[data-transclude="data-table"]').length, 1, 'copies');
+    swap.innerHTML = '';
+    delete swap.dataset.html;
+    return 'the marker in <head> is the whole record of what is already there';
+  });
+
+  // ---- form association -----------------------------------------------------
+  //
+  // A custom element in a <form> contributes nothing by default. This is the
+  // platform's answer, and the only way to check it is a real form.
+
+  const picker = document.getElementById('picker');
+  const controlForm = document.getElementById('control-form');
+  const sent = () => new FormData(controlForm);
+
+  await check('a component can be a real form control', () => {
+    is(picker.constructor.formAssociated, true, 'static formAssociated');
+    ok(picker.internals, 'no ElementInternals, so attachInternals never ran');
+    is(picker.internals.form, controlForm, 'it does not know which form it is in');
+    return 'export const formAssociated = true, and the framework does the rest';
+  });
+
+  await check('the form counts it as a field', () => {
+    ok([...sent().keys()].includes('tags'), 'the browser does not see it as a control');
+    is([...sent().keys()].length, 2, 'the ordinary input is still there too');
+    return 'setFormValue under the element\'s own name attribute';
+  });
+
+  await check('changing the value changes what would be submitted', async () => {
+    picker.value = 'a,b';
+    await picker.updateComplete;
+    is(sent().get('tags'), 'a,b', 'what the form would send');
+    is(picker.getAttribute('value'), 'a,b', 'the attribute is the only copy');
+    return 'reported from attributeChangedCallback, before the repaint';
+  });
+
+  await check('the value is reported before the render, not after', async () => {
+    // A form can be submitted between an attribute change and the microtask that
+    // repaints. What it sends has to be what the attribute already says.
+    picker.value = 'c';
+    is(sent().get('tags'), 'c', 'a submit in that window would have sent the old value');
+    await picker.updateComplete;
+    return 'no await needed, the report happens with the attribute';
+  });
+
+  await check('form.reset() puts it back to its declared default', async () => {
+    picker.value = 'a,b,c';
+    await picker.updateComplete;
+    controlForm.reset();
+    await picker.updateComplete;
+
+    is(picker.value, '', 'the default from <script properties>');
+    is(picker.getAttribute('value'), null, 'reset removes the attribute rather than blanking it');
+    is(sent().get('tags'), '', '');
+    return 'formResetCallback';
+  });
+
+  await check('the state restore callback takes the same shape a submit sends', async () => {
+    picker.formStateRestoreCallback('b,c');
+    await picker.updateComplete;
+    is(picker.value, 'b,c', '');
+    controlForm.reset();
+    await picker.updateComplete;
+    return 'formStateRestoreCallback: what came out is what goes back in';
+  });
+
+  await check('a prototype member reaches the value through `this`', () => {
+    picker.value = 'a,c';
+    is(picker.chosen.join('|'), 'a|c', 'the getter is on the prototype, shared by every instance');
+    controlForm.reset();
+    return 'members are shared; the value they read is the element\'s own';
+  });
+
+  await check('a click inside a shadow root is seen by a listener on the root', async () => {
+    // The bug this replaces: a listener on the host sees `event.target` as the
+    // host, because retargeting is what a shadow boundary does. The button did
+    // nothing, said nothing, and no test noticed.
+    const shadow = picker.shadowRoot;
+    const toggle = shadow.querySelector('[data-open]');
+
+    let hostSaw = null;
+    picker.addEventListener('click', (e) => (hostSaw = e.target), { once: true });
+
+    const before = picker.open;
+    toggle.click();
+    await picker.updateComplete;
+
+    is(hostSaw, picker, 'the host did not see itself, so retargeting is not happening');
+    ok(picker.open !== before, 'the click never reached the handler');
+    ok(shadow.querySelector('ul'), 'the list did not render');
+    return 'listen on `shadow`, or read event.composedPath()[0]';
+  });
+
+  await check('picking an option changes what the form would send', async () => {
+    const shadow = picker.shadowRoot;
+    ok(shadow.querySelector('ul'), 'the list is closed, so this proves nothing');
+
+    shadow.querySelector('[data-tag="a"]').click();
+    await picker.updateComplete;
+    is(sent().get('tags'), 'a', 'after picking a');
+
+    shadow.querySelector('[data-tag="c"]').click();
+    await picker.updateComplete;
+    is(sent().get('tags'), 'a,c', 'after picking c');
+
+    shadow.querySelector('[data-tag="a"]').click();
+    await picker.updateComplete;
+    is(sent().get('tags'), 'c', 'after unpicking a');
+    return 'a shadow-root control driving a form field';
+  });
+
+  await check('ARIA state is the word, not a bare attribute', () => {
+    // `${boolean}` goes through the framework's attribute rule: false drops the
+    // attribute, true writes it bare. Right for `disabled`, wrong here. A missing
+    // `aria-pressed` and `aria-pressed=""` both read as "no state".
+    const shadow = picker.shadowRoot;
+    is(shadow.querySelector('[data-open]').getAttribute('aria-expanded'), 'true', 'expanded');
+
+    const pressed = [...shadow.querySelectorAll('[data-tag]')].map((b) =>
+      b.getAttribute('aria-pressed'),
+    );
+    ok(pressed.every((v) => v === 'true' || v === 'false'), `got ${JSON.stringify(pressed)}`);
+    ok(pressed.includes('false'), 'nothing is unpressed, so the false case is untested');
+    return "open ? 'true' : 'false', because ARIA wants the words";
+  });
+
+  await check('closing puts the state back and keeps the value', async () => {
+    picker.shadowRoot.querySelector('[data-open]').click();
+    await picker.updateComplete;
+
+    is(picker.shadowRoot.querySelector('[data-open]').getAttribute('aria-expanded'), 'false', '');
+    is(picker.shadowRoot.querySelector('ul'), null, 'the list is still rendered');
+    is(sent().get('tags'), 'c', 'closing threw the value away');
+
+    picker.value = '';
+    await picker.updateComplete;
+    return 'state drives the markup; the value is a prop and outlives it';
+  });
+
+  await check('an ordinary component is not a form control', () => {
+    // Opting in is per component. Nothing else in the page became a field.
+    // `false`, not undefined: both kinds declare the static field either way, so
+    // the answer is explicit rather than absent.
+    is(document.getElementById('solo').constructor.formAssociated, false, 'user-card, shadow');
+    is(document.getElementById('note').constructor.formAssociated, false, 'site-note, light');
+    ok(!document.getElementById('solo').internals, 'an ordinary element gets no internals');
+    return 'no export, no association, and a light element can opt in too';
+  });
+
+  const passed = results.filter((r) => r.ok).length;
+  const summary = document.getElementById('summary');
+  summary.textContent = `${passed}/${results.length} passed`;
+  summary.className = passed === results.length ? 'pass' : 'fail';
+
+  // Built as nodes, not innerHTML: one of these names literally contains
+  // "<template shadowrootmode>", which as markup would swallow the rest of the
+  // list. Exactly the class of bug the framework escapes by default.
+  const list = document.getElementById('results');
+  for (const r of results) {
+    const li = document.createElement('li');
+    li.className = r.ok ? 'ok' : 'no';
+
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = `${r.ok ? '✓' : '✗'} ${r.name}`;
+    li.append(name);
+
+    if (r.why) {
+      const why = document.createElement('span');
+      why.className = 'why';
+      why.textContent = r.why;
+      li.append(document.createElement('br'), why);
+    }
+    list.append(li);
+  }
+
+  window.__checks = { passed, total: results.length, results };
+  console.log(`[checks] ${passed}/${results.length} passed`, results);
+
+  send({
+    agent: navigator.userAgent,
+    // The one place a browser takes a different path through the runtime. Without
+    // moveBefore a reorder is a remove plus an insert, which drops focus, and
+    // captureFocus carries it across.
+    moveBefore: 'moveBefore' in Element.prototype,
+    passed,
+    total: results.length,
+    failed: results.filter((r) => !r.ok).map((r) => ({ name: r.name, why: r.why })),
+  });
+</script>

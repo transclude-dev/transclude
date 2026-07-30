@@ -1,0 +1,32 @@
+<script server>
+  // No loader. A page that renders when something is already broken should not
+  // depend on anything that can also be broken. No database, no request, no
+  // `paths`. It is prerendered to a file at build time and sent as bytes.
+  export const prerender = true;
+</script>
+
+<title>Something broke</title>
+<meta name="robots" content="noindex" />
+
+<style>
+  .broke {
+    max-width: 46ch;
+  }
+  .broke code {
+    color: var(--muted);
+  }
+</style>
+
+<h1>Something broke</h1>
+<div class="broke">
+  <p>
+    The server hit an error it could not answer. Nothing you did caused it, and
+    trying again may work.
+  </p>
+  <p>
+    In development the stack trace is sent instead of this page.
+    <code>npm run dev</code> shows the throw, which is the more useful thing when
+    you are the one who has to fix it.
+  </p>
+  <p><a href="/">Back to the start</a></p>
+</div>

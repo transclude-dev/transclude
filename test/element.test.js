@@ -140,7 +140,7 @@ test('a member that would shadow a DOM member is refused', async () => {
   await withDom(async ({ defineComponent }) => {
     assert.throws(
       () => defineComponent(defOf({ members: { getAttribute() {} } }), null),
-      /getAttribute.*already exists/s,
+      /getAttribute.*already has/s,
     );
   });
 });
@@ -149,7 +149,7 @@ test('a member that would shadow a declared prop is refused', async () => {
   await withDom(async ({ defineComponent }) => {
     assert.throws(
       () => defineComponent(defOf({ members: { compact() {} } }), null),
-      /compact.*already exists/s,
+      /compact.*already has/s,
     );
   });
 });
@@ -715,5 +715,21 @@ test('an ordinary component gets no internals and reports nothing', async () => 
 
     assert.equal(Class.formAssociated, false);
     assert.equal(new Class().internals, null);
+  });
+});
+
+test('the message names the block the member is actually written in', async () => {
+  // It named `<script element>`, which has not existed for some time. Somebody
+  // hit this with a member called `click` and went looking for a block that was
+  // not there.
+  await withDom(async ({ defineComponent }) => {
+    assert.throws(
+      () => defineComponent(defOf({ members: { getAttribute() {} } }), null),
+      /export const prototype/,
+    );
+    assert.throws(
+      () => defineComponent(defOf({ members: { getAttribute() {} } }), null),
+      (error) => !/<script element>/.test(error.message),
+    );
   });
 });

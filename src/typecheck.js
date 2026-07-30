@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 import { buildEndpointShim, buildShim, originalOffset } from './compiler/shim.js';
-import { splitBlocks } from './compiler/index.js';
+import { splitBlocks, readFlags } from './compiler/index.js';
 import { resolveRoutesDir, scanRoutes } from './routes.js';
 
 /**
@@ -55,8 +55,7 @@ const LAYOUT_FILE = '_layout.html';
 export function createChecker({
   root,
   appDir = 'app',
-  componentsDir = 'components',
-  partialsDir = 'partials',
+  elementsDir = 'elements',
   routesDir = 'routes',
   strict = false,
 }) {
@@ -128,12 +127,23 @@ export function createChecker({
       .filter((entry) => entry.endsWith('.html') && entry.slice(0, -5).includes('-'))
       .map((entry) => path.resolve(app, dir, entry));
 
-  const componentFiles = () => elementFiles(componentsDir);
-  const partialFiles = () => elementFiles(partialsDir);
+  const componentFiles = () => elementFiles(elementsDir);
 
-  // The directory decides whether the element has a shadow root, so it also
-  // decides what `this.shadowRoot` means inside <script element>.
-  const isShadow = (file) => file.startsWith(path.resolve(app, componentsDir));
+  // The file decides whether the element has a shadow root, so it also decides
+  // what `this.shadowRoot` means inside its <script>. Read with the compiler's
+  // own reader, or the types would describe a different element than the one
+  // that ships.
+  const isShadow = (file) => Boolean(safeFlags(file).shadow);
+
+  const safeFlags = (file) => {
+    try {
+      return readFlags(fs.readFileSync(file, 'utf8'), path.basename(file));
+    } catch {
+      // A file that will not parse is reported by the checker itself. Guessing
+      // light here only decides which shim shape it gets while that is fixed.
+      return {};
+    }
+  };
 
   const layoutFiles = (dir = resolveRoutesDir(app, routesDir), out = new Map()) => {
     if (!fs.existsSync(dir)) return out;
@@ -219,7 +229,7 @@ export function createChecker({
     // way and their prop types are available to whatever renders them.
     const componentProps = new Map();
     const componentMembers = new Map();
-    const files = [...componentFiles(), ...partialFiles()];
+    const files = componentFiles();
     for (const file of files) {
       install(file, buildShim(sourceOf(file), { kind: 'component', shadow: isShadow(file) }));
     }
@@ -302,8 +312,7 @@ export function createChecker({
   };
 
   const kindOf = (file) => {
-    if (file.startsWith(path.resolve(app, componentsDir))) return 'component';
-    if (file.startsWith(path.resolve(app, partialsDir))) return 'component';
+    if (file.startsWith(path.resolve(app, elementsDir))) return 'component';
     return path.basename(file) === LAYOUT_FILE ? 'layout' : 'page';
   };
 
@@ -328,7 +337,7 @@ export function createChecker({
 
   return {
     files() {
-      const found = [...componentFiles(), ...partialFiles()];
+      const found = componentFiles();
       const dir = resolveRoutesDir(app, routesDir);
       walkHtml(dir, found);
       for (const route of scanRoutes(dir).endpoints) found.push(route.file);
@@ -411,7 +420,13 @@ export function createChecker({
 
     /** Everything transclude-env.d.ts is written from. */
     describe() {
-      const partialTags = new Set(partialFiles().map((file) => path.basename(file, '.html')));
+      // Light elements are described separately: they have props but no shadow
+      // root, so nothing about `this.shadowRoot` applies to them.
+      const partialTags = new Set(
+        componentFiles()
+          .filter((file) => !isShadow(file))
+          .map((file) => path.basename(file, '.html')),
+      );
       return {
         components: [...project.componentProps]
           .filter(([tag]) => !partialTags.has(tag))

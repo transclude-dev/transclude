@@ -21,6 +21,63 @@ const COMPONENT_EXPORTS = new Set([
 ]);
 
 /**
+ * What an element may declare about itself, in `<script properties>` or in
+ * `<script>`. Neither is a prop and neither is setup code: each decides
+ * something about the tag, the same for every element of it.
+ *
+ * `shadow` is the one that used to be the directory a file sat in.
+ */
+export const ELEMENT_FLAGS = ['shadow', 'formAssociated'];
+
+/**
+ * One value per flag, from whichever block declared it.
+ *
+ * Declaring one twice is refused rather than resolved. Two homes for one fact
+ * leaves nothing to say which is right when they disagree.
+ */
+function resolveFlags(fromProps = {}, fromClient = {}, tag) {
+  const out = {};
+
+  for (const flag of ELEMENT_FLAGS) {
+    const a = fromProps[flag] ?? null;
+    const b = fromClient[flag] ?? null;
+
+    if (a !== null && b !== null) {
+      throw new ScriptError(
+        `<${tag}> declares \`${flag}\` in both <script properties> and <script>. ` +
+          `Keep the one that reads better and delete the other.`,
+      );
+    }
+    out[flag] = a ?? b;
+  }
+
+  return out;
+}
+
+/**
+ * An element's flags, read without compiling it.
+ *
+ * The plugin needs `shadow` before it can compile anything, because how a tag
+ * renders decides how every other file that mentions it compiles. Same blocks
+ * and the same extractor as the compile itself, so there is one answer.
+ */
+export function readFlags(source, label = 'element') {
+  const blocks = splitBlocks(source);
+
+  const fromProps = blocks.properties
+    ? bindDefaultExport(blocks.properties, '__probe', `${label} <script properties>`, {
+        flags: ELEMENT_FLAGS,
+      }).flags
+    : {};
+  const fromClient = toFunctionBody(blocks.client, `${label} <script>`, {
+    lift: 'prototype',
+    flags: ELEMENT_FLAGS,
+  }).flags;
+
+  return resolveFlags(fromProps, fromClient, label);
+}
+
+/**
  * Top-level <script>/<style> blocks are pulled out; everything else is template.
  *
  *   <script server>      data loading, page only
@@ -97,66 +154,60 @@ export function compileComponent(
   const blocks = splitBlocks(source);
   const where = (kind) => `${filename || tag}.html <script${kind ? ` ${kind}` : ''}>`;
 
-  // `formAssociated` may be declared here as well as in `<script>`. It is a fact
-  // about the element rather than a prop, and a form control with no behavior
-  // would otherwise need a `<script>` block holding nothing else.
+  // A flag is a fact about the element rather than a prop or a piece of setup,
+  // so either block can carry it. An element that only needs one would otherwise
+  // need a block holding nothing else.
   const props = blocks.properties
-    ? bindDefaultExport(blocks.properties, '__propDefs', where('properties'), {
-        flag: 'formAssociated',
-      })
-    : { code: 'const __propDefs = {};', exports: [], defaultNode: null, formAssociated: null };
+    ? bindDefaultExport(blocks.properties, '__propDefs', where('properties'), { flags: ELEMENT_FLAGS })
+    : { code: 'const __propDefs = {};', exports: [], defaultNode: null, flags: {} };
   assertNoCollisions(props.exports, COMPONENT_EXPORTS, where('properties'));
+
+  // Members ride along in the client block: `export const prototype`, hoisted to
+  // module scope with anything it reads, because a prototype is shared and the
+  // setup body is per element.
+  const client = toFunctionBody(blocks.client, where(''), { lift: 'prototype', flags: ELEMENT_FLAGS });
+  assertNoLifecycle(client.lifted, where(''));
+
+  const flags = resolveFlags(props.flags, client.flags, tag);
+  const formAssociated = flags.formAssociated ?? false;
+  // The file decides. `shadow` is still an argument so a caller can compile one
+  // element on its own, but a file that says which it is always wins.
+  const isShadow = flags.shadow ?? shadow;
 
   const state = blocks.state
     ? bindDefaultExport(blocks.state, '__stateDefs', where('state'))
     : { code: 'const __stateDefs = {};', exports: [], defaultNode: null };
   assertNoCollisions(state.exports, COMPONENT_EXPORTS, where('state'));
 
-  if (blocks.state && !shadow) {
+  if (blocks.state && !isShadow) {
     throw new CompileError(
-      `<${tag}> is a partial: it keeps the markup it was served and is never ` +
-        `re-rendered, so state would have nothing to update. Move it to the ` +
-        `components directory.`,
+      `<${tag}> is a light element: it keeps the markup it was served and is ` +
+        `never re-rendered, so state would have nothing to update. Add ` +
+        `\`export const shadow = true\` if it needs to re-render.`,
       blocks.state.node,
     );
   }
   assertDistinct(props.defaultNode, state.defaultNode, tag);
-
-  // Members ride along in the client block: `export const prototype`, hoisted to
-  // module scope with anything it reads, because a prototype is shared and the
-  // setup body is per element.
-  const client = toFunctionBody(blocks.client, where(''), { lift: 'prototype' });
-  assertNoLifecycle(client.lifted, where(''));
-
-  // One declaration per component. Two homes for one fact leaves nothing to say
-  // which is right when they disagree.
-  if (props.formAssociated !== null && client.formAssociated !== null) {
-    throw new ScriptError(
-      `<${tag}> declares \`formAssociated\` in both <script properties> and ` +
-        `<script>. Keep the one that reads better and delete the other.`,
-    );
-  }
-  const formAssociated = props.formAssociated ?? client.formAssociated ?? false;
   const template = compileFragment(blocks.nodes, {
     components,
     shadowTags,
     page: false,
     // A partial's `<slot>` is a compile-time hole, like a layout's. In a shadow
     // root it is a real slot and must reach the browser untouched.
-    layout: !shadow,
+    layout: !isShadow,
     // Only a component is ever updated, so only a component pays for anchors.
-    blocks: shadow,
+    blocks: isShadow,
     // A fragment emits a component bare and lets it paint itself, so a
     // component's own render is never the thing being asked for a fragment.
     // A partial's is.
-    fragments: !shadow,
+    fragments: !isShadow,
   });
 
   const styles = blocks.styles.join('\n').trim();
 
   // Only a component is ever repainted. A partial keeps the markup it was
   // served, so there is nothing for a binding to update.
-  const bindings = shadow
+  const bindings = isShadow
     ? compileBindings(blocks.nodes, {
         components,
         shadowTags,
@@ -173,7 +224,7 @@ export function compileComponent(
   );
   if (stray) {
     throw new CompileError(
-      shadow
+      isShadow
         ? `<${tag}> is a component, so it already has a shadow root. Drop the ` +
           `<template shadowrootmode> wrapper and write the markup directly`
         : `<${tag}> is a partial and has no shadow root. Move it to the components ` +
@@ -196,9 +247,9 @@ ${state.code}
 ${client.lifted ? client.hoisted : 'const __members = {};'}
 
 export const tag = ${JSON.stringify(tag)};
-export const light = ${!shadow};
+export const light = ${!isShadow};
 export const formAssociated = ${formAssociated === true};
-export const css = ${JSON.stringify(shadow ? styles : scopeCss(styles, tag, nested))};
+export const css = ${JSON.stringify(isShadow ? styles : scopeCss(styles, tag, nested))};
 export const propDefs = __propDefs;
 export const propAttrs = ${props.exports.includes('attributes') ? 'attributes' : '{}'};
 export const stateDefs = __stateDefs;
@@ -238,7 +289,7 @@ let __defined = false;
 export function define() {
   if (__defined) return;
   __defined = true;
-  ${shadow ? 'defineComponent' : 'defineLight'}(def, ${client.body.trim() ? 'init' : 'null'});
+  ${isShadow ? 'defineComponent' : 'defineLight'}(def, ${client.body.trim() ? 'init' : 'null'});
 ${template.components.map(({ ref }) => `  ${ref}_define();`).join('\n')}
 }
 `;
@@ -246,7 +297,7 @@ ${template.components.map(({ ref }) => `  ${ref}_define();`).join('\n')}
   return {
     code,
     warnings,
-    shadow,
+    isShadow,
     hasScript: Boolean(client.body.trim()),
     components: template.components.map((c) => c.tag),
   };

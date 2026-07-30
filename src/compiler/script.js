@@ -28,30 +28,29 @@ const PARSE_OPTIONS = {
  * Returns the exported names so callers can check them against the names the
  * generated module already uses.
  */
-export function bindDefaultExport(block, name, label, { flag = null } = {}) {
+export function bindDefaultExport(block, name, label, { flags = [] } = {}) {
   const { code: source, line = 1 } = block;
   const ast = parseOrThrow(source, label, line);
 
-  // `flag` names an export that is a fact about the element rather than part of
-  // this block's own shape. It is read out here and blanked, not removed, so
-  // every offset after it still points where it did.
-  const found = flag ? literalExport(ast, flag, source, line, label) : null;
-  const code = found ? blank(source, [[found.start, found.end]]) : source;
-  const formAssociated = found ? found.value : null;
+  // A flag is a fact about the element rather than part of this block's own
+  // shape. Each is read out here and blanked, not removed, so every offset
+  // after it still points where it did.
+  const found = {};
+  const cuts = [];
+  for (const flag of flags) {
+    const hit = literalExport(ast, flag, source, line, label);
+    found[flag] = hit ? hit.value : null;
+    if (hit) cuts.push([hit.start, hit.end]);
+  }
+  const code = cuts.length ? blank(source, cuts) : source;
 
   // acorn rejects a duplicate `default` itself, so there is at most one.
   const node = ast.body.find((s) => s.type === 'ExportDefaultDeclaration') ?? null;
-  const exports = namedExportsOf(ast, source, line, label).filter((n) => n !== flag);
+  const exports = namedExportsOf(ast, source, line, label).filter((n) => !flags.includes(n));
   const imports = importsOf(ast);
 
   if (!node) {
-    return {
-      code: `${code}\nconst ${name} = null;`,
-      exports,
-      imports,
-      defaultNode: null,
-      formAssociated,
-    };
+    return { code: `${code}\nconst ${name} = null;`, exports, imports, defaultNode: null, flags: found };
   }
 
   // Slicing the *declaration* rather than the statement means
@@ -64,7 +63,7 @@ export function bindDefaultExport(block, name, label, { flag = null } = {}) {
     ';' +
     code.slice(node.end);
 
-  return { code: rewritten, exports, imports, defaultNode: node.declaration, formAssociated };
+  return { code: rewritten, exports, imports, defaultNode: node.declaration, flags: found };
 }
 
 /**
@@ -102,13 +101,13 @@ function literalExport(ast, flag, code, line, label) {
  * to module scope, and so does anything it reads, because a prototype is shared by
  * every instance and the function body is not.
  */
-export function toFunctionBody(blocks, label, { lift = null, binding = '__members' } = {}) {
+export function toFunctionBody(blocks, label, { lift = null, binding = '__members', flags = [] } = {}) {
   const imports = [];
   const hoisted = [];
   const bodies = [];
   let lifted = null;
-  // `null` until a block declares it, so "not said" and "said false" differ.
-  let formAssociated = null;
+  // `null` until a block declares one, so "not said" and "said false" differ.
+  const found = Object.fromEntries(flags.map((flag) => [flag, null]));
 
   for (const block of blocks) {
     const { code, line = 1 } = block;
@@ -153,26 +152,31 @@ export function toFunctionBody(blocks, label, { lift = null, binding = '__member
       if (statement.type.startsWith('Export')) {
         if (plan && statement === plan.statement) continue;
 
-        const flag = booleanExport(statement, 'formAssociated');
-        if (flag !== null) {
-          // A static class field, decided once for every element of this tag, so
-          // it has to be a literal. A computed value would look like a per-element
-          // choice and could not be one.
-          formAssociated = flag;
-          cuts.push([statement.start, statement.end]);
-          continue;
+        // A flag decides something about the tag rather than about one element,
+        // so it has to be a literal. A computed value would look like a
+        // per-element choice and could not be one.
+        let taken = false;
+        for (const flag of flags) {
+          const value = booleanExport(statement, flag);
+          if (value !== null) {
+            found[flag] = value;
+            cuts.push([statement.start, statement.end]);
+            taken = true;
+            break;
+          }
+          if (namesExport(statement, flag)) {
+            throw new ScriptError(
+              `${label}: \`${flag}\` must be \`true\` or \`false\`. It decides something ` +
+                `about the tag, the same for every element of it, so it cannot be decided at ` +
+                `run time (line ${lineOf(statement, code, line)})`,
+            );
+          }
         }
-        if (namesExport(statement, 'formAssociated')) {
-          throw new ScriptError(
-            `${label}: \`formAssociated\` must be \`true\` or \`false\`. It becomes a static ` +
-              `class field, the same for every element of this tag, so it cannot be decided at ` +
-              `run time (line ${lineOf(statement, code, line)})`,
-          );
-        }
+        if (taken) continue;
 
         throw new ScriptError(
           `${label}: a client <script> runs as setup code, so it cannot export` +
-            (lift ? ` anything but \`${lift}\` and \`formAssociated\`` : '') +
+            (lift ? ` anything but \`${[lift, ...flags].join('`, `')}\`` : '') +
             ` (line ${lineOf(statement, code, line)})`,
         );
       }
@@ -186,7 +190,7 @@ export function toFunctionBody(blocks, label, { lift = null, binding = '__member
     hoisted: hoisted.join('\n\n'),
     body: bodies.join('\n'),
     lifted,
-    formAssociated,
+    flags: found,
   };
 }
 

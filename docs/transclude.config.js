@@ -4,8 +4,8 @@ export default {
   appDir: 'app',
 
   routesDir: 'routes',
-  componentsDir: 'components',
-  partialsDir: 'partials',
+  // One directory for every element. A shadow root is opt-in per file.
+  elementsDir: 'elements',
 
   stylesheet: 'app/styles/global.css',
 

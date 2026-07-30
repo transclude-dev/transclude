@@ -95,8 +95,9 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
 
   <p>
     Libraries built for this do the same thing with attributes instead of script.
-    <a href="https://htmx.org">htmx</a> is the common one.
   </p>
+
+  <p><a href="https://htmx.org">htmx</a> is the common one.</p>
 
   ${html(s.htmx)}
 
@@ -109,15 +110,16 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
 
   <p>
     <a href="https://turbo.hotwired.dev">Turbo</a> and
-    <a href="https://leanrada.com/htmz/">htmz</a> drive them the same way. htmz
-    is 166 bytes and uses a hidden iframe, so it needs no build step. This
-    framework ships none of them. A fragment is a URL, and that is the whole
-    agreement.
+    <a href="https://leanrada.com/htmz/">htmz</a> are other options.
   </p>
 
   <doc-note label="setHTMLUnsafe, not innerHTML" tone="warn">
-    <code>innerHTML</code> does not process nested declarative shadow roots, so a
-    component inside the fragment arrives as a dead
+    <a
+      href="https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTMLUnsafe"
+      >setHTMLUnsafe()</a
+    >
+    processes declarative shadow roots. <code>innerHTML</code> does not, so a
+    component inside the fragment would arrive as a dead
     <code>&lt;template&gt;</code>.
   </doc-note>
 

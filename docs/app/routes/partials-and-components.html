@@ -62,7 +62,24 @@
   name="Ada Lovelace"
   tags='["math", "engines"]'
 ></user-card>`,
-      form: ['export const formAssociated = true;', 'js'],
+      form: `<!-- app/components/tag-picker.html -->
+<script properties>
+  export default {
+    name: '',
+    value: '',
+  };
+<\/script>
+
+<button type="button">\${value || 'Pick tags'}</button>
+
+<script>
+  export const formAssociated = true;
+<\/script>`,
+      formUse: `<form method="post">
+  <input name="text" />
+  <tag-picker name="tags"></tag-picker>
+  <button type="submit">Add</button>
+</form>`,
     }),
   });
 </script>
@@ -158,17 +175,25 @@
 
   ${html(s.prototype)}
 
-  <doc-note label="A prototype member cannot reach the element" tone="warn">
+  <doc-note label="Inside a member, use this" tone="warn">
     <code>host</code>, <code>shadow</code>, <code>signal</code> and
-    <code>internals</code> belong to one element. Reading one from a prototype
-    member is a compile error.
+    <code>internals</code> exist only in the body of the script, which runs once
+    per element. A <code>prototype</code> member is shared by every element of
+    that tag, so it reaches its own element with <code>this</code>. Using
+    <code>host</code> in one is a compile error rather than a bug you find later.
   </doc-note>
 
   <h2>A component</h2>
 
   <p>
-    The same file shape, in <code>components/</code>. It gets a shadow root, a
-    real <code>&lt;slot&gt;</code>, and it re-renders when its attributes change.
+    The same file shape, in <code>components/</code>. You get a real
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components"
+      >Web Component</a
+    >: a
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM"
+      >shadow root</a
+    >, a working <code>&lt;slot&gt;</code>, and a re-render when its attributes
+    change.
   </p>
 
   ${html(s.component)}
@@ -185,14 +210,29 @@
     rather than putting a large array in an attribute.
   </doc-note>
 
-  <h3>A component a form submits</h3>
+  <h3>A component a form can submit</h3>
 
   <p>
-    This makes the browser treat the element as a field. It has to be a literal.
-    A partial can opt in too.
+    Export <code>formAssociated</code> from the element's
+    <code>&lt;script&gt;</code> block and the browser treats it as a
+    <a
+      href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements#form-associated_custom_elements"
+      >form-associated custom element</a
+    >. Write <code>true</code> directly rather than a variable, because it
+    becomes a static field on the class and is the same for every element of that
+    tag.
   </p>
 
   ${html(s.form)}
 
-  <p>What a form submits matches what the attribute says.</p>
+  <p>
+    Drop it into a form and it behaves like an input. Its value is submitted
+    under its <code>name</code>, and
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/FormData">FormData</a>
+    reads it like any other field.
+  </p>
+
+  ${html(s.formUse)}
+
+  <p>A partial can do this too. Being a form control needs no shadow root.</p>
 </doc-page>

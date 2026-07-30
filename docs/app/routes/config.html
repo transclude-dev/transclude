@@ -53,19 +53,48 @@
           <td>Where the app lives, relative to the project root.</td>
         </tr>
         <tr>
-          <td><code>routesDir</code></td>
-          <td><code>'routes'</code></td>
-          <td>Pages and endpoints. Relative to <code>appDir</code>.</td>
+          <td><code>componentsDir</code></td>
+          <td><code>'components'</code></td>
+          <td>Shadow root reuse.</td>
+        </tr>
+        <tr>
+          <td><code>cookieSecret</code></td>
+          <td><code>null</code></td>
+          <td>Signs cookies. Without one, <code>cookies.signed</code> throws.</td>
+        </tr>
+        <tr>
+          <td><code>csrf</code></td>
+          <td><code>true</code></td>
+          <td>
+            <code>false</code> to turn it off, or an object passed to
+            <code>hono/csrf</code>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>fragmentHeader</code></td>
+          <td><code>null</code></td>
+          <td>
+            A request header that may name a fragment. Setting it adds that
+            header to <code>Vary</code>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>fragmentParam</code></td>
+          <td><code>'fragment'</code></td>
+          <td>
+            The query parameter that asks for a fragment. <code>null</code> ships
+            no loader on any page.
+          </td>
+        </tr>
+        <tr>
+          <td><code>outDir</code></td>
+          <td><code>'dist'</code></td>
+          <td>Where the build writes.</td>
         </tr>
         <tr>
           <td><code>partialsDir</code></td>
           <td><code>'partials'</code></td>
           <td>Light DOM reuse.</td>
-        </tr>
-        <tr>
-          <td><code>componentsDir</code></td>
-          <td><code>'components'</code></td>
-          <td>Shadow root reuse.</td>
         </tr>
         <tr>
           <td><code>publicDir</code></td>
@@ -76,22 +105,9 @@
           </td>
         </tr>
         <tr>
-          <td><code>stylesheet</code></td>
-          <td>—</td>
-          <td>
-            One global stylesheet, relative to the project root.
-            <code>null</code> for none.
-          </td>
-        </tr>
-        <tr>
-          <td><code>outDir</code></td>
-          <td><code>'dist'</code></td>
-          <td>Where the build writes.</td>
-        </tr>
-        <tr>
-          <td><code>typesFile</code></td>
-          <td>—</td>
-          <td>Where the generated declarations go.</td>
+          <td><code>routesDir</code></td>
+          <td><code>'routes'</code></td>
+          <td>Pages and endpoints. Relative to <code>appDir</code>.</td>
         </tr>
         <tr>
           <td><code>strict</code></td>
@@ -99,27 +115,11 @@
           <td>Full TypeScript strictness.</td>
         </tr>
         <tr>
-          <td><code>fragmentParam</code></td>
-          <td><code>'fragment'</code></td>
+          <td><code>stylesheet</code></td>
+          <td>—</td>
           <td>
-            The query parameter that asks for a fragment. <code>null</code>
-            ships no loader on any page.
-          </td>
-        </tr>
-        <tr>
-          <td><code>fragmentHeader</code></td>
-          <td><code>null</code></td>
-          <td>
-            A request header that may name a fragment. Setting it adds that header
-            to <code>Vary</code>.
-          </td>
-        </tr>
-        <tr>
-          <td><code>csrf</code></td>
-          <td><code>true</code></td>
-          <td>
-            <code>false</code> to turn it off, or an object passed to
-            <code>hono/csrf</code>.
+            One global stylesheet, relative to the project root.
+            <code>null</code> for none.
           </td>
         </tr>
         <tr>
@@ -131,11 +131,9 @@
           </td>
         </tr>
         <tr>
-          <td><code>cookieSecret</code></td>
-          <td><code>null</code></td>
-          <td>
-            Signs cookies. Without one, <code>cookies.signed</code> throws.
-          </td>
+          <td><code>typesFile</code></td>
+          <td>—</td>
+          <td>Where the generated declarations go.</td>
         </tr>
       </tbody>
     </table>

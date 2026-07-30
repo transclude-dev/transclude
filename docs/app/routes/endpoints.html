@@ -31,7 +31,16 @@ export const POST = async ({ request }) => {
 >
   ${html(s.endpoint)}
 
-  <p>One export per verb, uppercase. It must return a <code>Response</code>.</p>
+  <p>
+    One export per verb, uppercase. Each one returns a
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Response"
+      >Response</a
+    >, the same object the browser's own <code>fetch</code> gives you. Its
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Response/json_static"
+      >Response.json()</a
+    >
+    helper covers most of what an API returns.
+  </p>
 
   <doc-note label="Prefer export const">
     <code>export const GET = (ctx) =&gt; …</code> gets its parameter typed.

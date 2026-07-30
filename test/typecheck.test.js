@@ -471,6 +471,18 @@ test('an export that is not a verb gets no signature', () => {
   );
 });
 
+test('an all-caps export that is not a method is a constant, not a handler', () => {
+  // The rule was "any all-caps name", so a constant beside a handler was held to
+  // `Response | Promise<Response>` and reported as an error about correct code.
+  // The test above only ever tried a lowercase helper, which that rule allowed.
+  assert.deepEqual(
+    endpointErrors(
+      'export const LIMIT = 10;\nexport const GET = () => Response.json({ LIMIT });',
+    ).map((d) => d.message),
+    [],
+  );
+});
+
 test('an async handler is fine, since a Promise<Response> satisfies it', () => {
   assert.deepEqual(
     endpointErrors('export const GET = async () => Response.json({});').map((d) => d.message),

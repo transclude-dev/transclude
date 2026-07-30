@@ -19,6 +19,7 @@ import { splitInterpolations } from './interp.js';
 import { splitBlocks } from './index.js';
 import { planLift } from './script.js';
 import { ACTION_METHODS } from '../document.js';
+import { ENDPOINT_METHODS } from '../server.js';
 
 const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each']);
 
@@ -207,9 +208,15 @@ export function buildEndpointShim(source, { contextType }) {
   return out.build();
 }
 
-/** A handler is named for its method, the way HTTP spells it. */
+/**
+ * A handler is named for its method, the way HTTP spells it.
+ *
+ * Held to the methods the router dispatches rather than to any all-caps name,
+ * or `export const LIMIT = 10` beside a handler would be given a `Response`
+ * signature and reported as an error about code that is fine.
+ */
 function isVerb(name) {
-  return Boolean(name) && /^[A-Z]+$/.test(name);
+  return Boolean(name) && ENDPOINT_METHODS.includes(name);
 }
 
 /**

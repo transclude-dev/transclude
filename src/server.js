@@ -107,21 +107,32 @@ export const SERVER_FILE = 'server.js';
  * certainly forgotten `Response.json`.
  */
 export async function runEndpoint(mod, ctx, method) {
-  const handler = mod?.[method.toUpperCase()];
+  const name = method.toUpperCase();
+  // Membership, not shape. `mod.HELPERS` may well be a function, and a request
+  // naming it would otherwise reach it.
+  if (!ENDPOINT_METHODS.includes(name)) return null;
+
+  const handler = mod?.[name];
   if (typeof handler !== 'function') return null;
 
   const out = await handler(ctx);
   if (out instanceof Response) return out;
 
   throw new Error(
-    `${method.toUpperCase()} answered with ${out === undefined ? 'nothing' : typeof out}, ` +
+    `${name} answered with ${out === undefined ? 'nothing' : typeof out}, ` +
       `not a Response. An endpoint has no template to render instead`,
   );
 }
 
+/**
+ * The methods an endpoint can answer. `app.all` routes every one of them to it,
+ * so this is the list that decides which exports are handlers. The shim reads
+ * the same list, or a name would be dispatched and not checked, or checked and
+ * never dispatched.
+ */
+export const ENDPOINT_METHODS = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
+
 /** What an endpoint answers, for an `Allow` header. */
 export function endpointMethods(mod) {
-  return Object.keys(mod ?? {})
-    .filter((name) => /^[A-Z]+$/.test(name) && typeof mod[name] === 'function')
-    .sort();
+  return ENDPOINT_METHODS.filter((name) => typeof mod?.[name] === 'function').sort();
 }

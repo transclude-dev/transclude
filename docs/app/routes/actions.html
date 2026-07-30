@@ -30,6 +30,17 @@ export const PATCH = async (ctx) => { … };
 export const DELETE = async (ctx) => { … };`,
         'js',
       ],
+      intent: `<form method="post">
+  <input type="hidden" name="id" value="\${note.id}" />
+  <button name="intent" value="remove">Delete</button>
+</form>`,
+      fetch: [
+        `await fetch('/notes', {
+  method: 'DELETE',
+  body: new URLSearchParams({ id }),
+});`,
+        'js',
+      ],
       redirect: [
         `export const POST = async ({ request, url, fragment }) => {
   const result = await save(request);
@@ -63,14 +74,19 @@ export const DELETE = async (ctx) => { … };`,
   ${html(s.verbs)}
 
   <p>
-    A <code>&lt;form&gt;</code> can only send GET or POST. Post an intent to
-    reach the others from a form, or use <code>fetch</code>.
+    A <code>&lt;form&gt;</code> can only send GET or POST. That is HTML, not a
+    limit here. To delete something from a form, post a hidden field saying so
+    and let <code>POST</code> read it.
   </p>
 
-  <doc-note label="Prefer export const">
-    <code>export const POST = (ctx) =&gt; …</code> gets its parameter typed.
-    <code>export function POST(ctx)</code> does not.
-  </doc-note>
+  ${html(s.intent)}
+
+  <p>
+    From script you can send the method directly, and
+    <code>DELETE</code> runs.
+  </p>
+
+  ${html(s.fetch)}
 
   <h2>Answer a mutation with a redirect</h2>
 

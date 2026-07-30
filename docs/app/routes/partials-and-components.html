@@ -68,12 +68,17 @@
     name: '',
     value: '',
   };
+
+  export const formAssociated = true;
 <\/script>
 
-<button type="button">\${value || 'Pick tags'}</button>
-
-<script>
+<button type="button">\${value || 'Pick tags'}</button>`,
+      formScript: `<script>
   export const formAssociated = true;
+
+  host.addEventListener('click', () => {
+    host.setAttribute('value', next(host.getAttribute('value')));
+  });
 <\/script>`,
       formUse: `<form method="post">
   <input name="text" />
@@ -213,17 +218,29 @@
   <h3>A component a form can submit</h3>
 
   <p>
-    Export <code>formAssociated</code> from the element's
-    <code>&lt;script&gt;</code> block and the browser treats it as a
+    Export <code>formAssociated</code> and the browser treats the element as a
     <a
       href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements#form-associated_custom_elements"
       >form-associated custom element</a
-    >. Write <code>true</code> directly rather than a variable, because it
-    becomes a static field on the class and is the same for every element of that
-    tag.
+    >.
   </p>
 
   ${html(s.form)}
+
+  <p>
+    It can go in <code>&lt;script properties&gt;</code> or in
+    <code>&lt;script&gt;</code>. Use whichever block the element already has. An
+    element that only needs to be a form control needs no
+    <code>&lt;script&gt;</code> at all.
+  </p>
+
+  ${html(s.formScript)}
+
+  <doc-note label="Say it once" tone="warn">
+    Declaring it in both blocks is a compile error. Write <code>true</code>
+    directly rather than a variable: it becomes a static field on the class, the
+    same for every element of that tag.
+  </doc-note>
 
   <p>
     Drop it into a form and it behaves like an input. Its value is submitted

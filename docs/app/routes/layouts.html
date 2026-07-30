@@ -1,7 +1,13 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all, tree } from '../lib/code.js';
 
   export default async () => ({
+    nested: tree(`app/routes/
+  _layout.html          wraps everything
+  index.html
+  docs/
+    _layout.html        wraps /docs and below, inside the one above
+    routing.html        /docs/routing`),
     s: await all({
       layout: `<script server>
   export default async ({ route }) => ({
@@ -46,6 +52,21 @@
   <p>The page renders into <code>&lt;slot&gt;</code>. Name a slot to offer more than one.</p>
 
   ${html(s.named)}
+
+  <h2>Nesting</h2>
+
+  <p>
+    A <code>_layout.html</code> in a subdirectory renders inside the one above
+    it. Put a nav in the root layout and a sidebar in the section layout, and a
+    page in that section gets both.
+  </p>
+
+  ${html(nested)}
+
+  <p>
+    Each one loads its own data, and each gets its own
+    <code>&lt;slot&gt;</code> filled by whatever is below it.
+  </p>
 
   <h2>A layout can respond on its own</h2>
 

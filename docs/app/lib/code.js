@@ -8,7 +8,7 @@ let highlighter = null;
 
 async function ready() {
   highlighter ??= await createHighlighter({
-    themes: ['github-light', 'github-dark'],
+    themes: ['github-light-high-contrast', 'github-dark-high-contrast'],
     langs: ['html', 'js', 'json', 'css', 'shell'],
   });
   return highlighter;
@@ -17,6 +17,9 @@ async function ready() {
 /**
  * Both themes in one pass. Each token carries a light and a dark value as
  * custom properties, and the stylesheet picks between them.
+ *
+ * The high-contrast pair, because github-dark's comment token reads Lc 28 on
+ * this background and APCA wants 60 for code.
  *
  * @param {string} source
  * @param {'html' | 'js' | 'json' | 'css' | 'shell' | 'text'} [lang]
@@ -27,7 +30,7 @@ export async function code(source, lang = 'html') {
 
   return shiki.codeToHtml(source.trim(), {
     lang,
-    themes: { light: 'github-light', dark: 'github-dark' },
+    themes: { light: 'github-light-high-contrast', dark: 'github-dark-high-contrast' },
     defaultColor: false,
   });
 }

@@ -816,6 +816,20 @@ Declare a `value` prop and the framework does the rest: `attachInternals()`,
 after `host`, `shadow` and `signal`. A light element can opt in too, because being a
 form control does not need a shadow root.
 
+It can go in `<script properties>` instead, which is where it belongs when the
+element has props and no behavior:
+
+```html
+<script properties>
+  export default { value: '' };
+  export const formAssociated = true;
+</script>
+```
+
+One block or the other, not both. It is a fact about the element rather than a
+prop or a piece of setup, so either can carry it, and declaring it twice is a
+compile error.
+
 It has to be a literal. It becomes a `static` class field, which is the same for
 every element of that tag, so a computed value would look like a per-element choice
 and could not be one.

@@ -5,12 +5,9 @@
 // does not guard a prerendered page. Two copies of that order is two servers
 // that disagree, which has happened twice in this codebase already.
 
-import { existsSync } from 'node:fs';
-import path from 'node:path';
 import { Hono } from 'hono';
 import { csrf } from 'hono/csrf';
 import { trimTrailingSlash } from 'hono/trailing-slash';
-import { serveStatic } from '@hono/node-server/serve-static';
 
 /**
  * `strict: false` so /about and /about/ are the same page.
@@ -28,7 +25,7 @@ import { serveStatic } from '@hono/node-server/serve-static';
 export function baseApp({
   csrf: csrfOption = true,
   trailingSlash = 'never',
-  publicRoot = null,
+  publicFiles = null,
   middleware = null,
 } = {}) {
   if (trailingSlash !== 'never' && trailingSlash !== 'ignore') {
@@ -66,25 +63,13 @@ export function baseApp({
   // After the app's middleware, so a guard can cover these too, and before the
   // route table, so a real file always beats a `[...path]` catch-all.
   //
-  // Hono's rather than the in-memory cache the build output uses: these are the
-  // author's files, they can be large, and they can be media — which needs byte
-  // ranges (206), and the in-memory path does not do them.
-  if (publicRoot && existsSync(publicRoot)) {
-    app.use('*', serveStatic({ root: relativeToCwd(publicRoot), precompressed: true }));
-  }
+  // A handler rather than a directory: what can serve a file is the one thing that
+  // genuinely differs between runtimes. Node hands in Hono's `serveStatic`, which
+  // does byte ranges off a disk; a runtime with no disk hands in something that
+  // reads an asset binding. This file stays free of either.
+  if (publicFiles) app.use('*', publicFiles);
 
   return app;
-}
-
-/**
- * `serveStatic` joins `root` onto the request path, so a root is resolved against
- * the working directory. Both servers compute paths from their own location
- * instead, precisely so they do not depend on where they were started from — this
- * converts one to the other.
- */
-function relativeToCwd(absolute) {
-  const relative = path.relative(process.cwd(), absolute);
-  return relative === '' ? '.' : relative;
 }
 
 /** Where an app puts its middleware. Relative to `appDir`. */

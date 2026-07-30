@@ -63,6 +63,8 @@ function load(dir, urlFor, { maxBytes = DEFAULT_MAX_BYTES } = {}) {
     count: entries.size,
     bytes,
     onDisk,
+    /** For the build, which serialises these for runtimes with no filesystem. */
+    entries,
     encoded: [...entries.values()].filter((e) => e.encodings?.size).length,
 
     /** Entry for a request path, or null. Trailing slashes are the same resource. */

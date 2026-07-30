@@ -1,0 +1,43 @@
+<script properties>
+  export default {
+    label: 'Note',
+    tone: 'note',
+  };
+</script>
+
+<style>
+  :scope {
+    display: block;
+    background: var(--note-bg);
+    border: 1px solid var(--note-rule);
+    border-radius: var(--radius);
+    padding: 0.9rem 1.1rem;
+    margin: 0 0 1.4em;
+    max-width: var(--measure);
+  }
+  :scope[tone='warn'] {
+    background: var(--warn-bg);
+    border-color: var(--warn-rule);
+  }
+  .label {
+    display: block;
+    font-family: var(--sans);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--link);
+    margin-bottom: 0.4rem;
+  }
+  :scope[tone='warn'] .label {
+    color: var(--warn-ink);
+  }
+  p {
+    margin: 0;
+    font-size: 0.97rem;
+    line-height: 1.6;
+  }
+</style>
+
+<span class="label">${label}</span>
+<p><slot></slot></p>

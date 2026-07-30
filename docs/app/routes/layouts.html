@@ -1,0 +1,71 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      layout: `<script server>
+  export default async ({ route }) => ({
+    path: route.path,
+  });
+<\/script>
+
+<header>
+  <nav>…</nav>
+</header>
+
+<main>
+  <slot></slot>
+</main>`,
+      named: `<aside>
+  <slot name="aside">
+    <p>Pages can fill this by declaring a named slot.</p>
+  </slot>
+</aside>`,
+      guard: [
+        `export default async ({ cookies, url }) => {
+  const session = await cookies.signed.get('session');
+  if (!session) return Response.redirect(new URL('/login', url), 303);
+
+  return { user: await load(session) };
+};`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
+<title>Layouts · transclude</title>
+<meta name="description" content="_layout.html wraps every route beside and below it." />
+
+<doc-page
+  heading="Layouts"
+  lede="A _layout.html wraps every route in its directory and below. Layouts nest, and each one loads its own data."
+>
+  ${html(s.layout)}
+
+  <p>The page renders into <code>&lt;slot&gt;</code>. Name a slot to offer more than one.</p>
+
+  ${html(s.named)}
+
+  <h2>A layout can respond on its own</h2>
+
+  <p>
+    Return a <code>Response</code> from a layout loader and it stops there.
+    Nothing below it runs, which is how you write a login redirect once.
+  </p>
+
+  ${html(s.guard)}
+
+  <doc-note label="Middleware does not run during the build" tone="warn">
+    A page behind a guard needs
+    <code>export const prerender = false</code>. Otherwise the build writes a
+    logged-out copy to a file.
+  </doc-note>
+
+  <h2>Sharing the response</h2>
+
+  <p>
+    Every loader in the chain holds the same <code>ctx.response</code>, so a
+    layout that sets a status sets the one the server sends.
+  </p>
+</doc-page>

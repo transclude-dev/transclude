@@ -80,7 +80,7 @@ against.
 - **Empty type shapes must be `{}`, not `Record<string, never>`.** The second one
   carries an index signature, which makes every template typo legal. This was
   wrong in every component without a `<script state>` block and nothing failed.
-- **The shim is `.js` on purpose.** JSDoc `@type` is honoured in `.js` and
+- **The shim is `.js` on purpose.** JSDoc `@type` is honored in `.js` and
   ignored in `.ts`. Do not "clean it up" into TypeScript.
 - **A shim diagnostic that does not map is dropped.** An error landing in
   generated scaffolding disappears. A check that passes very quietly usually means
@@ -209,7 +209,7 @@ against.
   URL the pattern matches but `paths` never listed. Leaving those to the not-found
   handler is what made dev answer 200 with the page's own "not found" body while
   production answered the 404 page. Different status and different body.
-- **The order middleware is registered in is the behaviour, so it lives in one
+- **The order middleware is registered in is the behavior, so it lives in one
   function.** `baseApp` registers, in this order: the trailing-slash redirect,
   CSRF, `app/server.js`, the public-file handler, and then whatever routes the
   caller adds. Every position does a job. The redirect is first because it cleans
@@ -300,6 +300,19 @@ against.
   is a type error for a page that works. They are still checked as expressions.
   Only the claim that the name is declared goes away. The regular expression needs
   the trailing dash: `database` is not `data-`.
+- **A literal `${` cannot be written in a template.** There is no escape for it.
+  The compiler reads every one as an interpolation, so `${}` in prose fails with
+  `bad expression "": empty expression` and a line number in the compiled file
+  rather than the source. Anything documenting the syntax has to pass its
+  examples in from the loader, where a JS string can hold them. That is what
+  `docs/` does, and it is why its code samples are data rather than markup.
+- **A `file:` dependency does not bring its peers.** npm installs a peer
+  dependency alongside a package from the registry, so `npm install transclude`
+  gets Vite and TypeScript. It does not do that for `file:..`, which is how both
+  apps here depend on the package. So `examples/showcase` and `docs` each list
+  Vite and TypeScript again in their own `devDependencies`. Those entries look
+  redundant and are load-bearing. Measured both ways: from a tarball both land,
+  from a path neither does.
 
 ## Testing
 

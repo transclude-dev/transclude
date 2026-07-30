@@ -1,0 +1,58 @@
+<script server>
+  import { all, tree } from '../lib/code.js';
+
+  export default async () => ({
+    helpers: tree(`routes/api/people.js    /api/people
+routes/api/_shared.js   not a route`),
+    s: await all({
+      endpoint: [
+        `// app/routes/api/people.js
+import { people } from '../../data/people.js';
+
+export const GET = (ctx) => Response.json(people);
+
+export const POST = async ({ request }) => {
+  const body = await request.json();
+  people.push(body);
+  return Response.json(body, { status: 201 });
+};`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
+<title>Endpoints · transclude</title>
+<meta name="description" content="A .js file in routes/ returns a Response." />
+
+<doc-page
+  heading="Endpoints"
+  lede="A .js file in the route tree returns a Response. There is no template behind it."
+>
+  ${html(s.endpoint)}
+
+  <p>
+    One export per verb, uppercase. Each one returns a
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Response"
+      >Response</a
+    >, the same object the browser's own <code>fetch</code> gives you. Its
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Response/json_static"
+      >Response.json()</a
+    >
+    helper covers most of what an API returns.
+  </p>
+
+  <doc-note label="Prefer export const">
+    <code>export const GET = (ctx) =&gt; …</code> gets its parameter typed.
+    <code>export function GET(ctx)</code> does not.
+  </doc-note>
+
+  <h2>Helpers</h2>
+
+  <p>
+    A <code>.js</code> file in <code>routes/</code> is a route. Give a helper a
+    <code>_</code> prefix.
+  </p>
+
+  ${html(helpers)}
+</doc-page>

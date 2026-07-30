@@ -227,9 +227,9 @@ test('nothing in the package imports anything outside it', () => {
   // own, which is only true while it lives inside the app it serves. Installed,
   // two directories up is another package.
   //
-  // `examples/` is in this repository and is still on the far side of the boundary.
-  // It depends on the package by name, and nothing in the package may reach into
-  // it.
+  // `examples/` and `docs/` are in this repository and are still on the far side
+  // of the boundary. Both depend on the package by name, and nothing in the
+  // package may reach into either.
   const offenders = [];
 
   const walk = (dir) => {
@@ -251,7 +251,7 @@ test('nothing in the package imports anything outside it', () => {
           const out =
             specifier.startsWith('../../') ||
             /transclude\.config/.test(specifier) ||
-            /(^|\/)examples\//.test(specifier);
+            /(^|\/)(examples|docs)\//.test(specifier);
           if (out) offenders.push(`${full}: ${specifier}`);
         }
       }

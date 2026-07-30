@@ -1,0 +1,238 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      partial: `<!-- app/partials/site-note.html -->
+<script properties>
+  export default {
+    tone: 'neutral',
+  };
+<\/script>
+
+<style>
+  :scope {
+    display: block;
+    border-left: 3px solid var(--rule);
+    padding: 0.5rem 0.9rem;
+  }
+  :scope[tone='warn'] {
+    border-color: #b4232c;
+  }
+</style>
+
+<p><slot>Nothing to say.</slot></p>`,
+      use: `<site-note tone="warn">A partial, in the page's own DOM.</site-note>`,
+      behavior: `<script>
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key === 'Escape') host.dismiss();
+    },
+    { signal },
+  );
+<\/script>`,
+      prototype: [
+        `export const prototype = {
+  dismiss() {
+    this.hidden = true;
+    this.dispatchEvent(new CustomEvent('dismiss', { bubbles: true }));
+  },
+};`,
+        'js',
+      ],
+      component: `<!-- app/components/user-card.html -->
+<script properties>
+  export default {
+    name: '',
+    tags: [],
+  };
+<\/script>
+
+<style>
+  h3 { margin: 0; }
+</style>
+
+<h3>\${name}</h3>
+<ul>
+  <li each="tag of tags">\${tag}</li>
+</ul>
+<slot></slot>`,
+      json: `<user-card
+  name="Ada Lovelace"
+  tags='["math", "engines"]'
+></user-card>`,
+      form: `<!-- app/components/tag-picker.html -->
+<script properties>
+  export default {
+    name: '',
+    value: '',
+  };
+<\/script>
+
+<button type="button">\${value || 'Pick tags'}</button>
+
+<script>
+  export const formAssociated = true;
+<\/script>`,
+      formUse: `<form method="post">
+  <input name="text" />
+  <tag-picker name="tags"></tag-picker>
+  <button type="submit">Add</button>
+</form>`,
+    }),
+  });
+</script>
+
+<title>Partials and components · transclude</title>
+<meta name="description" content="A partial is light DOM. A component is a Web Component." />
+
+<doc-page
+  heading="Partials and components"
+  lede="A partial renders into the page's own DOM. A component is a Web Component with a shadow root. The folder a file sits in says which one it is."
+>
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Partial</th>
+          <th>Component</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Lives in</td>
+          <td><code>partials/</code></td>
+          <td><code>components/</code></td>
+        </tr>
+        <tr>
+          <td>Boundary</td>
+          <td>None. Light DOM.</td>
+          <td>Shadow root.</td>
+        </tr>
+        <tr>
+          <td>Page CSS reaches it</td>
+          <td>Yes</td>
+          <td>Only inherited properties</td>
+        </tr>
+        <tr>
+          <td><code>&lt;label for&gt;</code> works</td>
+          <td>Yes</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>Ships JavaScript</td>
+          <td>Only with behavior</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td>Re-renders on attribute change</td>
+          <td>No</td>
+          <td>Yes</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Reach for a partial first. It is the cheaper of the two and covers most
+    reuse. Choose a component when you want its styles and DOM sealed off from
+    the page, its markup and behavior kept together in one file, and the same tag
+    usable anywhere without the page knowing how it works.
+  </p>
+
+  <h2>A partial</h2>
+
+  <p>The file name is the tag name.</p>
+
+  ${html(s.partial)}
+
+  ${html(s.use)}
+
+  <p>
+    The style block is hoisted into <code>&lt;head&gt;</code> once, however many
+    times the partial appears.
+  </p>
+
+  <h2>Giving it behavior</h2>
+
+  <p>
+    A plain <code>&lt;script&gt;</code> block runs once per element.
+    <code>host</code> is the element, <code>shadow</code> is its shadow root or
+    <code>null</code>, and <code>signal</code> aborts when the element leaves the
+    document.
+  </p>
+
+  ${html(s.behavior)}
+
+  <h3>A public API</h3>
+
+  <p>
+    <code>export const prototype</code> puts members on the class. The rest of
+    the block runs once per element.
+  </p>
+
+  ${html(s.prototype)}
+
+  <doc-note label="Inside a member, use this" tone="warn">
+    <code>host</code>, <code>shadow</code>, <code>signal</code> and
+    <code>internals</code> exist only in the body of the script, which runs once
+    per element. A <code>prototype</code> member is shared by every element of
+    that tag, so it reaches its own element with <code>this</code>. Using
+    <code>host</code> in one is a compile error rather than a bug you find later.
+  </doc-note>
+
+  <h2>A component</h2>
+
+  <p>
+    The same file shape, in <code>components/</code>. You get a real
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components"
+      >Web Component</a
+    >: a
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM"
+      >shadow root</a
+    >, a working <code>&lt;slot&gt;</code>, and a re-render when its attributes
+    change.
+  </p>
+
+  ${html(s.component)}
+
+  <h3>Objects and arrays</h3>
+
+  <p>Anything that is not a string is written as JSON in the attribute.</p>
+
+  ${html(s.json)}
+
+  <doc-note label="Keep it small" tone="warn">
+    The JSON sits in the HTML, so it is sent with the document and read back on
+    every attribute change. Pass an id and load the rest in the page's loader
+    rather than putting a large array in an attribute.
+  </doc-note>
+
+  <h3>A component a form can submit</h3>
+
+  <p>
+    Export <code>formAssociated</code> from the element's
+    <code>&lt;script&gt;</code> block and the browser treats it as a
+    <a
+      href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements#form-associated_custom_elements"
+      >form-associated custom element</a
+    >. Write <code>true</code> directly rather than a variable, because it
+    becomes a static field on the class and is the same for every element of that
+    tag.
+  </p>
+
+  ${html(s.form)}
+
+  <p>
+    Drop it into a form and it behaves like an input. Its value is submitted
+    under its <code>name</code>, and
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/FormData">FormData</a>
+    reads it like any other field.
+  </p>
+
+  ${html(s.formUse)}
+
+  <p>A partial can do this too. Being a form control needs no shadow root.</p>
+</doc-page>

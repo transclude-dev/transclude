@@ -1,0 +1,98 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      page: `<script server>
+  export default async ({ action }) => ({
+    notes,
+    error: action?.error ?? null,
+  });
+
+  export const actions = {
+    async post({ request, url }) {
+      const form = await request.formData();
+      const text = String(form.get('text') ?? '').trim();
+      if (!text) return { error: 'a note needs some text' };
+
+      notes.push({ id: nextId++, text });
+      return Response.redirect(new URL(url), 303);
+    },
+  };
+<\/script>
+
+<form method="post">
+  <input name="text" />
+  <button>Add</button>
+</form>`,
+      keyed: [
+        `export const actions = {
+  async post(ctx) { … },
+  async delete(ctx) { … },
+  async put(ctx) { … },
+};`,
+        'js',
+      ],
+      redirect: [
+        `async post({ request, url, fragment }) {
+  const result = await save(request);
+  if (result.error) return result;
+  if (fragment !== null) return result;
+
+  return Response.redirect(new URL(url), 303);
+}`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
+<title>Actions · transclude</title>
+<meta name="description" content="A page handles GET. Its actions handle POST and the other verbs." />
+
+<doc-page
+  heading="Actions"
+  lede="A form posts to the page it sits on. The action runs, then the loader renders what it left behind."
+>
+  ${html(s.page)}
+
+  <h2>Keyed by method</h2>
+
+  ${html(s.keyed)}
+
+  <p>
+    A <code>&lt;form&gt;</code> can only send GET or POST. Post an intent to
+    reach the others from a form, or use <code>fetch</code>.
+  </p>
+
+  <h2>Answer a mutation with a redirect</h2>
+
+  <p>
+    Use a 303, so the URL the browser lands on is a GET and a reload does not
+    submit again. Two things skip it: a rejected submission, which changed
+    nothing, and a fragment request, which asked for markup.
+  </p>
+
+  ${html(s.redirect)}
+
+  <h2>One shape from every handler</h2>
+
+  <p>
+    <code>ctx.action</code> is the union of what the handlers return. Return the
+    same shape from all of them, or the loader can read none of them.
+  </p>
+
+  <doc-note label="Build a Response in a function, never share one" tone="warn">
+    A body can be read once. A module-level
+    <code>const badRequest = new Response(…)</code> works for the first request
+    and comes back empty after that.
+  </doc-note>
+
+  <h2>CSRF</h2>
+
+  <p>
+    On by default, covering non-GET requests that carry a form content type. Set
+    <code>csrf: false</code> to turn it off, or pass an object to allow another
+    origin.
+  </p>
+</doc-page>

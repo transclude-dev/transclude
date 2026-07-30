@@ -377,6 +377,21 @@ export function assertNoCollisions(exports, reserved, label) {
   }
 }
 
+/**
+ * A page's handlers are verb exports. An `actions` object is what they used to
+ * be, and nothing reads one now, so leaving it would answer 405 to every form
+ * on the page and say nothing about why.
+ */
+export function assertNoActionsObject(exports, label) {
+  if (!exports.includes('actions')) return;
+
+  throw new ScriptError(
+    `${label}: exports "actions", which nothing reads. Handlers are named for ` +
+      `their method now: export const POST = (ctx) => …, and the same for PUT, ` +
+      `PATCH and DELETE.`,
+  );
+}
+
 // ---- internals ------------------------------------------------------------
 
 function parseOrThrow(code, label, lineOffset, extra = {}) {

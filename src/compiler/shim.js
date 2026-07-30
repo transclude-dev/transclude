@@ -18,6 +18,7 @@ import { childrenOf } from './codegen.js';
 import { splitInterpolations } from './interp.js';
 import { splitBlocks } from './index.js';
 import { planLift } from './script.js';
+import { ACTION_METHODS } from '../document.js';
 
 const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each']);
 
@@ -212,6 +213,39 @@ function isVerb(name) {
 }
 
 /**
+ * A page's verb exports, in source order.
+ *
+ * Held to the methods a page actually dispatches on rather than to `isVerb`,
+ * because a page may export an all-caps constant and giving that a handler
+ * signature would be an error about code that is fine.
+ */
+function actionExports(ast) {
+  const found = [];
+
+  for (const node of ast.body) {
+    if (node.type !== 'ExportNamedDeclaration') continue;
+    const declaration = node.declaration;
+
+    const name =
+      declaration?.type === 'VariableDeclaration'
+        ? declaration.declarations[0]?.id?.name
+        : declaration?.type === 'FunctionDeclaration'
+          ? declaration.id?.name
+          : null;
+
+    if (name && ACTION_METHODS.includes(name)) {
+      found.push({
+        name,
+        at: node.start,
+        declared: declaration.type === 'FunctionDeclaration',
+      });
+    }
+  }
+
+  return found;
+}
+
+/**
  * `page`, `layout` and `component` differ only in where their data comes from:
  * a loader checked against a route context, or a props object.
  */
@@ -348,17 +382,18 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
   const attrs = binding === '__props' ? namedExport(ast, 'attributes') : null;
   if (attrs) edits.push({ at: attrs.start, insert: '/** @type {__Attrs} */\n' });
 
-  const actions = contextType ? namedExport(ast, 'actions') : null;
-  if (actions) {
-    // The same route context, except that `request` is not nullable here. It is
-    // null only while prerendering, and prerendering never runs an action, so the
-    // intersection narrows `Request | null` to `Request`. An author does not have
-    // to answer a question that cannot come up.
+  // A page's handlers are named for their methods, the same way an endpoint's
+  // are. The route context here has `request` non-nullable: it is null only
+  // while prerendering, and prerendering never runs an action.
+  const verbs = contextType ? actionExports(ast) : [];
+  for (const verb of verbs) {
+    // Only on `export const`. TypeScript ignores `@satisfies` on a function
+    // declaration, so emitting one there would be a check that reads as if it
+    // ran. The return type is still picked up below either way.
+    if (verb.declared) continue;
     edits.push({
-      at: actions.start,
-      insert:
-        `/** @satisfies {Record<string, ` +
-        `(ctx: ${contextType} & { request: Request }) => unknown>} */\n`,
+      at: verb.at,
+      insert: `/** @satisfies {(ctx: ${contextType} & { request: Request }) => unknown} */\n`,
     });
   }
 
@@ -385,9 +420,8 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
     // of their return types. A `Response` is excluded because returning
     // one short-circuits: the loader never runs, so it can never see it.
     if (contextType) {
-      const action = actions
-        ? `Exclude<Awaited<ReturnType<(typeof actions)[keyof typeof actions]>>, Response>`
-        : 'null';
+      const returns = verbs.map((verb) => `Awaited<ReturnType<typeof ${verb.name}>>`).join(' | ');
+      const action = verbs.length ? `Exclude<${returns}, Response>` : 'null';
       out.add(
         `\n/** @satisfies {(ctx: ${contextType} & { action: ${action} | null }) => unknown} */\n`,
       );

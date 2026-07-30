@@ -6,6 +6,7 @@ import { compileBindings } from './bind.js';
 import {
   ScriptError,
   assertModule,
+  assertNoActionsObject,
   assertNoCollisions,
   bindDefaultExport,
   toFunctionBody,
@@ -255,6 +256,7 @@ export function compilePage(
     ? bindDefaultExport(blocks.server, '__load', where)
     : { code: 'const __load = null;', exports: [], imports: [], defaultNode: null };
   assertNoCollisions(server.exports, PAGE_EXPORTS, where);
+  assertNoActionsObject(server.exports, where);
 
   const template = compileFragment(blocks.nodes, { components, shadowTags, page: true });
 
@@ -312,6 +314,7 @@ export function compileLayout(source, { id, components = new Map(), shadowTags =
     ? bindDefaultExport(blocks.server, '__load', where)
     : { code: 'const __load = null;', exports: [], imports: [], defaultNode: null };
   assertNoCollisions(server.exports, PAGE_EXPORTS, where);
+  assertNoActionsObject(server.exports, where);
 
   const template = compileFragment(blocks.nodes, {
     components,

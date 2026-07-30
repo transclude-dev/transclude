@@ -5,7 +5,7 @@ arrives is markup a browser already knows how to display. Nothing has to run for
 the page to be correct.
 
 One `.html` file is the unit of authorship, and the directory tree is the route
-table. A page answers GET. Its `actions` answer POST and the other verbs, so a
+table. A page answers GET. Its verb exports answer POST and the others, so a
 plain `<form method="post">` works. A `.js` file in the same tree is an endpoint
 that returns a `Response`. The server side is built on Hono.
 
@@ -47,12 +47,10 @@ to run against, and it is what the four runtimes are checked with.
   export default async () => ({ notes: notes.all() });
 
   // Answers everything else. A <form method="post"> reaches this.
-  export const actions = {
-    async post({ request, url }) {
-      notes.add((await request.formData()).get('text'));
-      // 303, so a reload is a GET and does not submit again.
-      return Response.redirect(new URL(url).origin + '/notes', 303);
-    },
+  export const POST = async ({ request, url }) => {
+    notes.add((await request.formData()).get('text'));
+    // 303, so a reload is a GET and does not submit again.
+    return Response.redirect(new URL(url).origin + '/notes', 303);
   };
 </script>
 
@@ -273,21 +271,19 @@ The rest of `ctx`:
 
 ## Answering more than GET
 
-A `<form method="post">` was not reachable until `actions` existed.
+A page exports a handler named for the method, the same way an endpoint does.
 
 ```html
 <script server>
   export default async ({ action }) => ({ notes, error: action?.error ?? null });
 
-  export const actions = {
-    async post({ request, cookies, fragment, url }) {
-      const form = await request.formData();
-      const text = String(form.get('text') ?? '').trim();
-      if (!text) return { error: 'a note needs some text' };
+  export const POST = async ({ request, cookies, fragment, url }) => {
+    const form = await request.formData();
+    const text = String(form.get('text') ?? '').trim();
+    if (!text) return { error: 'a note needs some text' };
 
-      notes.push({ text });
-      return Response.redirect(new URL(url).origin + '/notes', 303);
-    },
+    notes.push({ text });
+    return Response.redirect(new URL(url).origin + '/notes', 303);
   };
 </script>
 ```
@@ -297,9 +293,9 @@ asked for it. A form that comes back with an error and one that redirects are
 written the same way, and neither has to restate the page's data. Returning a
 `Response` answers the request directly and skips the render.
 
-Keyed by method because `export const delete` is a syntax error and an object key
-is not. A method the page does not answer gets a 405 with an `Allow` header, not a
-404. The URL exists; the method does not.
+`POST`, `PUT`, `PATCH` and `DELETE`, uppercase, because `export const delete` is a
+syntax error and `export const DELETE` is not. A method the page does not answer
+gets a 405 with an `Allow` header, not a 404. The URL exists; the method does not.
 
 Three rules, each of which was a bug first:
 

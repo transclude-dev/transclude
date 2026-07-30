@@ -200,11 +200,15 @@ against.
   and say nothing about why. The shim types each handler's `ctx` from the same
   route context as the loader, and adds `{ request: Request }`: the request is
   null only while prerendering, and prerendering never runs an action.
-- **The page shim keys on `ACTION_METHODS`, not on `isVerb`.** The endpoint shim
-  treats any all-caps export as a verb, which is right there and wrong on a page:
-  `export const LIMIT = 10` beside a loader would be given a handler signature and
-  reported as an error about code that is fine. One list, imported from
-  `document.js`, so dispatch and the types cannot disagree.
+- **A verb is a name on a list, not a shape.** Both shims key on the methods the
+  router really dispatches: `ACTION_METHODS` from `document.js` for a page,
+  `ENDPOINT_METHODS` from `server.js` for an endpoint. The endpoint rule was
+  `/^[A-Z]+$/`, so `export const LIMIT = 10` beside a handler was held to
+  `Response | Promise<Response>` and reported as an error about correct code. The
+  test meant to cover that used a lowercase helper, which the old rule already
+  allowed, so it passed for as long as it was wrong. `runEndpoint` checks
+  membership as well as shape: `mod.HELPERS` may well be a function, and a request
+  naming it would otherwise reach it.
 - **`ctx.response` is shared by reference, and has to be.** Loaders are called with
   `{ ...ctx, layout }`, so `ctx.status = 404` would be written to a copy nobody
   reads. `responseOf()` returns the one object every loader in the chain and the

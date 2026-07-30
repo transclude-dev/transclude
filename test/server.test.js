@@ -161,6 +161,22 @@ test('the methods it answers are readable, for an Allow header', () => {
   assert.deepEqual(endpointMethods(null), []);
 });
 
+test('an all-caps helper is not a method, however it is spelled', () => {
+  // The rule used to be "any all-caps export", which a lowercase helper passes
+  // and `HELPERS` does not. Only the lowercase case was covered, so this held
+  // for years while being wrong.
+  const mod = { GET: () => {}, HELPERS: () => {}, LIMIT: 10 };
+  assert.deepEqual(endpointMethods(mod), ['GET']);
+});
+
+test('a request naming a helper cannot reach it', async () => {
+  let called = false;
+  const mod = { HELPERS: () => ((called = true), new Response('x')) };
+
+  assert.equal(await runEndpoint(mod, {}, 'HELPERS'), null, 'not a method, so not routed');
+  assert.equal(called, false);
+});
+
 test('an endpoint is handed the same context a loader is', async () => {
   let saw = null;
   const ctx = { url: 'http://x/api', params: { id: '1' }, request: new Request('http://x/api') };

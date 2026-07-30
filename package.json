@@ -39,8 +39,8 @@
   ],
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
-    "test:demos": "npm test --prefix demos/everything",
-    "demo": "npm run dev --prefix demos/everything"
+    "test:examples": "npm test --prefix examples/showcase",
+    "showcase": "npm run dev --prefix examples/showcase"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

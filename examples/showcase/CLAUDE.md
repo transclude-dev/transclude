@@ -1,4 +1,4 @@
-# transclude demo
+# transclude showcase
 
 Every feature, and the browser checks. `transclude` is a dependency, from
 `file:../..`, so this is an ordinary app that happens to sit in the framework's

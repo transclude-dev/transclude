@@ -227,7 +227,7 @@ test('nothing in the package imports anything outside it', () => {
   // own, which is only true while it lives inside the app it serves. Installed,
   // two directories up is another package.
   //
-  // `demos/` is in this repository and is still on the far side of the boundary.
+  // `examples/` is in this repository and is still on the far side of the boundary.
   // It depends on the package by name, and nothing in the package may reach into
   // it.
   const offenders = [];
@@ -251,7 +251,7 @@ test('nothing in the package imports anything outside it', () => {
           const out =
             specifier.startsWith('../../') ||
             /transclude\.config/.test(specifier) ||
-            /(^|\/)demos\//.test(specifier);
+            /(^|\/)examples\//.test(specifier);
           if (out) offenders.push(`${full}: ${specifier}`);
         }
       }

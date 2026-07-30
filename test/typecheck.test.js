@@ -37,7 +37,7 @@ test('the loader keeps its inferred return type while its parameter is typed', (
   const { code } = shim(
     `<script server>export default ({ params }) => ({ a: params.x });</script><p>\${a}</p>`,
   );
-  // The context is inlined rather than imported: hf-env.d.ts is generated *from*
+  // The context is inlined rather than imported: transclude-env.d.ts is generated *from*
   // these shims, so it cannot also be an input to them.
   assert.match(code, /@satisfies \{\(ctx: \{ params: \{ name: string \}/);
   assert.match(code, /@typedef \{__Shape<Awaited<ReturnType<typeof __default>>>\} __Data/);
@@ -124,7 +124,7 @@ function project(files, options = {}) {
   }
   fs.mkdirSync(path.join(dir, 'app'), { recursive: true });
   fs.writeFileSync(
-    path.join(dir, 'app/hf-env.d.ts'),
+    path.join(dir, 'app/transclude-env.d.ts'),
     `export {};
 export interface IndexContext { params: Record<string, string>; layout: { site: string }; }
 export interface UserCardProps { name: string; tags: string[] }

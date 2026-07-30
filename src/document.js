@@ -190,7 +190,7 @@ export function renderDocument(chain, datas, { clientEntry, stylesheet, lang = '
       if (seen.has(def.tag)) continue;
       seen.add(def.tag);
       if (def.light && def.css) {
-        scoped.push(`<style data-hf="${def.tag}">\n${def.css}\n</style>`);
+        scoped.push(`<style data-transclude="${def.tag}">\n${def.css}\n</style>`);
       }
       collect(def.elements);
     }
@@ -202,7 +202,7 @@ export function renderDocument(chain, datas, { clientEntry, stylesheet, lang = '
   const own = chain.map((mod) => mod.css).filter(Boolean);
   const css = [
     ...scoped,
-    ...(own.length ? [`<style data-hf-page>\n${own.join('\n')}\n</style>`] : []),
+    ...(own.length ? [`<style data-transclude-page>\n${own.join('\n')}\n</style>`] : []),
   ];
 
   return `<!doctype html>

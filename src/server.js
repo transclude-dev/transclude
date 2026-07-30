@@ -38,14 +38,14 @@ export function baseApp(options = {}) {
   const unknown = Object.keys(options).filter((key) => !OPTIONS.has(key));
   if (unknown.length) {
     throw new Error(
-      `[html-first] baseApp does not know ${unknown.join(', ')}. ` +
+      `[transclude] baseApp does not know ${unknown.join(', ')}. ` +
         `It takes ${[...OPTIONS].join(', ')}.`,
     );
   }
 
   if (trailingSlash !== 'never' && trailingSlash !== 'ignore') {
     throw new Error(
-      `[html-first] trailingSlash must be 'never' or 'ignore', not ${JSON.stringify(trailingSlash)}`,
+      `[transclude] trailingSlash must be 'never' or 'ignore', not ${JSON.stringify(trailingSlash)}`,
     );
   }
 

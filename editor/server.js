@@ -1,4 +1,4 @@
-// Language server for .html files in an html-first project.
+// Language server for .html files in an transclude project.
 //
 // Hand-written JSON-RPC rather than a dependency. The part of the protocol
 // needed here is small, and keeping it dependency-free means any editor that
@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createChecker } from '../src/typecheck.js';
-import config from '../../html-first.config.js';
+import { loadProject } from '../src/project.js';
 
 let checker = null;
 let root = process.cwd();
@@ -49,7 +49,7 @@ function send(message) {
 
 /** stderr, so it never corrupts the protocol stream on stdout. */
 function log(text) {
-  process.stderr.write(`[html-first] ${text}\n`);
+  process.stderr.write(`[transclude] ${text}\n`);
 }
 
 // ---- protocol --------------------------------------------------------------
@@ -58,8 +58,15 @@ function handle(message) {
   switch (message.method) {
     case 'initialize': {
       root = message.params?.rootPath ?? fileURLToPath(message.params?.rootUri ?? pathToFileURL(root).href);
-      checker = createChecker({ root, ...config });
-      log(`watching ${root}`);
+      // The editor says which folder it opened, so the config is loaded from
+      // there. Everything after this needs it, so nothing is answered until it
+      // has arrived.
+      loadProject(root)
+        .then((project) => {
+          checker = createChecker({ root: project.root, ...project.config });
+          log(`watching ${project.root}`);
+        })
+        .catch((err) => log(`no project here: ${err.message}`));
       send({
         id: message.id,
         result: {
@@ -67,7 +74,7 @@ function handle(message) {
             textDocumentSync: { openClose: true, change: 1, save: true },
             hoverProvider: true,
           },
-          serverInfo: { name: 'html-first', version: '0.1.0' },
+          serverInfo: { name: 'transclude', version: '0.1.0' },
         },
       });
       return;
@@ -118,7 +125,7 @@ function publish(uri, text) {
     range: rangeOf(text, diagnostic.offset, diagnostic.length),
     severity: diagnostic.severity === 'error' ? 1 : 2,
     code: `TS${diagnostic.code}`,
-    source: 'html-first',
+    source: 'transclude',
     message: diagnostic.message,
   }));
 

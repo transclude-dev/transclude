@@ -15,11 +15,9 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { createApp } from './app.js';
 import { etagOf, loadAssets, loadStatic } from './static-cache.js';
 import { compressResponse } from './compress.js';
-import config from '../../html-first.config.js';
+import { loadProject } from './project.js';
 
-// `fileURLToPath`, not `url.pathname`: a space in the path stays percent-encoded
-// in the latter, and `Atelier%20Dakroub` is not a directory.
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const { root, config, configFile } = await loadProject();
 const dist = path.join(root, config.outDir);
 
 export const noBuild = !fs.existsSync(path.join(dist, 'routes.json'));
@@ -30,7 +28,11 @@ export const noBuild = !fs.existsSync(path.join(dist, 'routes.json'));
  * rather than leave it to be found.
  */
 function newestSource() {
-  const roots = [path.join(root, config.appDir), path.join(root, 'framework/src')];
+  // The app, and the framework wherever it is installed. `fileURLToPath`, not
+  // `url.pathname`: a space in the path stays percent-encoded in the latter, and
+  // `Atelier%20Dakroub` is not a directory.
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const roots = [path.join(root, config.appDir), here];
   let newest = { time: 0, file: null };
 
   const walk = (dir) => {
@@ -46,7 +48,6 @@ function newestSource() {
   };
 
   for (const dir of roots) walk(dir);
-  const configFile = path.join(root, 'html-first.config.js');
   if (fs.existsSync(configFile)) {
     const { mtimeMs } = fs.statSync(configFile);
     if (mtimeMs > newest.time) newest = { time: mtimeMs, file: configFile };
@@ -118,7 +119,8 @@ export function summary(port) {
   if (stale) {
     const ago = Math.round((newest.time - builtAt) / 1000);
     console.log('');
-    console.log(`  ⚠  ${path.relative(root, newest.file)} changed ${ago}s after the last build.`);
+    const where = path.relative(root, newest.file);
+    console.log(`  ⚠  ${where} changed ${ago}s after the last build.`);
     console.log('     This server reads dist/, so that edit is not being served.');
     console.log('     Run `npm run build` (or `npm run preview` to do both).');
   }

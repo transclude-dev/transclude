@@ -34,14 +34,14 @@ const light = (tag, css, elements = []) => ({ tag, light: true, css, elements })
 
 test('a light element gets its own <style>, named after its tag', () => {
   const html = renderDocument([page({ elements: [light('site-note', '.a{}')] })], [{}]);
-  assert.match(html, /<style data-hf="site-note">\n\.a\{\}\n<\/style>/);
+  assert.match(html, /<style data-transclude="site-note">\n\.a\{\}\n<\/style>/);
 });
 
 test('the name is what lets a client tell whether the styles are already here', () => {
   // The only record of what <head> contains is <head>. Nothing is tracked
   // alongside it, so a swap and a render cannot disagree.
   const html = renderDocument([page({ elements: [light('a-b', '.a{}')] })], [{}]);
-  assert.equal((html.match(/data-hf="a-b"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-transclude="a-b"/g) ?? []).length, 1);
 });
 
 test('rendering the same element twice still writes one <style>', () => {
@@ -49,7 +49,7 @@ test('rendering the same element twice still writes one <style>', () => {
     [page({ elements: [light('a-b', '.a{}'), light('a-b', '.a{}')] })],
     [{}],
   );
-  assert.equal((html.match(/data-hf="a-b"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-transclude="a-b"/g) ?? []).length, 1);
 });
 
 test('a shadow component adds nothing to <head>, since its styles are inside it', () => {
@@ -57,7 +57,7 @@ test('a shadow component adds nothing to <head>, since its styles are inside it'
     [page({ elements: [{ tag: 'u-c', light: false, css: '.a{}', elements: [] }] })],
     [{}],
   );
-  assert.doesNotMatch(html, /data-hf="u-c"/);
+  assert.doesNotMatch(html, /data-transclude="u-c"/);
 });
 
 test('nested elements are reached through their parent', () => {
@@ -65,13 +65,13 @@ test('nested elements are reached through their parent', () => {
     [page({ elements: [light('outer', '.o{}', [light('inner', '.i{}')])] })],
     [{}],
   );
-  assert.match(html, /data-hf="inner"/);
+  assert.match(html, /data-transclude="inner"/);
 });
 
 test("the page's own styles are marked, and come last", () => {
   const html = renderDocument([page({ css: '.page{}', elements: [light('a-b', '.a{}')] })], [{}]);
-  const element = html.indexOf('data-hf="a-b"');
-  const own = html.indexOf('data-hf-page');
+  const element = html.indexOf('data-transclude="a-b"');
+  const own = html.indexOf('data-transclude-page');
 
   assert.ok(element !== -1 && own !== -1);
   assert.ok(element < own, 'a page overrides an element, so it has to be last');
@@ -86,8 +86,8 @@ test('a page with no styles of its own emits no block for them', () => {
 
 test('every element in the app is one dynamic import away', () => {
   const { code } = compileElementsEntry(['site-note', 'user-card']);
-  assert.match(code, /"site-note": \(\) => import\("virtual:hf-component\/site-note"\)/);
-  assert.match(code, /"user-card": \(\) => import\("virtual:hf-component\/user-card"\)/);
+  assert.match(code, /"site-note": \(\) => import\("virtual:transclude-component\/site-note"\)/);
+  assert.match(code, /"user-card": \(\) => import\("virtual:transclude-component\/user-card"\)/);
 });
 
 test('a thunk, not a URL, because only the bundler knows where the chunk lands', () => {
@@ -149,7 +149,7 @@ test('defining an element defines what it renders', () => {
   // it paints into a shadow root is out of reach of anything watching the
   // document.
   const code = componentOf('<b-b></b-b>');
-  assert.match(code, /import __C0, \{ define as __C0_define \} from "virtual:hf-component\/b-b";/);
+  assert.match(code, /import __C0, \{ define as __C0_define \} from "virtual:transclude-component\/b-b";/);
   assert.match(code, /__C0_define\(\);/);
 });
 
@@ -308,7 +308,7 @@ test('no MutationObserver, no watching, and nothing thrown', () => {
 // ---- adoptStyles ----------------------------------------------------------
 
 function fakeHead(existing = []) {
-  const styles = existing.map((tag) => ({ tag, attrs: { 'data-hf': tag } }));
+  const styles = existing.map((tag) => ({ tag, attrs: { 'data-transclude': tag } }));
   const head = {
     insertBefore(node, before) {
       const at = before ? styles.indexOf(before) : styles.length;
@@ -326,8 +326,8 @@ function fakeHead(existing = []) {
       },
     }),
     querySelector(selector) {
-      const named = /^style\[data-hf="(.+)"\]$/.exec(selector);
-      const key = named ? 'data-hf' : 'data-hf-page';
+      const named = /^style\[data-transclude="(.+)"\]$/.exec(selector);
+      const key = named ? 'data-transclude' : 'data-transclude-page';
       return styles.find((s) => (named ? s.attrs[key] === named[1] : key in s.attrs)) ?? null;
     },
   };
@@ -340,7 +340,7 @@ test("a light element's styles land in <head>, marked with its tag", () => {
   adoptStyles({ tag: 'a-b', light: true, css: '.a{}' });
 
   assert.equal(dom.styles.length, 1);
-  assert.equal(dom.styles[0].attrs['data-hf'], 'a-b');
+  assert.equal(dom.styles[0].attrs['data-transclude'], 'a-b');
   assert.equal(dom.styles[0].textContent, '.a{}');
   dom.restore();
 });
@@ -363,10 +363,10 @@ test('a shadow component adopts nothing, its styles are inside its root', () => 
 
 test('adopted styles go before the page block, not after it', () => {
   const dom = fakeHead();
-  dom.styles.push({ attrs: { 'data-hf-page': '' } });
+  dom.styles.push({ attrs: { 'data-transclude-page': '' } });
   adoptStyles({ tag: 'a-b', light: true, css: '.a{}' });
 
-  assert.equal(dom.styles[0].attrs['data-hf'], 'a-b', 'a page still overrides an element');
+  assert.equal(dom.styles[0].attrs['data-transclude'], 'a-b', 'a page still overrides an element');
   dom.restore();
 });
 

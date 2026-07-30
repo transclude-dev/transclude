@@ -1,10 +1,10 @@
+#!/usr/bin/env node
 // Hono routes; Vite compiles. The route table is the directory tree. See
 // src/routes.js for the rules.
 
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { getRequestListener } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { createServer as createViteServer } from 'vite';
@@ -23,9 +23,9 @@ import { resolveRoutesDir, scanRoutes } from '../src/routes.js';
 import { baseApp, endpointMethods, runEndpoint, SERVER_FILE } from '../src/server.js';
 import { randomBytes } from 'node:crypto';
 import { cookiesOf } from '../src/cookies.js';
-import config from '../../html-first.config.js';
+import { loadProject } from '../src/project.js';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const { root, config } = await loadProject();
 const routesDir = resolveRoutesDir(path.join(root, config.appDir), config.routesDir);
 const PORT = Number(process.env.PORT ?? 5173);
 
@@ -40,7 +40,7 @@ const PORT = Number(process.env.PORT ?? 5173);
  */
 const cookieSecret = config.cookieSecret ?? randomBytes(32).toString('hex');
 if (!config.cookieSecret) {
-  console.log('[html-first] no cookieSecret, so signing with a random one for this process');
+  console.log('[transclude] no cookieSecret, so signing with a random one for this process');
 }
 
 const publicRoot = config.publicDir

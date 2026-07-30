@@ -55,7 +55,7 @@ export function scanRoutes(dir) {
     const clash = seen.get(route.pattern) ?? seen.get(route.id);
     if (clash) {
       throw new Error(
-        `[html-first] ${rel} and ${clash} collide (${route.pattern}, id ${route.id}). Rename one`,
+        `[transclude] ${rel} and ${clash} collide (${route.pattern}, id ${route.id}). Rename one`,
       );
     }
     seen.set(route.pattern, rel);
@@ -174,9 +174,9 @@ export function resolveRoutesDir(app, routesDir) {
   const legacy = path.resolve(app, 'pages');
   if (fs.existsSync(legacy)) {
     throw new Error(
-      `[html-first] ${path.relative(app, legacy)}/ is now ${routesDir}/. It holds .js ` +
+      `[transclude] ${path.relative(app, legacy)}/ is now ${routesDir}/. It holds .js ` +
         `endpoints as well as .html pages. Rename the directory, or set ` +
-        `\`routesDir\` in html-first.config.js.`,
+        `\`routesDir\` in transclude.config.js.`,
     );
   }
   return dir;

@@ -421,7 +421,7 @@ export function compileClientEntry(sources, { tags = [] } = {}, { runtime, eleme
   return {
     code: `
 ${imports}
-${tags.map((tag, i) => `import { define as __D${i} } from ${JSON.stringify(`virtual:hf-component/${tag}`)};`).join('\n')}
+${tags.map((tag, i) => `import { define as __D${i} } from ${JSON.stringify(`virtual:transclude-component/${tag}`)};`).join('\n')}
 
 ${tags.map((_, i) => `__D${i}();`).join('\n')}
 ${start}
@@ -432,7 +432,7 @@ ${blocks.join('\n')}
 }
 
 /** The id of the module `compileClientEntry` reaches for when `elements` is on. */
-export const ELEMENTS_ENTRY = 'virtual:hf-elements';
+export const ELEMENTS_ENTRY = 'virtual:transclude-elements';
 
 /**
  * tag -> dynamic import, for every element in the app.
@@ -446,7 +446,7 @@ export function compileElementsEntry(tags) {
     .sort()
     .map(
       (tag) =>
-        `  ${JSON.stringify(tag)}: () => import(${JSON.stringify(`virtual:hf-component/${tag}`)}),`,
+        `  ${JSON.stringify(tag)}: () => import(${JSON.stringify(`virtual:transclude-component/${tag}`)}),`,
     );
   return { code: `export const elements = {\n${entries.join('\n')}\n};\n` };
 }
@@ -575,7 +575,7 @@ function runtimeImport(runtime) {
 
 function layoutImports(layouts) {
   return layouts
-    .map((layout, i) => `import __L${i} from ${JSON.stringify(`virtual:hf-layout/${layout.id}`)};`)
+    .map((layout, i) => `import __L${i} from ${JSON.stringify(`virtual:transclude-layout/${layout.id}`)};`)
     .join('\n');
 }
 
@@ -588,7 +588,7 @@ function layoutImports(layouts) {
 function componentImports(used, { defines = false } = {}) {
   return used
     .map(({ tag, ref }) => {
-      const from = JSON.stringify(`virtual:hf-component/${tag}`);
+      const from = JSON.stringify(`virtual:transclude-component/${tag}`);
       const named = defines ? `, { define as ${ref}_define }` : '';
       return `import ${ref}${named} from ${from};`;
     })

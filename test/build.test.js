@@ -93,7 +93,7 @@ describe('layout chrome and layout data are baked in', () => {
 });
 
 describe('the page title beats the layout title in built output', () => {
-  assert.match(home, /<title>Single-file components · html-first<\/title>/);
+  assert.match(home, /<title>Single-file components · transclude<\/title>/);
   assert.match(read('static/404.html'), /<title>Not found<\/title>/);
 });
 
@@ -125,7 +125,7 @@ describe('the site stylesheet is one hashed, cacheable file', () => {
   assert.match(links[0], /href="\/assets\/[^"]+-[A-Za-z0-9_-]{8}\.css"/);
 
   // Everything the compiler produces still travels inline: no second request.
-  assert.match(html, /<style data-hf-page>/);
+  assert.match(html, /<style data-transclude-page>/);
 });
 
 describe('every page links the same stylesheet', () => {
@@ -139,14 +139,14 @@ describe('no dev-server plumbing leaks into built output', () => {
   const html = home;
   assert.doesNotMatch(html, /@vite\/client/);
   assert.doesNotMatch(html, /__x00__/);
-  assert.doesNotMatch(html, /virtual:hf-/);
+  assert.doesNotMatch(html, /virtual:transclude-/);
 });
 
 describe('the server bundle runs without vite', () => {
   const entry = read('server/entry.js');
   // Virtual ids may survive in rollup's region comments; what matters is that
   // nothing still tries to *import* one, since nothing would resolve it.
-  assert.doesNotMatch(entry, /from\s*['"]virtual:hf-/, 'a virtual id is still imported');
+  assert.doesNotMatch(entry, /from\s*['"]virtual:transclude-/, 'a virtual id is still imported');
   assert.doesNotMatch(entry, /from\s*['"]vite/, 'vite is still imported');
   assert.match(entry, /export\s*\{[^}]*pages/, 'exports the page map');
 });

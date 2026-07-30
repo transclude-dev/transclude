@@ -27,8 +27,8 @@ export function cookiesOf(request, response, secret = null) {
   const requireSecret = (what) => {
     if (secret) return secret;
     throw new Error(
-      `[html-first] ${what} needs a secret. Set \`cookieSecret\` in ` +
-        `html-first.config.js (read it from the environment there, not from a literal)`,
+      `[transclude] ${what} needs a secret. Set \`cookieSecret\` in ` +
+        `transclude.config.js (read it from the environment there, not from a literal)`,
     );
   };
 

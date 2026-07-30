@@ -1,4 +1,4 @@
-# The everything demo
+# The showcase
 
 Every feature the framework has, and the browser checks. `transclude` is a
 dependency here, from `file:../..`, so this is an ordinary app that happens to

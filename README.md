@@ -29,11 +29,11 @@ dependencies.
 ```
 npm install
 npm test           # 515 tests, and they need no app
-npm run test:demos # the demo's own tests, against a build
-npm run demo       # the demo on http://localhost:5173
+npm run test:examples # the demo's own tests, against a build
+npm run showcase   # the showcase on http://localhost:5173
 ```
 
-`demos/everything` is an app built against this package, the same way any other
+`examples/showcase` is an app built against this package, the same way any other
 project would be. It is where the browser checks live, because those need an app
 to run against, and it is what the four runtimes are checked with.
 
@@ -695,7 +695,7 @@ Two things only running it revealed:
 
 ## Browser checks
 
-Some things can only be answered by a browser. They live in `demos/everything`,
+Some things can only be answered by a browser. They live in `examples/showcase`,
 because they need an app to run against. `/check` is a page of assertions that
 runs a classic inline script while the page is parsing, before any module runs,
 so it can look at the document before a single component is defined.
@@ -718,7 +718,7 @@ from a shell without setup, since Safari needs "Allow remote automation" turned
 on by hand and Firefox needs geckodriver installed. Posting the results needs
 neither.
 
-Run them with `npm run demo` and open `/check`. The demo installs this package
+Run them with `npm run showcase` and open `/check`. It installs this package
 from `file:../..`, so a change here is in the next `npm run dev` with no publish
 step in between.
 
@@ -962,7 +962,7 @@ file paths. Vite's html middleware would otherwise intercept a request for
 
 ## Layout
 
-The package at the root, and apps built against it under `demos/`.
+The package at the root, and apps built against it under `examples/`.
 
 ```
 package.json               its exports, its bin, its own dependencies
@@ -998,14 +998,14 @@ src/negotiate.js           Accept-Encoding parsing, q-values and all
 src/compress.js            build-time brotli and gzip
 src/pool.js                bounded concurrency, order preserving
 test/                      515 tests, and they need no app
-demos/everything/          an app, on the far side of the boundary
+examples/showcase/          an app, on the far side of the boundary
 ```
 
 A demo is an ordinary app. It depends on the package by name, and a test says
-nothing in the package reaches into `demos/`:
+nothing in the package reaches into `examples/`:
 
 ```
-demos/everything/
+examples/showcase/
   package.json             "transclude": "file:../.."
   transclude.config.js     where the app is. The whole interface
   worker.js                its workerd entry, wiring transclude/worker
@@ -1242,9 +1242,9 @@ Three things that are not type errors, so tsc has no opinion on them:
 - The unused-prop check word-matches `<style>` and `<script>`, so a prop
   mentioned incidentally in either is assumed used.
 - Chrome, Safari and Firefox are measured. Nothing older is, and no mobile browser
-  is. `/check?report` in `demos/everything` is how to add one.
+  is. `/check?report` in `examples/showcase` is how to add one.
 - `npm test` at the root does not run the demo's tests or its browser checks.
-  `npm run test:demos` does the first. The second needs a browser and a person.
+  `npm run test:examples` does the first. The second needs a browser and a person.
 - In dev, Vite logs `Failed to load url /theme.js` for a `<script head src>` that
   points at a public file. Vite does not own that file, Hono serves it, and the
   browser gets it. The warning is wrong and there is no way to turn it off

@@ -3,7 +3,8 @@
 
   export default async () => ({
     s: await all({
-      partial: `<script properties>
+      partial: `<!-- app/partials/site-note.html -->
+<script properties>
   export default {
     tone: 'neutral',
   };
@@ -40,7 +41,8 @@
 };`,
         'js',
       ],
-      component: `<script properties>
+      component: `<!-- app/components/user-card.html -->
+<script properties>
   export default {
     name: '',
     tags: [],
@@ -56,16 +58,21 @@
   <li each="tag of tags">\${tag}</li>
 </ul>
 <slot></slot>`,
+      json: `<user-card
+  name="Ada Lovelace"
+  tags='["math", "engines"]'
+></user-card>`,
+      form: ['export const formAssociated = true;', 'js'],
     }),
   });
 </script>
 
 <title>Partials and components · transclude</title>
-<meta name="description" content="A partial is light DOM. A component gets a shadow root." />
+<meta name="description" content="A partial is light DOM. A component is a Web Component." />
 
 <doc-page
   heading="Partials and components"
-  lede="A partial is light DOM. A component gets a shadow root. Where the file sits says which."
+  lede="A partial renders into the page's own DOM. A component is a Web Component with a shadow root. The folder a file sits in says which one it is."
 >
   <div class="scroller">
     <table>
@@ -112,15 +119,17 @@
   </div>
 
   <p>
-    Reach for a partial first. Use a component when an element has to survive
-    being moved around a live page.
+    Reach for a partial first. It is the cheaper of the two and covers most
+    reuse. Choose a component when you want its styles and DOM sealed off from
+    the page, its markup and behavior kept together in one file, and the same tag
+    usable anywhere without the page knowing how it works.
   </p>
 
   <h2>A partial</h2>
 
-  ${html(s.partial)}
+  <p>The file name is the tag name.</p>
 
-  <p>Used as an element, with its props as attributes.</p>
+  ${html(s.partial)}
 
   ${html(s.use)}
 
@@ -164,14 +173,26 @@
 
   ${html(s.component)}
 
-  <p>An object or array prop is written as JSON in the attribute.</p>
+  <h3>Objects and arrays</h3>
 
-  <h2>A component a form submits</h2>
+  <p>Anything that is not a string is written as JSON in the attribute.</p>
+
+  ${html(s.json)}
+
+  <doc-note label="Keep it small" tone="warn">
+    The JSON sits in the HTML, so it is sent with the document and read back on
+    every attribute change. Pass an id and load the rest in the page's loader
+    rather than putting a large array in an attribute.
+  </doc-note>
+
+  <h3>A component a form submits</h3>
 
   <p>
-    <code>export const formAssociated = true</code> makes the browser treat the
-    element as a field. It has to be a literal. A partial can opt in too.
+    This makes the browser treat the element as a field. It has to be a literal.
+    A partial can opt in too.
   </p>
+
+  ${html(s.form)}
 
   <p>What a form submits matches what the attribute says.</p>
 </doc-page>

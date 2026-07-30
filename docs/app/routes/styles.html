@@ -69,12 +69,12 @@
 
   ${html(s.scoped)}
 
-  <h2>Adopted styles</h2>
+  <h2>Styles for swapped-in markup</h2>
 
   <p>
-    <code>&lt;style data-transclude="tag"&gt;</code> in <code>&lt;head&gt;</code>
-    records which light elements already have styles. A partial swapped in from
-    another route reads it before adding its own, so its rules land once.
+    A partial that arrives with a fragment brings its styles with it. They are
+    added to <code>&lt;head&gt;</code> once, on their own. There is nothing to
+    set up.
   </p>
 
   <h2>View transitions</h2>

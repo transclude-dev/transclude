@@ -33,7 +33,7 @@
 
 <doc-page
   heading="Configuration"
-  lede="transclude.config.js says where everything lives. The package names no path of its own."
+  lede="transclude.config.js says where everything in your app lives."
 >
   <p>An unknown key throws.</p>
 
@@ -102,15 +102,15 @@
           <td><code>fragmentParam</code></td>
           <td><code>'fragment'</code></td>
           <td>
-            The query parameter that asks for a region.
-            <code>null</code> ships no region loader on any page.
+            The query parameter that asks for a fragment. <code>null</code>
+            ships no loader on any page.
           </td>
         </tr>
         <tr>
           <td><code>fragmentHeader</code></td>
           <td><code>null</code></td>
           <td>
-            A request header that may name a region. Setting it adds that header
+            A request header that may name a fragment. Setting it adds that header
             to <code>Vary</code>.
           </td>
         </tr>

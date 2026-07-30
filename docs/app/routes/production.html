@@ -24,13 +24,16 @@ npm start        # serves dist/ on 3000`,
 
   <h2>Prerendering</h2>
 
-  <p>A page that reads the request has to opt out.</p>
+  <p>
+    Every page is rendered to a file at build time. Add this to a page that has
+    to run for each request instead:
+  </p>
 
   ${html(s.prerender)}
 
   <p>
-    A page reading <code>?q</code>, a page behind a guard, and a page whose data
-    changes are all in that group.
+    A page needs it if it reads the URL, sits behind a guard, or shows data that
+    changes.
   </p>
 
   <h2>Caching</h2>

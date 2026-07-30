@@ -71,8 +71,11 @@
 
   <p>
     A <code>&lt;style&gt;</code> block in a page or layout is hoisted into
-    <code>&lt;head&gt;</code>. In a partial it is scoped to that tag with
-    <code>:scope</code>.
+    <code>&lt;head&gt;</code>. In a partial it is scoped to that tag, and
+    <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/:scope"
+      ><code>:scope</code></a
+    >
+    is how you style the element itself.
   </p>
 
   ${html(s.scoped)}

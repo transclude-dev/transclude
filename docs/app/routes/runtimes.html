@@ -1,0 +1,74 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      run: [
+        `npm start                                              # Node
+bun node_modules/transclude/bin/serve.bun.js           # Bun
+deno run -A node_modules/transclude/bin/serve.deno.js  # Deno
+wrangler dev                                           # workerd`,
+        'shell',
+      ],
+    }),
+  });
+</script>
+
+<title>Runtimes · transclude</title>
+<meta name="description" content="The same app on Node, Bun, Deno and workerd." />
+
+<doc-page
+  heading="Runtimes"
+  lede="The same app runs on Node, Bun, Deno and Cloudflare Workers."
+>
+  ${html(s.run)}
+
+  <p>
+    The Node, Bun and Deno adapters come from the package and only listen.
+    <code>worker.js</code> belongs to the app.
+  </p>
+
+  <h2>What differs</h2>
+
+  <p>Each difference from Node is one argument to <code>createApp</code>.</p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Node</th>
+          <th>workerd</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Bytes</td>
+          <td>The filesystem</td>
+          <td><code>dist/server/assets.js</code></td>
+        </tr>
+        <tr>
+          <td>Hashing</td>
+          <td><code>node:crypto</code></td>
+          <td>WebCrypto, so <code>hash</code> is awaited</td>
+        </tr>
+        <tr>
+          <td>Compression</td>
+          <td><code>node:zlib</code></td>
+          <td><code>null</code>. The edge does it.</td>
+        </tr>
+        <tr>
+          <td>Range requests</td>
+          <td>206</td>
+          <td>200</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <doc-note label="A worker reads its config on the first request" tone="warn">
+    There is no <code>process.env</code> on workerd, so the app is built when the
+    first request comes in and takes its config from <code>env</code>. Reading a
+    secret at import time gives <code>undefined</code>.
+  </doc-note>
+</doc-page>

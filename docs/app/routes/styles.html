@@ -1,0 +1,103 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      scoped: `<style>
+  :scope {
+    display: block;
+  }
+  p {
+    margin: 0;
+  }
+</style>`,
+      transition: [
+        `@view-transition {
+  navigation: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+}`,
+        'css',
+      ],
+      name: `<a
+  each="person of people"
+  href="/people/\${person.slug}"
+  style="view-transition-name: person-\${person.slug}"
+>…</a>`,
+    }),
+  });
+</script>
+
+<title>Styles · transclude</title>
+<meta name="description" content="One global stylesheet, and what crosses a shadow boundary." />
+
+<doc-page
+  heading="Styles"
+  lede="One global stylesheet, linked once. A style block in a file belongs to that file."
+>
+  <p>
+    <code>stylesheet</code> names one file, served through Vite, so nesting,
+    <code>@import</code> and PostCSS work. Set it to <code>null</code> for none.
+  </p>
+
+  <h2>What crosses a boundary</h2>
+
+  <ul>
+    <li>
+      Custom properties inherit, so <code>--rule</code> on <code>:root</code>
+      reaches inside a component.
+    </li>
+    <li>
+      Selectors do not. A global class lands on a page and on a partial, and
+      stops at a component's shadow root.
+    </li>
+  </ul>
+
+  <p>
+    So a global stylesheet themes a component through custom properties. To let
+    it style something inside, the component marks that element with a
+    <code>part</code> attribute, which
+    <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/::part"
+      ><code>::part()</code></a
+    >
+    then selects. The component decides what it exposes.
+  </p>
+
+  <h2>Styles in a file</h2>
+
+  <p>
+    A <code>&lt;style&gt;</code> block in a page or layout is hoisted into
+    <code>&lt;head&gt;</code>. In a partial it is scoped to that tag with
+    <code>:scope</code>.
+  </p>
+
+  ${html(s.scoped)}
+
+  <h2>Styles for swapped-in markup</h2>
+
+  <p>
+    A partial that arrives with a fragment brings its styles with it. They are
+    added to <code>&lt;head&gt;</code> once, on their own. There is nothing to
+    set up.
+  </p>
+
+  <h2>View transitions</h2>
+
+  <p>
+    Cross-document view transitions are CSS-only and opt-in. Both documents must
+    carry the rule.
+  </p>
+
+  ${html(s.transition)}
+
+  <p>
+    A name has to be unique in a document. Derive one from the data when the same
+    element appears in a list and on a detail page.
+  </p>
+
+  ${html(s.name)}
+</doc-page>

@@ -1,0 +1,80 @@
+<script server>
+  import { tree } from '../lib/code.js';
+
+  export default async () => ({
+    layout: tree(`app/
+  routes/             .html is a page, .js is an endpoint
+    _layout.html      wraps this directory and below
+    index.html        /
+    about.html        /about
+    people/
+      [name].html     /people/:name
+    docs/
+      [...path].html  /docs/*
+    404.html
+    500.html
+  partials/           light DOM
+  components/         shadow root
+  public/             copied to the site root
+  styles/
+    global.css
+  server.js           your own Hono middleware
+transclude.config.js`),
+  });
+</script>
+
+<title>Project layout · transclude</title>
+<meta name="description" content="What each directory holds." />
+
+<doc-page
+  heading="Project layout"
+  lede="Where a file sits says what it is. Nothing inside it does."
+>
+  ${html(layout)}
+
+  <p>
+    In <code>routes/</code>, <code>.html</code> is a page and <code>.js</code> is
+    an endpoint. Elsewhere, <code>partials/</code> is light DOM and
+    <code>components/</code> gets a shadow root.
+  </p>
+
+  <doc-note label="A helper in routes/ needs a prefix" tone="warn">
+    A <code>.js</code> file in <code>routes/</code> is a route. Give a helper a
+    <code>_</code> prefix to keep it out of the route table.
+  </doc-note>
+
+  <h2>Names with meaning</h2>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>_layout.html</code></td>
+          <td>Wraps every route in its directory and below.</td>
+        </tr>
+        <tr>
+          <td><code>[name].html</code></td>
+          <td>One segment, in <code>params.name</code>.</td>
+        </tr>
+        <tr>
+          <td><code>[...path].html</code></td>
+          <td>The rest of the path, in <code>params.path</code>.</td>
+        </tr>
+        <tr>
+          <td><code>404.html</code>, <code>500.html</code></td>
+          <td>Sent when a request finds nothing or fails.</td>
+        </tr>
+        <tr>
+          <td><code>_anything.js</code></td>
+          <td>A helper, not a route.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</doc-page>

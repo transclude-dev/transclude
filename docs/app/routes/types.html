@@ -1,0 +1,62 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    passThrough: 'hx-get="/x?id=${id}"',
+    s: await all({
+      check: ['npm run check', 'shell'],
+      jsdoc: `<script server>
+  /** @param {{ params: { name: string } }} ctx */
+  export default async ({ params }) => {
+    return { name: params.name };
+  };
+<\/script>`,
+    }),
+  });
+</script>
+
+<title>Types · transclude</title>
+<meta name="description" content="transclude-check runs TypeScript over every template and route." />
+
+<doc-page
+  heading="Types"
+  lede="transclude-check runs TypeScript over every .html and .js route. Annotations are optional."
+>
+  ${html(s.check)}
+
+  <p>
+    With no annotations it still catches a misspelled field in a template, an
+    unknown prop on a component, and a prop given the wrong type.
+  </p>
+
+  <p>
+    <code>strict: true</code> turns on full TypeScript strictness, which also
+    wants a declared type on every parameter.
+  </p>
+
+  <h2>Where the types come from</h2>
+
+  <ol>
+    <li>What the loader's return value infers to.</li>
+    <li>What <code>&lt;script properties&gt;</code> declares.</li>
+    <li>JSDoc, where inference is not enough.</li>
+  </ol>
+
+  ${html(s.jsdoc)}
+
+  <h2>Attributes that are not props</h2>
+
+  <p>
+    <code>data-*</code>, <code>aria-*</code> and <code>hx-*</code> pass through.
+    They are still checked as expressions, so
+    <code>${passThrough}</code> on a component is not an error.
+  </p>
+
+  <h2>transclude-env.d.ts</h2>
+
+  <p>
+    Generated from the compiled routes and written where
+    <code>typesFile</code> says. It is an output, so it belongs in
+    <code>.gitignore</code>.
+  </p>
+</doc-page>

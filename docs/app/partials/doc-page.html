@@ -1,0 +1,46 @@
+<script properties>
+  export default {
+    heading: '',
+    lede: '',
+  };
+</script>
+
+<style>
+  /* One measure for every page, set once. A partial rather than a class so a
+     page cannot forget it. */
+  :scope {
+    display: block;
+  }
+  .lede {
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    line-height: 1.55;
+    letter-spacing: -0.004em;
+    color: var(--muted);
+    max-width: 58ch;
+    margin: 0.7rem 0 2.4rem;
+    text-wrap: pretty;
+  }
+  .body {
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.68;
+    max-width: var(--measure);
+  }
+  .body p,
+  .body ul,
+  .body ol {
+    margin: 0 0 1.1em;
+  }
+  .body li {
+    margin-bottom: 0.5em;
+  }
+  .body ul,
+  .body ol {
+    padding-left: 1.3em;
+  }
+</style>
+
+<h1>${heading}</h1>
+<p class="lede" if="lede">${lede}</p>
+<div class="body"><slot></slot></div>

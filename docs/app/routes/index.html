@@ -1,0 +1,140 @@
+<title>transclude</title>
+<meta
+  name="description"
+  content="Single-file .html routes, layouts, partials and components. The server renders HTML."
+/>
+
+<style>
+  .pitch {
+    font-family: var(--serif);
+    font-size: 1.35rem;
+    line-height: 1.5;
+    letter-spacing: -0.008em;
+    margin: 0.8rem 0 2rem;
+  }
+
+  .body {
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.68;
+    max-width: var(--measure);
+  }
+  .body p {
+    margin: 0 0 1.1em;
+  }
+
+  .grid {
+    display: grid;
+    gap: 1px;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin: 2.5rem 0;
+    max-width: var(--measure);
+  }
+  .cell {
+    background: var(--ground);
+    padding: 1.1rem 1.2rem;
+  }
+  .cell h2 {
+    margin: 0 0 0.4rem;
+    padding: 0;
+    border: 0;
+    font-size: 0.95rem;
+    letter-spacing: -0.008em;
+  }
+  .cell p {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 0.94rem;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  .next {
+    display: inline-block;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+</style>
+
+<h1>transclude</h1>
+
+<p class="pitch">HTML is the product.</p>
+
+<div class="body">
+  <p>
+    You write a page as an <code>.html</code> file. The server renders it and
+    sends back plain HTML. There is no client framework to start up, and nothing
+    has to run before the page works.
+  </p>
+
+  <p>
+    Your folder structure is your routing. A page handles GET. Export
+    <code>actions</code> from it to handle POST, PUT and DELETE. Put a
+    <code>.js</code> file in the same folder and it becomes an API endpoint. Hono
+    runs the server.
+  </p>
+
+  <p>
+    It is HTML-first and hypermedia-driven. The markup the server sends is the
+    state of your app, and links and forms are what change it. If that idea is
+    new to you, <a href="https://hypermedia.systems/">Hypermedia Systems</a> is a
+    good place to start.
+  </p>
+
+  <p>
+    This site is built with it. Every page you are reading is one
+    <code>.html</code> file in <code>docs/app/routes/</code>.
+  </p>
+</div>
+
+<div class="grid">
+  <div class="cell">
+    <h2>Everything in one file</h2>
+    <p>
+      Data loading, markup, styles and behavior live together in the file the URL
+      points at.
+    </p>
+  </div>
+  <div class="cell">
+    <h2>Fetch any part of a page</h2>
+    <p>
+      Give an element an id and you can request just that piece, from the same
+      compiled markup.
+    </p>
+  </div>
+  <div class="cell">
+    <h2>Partials before components</h2>
+    <p>
+      A partial is plain HTML inside your page. Your CSS reaches it and it ships
+      no JavaScript.
+    </p>
+  </div>
+  <div class="cell">
+    <h2>Runs anywhere</h2>
+    <p>Node, Bun, Deno and Cloudflare Workers, from the same code.</p>
+  </div>
+</div>
+
+<h2>Where the name comes from</h2>
+
+<div class="body">
+  <p>
+    Transclusion means putting part of one document inside another by pointing at
+    it, instead of copying it. Ted Nelson named the idea in
+    <em>Literary Machines</em>, the book that described his Project Xanadu. He had
+    already given us the word hypertext.
+  </p>
+
+  <p>
+    This framework does it twice. A <strong>partial</strong> is markup pulled into
+    the page that calls it. A <strong>fragment</strong> is a piece of a page that
+    keeps a URL of its own, so you can render it in place or fetch it by itself.
+    Either way there is one copy of the markup.
+  </p>
+</div>
+
+<a class="next" href="/getting-started">Getting started &rarr;</a>

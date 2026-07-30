@@ -1,0 +1,74 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      server: [
+        `// app/server.js
+export default (app) => {
+  app.use('*', async (c, next) => {
+    c.header('X-Frame-Options', 'DENY');
+    await next();
+  });
+};`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
+<title>Middleware · transclude</title>
+<meta name="description" content="Where an app adds its own middleware, and the order everything runs in." />
+
+<doc-page
+  heading="Middleware"
+  lede="The server is Hono. An app adds its own middleware in app/server.js."
+>
+  ${html(s.server)}
+
+  <h2>The order</h2>
+
+  <ol>
+    <li>Trailing-slash redirect</li>
+    <li>CSRF</li>
+    <li><code>app/server.js</code></li>
+    <li>Public files</li>
+    <li>Routes</li>
+  </ol>
+
+  <p>
+    <code>app/server.js</code> runs before anything that serves bytes, so a guard
+    covers prerendered pages and public files. Public files come before the route
+    table, so a real file beats a <code>[...path]</code> catch-all.
+  </p>
+
+  <doc-note label="A guard needs prerender: false" tone="warn">
+    Middleware does not run during the build. A prerendered page behind a guard
+    is written to a file in its logged-out state.
+  </doc-note>
+
+  <h2>Trailing slashes</h2>
+
+  <p><code>trailingSlash</code> sets the router mode and the redirect together.</p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Value</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>'never'</code></td>
+          <td>One URL per page. <code>/about/</code> redirects with a 301.</td>
+        </tr>
+        <tr>
+          <td><code>'ignore'</code></td>
+          <td>Both URLs return 200, and neither is canonical.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</doc-page>

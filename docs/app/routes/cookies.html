@@ -1,0 +1,118 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      read: [
+        `export default async ({ cookies }) => {
+  const theme = cookies.get('theme') ?? 'light';
+  const user = await cookies.signed.get('user');
+
+  return { theme, user };
+};`,
+        'js',
+      ],
+      secret: [
+        `// transclude.config.js
+export default {
+  cookieSecret: globalThis.process?.env?.COOKIE_SECRET ?? null,
+};`,
+        'js',
+      ],
+      flash: [
+        `const flash = await cookies.signed.get('flash');
+if (flash) cookies.delete('flash');`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
+<title>Cookies · transclude</title>
+<meta name="description" content="Read and write cookies, signed or plain." />
+
+<doc-page
+  heading="Cookies"
+  lede="ctx.cookies reads and writes. A signed cookie can be read by the client and not forged, so use one for a session."
+>
+  ${html(s.read)}
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Call</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cookies.get(name)</code></td>
+          <td>The value, or <code>undefined</code>.</td>
+        </tr>
+        <tr>
+          <td><code>cookies.set(name, value, options)</code></td>
+          <td>Writes it on the response.</td>
+        </tr>
+        <tr>
+          <td><code>cookies.delete(name)</code></td>
+          <td>Expires it.</td>
+        </tr>
+        <tr>
+          <td><code>cookies.all()</code></td>
+          <td>Every cookie, on a null-prototype object.</td>
+        </tr>
+        <tr>
+          <td><code>cookies.signed.get(name)</code></td>
+          <td>The value if the signature holds, else <code>undefined</code>.</td>
+        </tr>
+        <tr>
+          <td><code>cookies.signed.set(name, value, options)</code></td>
+          <td>Signs and writes.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Signing</h2>
+
+  <p>
+    <code>cookies.signed</code> needs <code>cookieSecret</code>. Without one it
+    throws.
+  </p>
+
+  ${html(s.secret)}
+
+  <p>
+    Use <code>globalThis.process?.env</code>. A runtime with no Node
+    compatibility has no <code>process</code>, and a bare reference throws before
+    anything runs.
+  </p>
+
+  <doc-note label="Only dev invents a secret">
+    The dev server signs with a random value for that process and prints a
+    notice. Production does not.
+  </doc-note>
+
+  <h2>A forged cookie is not a missing one</h2>
+
+  <p>
+    <code>cookies.signed.get</code> returns <code>undefined</code> for both, so
+    <code>?? fallback</code> cannot slip past a tampered value.
+  </p>
+
+  <h2>A flash message</h2>
+
+  <p>
+    A short-lived signed cookie, read once and then deleted, crosses a redirect
+    exactly once.
+  </p>
+
+  ${html(s.flash)}
+
+  <doc-note label="Check a flash in a browser" tone="warn">
+    <code>curl -L</code> does not send a cookie the redirect set on the hop it
+    follows. It arrives on the next request instead, so a flash looks broken
+    under curl and works in practice.
+  </doc-note>
+</doc-page>

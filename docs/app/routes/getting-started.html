@@ -1,0 +1,134 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    interpolation: '${value}',
+    s: await all({
+      install: ['npm install transclude', 'shell'],
+      config: [
+        `export default {
+  appDir: 'app',
+  routesDir: 'routes',
+  partialsDir: 'partials',
+  componentsDir: 'components',
+  stylesheet: 'app/styles/global.css',
+  publicDir: 'public',
+  outDir: 'dist',
+};`,
+        'js',
+      ],
+      vite: [
+        `import { defineConfig } from 'vite';
+import transclude from 'transclude';
+import config from './transclude.config.js';
+
+export default defineConfig({
+  appType: 'custom',
+  plugins: [transclude(config)],
+});`,
+        'js',
+      ],
+      page: `<script server>
+  export default async () => ({
+    title: 'Hello',
+    items: ['one', 'two', 'three'],
+  });
+<\/script>
+
+<title>\${title}</title>
+
+<h1>\${title}</h1>
+<ul>
+  <li each="item of items">\${item}</li>
+</ul>`,
+      scripts: [
+        `{
+  "scripts": {
+    "dev": "transclude-dev",
+    "build": "transclude-build",
+    "start": "transclude-serve",
+    "check": "transclude-check"
+  }
+}`,
+        'json',
+      ],
+    }),
+  });
+</script>
+
+<title>Getting started · transclude</title>
+<meta name="description" content="Install it, write a page, run the server." />
+
+<doc-page
+  heading="Getting started"
+  lede="Install the package, write one .html file, and the directory it sits in is its URL."
+>
+  <h2>Install</h2>
+
+  ${html(s.install)}
+
+  <p>Vite and TypeScript come with it.</p>
+
+  <doc-note label="Declare Vite yourself if you import it">
+    Your <code>vite.config.js</code> imports <code>vite</code>. A package manager
+    that does not hoist peer dependencies will not resolve it unless your own
+    <code>package.json</code> names it.
+  </doc-note>
+
+  <h2>Two files to start</h2>
+
+  <p>
+    An app is a directory with a <code>transclude.config.js</code> in it. It says
+    where everything lives.
+  </p>
+
+  ${html(s.config)} ${html(s.vite)}
+
+  <h2>A page</h2>
+
+  <p>
+    <code>app/routes/index.html</code> handles <code>/</code>. The
+    <code>&lt;script server&gt;</code> block runs on the server and returns the
+    data the markup reads.
+  </p>
+
+  ${html(s.page)}
+
+  <h2>Scripts</h2>
+
+  ${html(s.scripts)}
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Command</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>transclude-dev</code></td>
+          <td>Runs on 5173. Edits appear without a restart.</td>
+        </tr>
+        <tr>
+          <td><code>transclude-build</code></td>
+          <td>Writes <code>dist/</code>.</td>
+        </tr>
+        <tr>
+          <td><code>transclude-serve</code></td>
+          <td>Serves <code>dist/</code> on 3000.</td>
+        </tr>
+        <tr>
+          <td><code>transclude-check</code></td>
+          <td>Type-checks every template and route.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <doc-note label="Interpolation is escaped">
+    <code>${interpolation}</code> is escaped. Wrap a value in
+    <code>html()</code> to pass markup through.
+  </doc-note>
+</doc-page>

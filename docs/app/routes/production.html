@@ -1,0 +1,91 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      build: [
+        `npm run build
+npm start        # serves dist/ on 3000`,
+        'shell',
+      ],
+      prerender: ['export const prerender = false;', 'js'],
+    }),
+  });
+</script>
+
+<title>The production build · transclude</title>
+<meta name="description" content="What transclude-build writes." />
+
+<doc-page
+  heading="The production build"
+  lede="transclude-build writes dist/. A route with no per-request state is rendered to a file."
+>
+  ${html(s.build)}
+
+  <h2>Prerendering</h2>
+
+  <p>
+    Every page is rendered to a file at build time. Add this to a page that has
+    to run for each request instead:
+  </p>
+
+  ${html(s.prerender)}
+
+  <p>
+    A page needs it if it reads the URL, sits behind a guard, or shows data that
+    changes.
+  </p>
+
+  <h2>Caching</h2>
+
+  <p>Build output is compressed once, and each encoding gets its own ETag.</p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>What</th>
+          <th>Cache-Control</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Hashed assets</td>
+          <td><code>public, max-age=31536000, immutable</code></td>
+        </tr>
+        <tr>
+          <td>Prerendered pages</td>
+          <td><code>public, max-age=0, must-revalidate</code></td>
+        </tr>
+        <tr>
+          <td>The 500 page</td>
+          <td><code>no-store</code>, and no ETag</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Public files</h2>
+
+  <p>
+    <code>app/public/</code> is copied to <code>dist/public</code> and served
+    with byte ranges, so media works.
+  </p>
+
+  <h2>Error pages</h2>
+
+  <p>
+    <code>404.html</code> and <code>500.html</code> are rendered at build time
+    and served as static files.
+  </p>
+
+  <p>
+    In production the error is logged and kept out of the page. In dev you get
+    the stack instead.
+  </p>
+
+  <doc-note label="JavaScript only where it is used">
+    A page loads a script only if something on it needs one. A page of plain
+    markup and partials ships none at all.
+  </doc-note>
+</doc-page>

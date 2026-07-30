@@ -9,8 +9,11 @@
     "./worker": "./src/worker.js",
     "./runtime": "./src/runtime/index.js",
     "./document": "./src/document.js",
+    "./cookies": "./src/cookies.js",
     "./routes": "./src/routes.js",
-    "./typecheck": "./src/typecheck.js"
+    "./typecheck": "./src/typecheck.js",
+    "./serve.bun": "./bin/serve.bun.js",
+    "./serve.deno": "./bin/serve.deno.js"
   },
   "bin": {
     "transclude-dev": "./bin/dev.js",
@@ -33,5 +36,12 @@
     "bin",
     "src",
     "editor"
-  ]
+  ],
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5"
+  }
 }

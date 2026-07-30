@@ -1,0 +1,162 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      markup: `<div id="matches" fragment>
+  <p>\${matches.length} of \${people.length} match.</p>
+  <ul>
+    <li each="person of matches">\${person.name}</li>
+  </ul>
+</div>`,
+      fetch: [
+        `const res = await fetch('/?q=ada&fragment=matches');
+document.getElementById('matches').setHTMLUnsafe(await res.text());`,
+        'js',
+      ],
+      htmx: `<input
+  name="q"
+  hx-get="/"
+  hx-target="#matches"
+  hx-trigger="input changed delay:200ms"
+/>`,
+      header: [`fragmentHeader: 'HX-Target',`, 'js'],
+    }),
+  });
+</script>
+
+<title>Fragments · transclude</title>
+<meta name="description" content="Any element with an id can be asked for on its own URL." />
+
+<doc-page
+  heading="Fragments"
+  lede="Any element with an id can be asked for on its own URL. The same compiled markup serves it inside the page and on its own."
+>
+  <p>
+    Give an element an id and a <code>fragment</code> attribute. It renders in
+    the page, and it answers at the same path with <code>?fragment=</code> and
+    that id.
+  </p>
+
+  ${html(s.markup)}
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Request</th>
+          <th>Response</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>GET /?q=ada</code></td>
+          <td>the whole document</td>
+        </tr>
+        <tr>
+          <td><code>GET /?q=ada&amp;fragment=matches</code></td>
+          <td>the <code>&lt;div&gt;</code> and its contents</td>
+        </tr>
+        <tr>
+          <td><code>GET /?fragment=nope</code></td>
+          <td><strong>404</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    The id is the name. The URL asks for <code>matches</code> and a swap targets
+    <code>#matches</code>.
+  </p>
+
+  <h2>What they are for</h2>
+
+  <p>
+    Anything on a page that changes on its own: search results as you type, a
+    list after something is added to it, the next page of a table, a panel that
+    refreshes on a timer. Ask for that one piece and put it back in place.
+  </p>
+
+  <p>
+    The markup is compiled once, so what comes back matches what a full page load
+    would have rendered. There is no second template to keep in step.
+  </p>
+
+  <h2>Asking for one</h2>
+
+  <p>
+    A fragment is an ordinary URL, so anything that can fetch HTML and put it in
+    the page will do.
+  </p>
+
+  ${html(s.fetch)}
+
+  <p>
+    Libraries built for this do the same thing with attributes instead of script.
+    <a href="https://htmx.org">htmx</a> is the common one.
+  </p>
+
+  ${html(s.htmx)}
+
+  <p>
+    htmx sends the target's id in an <code>HX-Target</code> header. Name that
+    header in the config and the query parameter becomes optional.
+  </p>
+
+  ${html(s.header)}
+
+  <p>
+    <a href="https://turbo.hotwired.dev">Turbo</a> and
+    <a href="https://leanrada.com/htmz/">htmz</a> drive them the same way. htmz
+    is 166 bytes and uses a hidden iframe, so it needs no build step. This
+    framework ships none of them. A fragment is a URL, and that is the whole
+    agreement.
+  </p>
+
+  <doc-note label="setHTMLUnsafe, not innerHTML" tone="warn">
+    <code>innerHTML</code> does not process nested declarative shadow roots, so a
+    component inside the fragment arrives as a dead
+    <code>&lt;template&gt;</code>.
+  </doc-note>
+
+  <h2>Swapped-in markup styles itself</h2>
+
+  <p>
+    A fragment can land on a page that has never rendered the elements inside it.
+    While <code>fragmentParam</code> is set, every page includes a small script
+    that notices an unknown tag, loads its definition and adds its styles once.
+    There is nothing to wire up.
+  </p>
+
+  <p>
+    Set <code>fragmentParam: null</code> and a page ships exactly what it
+    renders. This site is built that way.
+  </p>
+
+  <h2>The parameter is strict, the header is not</h2>
+
+  <ul>
+    <li><code>?fragment=nope</code> is a 404.</li>
+    <li>
+      <code>HX-Target: nope</code> is ignored. htmx sends that header on every
+      request, including ones that want the whole document.
+    </li>
+  </ul>
+
+  <p>
+    Naming a header in <code>fragmentHeader</code> adds it to <code>Vary</code>.
+  </p>
+
+  <h2>Actions</h2>
+
+  <p>
+    <code>POST /?fragment=nope</code> changes nothing and returns 404. The
+    fragment is checked before the action runs.
+  </p>
+
+  <p>
+    <code>ctx.fragment</code> tells a form submission from a fetch. The first
+    wants a redirect, the second wants markup.
+  </p>
+</doc-page>

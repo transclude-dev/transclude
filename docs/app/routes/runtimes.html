@@ -66,13 +66,9 @@ wrangler dev                                           # workerd`,
     </table>
   </div>
 
-  <doc-note label="On a worker, config arrives with the request" tone="warn">
-    There is no <code>process.env</code>, so the worker builds the app on the
-    first request from <code>env</code>. Reading a secret at import time gives
-    <code>undefined</code>.
+  <doc-note label="A worker reads its config on the first request" tone="warn">
+    There is no <code>process.env</code> on workerd, so the app is built when the
+    first request comes in and takes its config from <code>env</code>. Reading a
+    secret at import time gives <code>undefined</code>.
   </doc-note>
-
-  <h2>The core imports nothing from a runtime</h2>
-
-  <p>No <code>node:</code> specifier and no Node-only global.</p>
 </doc-page>

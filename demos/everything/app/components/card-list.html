@@ -1,0 +1,57 @@
+<script properties>
+  export default {
+    heading: "",
+    /** @type {Person[]} */
+    people: [],
+  };
+
+  /** @typedef {{ name: string; role: string; tags: string[]; joined: Date }} Person */
+
+  /**
+   * What survives the attribute is JSON, and JSON has no date, so the shape on the
+   * wire is not the shape of the prop. That gap is why a converter exists.
+   *
+   * @typedef {Omit<Person, 'joined'> & { joined: string }} WirePerson
+   */
+  export const attributes = {
+    people: {
+      from: (text) =>
+        /** @type {WirePerson[]} */ (JSON.parse(text)).map((person) => ({
+          ...person,
+          joined: new Date(person.joined),
+        })),
+    },
+  };
+</script>
+
+<style>
+  :host {
+    display: block;
+  }
+  h4 {
+    margin: 0 0 0.6rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #8a8a96;
+  }
+  .row {
+    display: grid;
+    gap: 0.6rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+</style>
+
+<h4>${heading}</h4>
+<div class="row">
+  <!-- A component inside a component. Its shadow root sits inside this one's,
+       which is what the client upgrade path has to get right. -->
+  <user-card
+    each="person of people"
+    key="person.name"
+    name="${person.name}"
+    role="${person.role}"
+    tags="${person.tags}"
+    since="${person.joined}"
+  ></user-card>
+</div>

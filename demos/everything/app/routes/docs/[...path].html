@@ -1,0 +1,22 @@
+<script server>
+  export default async ({ params }) => ({
+    path: params.path,
+    crumbs: params.path.split('/').filter(Boolean),
+  });
+</script>
+
+<title>docs/${path}</title>
+
+<style>
+  ol { padding-left: 1.2rem; }
+</style>
+
+<h1>Catch-all route</h1>
+<p>
+  This file is <code>src/pages/docs/[...path].html</code>, which Hono sees as
+  <code>/docs/:path{.+}</code>. It captured <code>${path}</code>.
+</p>
+
+<ol>
+  <li each="crumb, i of crumbs">segment ${i}: <code>${crumb}</code></li>
+</ol>

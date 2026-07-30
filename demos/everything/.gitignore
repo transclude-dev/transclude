@@ -1,0 +1,19 @@
+node_modules/
+
+# `npm run build` output: prerendered pages, the server bundle, client entries
+# and their precompressed twins. All reproducible from source.
+dist/
+
+# Claude Code's working directory.
+.claude/
+
+# wrangler's local state for `npm run start:worker`. Regenerated on demand.
+.wrangler/
+
+# Secrets. `.env.example` is the committed template and is not one.
+.env
+.env.*
+!.env.example
+
+# The same, for `wrangler dev`.
+.dev.vars

@@ -1,0 +1,79 @@
+<script properties>
+  /**
+   * Stated once for the whole object rather than field by field. An annotation is only
+   * needed where a default cannot imply a type: `[]` is `never[]` to TypeScript,
+   * which is the correct reading of an empty literal.
+   *
+   * `emptyLabel` is camelCase, so the attribute is `empty-label`. HTML lowercases
+   * attribute names, and a prop that ignored that would never see the value it
+   * was given.
+   *
+   * @typedef {{ caption: string; columns: string[]; rows: string[][]; emptyLabel: string }} Props
+   */
+
+  /** @type {Props} */
+  export default {
+    caption: "",
+    columns: [],
+    rows: [],
+    emptyLabel: "no rows",
+  };
+</script>
+
+<style>
+  :scope {
+    display: block;
+    overflow-x: auto;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.9rem;
+    background: #fff;
+  }
+  caption {
+    text-align: left;
+    padding: 0 0 0.5rem;
+    color: #6b6b78;
+    font-size: 0.8rem;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid #e6e6ee;
+  }
+  th {
+    font-weight: 600;
+    background: #f7f7fb;
+  }
+  tr:last-child td {
+    border-bottom: 0;
+  }
+  .empty {
+    padding: 0.75rem;
+    color: #a0a0ac;
+    font-style: italic;
+  }
+</style>
+
+<template if="rows.length">
+  <table>
+    <caption if="caption">
+      ${caption}
+    </caption>
+    <thead>
+      <tr>
+        <th each="column of columns">${column}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr each="row, i of rows">
+        <template each="cell of row">
+          <td>${cell}</td>
+        </template>
+      </tr>
+    </tbody>
+  </table>
+</template>
+<p class="empty" else>${emptyLabel}</p>

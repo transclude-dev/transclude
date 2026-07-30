@@ -1,0 +1,283 @@
+<script server>
+  // A form-shaped page. Everything below works with JavaScript turned off: the
+  // browser submits, the server changes the data, the page comes back. With a
+  // client, the same page is asked for one region instead of the document. Same
+  // action, same loader, same compiled markup.
+
+  // In memory, because the point here is the request cycle rather than storage.
+  const notes = [
+    { id: 1, text: "Forms are the platform's own state machine.", tags: ["idea"] },
+  ];
+  let nextId = 2;
+
+  // The list changes, so a file written once at build time would be a lie.
+  export const prerender = false;
+
+  export default async ({ action, cookies }) => {
+    // A flash: read once, then cleared. Putting it in the URL instead looked tidy
+    // and was wrong. `?added=x` can be replayed and shared, and it outlives what
+    // it describes, so a reload after a restart announced a note that was never
+    // added and no longer existed.
+    const flash = await cookies.signed.get("flash");
+    if (flash) cookies.delete("flash");
+
+    return {
+    notes,
+    // Signed, so the browser can read the number but cannot invent one. A cookie
+    // is only a session when it cannot be forged; put an id in it and keep
+    // everything else on the server.
+    mine: Number((await cookies.signed.get("mine")) ?? 0),
+    // A rejected submission never mutated anything, so it comes back as a
+    // rendered response rather than a redirect. `action` is typed as the union
+    // of what `actions` returns, so reading a field no handler ever sets is a
+    // type error here rather than `undefined` in the markup.
+    error: action?.error ?? null,
+    // Whatever the action said, or the flash it left behind. A swap gets the
+    // message directly, because it never left the page; a form submission got a
+    // redirect, and a cookie is the only thing that crosses one exactly once.
+    added: action?.added ?? flash ?? null,
+    };
+  };
+
+  export const actions = {
+    async post({ request, url, fragment, cookies }) {
+      // The platform's own Request. No router API to learn to read a form.
+      const form = await fields(request);
+      if (!form) return badRequest();
+
+      // Which button was pressed. A submit button's name/value is only sent if
+      // it is the one that submitted, which is how one form does two things.
+      if (form.get("intent") === "remove") {
+        const result = remove(Number(form.get("id")));
+        return result.error ? result : back(url, fragment, cookies);
+      }
+
+      const text = String(form.get("text") ?? "").trim();
+      if (!text) return said("a note needs some text");
+      if (text.length > 80) return said("80 characters is the limit");
+
+      // From <tag-picker>, which is a custom element. Nothing here knows that. A
+      // form-associated element arrives as a field like any other.
+      const tags = String(form.get("tags") ?? "")
+        .split(",")
+        .filter(Boolean);
+
+      notes.push({ id: nextId++, text, tags });
+
+      // Set before returning a redirect, which is where this used to be lost:
+      // the action's Response short-circuits the render, and nothing looked at
+      // the envelope on that path. `Response.redirect()` also has immutable
+      // headers, so appending to it threw rather than dropping quietly.
+      const mine = Number((await cookies.signed.get("mine")) ?? 0) + 1;
+      await cookies.signed.set("mine", String(mine), { maxAge: 60 * 60 * 24 * 30 });
+
+      return back(url, fragment, cookies, text);
+    },
+
+    // A <form> can only send GET or POST. That is HTML, not a limit of this
+    // framework, so the same removal is reachable two ways. The form posts an
+    // intent; a fetch caller uses the method the platform already has.
+    async delete({ request, url, fragment, cookies }) {
+      const form = await fields(request);
+      if (!form) return badRequest();
+
+      const result = remove(Number(form.get("id")));
+      return result.error ? result : back(url, fragment, cookies);
+    },
+  };
+
+  function remove(id) {
+    const at = notes.findIndex((note) => note.id === id);
+    if (at === -1) return said(`no note ${id}`);
+
+    notes.splice(at, 1);
+    return { error: null, added: null };
+  }
+
+  /**
+   * `request.formData()` throws when the body is not a form: a POST with no body,
+   * the wrong content type, a cut-off upload. That is the caller's mistake and
+   * deserves a 400; letting it escape makes it a 500, which says the server broke.
+   *
+   * @param {Request} request
+   */
+  async function fields(request) {
+    try {
+      return await request.formData();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Returning a Response from an action answers the request outright, which is
+   * the same rule a redirect uses.
+   *
+   * A function, not a constant: a Response body can be read once, so a shared
+   * instance works for the first request and misbehaves for every one after it.
+   */
+  const badRequest = () => new Response("expected a form submission", { status: 400 });
+
+  /**
+   * Post/redirect/get: every mutation ends in a redirect, so the URL the browser
+   * lands on is a GET and a refresh repeats *that*. Skipping this is how a form
+   * adds the same note again every time the page is reloaded.
+   *
+   * Except when a region was asked for. That caller wanted markup back, and a
+   * redirect is not markup. `fragment` is how an action tells the difference
+   * between a browser submitting a form and a swap fetching a piece.
+   *
+   * @param {string} url
+   * @param {string | null} fragment
+   * @param {{ signed: { set(n: string, v: string, o?: { maxAge?: number }): Promise<void> } }} cookies
+   * @param {string | null} [added]
+   */
+  async function back(url, fragment, cookies, added = null) {
+    // A swap has nowhere to redirect to, because the browser never left, so the
+    // message comes back with the markup rather than in a cookie.
+    if (fragment !== null) return { error: null, added };
+
+    // Short-lived, signed, and read once on the other side. The Set-Cookie
+    // survives the 303 because `withEnvelope` puts it there, which is what lets a
+    // redirect carry anything at all.
+    if (added !== null) await cookies.signed.set("flash", added, { maxAge: 10 });
+
+    const to = new URL(url);
+    to.search = "";
+    return Response.redirect(to, 303);
+  }
+
+  // Every handler answers with the same shape. A union of differing object
+  // literals would be correct and unusable. The loader could not read `error` off
+  // a branch that only set it sometimes.
+  /** @param {string} error */
+  const said = (error) => ({ error, added: null });
+</script>
+
+<title>Notes · transclude</title>
+<meta name="description" content="A form-shaped page: POST, mutate, re-render." />
+
+<style>
+  .note-form {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    max-width: 40rem;
+  }
+  .note-form input[type="text"] {
+    flex: 1;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid #d6d6e0;
+    border-radius: 4px;
+    font: inherit;
+  }
+  .note-form button {
+    padding: 0.45rem 0.9rem;
+    border: 1px solid #d6d6e0;
+    border-radius: 4px;
+    background: #f7f7fb;
+    font: inherit;
+    cursor: pointer;
+  }
+  .said {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+  }
+  .said.bad {
+    color: #b4232c;
+  }
+  .said.good {
+    color: #1a7f37;
+  }
+
+  @scope (.notes) {
+    :scope {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-width: 40rem;
+    }
+    li {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.7rem;
+      background: #fff;
+      border-bottom: 1px solid #e6e6ee;
+    }
+    li span {
+      flex: 1;
+    }
+    .tags {
+      color: #8a8a96;
+      font-size: 0.8rem;
+      font-style: normal;
+    }
+    button {
+      border: 0;
+      background: none;
+      color: #8a8a96;
+      font: inherit;
+      cursor: pointer;
+    }
+  }
+</style>
+
+<h1>Notes</h1>
+<p class="lede">
+  Nothing here needs JavaScript to work. The form submits, <code>actions.post</code>
+  runs, and the loader renders what it left behind. The oldest way to change state
+  on the web, and still the one that works everywhere.
+</p>
+<p class="lede">
+  Every mutation ends in a <strong>303 redirect</strong>, so the URL you land on
+  is a GET: refreshing repeats that, not the submission. A rejected note is the
+  exception. Nothing changed, so it comes straight back with the reason.
+</p>
+<p class="lede">
+  The list below is a <strong>region</strong>: it renders here as part of the
+  document and answers on its own at <code>/notes?fragment=notes</code>, from
+  the same compiled markup. Swapping it in without a reload is a client's job,
+  and this framework does not ship one. Bring htmx, Turbo, or ten lines of
+  <code>fetch</code>. What arrives will define and style itself either way.
+</p>
+
+<!-- No `action`, so it posts to this same URL. The method is the whole routing
+     decision: GET renders, POST mutates and then renders. -->
+<form class="note-form" method="post">
+  <input type="text" name="text" placeholder="a note" aria-label="note text" />
+  <!-- A custom element that is a real form control. `formAssociated` in its
+       <script> is what makes the browser submit it; the value arrives in
+       `request.formData()` under this `name` like any other field. -->
+  <tag-picker name="tags" options='["idea", "todo", "later"]'></tag-picker>
+  <button type="submit">Add</button>
+</form>
+
+<!-- Addressable, so the same answer can be asked for on its own:
+     `POST /notes?fragment=notes` adds a note and returns just this <div>. The
+     action runs either way. A fragment is a smaller answer, not a different code
+     path, and `ctx.fragment` is how it knows which was asked for.
+
+     It wraps the message as well as the list, because both are part of what
+     changed. A region that covered only the <ul> would leave a stale "Added …"
+     sitting above a list that had moved on. -->
+<div id="notes" fragment>
+  <p class="said bad" if="error">${error}</p>
+  <p class="said good" else-if="added">Added <code>${added}</code>.</p>
+
+  <ul class="notes">
+    <li each="note of notes" key="note.id">
+      <span>${note.text}</span>
+      <em class="tags" if="note.tags && note.tags.length">${note.tags.join(', ')}</em>
+      <form method="post">
+        <input type="hidden" name="id" value="${note.id}" />
+        <button type="submit" name="intent" value="remove" aria-label="delete">
+          ✕
+        </button>
+      </form>
+    </li>
+  </ul>
+
+  <p if="!notes.length" class="said">Nothing yet.</p>
+  <p class="said" if="mine">You have added ${mine} of these, from this browser.</p>
+</div>

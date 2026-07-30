@@ -226,6 +226,10 @@ test('nothing in the package imports anything outside it', () => {
   // from six files and work out the project root as two directories up from its
   // own, which is only true while it lives inside the app it serves. Installed,
   // two directories up is another package.
+  //
+  // `demos/` is in this repository and is still on the far side of the boundary.
+  // It depends on the package by name, and nothing in the package may reach into
+  // it.
   const offenders = [];
 
   const walk = (dir) => {
@@ -244,7 +248,10 @@ test('nothing in the package imports anything outside it', () => {
           ...code.matchAll(/import\('([^']+)'\)/g),
         ];
         for (const [, specifier] of specifiers) {
-          const out = specifier.startsWith('../../') || /transclude\.config/.test(specifier);
+          const out =
+            specifier.startsWith('../../') ||
+            /transclude\.config/.test(specifier) ||
+            /(^|\/)demos\//.test(specifier);
           if (out) offenders.push(`${full}: ${specifier}`);
         }
       }

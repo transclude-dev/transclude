@@ -1,0 +1,126 @@
+<script properties>
+  /**
+   * `value` is the one the framework reports to the form. It is serialized the
+   * same way its attribute is, so what gets submitted is what the DOM says.
+   *
+   * @typedef {{ value: string; options: string[]; disabled: boolean }} Props
+   */
+
+  /** @type {Props} */
+  export default {
+    value: "",
+    options: [],
+    disabled: false,
+  };
+</script>
+
+<script state>
+  export default { open: false };
+</script>
+
+<style>
+  :host {
+    display: inline-block;
+  }
+  :host([disabled]) {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  button {
+    font: inherit;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid #d6d6e0;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+  }
+  ul {
+    list-style: none;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    border: 1px solid #d6d6e0;
+    border-radius: 4px;
+    background: #fff;
+  }
+  li button {
+    border: 0;
+    border-radius: 0;
+    width: 100%;
+    text-align: left;
+  }
+  li button[aria-pressed="true"] {
+    background: #eef;
+  }
+</style>
+
+<script>
+  // The platform's switch. A `<form>` has no reason to think a custom element is
+  // a control, and without this nothing it holds is ever submitted. It is a static
+  // class field, so it has to be a literal. The compiler refuses anything else.
+  export const formAssociated = true;
+
+  export const prototype = {
+    get chosen() {
+      return this.value ? this.value.split(",") : [];
+    },
+
+    toggle(tag) {
+      const next = new Set(this.chosen);
+      if (!next.delete(tag)) next.add(tag);
+
+      // Writing the prop writes the attribute, which is what the framework
+      // notices. It reports the new form value before the repaint, so a submit in
+      // between still sends what the DOM already says.
+      this.value = [...next].join(",");
+    },
+  };
+
+  // On `shadow`, not `host`. That was the bug this once had.
+  //
+  // A click inside a shadow root does reach a listener on the host, but by then
+  // it has been *retargeted*: `event.target` is the host element itself, because
+  // the point of a shadow boundary is that the outside does not see through it.
+  // `closest("[data-open]")` from there finds nothing and the button does nothing.
+  //
+  // Inside the root the target is the real element. `event.composedPath()[0]`
+  // would work from the host too, but listening on the right side of the boundary
+  // is the version that does not need explaining twice.
+  shadow.addEventListener(
+    "click",
+    (event) => {
+      const tag = event.target.closest("[data-tag]")?.dataset.tag;
+      if (tag) host.toggle(tag);
+      else if (event.target.closest("[data-open]")) host.open = !host.open;
+    },
+    { signal },
+  );
+
+  // `internals` is the fourth thing a <script> block gets, alongside host, shadow
+  // and signal. Everything else about validity and state lives on it.
+  internals.setValidity({});
+</script>
+
+<!-- `value`, not the `chosen` getter below: a template reads props and state, and
+     a prototype member is neither. The typechecker says so rather than letting it
+     render as undefined.
+
+     `open ? 'true' : 'false'`, not `${open}`. A boolean goes through the
+     framework's attribute rule, which drops `false` entirely and writes `true` as
+     a bare attribute. Right for `disabled`, wrong for ARIA, where a missing
+     `aria-expanded` and `aria-expanded=""` both mean "no state" to a screen
+     reader. ARIA wants the words. -->
+<button type="button" data-open aria-expanded="${open ? 'true' : 'false'}">
+  ${value ? value : "choose tags"}
+</button>
+
+<ul if="open">
+  <li each="option of options">
+    <button
+      type="button"
+      data-tag="${option}"
+      aria-pressed="${value.split(',').includes(option) ? 'true' : 'false'}"
+    >
+      ${option}
+    </button>
+  </li>
+</ul>

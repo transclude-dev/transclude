@@ -1,0 +1,16 @@
+<script server>
+  import { people } from '../../data/people.js';
+
+  // A nested layout with its own loader. It knows nothing about the page's data
+  // and does not need to.
+  export default async () => ({ total: people.length });
+</script>
+
+<style>
+  .people-frame > .crumbs { font-size: .8rem; color: var(--muted); margin: 0 0 1.25rem; }
+</style>
+
+<div class="people-frame">
+  <p class="crumbs">people · ${total} in total</p>
+  <slot></slot>
+</div>

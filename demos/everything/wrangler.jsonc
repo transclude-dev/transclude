@@ -1,0 +1,9 @@
+{
+  "name": "transclude-demo",
+  "main": "worker.js",
+  "compatibility_date": "2026-01-01",
+  // There is no JSON module type, so the manifest arrives as text and the adapter
+  // parses it. `fallthrough` matters: without it this rule silently replaces the
+  // default text rule for .txt/.html/.sql rather than adding to it.
+  "rules": [{ "type": "Text", "globs": ["**/routes.json"], "fallthrough": true }]
+}

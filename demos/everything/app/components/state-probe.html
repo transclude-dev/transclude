@@ -1,0 +1,53 @@
+<script properties>
+  export default {
+    label: '',
+    open: false,
+    /** @type {{ id: number; label: string; flagged: boolean }[]} */
+    rows: [],
+  };
+</script>
+
+<style>
+  :host { display: block; font-size: .8rem; }
+  input { font: inherit; padding: .2rem .4rem; }
+  ul { margin: .4rem 0 0; padding: 0; list-style: none; }
+  dl { margin: .4rem 0 0; }
+  dt { font-weight: 600; }
+  dd { margin: 0 0 .3rem; }
+  li { margin: .2rem 0; }
+</style>
+
+<!-- Three positions, three different fates when something changes. Each input
+     is here to be typed into and focused, so what survives an update can be
+     measured rather than assumed. -->
+
+<h4>${label}</h4>
+
+<!-- Stable: no block sits between it and the root, so nothing moves it. -->
+<input id="stable" placeholder="stable">
+
+<!-- Inside a block. The block re-renders as a unit whenever its rendered markup
+     differs, including when only ${label} changed. -->
+<div if="open">
+  <span>${label}</span>
+  <input id="in-block" placeholder="in block">
+</div>
+
+<!-- A <template each> renders several nodes per item, so each item carries its
+     own anchors and is reconciled as a region rather than as a node. -->
+<dl>
+  <template each="row of rows" key="row.id">
+    <dt>${row.label}</dt>
+    <dd><input placeholder="${row.label}"></dd>
+  </template>
+</dl>
+
+<!-- Inside a keyed each: reconciled, so a reorder moves these rather than
+     rebuilding them. The `if` is nested one level further, inside the loop
+     item. A block there is a function of the row, not of the props alone. -->
+<ul>
+  <li each="row of rows" key="row.id">
+    <b if="row.flagged">!</b>
+    <input placeholder="${row.label}">
+  </li>
+</ul>

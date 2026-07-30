@@ -1,0 +1,106 @@
+/* The global stylesheet: tokens, reset, base typography, a utility or two.
+   Served through Vite, so nesting and @import work here.
+
+   What reaches where is what this file is about:
+
+   - Custom properties INHERIT, so `--line` below crosses into a shadow root and
+     `<user-card>` can use it.
+   - Selectors do NOT cross. `.stack` and the `p` rule below apply to pages and
+     partials, and stop at a component's shadow boundary.
+
+   So a global stylesheet can theme a component, but it cannot style one. */
+
+/* Cross-document view transitions, opt-in and CSS-only. They need full-page
+   navigation, which is what this framework does. An SPA has to build them
+   itself. Both documents must carry this rule for a transition to run. */
+@view-transition {
+  navigation: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+}
+
+/* A transition cannot start while one is still running, and the default is
+   around 250ms, long enough that clicking straight through two links skips the
+   second. Shortening it narrows that window as well as looking brisker. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 300ms;
+}
+
+::view-transition-group(*) {
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+/* Chrome that should stay put rather than cross-fade with the page. */
+header nav {
+  view-transition-name: site-nav;
+}
+
+footer {
+  view-transition-name: site-footer;
+}
+
+:root {
+  --line: #dcdce4;
+  --muted: #6b6b78;
+  --ink: #1a1a22;
+  --accent: #3b3bb0;
+  --paper: #f4f4f8;
+  --radius: 12px;
+  --step: 1rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font:
+    15px/1.55 ui-sans-serif,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+a {
+  color: var(--accent);
+}
+
+h1 {
+  font-size: 1.6rem;
+  margin: 0 0 0.25rem;
+}
+
+h2 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8a8a96;
+  margin: 2.5rem 0 0.75rem;
+}
+
+code {
+  background: #e8e8f0;
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.85em;
+}
+
+/* A utility class, to make the boundary visible: it lands on a partial and is
+   ignored inside a component's shadow root. */
+.tinted {
+  background: #fffbe6;
+  border: 1px dashed #d8c56a;
+  border-radius: var(--radius);
+  padding: calc(var(--step) / 2);
+}

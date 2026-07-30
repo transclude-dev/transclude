@@ -28,16 +28,31 @@ const PARSE_OPTIONS = {
  * Returns the exported names so callers can check them against the names the
  * generated module already uses.
  */
-export function bindDefaultExport(block, name, label) {
-  const { code, line = 1 } = block;
-  const ast = parseOrThrow(code, label, line);
+export function bindDefaultExport(block, name, label, { flag = null } = {}) {
+  const { code: source, line = 1 } = block;
+  const ast = parseOrThrow(source, label, line);
+
+  // `flag` names an export that is a fact about the element rather than part of
+  // this block's own shape. It is read out here and blanked, not removed, so
+  // every offset after it still points where it did.
+  const found = flag ? literalExport(ast, flag, source, line, label) : null;
+  const code = found ? blank(source, [[found.start, found.end]]) : source;
+  const formAssociated = found ? found.value : null;
 
   // acorn rejects a duplicate `default` itself, so there is at most one.
   const node = ast.body.find((s) => s.type === 'ExportDefaultDeclaration') ?? null;
-  const exports = namedExportsOf(ast, code, line, label);
+  const exports = namedExportsOf(ast, source, line, label).filter((n) => n !== flag);
   const imports = importsOf(ast);
 
-  if (!node) return { code: `${code}\nconst ${name} = null;`, exports, imports, defaultNode: null };
+  if (!node) {
+    return {
+      code: `${code}\nconst ${name} = null;`,
+      exports,
+      imports,
+      defaultNode: null,
+      formAssociated,
+    };
+  }
 
   // Slicing the *declaration* rather than the statement means
   // `export default function f() {}` becomes `const x = function f() {}`,
@@ -49,7 +64,33 @@ export function bindDefaultExport(block, name, label) {
     ';' +
     code.slice(node.end);
 
-  return { code: rewritten, exports, imports, defaultNode: node.declaration };
+  return { code: rewritten, exports, imports, defaultNode: node.declaration, formAssociated };
+}
+
+/**
+ * `export const NAME = true` or `= false`, read out of a block.
+ *
+ * `null` when the block does not declare it, which is not the same as declaring
+ * it false. A component may say so in one block or the other, and telling those
+ * apart is what makes "declared in both" reportable.
+ */
+function literalExport(ast, flag, code, line, label) {
+  for (const statement of ast.body) {
+    if (!statement.type.startsWith('Export')) continue;
+
+    const value = booleanExport(statement, flag);
+    if (value !== null) return { value, start: statement.start, end: statement.end };
+
+    if (namesExport(statement, flag)) {
+      throw new ScriptError(
+        `${label}: \`${flag}\` must be \`true\` or \`false\`. It becomes a static ` +
+          `class field, the same for every element of this tag, so it cannot be decided at ` +
+          `run time (line ${lineOf(statement, code, line)})`,
+      );
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -66,7 +107,8 @@ export function toFunctionBody(blocks, label, { lift = null, binding = '__member
   const hoisted = [];
   const bodies = [];
   let lifted = null;
-  let formAssociated = false;
+  // `null` until a block declares it, so "not said" and "said false" differ.
+  let formAssociated = null;
 
   for (const block of blocks) {
     const { code, line = 1 } = block;

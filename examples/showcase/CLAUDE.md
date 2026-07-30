@@ -67,13 +67,16 @@ when to merge.
   and `true` writes it bare. That is right for `disabled` and wrong for
   `aria-expanded` and `aria-pressed`, where a missing attribute and `=""` both
   mean no state to a screen reader. Write `${open ? 'true' : 'false'}`.
-- **`export const formAssociated = true` is the only other thing `<script>` may
-  export**, and it has to be a literal. It becomes a static class field, which is
-  the same for every element of the tag, so a computed value would look like a
-  per-element choice and could not be one. The compiler says so rather than
-  accepting it. A light element can opt in too. Being a form control needs no
-  shadow root, and it counts as behavior for the "nothing to define, so define
-  nothing" rule.
+- **`export const formAssociated` goes in `<script properties>` or `<script>`,
+  and not in both.** It is a fact about the element rather than a prop or a piece
+  of setup, so either block can say it. Declaring it twice is a compile error,
+  because one fact with two homes has nothing to settle a disagreement. Put it in
+  `<script properties>` when the element has props and no behavior, which saves a
+  `<script>` block holding one line. It has to be a literal either way: it becomes
+  a static class field, the same for every element of the tag, so a computed value
+  would look like a per-element choice and could not be one. A light element can
+  opt in too. Being a form control needs no shadow root, and it counts as behavior
+  for the "nothing to define, so define nothing" rule.
 - **`static formAssociated` can only be checked in a browser.** Nothing in Node
   models a form, so setting it to `false` broke no test until one read the flag
   directly. Whether a `<form>` counts it as a field is checked in

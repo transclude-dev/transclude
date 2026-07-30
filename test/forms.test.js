@@ -36,15 +36,72 @@ test('the export is lifted out of the setup code, not run per element', () => {
   assert.match(out.body, /host\.id;/);
 });
 
-test('opting out explicitly is the same as not opting in', () => {
+test('opting out explicitly compiles the same as not opting in', () => {
+  const off = componentOf('<script>\nexport const formAssociated = false;\n</script>\n<p>x</p>');
+  const silent = componentOf('<p>x</p>');
+
+  assert.match(off, /export const formAssociated = false;/);
+  assert.match(silent, /export const formAssociated = false;/);
+});
+
+test('a block still reports which of those two it was', () => {
+  // The compiled module cannot tell them apart and does not need to. The block
+  // can, which is what makes "declared in both blocks" something to report.
   assert.equal(bodyOf('export const formAssociated = false;').formAssociated, false);
-  assert.equal(bodyOf('host.id;').formAssociated, false);
+  assert.equal(bodyOf('host.id;').formAssociated, null, 'silence is not a `false`');
 });
 
 test('it coexists with an exported prototype', () => {
   const out = bodyOf('export const prototype = { a() {} };\nexport const formAssociated = true;');
   assert.equal(out.formAssociated, true);
   assert.ok(out.lifted, 'the prototype still got lifted');
+});
+
+// ---- either block ----------------------------------------------------------
+
+test('the properties block can declare it, so a form control needs no <script>', () => {
+  const source =
+    '<script properties>\nexport default { name: \'\' };\nexport const formAssociated = true;\n</script>\n<button>x</button>';
+
+  const code = componentOf(source, { shadow: false });
+  assert.match(code, /export const formAssociated = true;/);
+  assert.doesNotMatch(source, /<script>/, 'the point is that none is needed');
+});
+
+test('the flag is taken out of the properties block, not left in it', () => {
+  // It would otherwise be a second `export const formAssociated` in the module.
+  const code = componentOf(
+    '<script properties>\nexport default { name: \'\' };\nexport const formAssociated = true;\n</script>\n<p>x</p>',
+  );
+  assert.equal(code.match(/export const formAssociated/g).length, 1);
+});
+
+test('a prop declared after the flag still lands, so offsets survive the cut', () => {
+  const code = componentOf(
+    '<script properties>\nexport const formAssociated = true;\nexport default { name: \'\', tone: \'warn\' };\n</script>\n<p>x</p>',
+  );
+  assert.match(code, /export const formAssociated = true;/);
+  assert.match(code, /tone: 'warn'/, 'the default export was read from the blanked source');
+});
+
+test('declaring it in both blocks is refused', () => {
+  assert.throws(
+    () =>
+      componentOf(
+        '<script properties>\nexport default {};\nexport const formAssociated = true;\n</script>\n<p>x</p>\n<script>\nexport const formAssociated = false;\n</script>',
+      ),
+    /declares `formAssociated` in both/,
+  );
+});
+
+test('a computed value is refused in the properties block too', () => {
+  assert.throws(
+    () =>
+      componentOf(
+        '<script properties>\nexport default {};\nexport const formAssociated = enabled;\n</script>\n<p>x</p>',
+      ),
+    /must be `true` or `false`/,
+  );
 });
 
 test('a computed value is refused, because a static field cannot be one', () => {

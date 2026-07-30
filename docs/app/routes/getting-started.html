@@ -31,12 +31,19 @@
 >
   <h2>Install</h2>
 
-  <pre><code>npm install transclude vite typescript</code></pre>
+  <pre><code>npm install transclude</code></pre>
 
   <p>
-    Vite and TypeScript are peer dependencies. Vite builds, and TypeScript is
-    what <code>transclude-check</code> runs over your templates.
+    Vite and TypeScript are peer dependencies, and npm installs them alongside
+    it. Vite builds, and TypeScript is what <code>transclude-check</code> runs
+    over your templates.
   </p>
+
+  <doc-note label="Declare Vite yourself if you import it">
+    Your <code>vite.config.js</code> imports <code>vite</code>, so a package
+    manager that does not hoist peers will not resolve it. Adding it to your own
+    <code>package.json</code> costs nothing and holds everywhere.
+  </doc-note>
 
   <h2>Two files to start</h2>
 

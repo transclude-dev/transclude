@@ -32,13 +32,33 @@ export async function code(source, lang = 'html') {
   });
 }
 
+const escape = (text) =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 /**
- * A directory listing. Not a language, so it is only escaped and wrapped.
+ * A directory listing. No grammar fits one, so the parts are marked up here:
+ * a path, and the comment that lines up after it. A name ending in `/` is a
+ * directory.
  *
  * @param {string} source
- * @returns {Promise<string>}
+ * @returns {string}
  */
-export const tree = (source) => code(source, 'text');
+export function tree(source) {
+  const lines = source.trim().split('\n').map((line) => {
+    // Two or more spaces after the path is the gap before the comment. One
+    // space cannot be it, or `[...path].html /docs/*` would split wrongly.
+    const [, path = '', gap = '', note = ''] = line.match(/^(.*?\S)(\s{2,})(\S.*)$/) ?? [];
+    const named = path || line;
+    const kind = named.trimEnd().endsWith('/') ? 't-dir' : 't-path';
+
+    // A line with nothing after it is a whole path, comment or not.
+    if (!path) return `<span class="${kind}">${escape(line)}</span>`;
+
+    return `<span class="${kind}">${escape(path)}</span>${gap}<span class="t-note">${escape(note)}</span>`;
+  });
+
+  return `<pre class="tree"><code>${lines.join('\n')}</code></pre>`;
+}
 
 /**
  * Highlights every value of an object, keeping its keys.

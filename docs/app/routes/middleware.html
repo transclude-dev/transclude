@@ -13,14 +13,6 @@ export default (app) => {
 };`,
         'js',
       ],
-      order: [
-        `1. trailing-slash redirect
-2. CSRF
-3. app/server.js
-4. public files
-5. routes`,
-        'text',
-      ],
     }),
   });
 </script>
@@ -36,7 +28,13 @@ export default (app) => {
 
   <h2>The order</h2>
 
-  ${html(s.order)}
+  <ol>
+    <li>Trailing-slash redirect</li>
+    <li>CSRF</li>
+    <li><code>app/server.js</code></li>
+    <li>Public files</li>
+    <li>Routes</li>
+  </ol>
 
   <p>
     <code>app/server.js</code> runs before anything that serves bytes, so a guard

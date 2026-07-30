@@ -187,6 +187,17 @@ pre code {
   }
 }
 
+/* A directory listing. The comment column is part of the content, so the
+   whole block is preformatted and only the roles are colored. */
+.tree .t-dir {
+  color: var(--link);
+  font-weight: 700;
+}
+
+.tree .t-note {
+  color: var(--muted);
+}
+
 table {
   border-collapse: collapse;
   width: 100%;

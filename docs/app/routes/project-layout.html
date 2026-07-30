@@ -1,10 +1,8 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { tree } from '../lib/code.js';
 
   export default async () => ({
-    s: await all({
-      tree: [
-        `app/
+    layout: tree(`app/
   routes/             .html is a page, .js is an endpoint
     _layout.html      wraps this directory and below
     index.html        /
@@ -21,10 +19,7 @@
   styles/
     global.css
   server.js           your own Hono middleware
-transclude.config.js`,
-        'text',
-      ],
-    }),
+transclude.config.js`),
   });
 </script>
 
@@ -33,20 +28,14 @@ transclude.config.js`,
 
 <doc-page
   heading="Project layout"
-  lede="The directory decides what a file is. Nothing inside the file says which."
+  lede="Where a file sits says what it is. Nothing inside it does."
 >
-  ${html(s.tree)}
-
-  <h2>Two rules</h2>
+  ${html(layout)}
 
   <p>
-    In <code>routes/</code>, the extension decides. <code>.html</code> is a page
-    and <code>.js</code> is an endpoint.
-  </p>
-
-  <p>
-    Everywhere else the directory decides. <code>components/</code> gets a shadow
-    root, <code>partials/</code> is light DOM.
+    In <code>routes/</code>, <code>.html</code> is a page and <code>.js</code> is
+    an endpoint. Elsewhere, <code>partials/</code> is light DOM and
+    <code>components/</code> gets a shadow root.
   </p>
 
   <doc-note label="A helper in routes/ needs a prefix" tone="warn">

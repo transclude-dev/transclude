@@ -8,8 +8,8 @@ these are the ones about writing and running an app.
 HTML is the product. A page is an `.html` file, the server renders it, and what
 arrives is markup a browser already knows how to display. A form posts to an
 action. Any element with an id is a resource on its own URL, which is what a
-client swaps. Reach for a partial before a component: a partial has no boundary,
-page CSS reaches it, and it ships no JavaScript.
+client swaps. An element is light DOM unless its file exports `shadow`: no
+boundary, page CSS reaches it, and it ships no JavaScript.
 
 `npm test` (29, about this app's own files) · `npm run check` · `npm run dev` ·
 `npm run preview`
@@ -22,7 +22,7 @@ cannot. Leave it out otherwise.
 Words: short and plain. No jargon. No em dashes. Write so that someone reading
 English as a second language gets it on the first pass. This applies to comments,
 commit messages, the README, and anything else written here. `hypermedia`,
-`partial` and `component` are the exceptions: they name things this framework is
+`element` and `fragment` are the exceptions: they name things this framework is
 about, so use them and say what they mean the first time.
 
 Tone: declarative. State what is true and stop. Do not sell the design, and do not
@@ -35,8 +35,8 @@ when to merge.
 
 - `app/routes/`. Extension decides: `.html` is a page, `.js` is an endpoint. A
   helper here needs a `_` prefix or it becomes a URL.
-- `app/partials/` is light DOM, `app/components/` gets a shadow root. The
-  directory decides, and nothing in the file says which.
+- `app/elements/` holds every custom element. Light DOM unless the file exports
+  `shadow`, which either script block can carry.
 - `app/routes/check.html`. 53 assertions that run in a browser. The framework has
   no browser coverage of its own, so this is it.
 - `app/server.js`. This app's own Hono middleware.

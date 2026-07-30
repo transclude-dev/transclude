@@ -50,5 +50,25 @@ export async function loadProject(from = process.cwd()) {
   if (!config || typeof config !== 'object') {
     throw new Error(`[transclude] ${CONFIG_FILE} must export a config object as its default`);
   }
+  assertNoSplitDirs(config, file);
   return { root, config, configFile: file };
+}
+
+/**
+ * `partialsDir` and `componentsDir` are one `elementsDir` now, and how an
+ * element renders is read from the file rather than from where it sits.
+ *
+ * Left alone, the old keys would be ignored and the app would look in
+ * `app/elements/`, find nothing, and every tag would render as an unknown
+ * element with no styles and nothing said.
+ */
+function assertNoSplitDirs(config, file) {
+  const old = ['partialsDir', 'componentsDir'].filter((key) => key in config);
+  if (!old.length) return;
+
+  throw new Error(
+    `[transclude] ${file} sets ${old.join(' and ')}, which nothing reads. ` +
+      `Put every element in one directory and name it with \`elementsDir\`. ` +
+      `A shadow root is opt-in per file now: \`export const shadow = true\`.`,
+  );
 }

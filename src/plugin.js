@@ -14,6 +14,7 @@ import {
   ELEMENTS_ENTRY,
   splitBlocks,
   usedComponents,
+  readFlags,
 } from './compiler/index.js';
 import { resolveRoutesDir, scanRoutes } from './routes.js';
 import { SERVER_FILE } from './server.js';
@@ -29,8 +30,7 @@ const RUNTIME_FILE = fileURLToPath(new URL('./runtime/index.js', import.meta.url
 
 export default function transclude({
   appDir = 'app',
-  componentsDir = 'components',
-  partialsDir = 'partials',
+  elementsDir = 'elements',
   routesDir = 'routes',
   fragmentParam = 'fragment',
 } = {}) {
@@ -51,11 +51,9 @@ export default function transclude({
   const origin = new Map();
 
   const scan = () => {
-    // Two directories, because they are two things you reach for at different
-    // moments. Which rendering an element gets is decided here and nowhere else.
-    const shadow = readDir(path.resolve(app, componentsDir));
-    const light = readDir(path.resolve(app, partialsDir));
-    components = new Map([...light, ...shadow]);
+    // One directory. An element is light unless its own file says otherwise,
+    // which is read below rather than taken from where the file sits.
+    components = readDir(path.resolve(app, elementsDir));
 
     const scanned = scanRoutes(resolveRoutesDir(app, routesDir));
     pages = new Map(
@@ -74,16 +72,12 @@ export default function transclude({
       }
     }
 
-    shadowTags = new Set([...shadow.keys()].filter((tag) => components.has(tag)));
-
-    // One tag, one meaning. Otherwise the component wins and the partial never
-    // renders, with nothing said.
-    for (const tag of shadow.keys()) {
-      if (!light.has(tag)) continue;
-      throw new Error(
-        `[transclude] <${tag}> is both a component and a partial ` +
-          `(${componentsDir}/${tag}.html and ${partialsDir}/${tag}.html). Rename one`,
-      );
+    // How a tag renders decides how every file that mentions it compiles, so it
+    // has to be known for all of them before any of them is compiled.
+    shadowTags = new Set();
+    for (const [tag, file] of components) {
+      const flags = safely(() => readFlags(read(file), `${tag}.html`));
+      if (flags?.shadow) shadowTags.add(tag);
     }
 
     layouts = scanLayouts(resolveRoutesDir(app, routesDir));
@@ -287,7 +281,7 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
       if (virt.startsWith(P_COMPONENT)) {
         const tag = virt.slice(P_COMPONENT.length);
         const file = components.get(tag);
-        if (!file) throw new Error(`[transclude] no component <${tag}> in ${componentsDir}`);
+        if (!file) throw new Error(`[transclude] no element <${tag}> in ${elementsDir}`);
         origin.set(id, file);
         // The donut: a light element's styles stop at any light element nested
         // inside it.

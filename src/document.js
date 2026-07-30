@@ -105,7 +105,7 @@ export const ACTION_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
  * a 404. The URL exists.
  */
 export async function runAction(page, ctx, method) {
-  const action = page.actions?.[method.toLowerCase()];
+  const action = page[method];
   if (typeof action !== 'function') return null;
 
   const result = await action(ctx);
@@ -147,8 +147,7 @@ export function hasRegion(page, region) {
 
 /** What a page answers, for an `Allow` header. GET is not optional. */
 export function methodsOf(page) {
-  const declared = Object.keys(page?.actions ?? {}).map((method) => method.toUpperCase());
-  return ['GET', ...declared.filter((method) => method !== 'GET')];
+  return ['GET', ...ACTION_METHODS.filter((method) => typeof page?.[method] === 'function')];
 }
 
 export function renderDocument(chain, datas, { clientEntry, stylesheet, lang = 'en' } = {}) {

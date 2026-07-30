@@ -16,6 +16,7 @@ import {
   runAction,
 } from '../src/document.js';
 import { buildShim } from '../src/compiler/shim.js';
+import { compilePage, compileLayout } from '../src/compiler/index.js';
 
 const CTX = '{ url: string; params: {}; layout: {}; request: Request | null; action: unknown }';
 const shimOf = (server) =>
@@ -48,26 +49,33 @@ test('null is 405, not 404, because the URL exists and the method does not', () 
   // The distinction only matters because something has to choose the status,
   // and both servers choose it from this.
   assert.deepEqual(methodsOf(pageOf()), ['GET']);
-  assert.deepEqual(methodsOf(pageOf({ actions: { post: () => {}, delete: () => {} } })), [
+  assert.deepEqual(methodsOf(pageOf({ POST: () => {}, DELETE: () => {} })), [
     'GET',
     'POST',
     'DELETE',
   ]);
 });
 
-test('the method is matched case-insensitively, because HTTP sends it upper', async () => {
-  const page = pageOf({ actions: { post: async () => ({ ok: true }) } });
+test('a handler is found by the method HTTP sent, uppercase', async () => {
+  const page = pageOf({ POST: async () => ({ ok: true }) });
   assert.deepEqual(await runAction(page, {}, 'POST'), { action: { ok: true } });
 });
 
+test('a lowercase export is not a handler, so the old shape cannot half-work', async () => {
+  // `export const actions` is a compile error now, but a page module built by
+  // hand should not find a handler under the name the object used to hold.
+  const page = pageOf({ post: async () => ({ ok: true }) });
+  assert.equal(await runAction(page, {}, 'POST'), null);
+});
+
 test('what an action returns becomes ctx.action', async () => {
-  const page = pageOf({ actions: { post: async () => ({ added: 'a note' }) } });
+  const page = pageOf({ POST: async () => ({ added: 'a note' }) });
   const { action } = await runAction(page, {}, 'POST');
   assert.deepEqual(action, { added: 'a note' });
 });
 
 test('an action that returns nothing still ran', async () => {
-  const page = pageOf({ actions: { post: async () => {} } });
+  const page = pageOf({ POST: async () => {} });
   assert.deepEqual(await runAction(page, {}, 'POST'), { action: {} });
 });
 
@@ -75,7 +83,7 @@ test('a Response is the answer itself, and nothing renders', async () => {
   // Redirect-after-post, JSON, a 404 the page chose. The platform already has a
   // type for "this is the reply", so there is no framework one to learn.
   const redirect = new Response(null, { status: 303, headers: { Location: '/notes' } });
-  const page = pageOf({ actions: { post: async () => redirect } });
+  const page = pageOf({ POST: async () => redirect });
 
   const outcome = await runAction(page, {}, 'POST');
   assert.equal(outcome.response, redirect);
@@ -84,7 +92,7 @@ test('a Response is the answer itself, and nothing renders', async () => {
 
 test('the action is handed the same ctx the loader gets', async () => {
   let saw = null;
-  const page = pageOf({ actions: { post: async (ctx) => ((saw = ctx), {}) } });
+  const page = pageOf({ POST: async (ctx) => ((saw = ctx), {}) });
   const ctx = { url: 'http://x/notes', request: new Request('http://x/notes', { method: 'POST' }) };
 
   await runAction(page, ctx, 'POST');
@@ -96,9 +104,7 @@ test('an action can read a form off the platform Request', async () => {
   const body = new URLSearchParams({ text: 'a note' });
   const request = new Request('http://x/notes', { method: 'POST', body });
   const page = pageOf({
-    actions: {
-      post: async ({ request }) => ({ text: (await request.formData()).get('text') }),
-    },
+    POST: async ({ request }) => ({ text: (await request.formData()).get('text') }),
   });
 
   const { action } = await runAction(page, { request }, 'POST');
@@ -106,7 +112,7 @@ test('an action can read a form off the platform Request', async () => {
 });
 
 test('a throwing action throws, so a server answers 500 rather than a half page', async () => {
-  const page = pageOf({ actions: { post: async () => { throw new Error('nope'); } } });
+  const page = pageOf({ POST: async () => { throw new Error('nope'); } });
   await assert.rejects(() => runAction(page, {}, 'POST'), /nope/);
 });
 
@@ -134,27 +140,79 @@ test('after an action one region can render on its own', async () => {
 test("an action's ctx is the route context, with request no longer nullable", () => {
   // Null only while prerendering, and prerendering never runs an action. An
   // author should not have to answer a question that cannot come up.
-  const code = shimOf('export const actions = { async post({ request }) { return {}; } };');
-  assert.match(code, /@satisfies \{Record<string, \(ctx: .* & \{ request: Request \}\) => unknown>\}/);
+  const code = shimOf('export const POST = async ({ request }) => ({});');
+  assert.match(code, /@satisfies \{\(ctx: .* & \{ request: Request \}\) => unknown\}/);
 });
 
-test("the loader's ctx.action is the union of what this page's actions return", () => {
-  const code = shimOf('export const actions = { post: async () => ({ ok: true }) };\nexport default async () => ({});');
-  assert.match(code, /action: Exclude<Awaited<ReturnType<\(typeof actions\)\[keyof typeof actions\]>>, Response> \| null/);
+test('every verb a page can answer gets its own signature', () => {
+  const code = shimOf(
+    'export const POST = async () => ({});\nexport const DELETE = async () => ({});',
+  );
+  assert.equal(code.match(/@satisfies \{\(ctx: .* request: Request/g)?.length, 2);
 });
 
-test('a page with no actions has no action to read', () => {
+test('an all-caps export that is not a method is left alone', () => {
+  // The endpoint shim treats any uppercase export as a verb. A page dispatches
+  // on four methods, so anything else is a constant and giving it a handler
+  // signature would be an error about code that is fine.
+  const code = shimOf('export const LIMIT = 10;\nexport default async () => ({});');
+  // `request: Request` is what only a handler's signature carries. The loader
+  // gets a `@satisfies` of its own, so matching on `(ctx:` would find that one.
+  assert.doesNotMatch(code, /request: Request \}\) => unknown/);
+  assert.match(code, /\{ action: null \| null \}/);
+});
+
+test("the loader's ctx.action is the union of what this page's handlers return", () => {
+  const code = shimOf(
+    'export const POST = async () => ({ ok: true });\n' +
+      'export const DELETE = async () => ({ gone: true });\n' +
+      'export default async () => ({});',
+  );
+  assert.match(
+    code,
+    /action: Exclude<Awaited<ReturnType<typeof POST>> \| Awaited<ReturnType<typeof DELETE>>, Response> \| null/,
+  );
+});
+
+test('a page with no handlers has no action to read', () => {
   const code = shimOf('export default async () => ({});');
   assert.match(code, /\{ action: null \| null \}/);
-  assert.doesNotMatch(code, /typeof actions/);
+  assert.doesNotMatch(code, /action: Exclude</);
 });
 
-test('a server block with only actions and no loader still gets checked', () => {
+test('a server block with only handlers and no loader still gets checked', () => {
   // No default export used to mean the block was copied and nothing annotated,
   // so an action's ctx went untyped in exactly the page most likely to have one.
-  const code = shimOf('export const actions = { async post({ request }) { return {}; } };');
-  assert.match(code, /@satisfies \{Record<string,/);
+  const code = shimOf('export const POST = async ({ request }) => ({});');
+  assert.match(code, /@satisfies \{\(ctx:/);
   assert.match(code, /@typedef \{\{\}\} __Data/, 'it renders from nothing, so its data shape is empty');
+});
+
+test('a handler written as a function declaration gets no signature it cannot use', () => {
+  // TypeScript ignores `@satisfies` on a function declaration. Emitting one
+  // would read as a check that ran. The return type still reaches ctx.action.
+  const code = shimOf('export async function POST({ request }) { return {}; }\nexport default async () => ({});');
+  assert.doesNotMatch(code, /request: Request \}\) => unknown/);
+  assert.match(code, /ReturnType<typeof POST>/);
+});
+
+// ---- the shape this replaced ----------------------------------------------
+
+test('an `actions` object is refused, rather than quietly answering 405', () => {
+  // Nothing reads one now. Left alone it compiles, serves, and rejects every
+  // form on the page with no hint about why.
+  const source = '<script server>\nexport const actions = { async post() { return {}; } };\n</script>\n<p>x</p>';
+
+  assert.throws(() => compilePage(source, { runtime: '/rt.js', filename: 'p' }), /exports "actions"/);
+  assert.throws(() => compilePage(source, { runtime: '/rt.js', filename: 'p' }), /export const POST/);
+});
+
+test('a layout is held to the same rule', () => {
+  const source = '<script server>\nexport const actions = {};\n</script>\n<slot></slot>';
+  assert.throws(
+    () => compileLayout(source, { id: 'l', runtime: '/rt.js' }),
+    /exports "actions"/,
+  );
 });
 
 // ---- a request nobody can answer ------------------------------------------

@@ -39,51 +39,49 @@
     };
   };
 
-  export const actions = {
-    async post({ request, url, fragment, cookies }) {
-      // The platform's own Request. No router API to learn to read a form.
-      const form = await fields(request);
-      if (!form) return badRequest();
+  export const POST = async ({ request, url, fragment, cookies }) => {
+    // The platform's own Request. No router API to learn to read a form.
+    const form = await fields(request);
+    if (!form) return badRequest();
 
-      // Which button was pressed. A submit button's name/value is only sent if
-      // it is the one that submitted, which is how one form does two things.
-      if (form.get("intent") === "remove") {
-        const result = remove(Number(form.get("id")));
-        return result.error ? result : back(url, fragment, cookies);
-      }
-
-      const text = String(form.get("text") ?? "").trim();
-      if (!text) return said("a note needs some text");
-      if (text.length > 80) return said("80 characters is the limit");
-
-      // From <tag-picker>, which is a custom element. Nothing here knows that. A
-      // form-associated element arrives as a field like any other.
-      const tags = String(form.get("tags") ?? "")
-        .split(",")
-        .filter(Boolean);
-
-      notes.push({ id: nextId++, text, tags });
-
-      // Set before returning a redirect, which is where this used to be lost:
-      // the action's Response short-circuits the render, and nothing looked at
-      // the envelope on that path. `Response.redirect()` also has immutable
-      // headers, so appending to it threw rather than dropping quietly.
-      const mine = Number((await cookies.signed.get("mine")) ?? 0) + 1;
-      await cookies.signed.set("mine", String(mine), { maxAge: 60 * 60 * 24 * 30 });
-
-      return back(url, fragment, cookies, text);
-    },
-
-    // A <form> can only send GET or POST. That is HTML, not a limit of this
-    // framework, so the same removal is reachable two ways. The form posts an
-    // intent; a fetch caller uses the method the platform already has.
-    async delete({ request, url, fragment, cookies }) {
-      const form = await fields(request);
-      if (!form) return badRequest();
-
+    // Which button was pressed. A submit button's name/value is only sent if
+    // it is the one that submitted, which is how one form does two things.
+    if (form.get("intent") === "remove") {
       const result = remove(Number(form.get("id")));
       return result.error ? result : back(url, fragment, cookies);
-    },
+    }
+
+    const text = String(form.get("text") ?? "").trim();
+    if (!text) return said("a note needs some text");
+    if (text.length > 80) return said("80 characters is the limit");
+
+    // From <tag-picker>, which is a custom element. Nothing here knows that. A
+    // form-associated element arrives as a field like any other.
+    const tags = String(form.get("tags") ?? "")
+      .split(",")
+      .filter(Boolean);
+
+    notes.push({ id: nextId++, text, tags });
+
+    // Set before returning a redirect, which is where this used to be lost:
+    // the action's Response short-circuits the render, and nothing looked at
+    // the envelope on that path. `Response.redirect()` also has immutable
+    // headers, so appending to it threw rather than dropping quietly.
+    const mine = Number((await cookies.signed.get("mine")) ?? 0) + 1;
+    await cookies.signed.set("mine", String(mine), { maxAge: 60 * 60 * 24 * 30 });
+
+    return back(url, fragment, cookies, text);
+  };
+
+  // A <form> can only send GET or POST. That is HTML, not a limit of this
+  // framework, so the same removal is reachable two ways. The form posts an
+  // intent; a fetch caller uses the method the platform already has.
+  export const DELETE = async ({ request, url, fragment, cookies }) => {
+    const form = await fields(request);
+    if (!form) return badRequest();
+
+    const result = remove(Number(form.get("id")));
+    return result.error ? result : back(url, fragment, cookies);
   };
 
   function remove(id) {

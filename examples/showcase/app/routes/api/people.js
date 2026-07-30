@@ -4,7 +4,7 @@
 //
 // Handlers are named for the method the way HTTP spells it. Uppercase is doing
 // real work: `export const delete` is a syntax error, `export const DELETE` is
-// not, which is why a page's `actions` had to be an object and this does not.
+// not. A page's handlers are spelled the same way.
 
 import { people } from '../../data/people.js';
 

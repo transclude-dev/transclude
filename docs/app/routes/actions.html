@@ -9,15 +9,13 @@
     error: action?.error ?? null,
   });
 
-  export const actions = {
-    async post({ request, url }) {
-      const form = await request.formData();
-      const text = String(form.get('text') ?? '').trim();
-      if (!text) return { error: 'a note needs some text' };
+  export const POST = async ({ request, url }) => {
+    const form = await request.formData();
+    const text = String(form.get('text') ?? '').trim();
+    if (!text) return { error: 'a note needs some text' };
 
-      notes.push({ id: nextId++, text });
-      return Response.redirect(new URL(url), 303);
-    },
+    notes.push({ id: nextId++, text });
+    return Response.redirect(new URL(url), 303);
   };
 <\/script>
 
@@ -25,22 +23,21 @@
   <input name="text" />
   <button>Add</button>
 </form>`,
-      keyed: [
-        `export const actions = {
-  async post(ctx) { … },
-  async delete(ctx) { … },
-  async put(ctx) { … },
-};`,
+      verbs: [
+        `export const POST = async (ctx) => { … };
+export const PUT = async (ctx) => { … };
+export const PATCH = async (ctx) => { … };
+export const DELETE = async (ctx) => { … };`,
         'js',
       ],
       redirect: [
-        `async post({ request, url, fragment }) {
+        `export const POST = async ({ request, url, fragment }) => {
   const result = await save(request);
   if (result.error) return result;
   if (fragment !== null) return result;
 
   return Response.redirect(new URL(url), 303);
-}`,
+};`,
         'js',
       ],
     }),
@@ -48,22 +45,32 @@
 </script>
 
 <title>Actions · transclude</title>
-<meta name="description" content="A page handles GET. Its actions handle POST and the other verbs." />
+<meta name="description" content="A page handles GET. Export a verb to handle POST and the rest." />
 
 <doc-page
   heading="Actions"
-  lede="A form posts to the page it sits on. The action runs, then the loader renders what it left behind."
+  lede="A form posts to the page it sits on. The handler runs, then the loader renders what it left behind."
 >
   ${html(s.page)}
 
-  <h2>Keyed by method</h2>
+  <h2>One export per method</h2>
 
-  ${html(s.keyed)}
+  <p>
+    Handlers are named for their HTTP method, in uppercase. Endpoints are written
+    the same way, so there is one spelling to learn.
+  </p>
+
+  ${html(s.verbs)}
 
   <p>
     A <code>&lt;form&gt;</code> can only send GET or POST. Post an intent to
     reach the others from a form, or use <code>fetch</code>.
   </p>
+
+  <doc-note label="Prefer export const">
+    <code>export const POST = (ctx) =&gt; …</code> gets its parameter typed.
+    <code>export function POST(ctx)</code> does not.
+  </doc-note>
 
   <h2>Answer a mutation with a redirect</h2>
 
@@ -78,7 +85,7 @@
   <h2>One shape from every handler</h2>
 
   <p>
-    <code>ctx.action</code> is the union of what the handlers return. Return the
+    <code>ctx.action</code> is the union of what your handlers return. Return the
     same shape from all of them, or the loader can read none of them.
   </p>
 

@@ -16,7 +16,7 @@ const gzip = promisify(zlib.gzip);
 
 const COMPRESSIBLE = new Set(['.html', '.js', '.mjs', '.css', '.json', '.svg', '.txt', '.xml', '.map']);
 
-// Below this, framing overhead eats the gain — a 91 byte file gzips to 120.
+// Below this, the framing costs more than it saves. A 91 byte file gzips to 120.
 export const COMPRESSIBLE_FLOOR = 512;
 
 // At build time nothing is waiting, so brotli runs at its maximum. Per request

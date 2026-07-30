@@ -1,6 +1,6 @@
-// Surgical updates.
+// Updates in place.
 //
-// One invariant carries almost all of these: after bind() + update(), the DOM
+// One rule carries almost all of these: after bind() + update(), the DOM
 // must serialize to exactly what a full render of the same props would have
 // produced. That catches a wrong childNodes index, a mis-split text node, an
 // escaping difference and a missed attribute in a single assertion, and it is
@@ -49,7 +49,7 @@ async function transition(source, before, after, opts) {
 
 const props = (defaults) => `<script properties>export default ${JSON.stringify(defaults)};</script>`;
 
-// ---- the invariant --------------------------------------------------------
+// ---- the rule -------------------------------------------------------------
 
 const CASES = [
   {
@@ -72,7 +72,7 @@ const CASES = [
   },
   {
     name: 'a ${} with static text only after it',
-    source: `${props({ name: '' })}<p>\${name} — analyst</p>`,
+    source: `${props({ name: '' })}<p>\${name}, analyst</p>`,
     before: { name: 'Ada' },
     after: { name: 'Grace' },
   },
@@ -355,7 +355,7 @@ const CASES = [
 ];
 
 for (const testCase of CASES) {
-  test(`updating in place matches a full render — ${testCase.name}`, async () => {
+  test(`updating in place matches a full render: ${testCase.name}`, async () => {
     const { ok, actual, expected } = await transition(
       testCase.source,
       testCase.before,
@@ -368,7 +368,7 @@ for (const testCase of CASES) {
 
 // ---- what it refuses to bind ----------------------------------------------
 
-test('structure no longer forces a repaint — it is a block of its own', async () => {
+test('structure no longer forces a repaint, it is a block of its own', async () => {
   const mod = await load(
     `${props({ show: false, name: '', role: '', tags: [] })}` +
       `<h3>\${name}</h3><p if="show">\${role}</p><li each="tag of tags">\${tag}</li>`,
@@ -404,7 +404,7 @@ test('a branch that stays chosen is written into, not rebuilt', async () => {
   assert.equal(div.textContent, 'two');
 });
 
-test('changing branch does rebuild — that is a structural change', async () => {
+test('changing branch does rebuild, because the structure changed', async () => {
   const mod = await load(
     `${props({ show: false })}<p if="show">yes</p><p else>no</p>`,
   );
@@ -593,7 +593,7 @@ test('html() cannot go in a text node, so update hands back a repaint', async ()
   assert.equal(mod.update(bindings, mod.coerce({ body: '<em>bye</em>' })), false);
 });
 
-test('a partial gets no bindings at all — it is never repainted', async () => {
+test('a partial gets no bindings at all, it is never repainted', async () => {
   const mod = await load(`${props({ name: '' })}<h3>\${name}</h3>`, { shadow: false });
   assert.equal(mod.bind(), null);
   assert.equal(mod.update(), false);
@@ -676,7 +676,7 @@ test("a parent serializes a child's attribute the way that child reads it back",
   const child = await load(`${converted}<time>\${since.getFullYear()}</time>`, { tag: 'x-child' });
   const { attrProp, setAttrProp } = await import('../src/runtime/index.js');
 
-  // Without the child's `to`, a Date would be JSON — quotes and all — and the
+  // Without the child's `to`, a Date would be JSON, quotes and all, and the
   // child's `from` would get something it cannot parse back.
   assert.equal(attrProp(child.def, 'since', new Date('1843-12-10')), ' since="1843-12-10"');
   assert.equal(child.coerce({ since: '1843-12-10' }).since.getUTCFullYear(), 1843);

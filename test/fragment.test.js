@@ -2,8 +2,8 @@
 //
 // A fragment is markup for a document that already exists. Nothing that swaps
 // HTML into a live page processes a declarative shadow root, so a component in
-// a fragment ships bare and paints itself on connect. Everything else — the
-// light DOM, the partials, the attributes — renders exactly as it always did.
+// a fragment ships bare and paints itself on connect. Everything else renders the
+// way it always did: the light DOM, the partials, the attributes.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,9 +17,9 @@ import * as rt from '../src/runtime/index.js';
 /**
  * Every framework-generated name a module mentions but never binds.
  *
- * The generated module is never run by the unit tests — it is a real ESM module
- * with imports — so a name emitted into a scope that does not have it survives
- * every assertion here and fails at build time instead. This is the check that
+ * The generated module is never run by the unit tests, because it is a real ESM
+ * module with imports, so a name emitted into a scope that does not have it
+ * survives every assertion here and fails at build time instead. This is the check that
  * moves that failure forward. Only `__` names are considered: those are the
  * compiler's own, and the author's are their business.
  */
@@ -105,8 +105,8 @@ function unbound(code) {
 
 /**
  * Compiles a template to the function the generated module would have wrapped,
- * with the component refs bound to real defs. The compiled body is the point —
- * hand-writing it would test nothing.
+ * with the component refs bound to real defs. The compiled body is what is being
+ * tested. Writing it out by hand would test nothing.
  */
 function templateOf(source, registry = new Map(), opts = {}) {
   const components = new Map([...registry.keys()].map((tag, i) => [tag, `/c${i}.js`]));
@@ -173,13 +173,13 @@ test('a component ships bare in a fragment', () => {
   assert.equal(html, '<user-card name="Ada"></user-card>');
 });
 
-test('its attributes survive — they are the whole of what the client re-renders from', () => {
+test('its attributes survive, since they are all the client re-renders from', () => {
   const html = templateOf('<user-card name="${who}"></user-card>', cards)({ who: 'Grace' }, {}, true);
 
   assert.equal(html, '<user-card name="Grace"></user-card>');
 });
 
-test('light children still render — they are slot content, not shadow content', () => {
+test('light children still render, because they are slot content', () => {
   const html = templateOf('<user-card name="Ada"><em>hi</em></user-card>', cards)({}, {}, true);
 
   assert.equal(html, '<user-card name="Ada"><em>hi</em></user-card>');
@@ -193,7 +193,7 @@ test('the styles go with the shadow root that is no longer there', () => {
 
 // ---- partials -------------------------------------------------------------
 
-test('a partial renders the same either way — it has no shadow root to skip', () => {
+test('a partial renders the same either way, having no shadow root to skip', () => {
   const render = templateOf('<site-note tone="warn">careful</site-note>', notes);
 
   assert.equal(render(), render({}, {}, true));
@@ -235,7 +235,7 @@ test('fragment() renders a partial for insertion', () => {
   assert.equal(rt.fragment(NOTE, { tone: 'warn' }, { default: 'careful' }), '<p class="warn">careful</p>');
 });
 
-test('fragment() leaves the styles out — they are hoisted per page, not per swap', () => {
+test('fragment() leaves the styles out, since they are hoisted per page', () => {
   assert.doesNotMatch(rt.fragment(NOTE, {}), /@scope|<style>/, 'a copy per swap would stack up');
 });
 
@@ -244,7 +244,7 @@ test('fragment() leaves the styles out — they are hoisted per page, not per sw
 test('a component with a block full of components binds every name it uses', () => {
   // `each` in a component compiles to its own module-scope function. A flag
   // threaded in from render is not in scope there, and nothing that runs in
-  // this file would notice — the module is real ESM and never gets executed.
+  // this file would notice, because the module is real ESM and never runs.
   const { code } = compileComponent(
     `<script properties>export default { people: [] };</script>
 <ul><li each="p of people" key="p.name"><user-card name="\${p.name}"></user-card></li></ul>`,

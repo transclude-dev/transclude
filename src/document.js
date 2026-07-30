@@ -5,15 +5,15 @@
 
 /**
  * Loads a page's chain and renders the document. Layout loaders run outermost
- * first, each receiving what the ones above returned — so this is sequential by
- * necessity, not by omission.
+ * first, each one given what the ones above returned, so they have to run one
+ * after another.
  */
 /**
  * The part of the answer that is not markup: a status and some headers.
  *
  * One object, handed to every loader in the chain and mutated in place. Loaders
  * are called with `{ ...ctx, layout }`, so a scalar assigned onto `ctx` would be
- * lost on the copy — this survives because the copy carries the same reference.
+ * lost on the copy. This survives because the copy carries the same reference.
  * Built here rather than in each server, because there are three of them and
  * that is exactly how two servers end up disagreeing.
  */
@@ -26,13 +26,13 @@ export function responseOf() {
  * loader answered with instead.
  *
  * Returning one is how a loader redirects, or serves something that is not this
- * page at all — the same convention an action already uses, so there is one rule
- * rather than two. A layout can do it too, which is what makes an auth redirect
+ * page at all. It is the same convention an action already uses, so there is one
+ * rule rather than two. A layout can do it too, which is what makes an auth redirect
  * a layout's job: nothing below it runs.
  *
  * For everything else the page still renders, and `ctx.response` decides what it
- * is wrapped in — a 404 status on a page that renders its own "not found" body,
- * an `HX-Trigger` header, a `Set-Cookie`.
+ * is wrapped in: a 404 status on a page that renders its own "not found" body, an
+ * `HX-Trigger` header, a `Set-Cookie`.
  */
 export async function renderRoute(page, ctx, options = {}) {
   const chain = [...page.layouts, page];
@@ -54,8 +54,8 @@ export async function renderRoute(page, ctx, options = {}) {
  *
  * The layout loaders still run: a page's own loader is handed what they
  * returned, so skipping them would change the data the region renders from.
- * What is skipped is the layouts' *markup* — a fragment is a piece of the page,
- * not a document.
+ * What is skipped is the layouts' markup. A fragment is a piece of the page, not a
+ * document.
  *
  * Returns null when the page has no region by that name, which is a 404 rather
  * than an empty swap: asking for something that does not exist should say so.
@@ -94,15 +94,15 @@ export const ACTION_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 /**
  * Runs the page's handler for a request that is not a GET.
  *
- * A `Response` is the author's own answer and goes out as it is — a redirect
- * after a POST, JSON, a 404. Anything else becomes `ctx.action`, and the page
+ * A `Response` is the author's own answer and goes out as it is: a redirect after
+ * a POST, JSON, a 404. Anything else becomes `ctx.action`, and the page
  * then renders exactly the way it does for a GET: `load` stays the one thing
  * that decides what a page renders, whatever method asked for it. So a form
  * that re-renders with an error reads the same as a form that redirects, and
  * neither has to restate the page's data.
  *
  * `null` is "this page does not answer that method", which is a 405 rather than
- * a 404 — the URL exists.
+ * a 404. The URL exists.
  */
 export async function runAction(page, ctx, method) {
   const action = page.actions?.[method.toLowerCase()];
@@ -115,8 +115,8 @@ export async function runAction(page, ctx, method) {
 /**
  * A short-circuiting `Response`, carrying whatever the envelope collected.
  *
- * Set a session cookie and then redirect — the most ordinary thing an action
- * does — and the cookie would otherwise be dropped: the action's `Response` is
+ * Set a session cookie and then redirect, which is an ordinary thing for an action
+ * to do, and the cookie would otherwise be dropped. The action's `Response` is
  * returned directly, and nothing looks at `ctx.response` on that path.
  * `Response.redirect()` makes it worse than a silent loss, because its headers
  * are immutable and appending to them throws.
@@ -181,8 +181,8 @@ export function renderDocument(chain, datas, { clientEntry, stylesheet, lang = '
   //
   // One <style> per tag rather than one block for all of them, each named. The
   // name is what lets the client answer "are these already here?" for an element
-  // that arrives later in a fragment — the document says what it has, so nothing
-  // has to be tracked alongside it.
+  // that arrives later in a fragment. The document says what it has, so nothing
+  // has to be tracked beside it.
   const seen = new Set();
   const scoped = [];
   const collect = (defs) => {

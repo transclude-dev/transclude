@@ -1,7 +1,7 @@
 // Bun adapter. `bun framework/bin/serve.bun.js`
 //
 // Bun serves whatever a module default-exports with a `fetch`, so there is no
-// listener to write — the app already is one.
+// listener to write. The app already is one.
 
 import { app, noBuild, summary } from '../src/production.js';
 

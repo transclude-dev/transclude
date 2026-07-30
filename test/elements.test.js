@@ -2,8 +2,8 @@
 // elements in it, and definitions for the custom ones.
 //
 // A page's client entry covers what the page can render. A fragment can name
-// anything, so the client watches the DOM instead — whatever put the tag there,
-// it is there, and that is the signal.
+// anything, so the client watches the DOM instead. Whatever put the tag there, it
+// is there, and that is the signal.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -52,7 +52,7 @@ test('rendering the same element twice still writes one <style>', () => {
   assert.equal((html.match(/data-hf="a-b"/g) ?? []).length, 1);
 });
 
-test('a shadow component contributes nothing to <head> — its styles are inside it', () => {
+test('a shadow component adds nothing to <head>, since its styles are inside it', () => {
   const html = renderDocument(
     [page({ elements: [{ tag: 'u-c', light: false, css: '.a{}', elements: [] }] })],
     [{}],
@@ -90,7 +90,7 @@ test('every element in the app is one dynamic import away', () => {
   assert.match(code, /"user-card": \(\) => import\("virtual:hf-component\/user-card"\)/);
 });
 
-test('a thunk, not a URL — only the bundler knows where the chunk lands', () => {
+test('a thunk, not a URL, because only the bundler knows where the chunk lands', () => {
   const { code } = compileElementsEntry(['a-b']);
   assert.doesNotMatch(code, /\.js/, 'a filename here would need a manifest to keep in sync');
 });
@@ -131,7 +131,7 @@ test("the page's own tags are still static imports, defined before the watcher",
   );
 });
 
-// ---- define() is transitive ----------------------------------------------
+// ---- define() reaches children -------------------------------------------
 
 const componentOf = (source, over = {}) =>
   compileComponent(source, {
@@ -158,13 +158,13 @@ test('an element that renders nothing defines only itself', () => {
   assert.doesNotMatch(code, /__C\d+_define/);
 });
 
-test('define is idempotent, because an element may render itself', () => {
+test('define can be called twice, because an element may render itself', () => {
   const code = componentOf('<a-a></a-a>', { components: new Map([['a-a', 'a-a.html']]) });
   assert.match(code, /let __defined = false;/);
   assert.match(code, /if \(__defined\) return;/);
 });
 
-test('a page does not pull in nested defines — its entry already listed them', () => {
+test('a page does not pull in nested defines, its entry already listed them', () => {
   const code = componentOf('<b-b></b-b>');
   assert.equal((code.match(/__C0_define/g) ?? []).length, 2, 'import and call, nothing more');
 });
@@ -298,7 +298,7 @@ test('a chunk that fails to load does not take the others down', async () => {
   dom.restore();
 });
 
-test('no MutationObserver, no watching — and nothing thrown', () => {
+test('no MutationObserver, no watching, and nothing thrown', () => {
   const original = globalThis.MutationObserver;
   delete globalThis.MutationObserver;
   assert.doesNotThrow(() => watch({ 'a-b': () => Promise.resolve({}) }, { querySelector: () => null }));
@@ -353,7 +353,7 @@ test('styles the document already has are left alone', () => {
   dom.restore();
 });
 
-test('a shadow component adopts nothing — its styles are inside its root', () => {
+test('a shadow component adopts nothing, its styles are inside its root', () => {
   const dom = fakeHead();
   adoptStyles({ tag: 'u-c', light: false, css: '.a{}' });
 
@@ -378,7 +378,7 @@ test('on the server there is no document and nothing to do', () => {
 });
 
 test('a light element with nothing to define still gets its styles', () => {
-  // defineLight registers no class for a partial with no behaviour — that is the
+  // defineLight registers no class for a partial with no behaviour. That is the
   // zero-JS trade. Styles are the half it still needs, and the half a swapped-in
   // one arrives without, so they have to be adopted before every early return.
   const dom = fakeHead();

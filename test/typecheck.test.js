@@ -192,7 +192,7 @@ test('hover reports the type of an expression in the template', () => {
 
 test('a JSDoc typedef and a whole-object @type both reach tsc', () => {
   // Neither is a statement, so copying the block statement-by-statement would
-  // silently drop them — and they are exactly how an author says what `[]` holds.
+  // drop them without a word, and they are how an author says what `[]` holds.
   const { code } = shim(
     `<script properties>
 /** @typedef {{ columns: string[] }} Props */
@@ -217,8 +217,8 @@ test('an empty array without an annotation is usable, not never[]', () => {
 });
 
 test('an unannotated parameter is plain JavaScript, not an error', () => {
-  // The whole point: JSDoc is optional. A parameter with no declared type is
-  // `any`, the same as it would be in any other .js file.
+  // JSDoc is optional. A parameter with no declared type is `any`, the same as it
+  // would be in any other .js file.
   const { dir, checker } = project({
     'app/components/data-table.html': `<script properties>export default { columns: [] };</script>
 <script>
@@ -234,7 +234,7 @@ test('an unannotated parameter is plain JavaScript, not an error', () => {
 
 test('a helper the prototype reads is resolvable in the shim', () => {
   // The helper is hoisted with the members in the generated module, so the shim
-  // has to copy it too — otherwise tsc reports a name the browser resolves fine.
+  // has to copy it too, or tsc reports a name the browser resolves fine.
   const { dir, checker } = project({
     'app/components/data-table.html': `<script properties>export default { columns: [] };</script>
 <script>
@@ -250,7 +250,7 @@ test('a helper the prototype reads is resolvable in the shim', () => {
   assert.deepEqual(checker.check(path.join(dir, 'app/components/data-table.html')), []);
 });
 
-test('setup code is not checked — it has host, shadow and signal in scope', () => {
+test('setup code is not checked, because host, shadow and signal are in scope', () => {
   const { dir, checker } = project({
     'app/components/data-table.html': `<script properties>export default { columns: [] };</script>
 <script>
@@ -313,11 +313,11 @@ test('a dash-case attribute is checked under its camelCase prop name', () => {
 
 // ---- attributes that are not props ----------------------------------------
 //
-// `hx-*` belongs to whichever hypermedia library the author brought, `data-*`
+// `hx-*` belongs to whichever library the author brought, `data-*`
 // and `aria-*` to the platform. None of them are declared in <script
 // properties>, so treating an interpolated one as a prop turned a correct page
-// into a type error — which is what `hx-get="/notes?id=${id}"` on a component
-// used to be.
+// into a type error. That is what `hx-get="/notes?id=${id}"` on a component used
+// to be.
 
 const withCard = (markup) => ({
   'app/components/user-card.html': `<script properties>
@@ -342,8 +342,8 @@ for (const prefix of ['hx-get', 'data-key', 'aria-label']) {
 }
 
 test('the expression inside one is still checked', () => {
-  // Not an escape hatch — only the claim that the name is a declared prop goes
-  // away. A typo in the `${…}` is an error the same as anywhere else.
+  // Not a way out of checking. Only the claim that the name is a declared prop
+  // goes away. A typo in the `${…}` is an error the same as anywhere else.
   const [diagnostic] = errorsFor('<user-card hx-get="/n?id=${idd}" name="x"></user-card>');
   assert.match(diagnostic.message, /'idd' does not exist/);
 });
@@ -438,8 +438,8 @@ test("a ctx field that does not exist is an error in a handler", () => {
 });
 
 test('a handler that returns nothing is an error', () => {
-  // TypeScript reports this *at the annotation*, which is generated text — with
-  // an unmapped position the diagnostic was dropped and this passed silently.
+  // TypeScript reports this at the annotation, which is generated text. With an
+  // unmapped position the diagnostic was dropped and this passed quietly.
   const [diagnostic] = endpointErrors('export const GET = () => {};');
   assert.match(diagnostic.message, /not assignable to type 'Response \| Promise<Response>'/);
 });
@@ -483,7 +483,7 @@ test('export function GET counts as much as export const GET', () => {
   assert.match(diagnostic.message, /not assignable to type 'Response \| Promise<Response>'/);
 });
 
-test("an endpoint's ctx has no layout — nothing renders", () => {
+test("an endpoint's ctx has no layout, because nothing renders", () => {
   const [diagnostic] = endpointErrors('export const GET = ({ layout }) => Response.json(layout);');
   assert.match(diagnostic.message, /'layout' does not exist/);
 });

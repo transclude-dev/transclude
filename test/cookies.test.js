@@ -35,7 +35,7 @@ test('percent-encoded values come back decoded', () => {
   assert.equal(cookies.get('greeting'), 'hello there');
 });
 
-test('no request at all — prerendering — reads nothing rather than throwing', () => {
+test('no request at all, as when prerendering, reads nothing rather than throwing', () => {
   const response = responseOf();
   const cookies = cookiesOf(null, response, SECRET);
   assert.equal(cookies.get('session'), undefined);
@@ -110,14 +110,14 @@ test('a signed cookie round trips', async () => {
   assert.equal(await back.cookies.signed.get('mine'), '3');
 });
 
-test('the value is readable by the client — signing is not encryption', async () => {
+test('the value is readable by the client, since signing is not encryption', async () => {
   const { response, cookies } = setup();
   await cookies.signed.set('mine', '3');
   assert.match(sent(response)[0], /^mine=3\./, 'the plain value is right there, plus a signature');
 });
 
 test('a tampered value reads as absent rather than as itself', async () => {
-  // Untrusted input, so "no valid cookie" is the honest answer, not a throw.
+  // Untrusted input, so "no valid cookie" is the right answer, not a throw.
   const { cookies } = setup({ header: 'mine=99.notarealsignature' });
   assert.equal(await cookies.signed.get('mine'), undefined);
 });
@@ -161,7 +161,7 @@ test('a cookie set before a redirect is still on the redirect', async () => {
 });
 
 test('Response.redirect has immutable headers, so the copy is required', () => {
-  // Appending to one throws rather than being ignored — measured.
+  // Appending to one throws rather than being ignored. Measured.
   const redirect = Response.redirect('http://x/in', 303);
   assert.throws(() => redirect.headers.append('Set-Cookie', 'a=1'));
 

@@ -1,13 +1,13 @@
 // Turns a .html file into JavaScript that means the same thing, so tsc can
 // check it.
 //
-// JavaScript rather than TypeScript, deliberately: a JSDoc `@type` in the
+// JavaScript rather than TypeScript, on purpose. A JSDoc `@type` in the
 // author's own `<script props>` is honoured in a .js file and silently ignored
-// in a .ts one. Since the whole point is to check what the author wrote, the
-// shim speaks the same language they do — the scaffolding uses JSDoc too.
+// in a .ts one. The job is to check what the author wrote, so the shim speaks the
+// same language they do. The scaffolding uses JSDoc too.
 //
-// The shim is never written to disk and never executed — it exists only to be
-// type checked. Its one hard requirement is that every position tsc reports can
+// The shim is never written to disk and never run. It exists only to be type
+// checked. Its one hard requirement is that every position tsc reports can
 // be traced back to the .html file, so it is assembled from chunks: text we
 // generated (unmapped) and text copied verbatim from the source (mapped). A
 // diagnostic offset lands inside one chunk, and a verbatim chunk knows where it
@@ -23,10 +23,10 @@ const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each']);
 
 /**
  * Attributes that are not props, whatever they land on. `data-*` and `aria-*`
- * are the platform's own, and `hx-*` belongs to whichever hypermedia library the
- * author brought. None of them are declared in `<script properties>`, so
- * checking them as props makes a correct page a type error — which is exactly
- * what `hx-get="/notes?id=${id}"` on a component used to be.
+ * are the platform's own, and `hx-*` belongs to whichever library the author
+ * brought. None of them are declared in `<script properties>`, so
+ * checking them as props turns a correct page into a type error. That is what
+ * `hx-get="/notes?id=${id}"` on a component used to be.
  *
  * They are still checked, just as expressions rather than as props: a typo in
  * the `${…}` is an error the same as anywhere else. Only the claim that the name
@@ -35,13 +35,13 @@ const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each']);
 const PASS_THROUGH = /^(?:data|aria|hx)-/;
 
 /**
- * `ctx.cookies`, named rather than inlined into the route context — that context
- * is a string built in typecheck.js and would otherwise carry this whole shape
+ * `ctx.cookies`, named rather than written into the route context. That context is
+ * a string built in typecheck.js, and it would otherwise carry this whole shape
  * into every shim that mentions it.
  *
- * Emitted by *every* shim whose context references it. An unresolved type name in
- * JSDoc is not an error, it is `any` — so a shim that referenced `__Cookies`
- * without defining it type-checked happily and caught nothing. The endpoint shim
+ * Emitted by every shim whose context names it. A type name JSDoc cannot resolve
+ * is not an error, it is `any`, so a shim that named `__Cookies` without defining
+ * it type-checked happily and caught nothing. The endpoint shim
  * did exactly that.
  */
 const COOKIES_TYPEDEF =
@@ -99,8 +99,8 @@ class Builder {
    * maps to one source position.
    *
    * For the annotations. A `@satisfies` is ours, not the author's, but the errors
-   * it produces are about their code — `TS1360: type '() => void' does not satisfy`
-   * is reported *at the comment*, so with `add` it mapped to nothing and was
+   * it produces are about their code. `TS1360: type '() => void' does not satisfy`
+   * is reported at the comment, so with `add` it mapped to nothing and was
    * dropped. A handler that returned no Response type-checked silently.
    */
   pin(text, sourceOffset) {
@@ -138,8 +138,8 @@ export function originalOffset(chunks, offset) {
 }
 
 /**
- * An endpoint is already a module — there is nothing to compile, only something
- * to annotate. So the shim is the file, verbatim, with a `@satisfies` spliced in
+ * An endpoint is already a module. There is nothing to compile, only something to
+ * annotate. So the shim is the file, verbatim, with a `@satisfies` spliced in
  * front of each verb export.
  *
  * That buys two things a page's shim also buys: the handler's own `ctx` is typed
@@ -184,7 +184,7 @@ export function buildEndpointShim(source, { contextType }) {
     }
 
     if (declared?.type === 'FunctionDeclaration' && isVerb(declared.id?.name)) {
-      // TypeScript ignores `@satisfies` on a function *declaration* — measured, it
+      // TypeScript ignores `@satisfies` on a function declaration. Measured: it
       // reports nothing at all. An assignment after the fact is checked, so the
       // return type still cannot be wrong. What is lost is contextual typing of
       // the parameter, which is why `export const` is the better spelling.
@@ -228,8 +228,8 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
   //
   // The mapping is what keeps `${user.nmae}` an error. TypeScript treats a type
   // that came straight from an object literal in a .js file as open for expando
-  // properties, so reading an undeclared one is allowed — remapping the keys
-  // produces an ordinary object type, which is not.
+  // properties, so reading an undeclared one is allowed. Remapping the keys gives
+  // an ordinary object type, where it is not.
   //
   // The conditional widens a bare `[]`, which otherwise infers `never[]` and
   // turns "no annotation" from "less checking" into a page of errors about a
@@ -277,8 +277,8 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
   emitNodes(blocks.nodes, out, new Set(), componentProps, 1);
   out.add('}\n');
 
-  // Client blocks are not otherwise part of the shim — they run in the browser
-  // with `host`, `shadow` and `signal` in scope, which tsc has no way to know.
+  // Client blocks are not otherwise part of the shim. They run in the browser with
+  // `host`, `shadow` and `signal` in scope, which tsc has no way to know.
   // They are still parsed, because a syntax error there should be reported by
   // the same command that reports every other one.
   for (const block of blocks.client) {
@@ -315,7 +315,7 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
 /**
  * `<script server>` and `<script props>` are module bodies, not expressions: they
  * have imports and may have named exports of their own. Those stay where they
- * are — the shim is a module too — and only the default export is rebound. For a
+ * are, because the shim is a module too, and only the default export is rebound. For a
  * loader that rebinding is what types its parameter from the route context while
  * leaving the return type inferred.
  */
@@ -337,9 +337,9 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
 
   // The block is copied whole with pieces spliced in at exact offsets, so every
   // position still maps back to the .html file. Copying statement by statement
-  // would drop everything that is not a statement — a floating `@typedef`, or a
-  // JSDoc comment attached to an export — and those are exactly how an author
-  // says what an empty array holds.
+  // would drop everything that is not a statement, such as a loose `@typedef` or a
+  // JSDoc comment attached to an export, and those are how an author says what an
+  // empty array holds.
   const edits = [];
 
   // A props block annotates `attributes`; a server block annotates `actions`,
@@ -351,9 +351,9 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
   const actions = contextType ? namedExport(ast, 'actions') : null;
   if (actions) {
     // The same route context, except that `request` is not nullable here. It is
-    // null only while prerendering, and prerendering never runs an action — so
-    // the intersection narrows `Request | null` to `Request` and an author does
-    // not have to answer a question that cannot come up.
+    // null only while prerendering, and prerendering never runs an action, so the
+    // intersection narrows `Request | null` to `Request`. An author does not have
+    // to answer a question that cannot come up.
     edits.push({
       at: actions.start,
       insert:
@@ -380,9 +380,9 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
     // parameter *and* leaves the return type intact for the template below. An
     // annotation would flatten one or the other.
     //
-    // The loader's `ctx.action` is whatever this page's own actions return —
-    // `unknown` in the route context, narrowed here by intersection to the
-    // union of their return types. A `Response` is excluded because returning
+    // The loader's `ctx.action` is whatever this page's own actions return. It is
+    // `unknown` in the route context, narrowed here by intersection to the union
+    // of their return types. A `Response` is excluded because returning
     // one short-circuits: the loader never runs, so it can never see it.
     if (contextType) {
       const action = actions
@@ -403,8 +403,8 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
   out.copy(block.code.slice(cursor), block.offset + cursor);
   out.add('\n');
 
-  // No default export is a block that only does other things — `paths`,
-  // `prerender`, `actions`. It renders from nothing, so its data shape is empty.
+  // No default export means a block that only does other things, such as `paths`,
+  // `prerender` or `actions`. It renders from nothing, so its data shape is empty.
   if (!statement) {
     out.add(`/** @typedef {{}} ${name} */\n\n`);
     return;
@@ -432,9 +432,8 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
  * DOM's type cannot know that, but the directory the file is in does.
  *
  * Only the members and what they read come across. The rest of the block runs
- * with `host`, `shadow` and `signal` in scope, which tsc has no way to know —
- * and its imports may be browser-only, so they are copied only where a member
- * actually uses them. Blocks that will not parse are skipped in silence here;
+ * with `host`, `shadow` and `signal` in scope, which tsc has no way to know. Its
+ * imports may be browser-only, so they are copied only where a member uses them. Blocks that will not parse are skipped in silence here;
  * the syntax pass below is what reports them, once.
  */
 function emitMembers(blocks, out, shadow) {

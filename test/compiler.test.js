@@ -99,7 +99,7 @@ test('conditions evaluate as expressions, not strings', () => {
 });
 
 test('orphaned else is a compile error', () => {
-  assert.throws(() => compile('<p>a</p><p else>b</p>'), /orphaned "else"/);
+  assert.throws(() => compile('<p>a</p><p else>b</p>'), /"else" on <p> has no "if" before it/);
 });
 
 test('if + each on one element is a hard error', () => {
@@ -299,7 +299,7 @@ for (const name of ['connectedCallback', 'disconnectedCallback', 'attributeChang
   });
 }
 
-test('adoptedCallback is left alone — nothing implements it, so nothing breaks', () => {
+test('adoptedCallback is left alone, since nothing implements it', () => {
   assert.match(
     component('<script>export const prototype = { adoptedCallback() {} };</script><p>a</p>'),
     /adoptedCallback/,

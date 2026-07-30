@@ -62,7 +62,7 @@ test('a named slot in a layout is a hole of its own', () => {
   assert.equal(render(source, {}, { default: 'body' }), '<main>body</main><aside>none</aside>');
 });
 
-test('a named slot in a component is left alone — the browser assigns it', () => {
+test('a named slot in a component is left alone, the browser assigns it', () => {
   const { body } = compileFragment(splitBlocks('<slot name="aside"></slot>').nodes, { page: false });
   assert.match(body, /<slot name=/);
   assert.doesNotMatch(body, /__slots/);
@@ -95,7 +95,7 @@ test('<slot> in a component is untouched, because it is a real shadow DOM slot',
   assert.doesNotMatch(body, /__slot/);
 });
 
-test('a layout with no slot warns — nothing inside it could ever appear', () => {
+test('a layout with no slot warns, since nothing inside it could appear', () => {
   assert.match(compile('<div>chrome only</div>').warnings[0], /no <slot>/);
   assert.deepEqual(compile('<div><slot></slot></div>').warnings, []);
 });
@@ -193,7 +193,7 @@ test('only the components a template actually mentions are found', () => {
   assert.deepEqual([...used], ['user-card']);
 });
 
-test('components inside <template> are found — the parser hides them on .content', () => {
+test('components inside <template> are found, though the parser puts them on .content', () => {
   const used = usedComponents('<template if="x"><data-table></data-table></template>', registry);
   assert.deepEqual([...used], ['data-table']);
 });
@@ -216,7 +216,7 @@ const element = (source, opts = {}) =>
   compileComponent(source, { tag: 'site-note', runtime: '/rt.js', ...opts });
 
 test('a partial is light, a component is shadow, and the caller says which', () => {
-  // The directory decides — one declaration, in one place, visible in the tree.
+  // The directory decides. One decision, in one place, visible in the tree.
   assert.match(element('<p><slot></slot></p>').code, /export const light = true;/);
   assert.match(element('<p><slot></slot></p>', { shadow: true }).code, /export const light = false;/);
 });
@@ -228,7 +228,7 @@ test('a stray shadow root template is an error, not a silent second switch', () 
   );
   assert.throws(
     () => element('<template shadowrootmode="open"><p>x</p></template>', { shadow: true }),
-    /already implied — drop the/,
+    /already has a shadow root\. Drop the/,
   );
 });
 

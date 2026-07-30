@@ -1,6 +1,6 @@
 // Language server for .html files in an html-first project.
 //
-// Hand-rolled JSON-RPC rather than a framework dependency: the protocol surface
+// Hand-written JSON-RPC rather than a dependency. The part of the protocol
 // needed here is small, and keeping it dependency-free means any editor that
 // speaks LSP can use it without the project growing a toolchain.
 

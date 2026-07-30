@@ -2,8 +2,8 @@
  * Runs `worker` over `items` with at most `limit` in flight, preserving order.
  *
  * Rendering itself is synchronous and CPU-bound, so this buys nothing on its
- * own — the win is that loaders await I/O, and a build of a hundred pages should
- * not wait for a hundred round trips one at a time.
+ * own. Loaders wait on I/O, and a build of a hundred pages should not wait for a
+ * hundred round trips one at a time.
  */
 export async function pool(items, limit, worker) {
   const results = new Array(items.length);

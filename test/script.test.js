@@ -135,7 +135,7 @@ test('dynamic import is not mistaken for a declaration', () => {
   assert.match(body, /await import\('\.\/x\.js'\)/);
 });
 
-test('top-level await is allowed — init is async', () => {
+test('top-level await is allowed, because init is async', () => {
   assert.doesNotThrow(() => toFunctionBody([at('await ready();')], 'x'));
 });
 
@@ -168,7 +168,7 @@ host.x = other;`;
   assert.ok(lifted);
 });
 
-test('a transitive dependency comes along too', () => {
+test('something a hoisted name reads comes along too', () => {
   const source = `const A = 1;
 const B = A + 1;
 export const prototype = { go() { return B; } };`;

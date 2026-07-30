@@ -1,9 +1,9 @@
 // Expression layer.
 //
-// jsep gives us a deliberately small grammar: no assignment, no arrow
-// functions, no object literals, no `new`. That keeps "declarative, not
-// scripting" honest and makes the reference collection below tractable — the
-// same property that lets us check `${user.nmae}` against a known shape.
+// jsep gives a small grammar: no assignment, no arrow functions, no object
+// literals, no `new`. That keeps a template declarative rather than a second place
+// to write code, and it is what makes collecting references below possible. The
+// same thing lets `${user.nmae}` be checked against a known shape.
 
 import jsep from 'jsep';
 
@@ -107,8 +107,8 @@ export function emit(node, scope) {
 /**
  * The longest static property path rooted at template data or a loop variable,
  * or null when the root is something we cannot follow (a call result, a
- * literal). A computed access closes the path — `a.b[i].c` yields `a.b`,
- * because past `[i]` we no longer know what we are looking at.
+ * literal). A computed access ends the path, so `a.b[i].c` gives `a.b`. Past `[i]`
+ * there is no way to know what is being read.
  */
 export function chainOf(node, scope, computed = []) {
   if (node.type === 'Identifier') {

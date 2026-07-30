@@ -90,7 +90,7 @@ test('a loader answering with a Response is the answer, and nothing renders', as
 });
 
 test('a layout can answer for the page, which is what makes auth a layout', async () => {
-  // Nothing below it runs — not the page's loader, not its render.
+  // Nothing below it runs. Not the page's loader, not its render.
   let pageLoaded = false;
   const page = pageOf({
     layouts: [layoutOf({ load: async () => new Response(null, { status: 302 }) })],
@@ -227,8 +227,8 @@ test('an object is passed through as options, which is how another origin is all
 });
 
 test("the app's own middleware runs, and runs after the guard", async () => {
-  // After, deliberately: middleware cannot register itself ahead of CSRF and
-  // accidentally answer a forged request before it is checked.
+  // After, on purpose. Middleware cannot register itself ahead of CSRF and answer
+  // a forged request before it is checked.
   const order = [];
   const app = baseApp({
     middleware: (a) =>
@@ -270,7 +270,7 @@ const canonical = (mode) => {
   return app;
 };
 
-test("'never' redirects a trailing slash to the canonical form", async () => {
+test("'never' redirects a trailing slash to the URL without one", async () => {
   const out = await canonical('never').request('http://x/check/');
   assert.equal(out.status, 301, '302 would let a client keep using the other URL');
   assert.equal(out.headers.get('location'), 'http://x/check');
@@ -285,7 +285,7 @@ test('the root is not redirected to the empty string', async () => {
   assert.equal((await canonical('never').request('http://x/')).status, 200);
 });
 
-test('the canonical form itself is untouched', async () => {
+test('a URL with no trailing slash is left alone', async () => {
   assert.equal((await canonical('never').request('http://x/check')).status, 200);
 });
 
@@ -310,8 +310,8 @@ test('the loose router strips the slash before anything can act on it', async ()
 
 test('a catch-all route does not get to answer the slashed form first', async () => {
   // Hono's default only redirects a request that already 404'd, and `:path{.+}`
-  // matches `intro/` happily — so without `alwaysRedirect` the slashed URL
-  // serves content and the duplicate survives.
+  // matches `intro/` happily, so without `alwaysRedirect` the slashed URL serves
+  // content and the duplicate survives.
   const app = baseApp({ trailingSlash: 'never', csrf: false });
   app.get('/docs/:path{.+}', (c) => c.text(`doc:${c.req.param('path')}`));
 
@@ -343,8 +343,8 @@ test('a public file beats a route, and a miss falls through', async () => {
 });
 
 test("the app's middleware sees public file requests too", async () => {
-  // Mounted after the middleware, so a guard covers these as well — a file being
-  // public by default is not the same as being unguardable.
+  // Mounted after the middleware, so a guard covers these as well. A file being
+  // public by default is not the same as one a guard cannot cover.
   const seen = [];
   const app = baseApp({
     csrf: false,
@@ -376,8 +376,8 @@ test('no handler, and nothing is mounted', async () => {
 // ---- the adapters ----------------------------------------------------------
 //
 // Three files that only listen. The app is `app.fetch`, which is
-// (Request) => Response — so what is worth asserting here is that the split
-// actually happened and no adapter grew logic of its own.
+// (Request) => Response, so what is worth checking here is that the split really
+// happened and no adapter grew logic of its own.
 
 test('production.js exports an app and nothing runtime-specific runs on import', async () => {
   // Importing it must not bind a port; that is the adapter's job.

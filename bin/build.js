@@ -1,6 +1,6 @@
 // Production build.
 //
-//   dist/client   hashed, minified client entries — one per route that needs JS
+//   dist/client   hashed, minified client entries, one per route that needs JS
 //   dist/server   the SSR bundle, plain ESM, no Vite at runtime
 //   dist/static   prerendered HTML for every route whose URLs are knowable
 //   dist/routes.json  what is left for the server to render on demand
@@ -32,8 +32,8 @@ fs.rmSync(dist, { recursive: true, force: true });
 
 // ---- client ---------------------------------------------------------------
 
-// `needed` is decided in the plugin, which is also what the dev server asks —
-// two copies of that rule is two servers that disagree about which pages ship JS.
+// `needed` is decided in the plugin, which is also what the dev server asks. Two
+// copies of that rule is two servers that disagree about which pages ship JS.
 const clientRoutes = [...manifest.routes, manifest.notFound, manifest.error]
   .filter(Boolean)
   .filter((route) => route.client.needed);
@@ -45,7 +45,7 @@ const clientInput = Object.fromEntries(
   clientRoutes.map((route) => [route.id, `virtual:hf-client/${route.id}`]),
 );
 // The site stylesheet is an entry of its own, so Vite processes it and rollup
-// hashes it — one cacheable file shared by every page.
+// hashes it. One cacheable file shared by every page.
 if (config.stylesheet) clientInput.__global = path.join(root, config.stylesheet);
 
 if (Object.keys(clientInput).length) {
@@ -53,8 +53,8 @@ if (Object.keys(clientInput).length) {
     root,
     logLevel: 'warn',
     plugins: [htmlFirst(config)],
-    // Copied once, by us, into dist/public — Vite would otherwise put a copy in
-    // both the client and the SSR output, and neither is where it is served from.
+    // Copied once, here, into dist/public. Vite would otherwise put a copy in both
+    // the client and the SSR output, and neither is where it is served from.
     publicDir: false,
     build: {
       outDir: `${config.outDir}/client`,
@@ -101,7 +101,7 @@ const { pages } = await import(pathToFileURL(path.join(dist, 'server/entry.js'))
 
 /**
  * A static route has one URL. A dynamic route has as many as its `paths` export
- * names — and none at all if it does not export one, in which case it stays a
+ * names, and none at all if it does not export one, in which case it stays a
  * server render.
  *
  * `export const prerender = false` is the third case: a page whose output
@@ -124,7 +124,7 @@ async function urlsFor(route) {
 }
 
 /**
- * A prerendered file has no status and no headers — it is a file. So a loader
+ * A prerendered file has no status and no headers. It is a file. So a loader
  * that answered with a Response, or set a status other than 200, is saying this
  * URL is not a page you can write down, and the build says so rather than
  * writing a file that lies about it.
@@ -148,13 +148,13 @@ async function render(route, { url, params }) {
   });
 
   if (html instanceof Response) {
-    throw new Error(`answered with ${html.status} instead of markup — it cannot be prerendered`);
+    throw new Error(`answered with ${html.status} instead of markup, so it cannot be prerendered`);
   }
   if (ctx.response.status !== 200) {
     throw new Error(`answered ${ctx.response.status}, which no file can carry`);
   }
-  // A file carries no headers either — a Set-Cookie or a Cache-Control written
-  // here would be dropped on the floor, which is worse than being told.
+  // A file carries no headers either. A Set-Cookie or a Cache-Control written here
+  // would be thrown away, which is worse than being told.
   const [header] = [...ctx.response.headers.keys()];
   if (header) {
     throw new Error(`set a ${header} header, which no file can carry`);
@@ -237,8 +237,8 @@ fs.writeFileSync(
         client: assets.get(route.id) ?? null,
       })),
       // Every route, prerendered or not. A fragment is rendered on demand even
-      // where the document it belongs to was written to a file at build time —
-      // its data is a request away, and its URL is a query on the same path.
+      // where the document it belongs to was written to a file at build time. Its
+      // data is a request away, and its URL is a query on the same path.
       routes: manifest.routes.map((route) => ({
         id: route.id,
         pattern: route.pattern,
@@ -285,8 +285,8 @@ function countFiles(dir) {
 // ---- assets, for runtimes with no filesystem ------------------------------
 //
 // The Node server reads `dist` off a disk. A worker cannot, so the same bytes are
-// emitted as a module it can import. Identity only — no `.br`/`.gz`: an edge
-// runtime compresses for you, and shipping three copies of every file into a
+// emitted as a module it can import. Plain bytes only, with no `.br` or `.gz`. An
+// edge runtime compresses for you, and shipping three copies of every file into a
 // bundle with a size limit is the wrong trade.
 
 function assetModule() {
@@ -388,4 +388,4 @@ if (compressed.files) {
       `${kb(compressed.brotli)} brotli (−${pct(compressed.brotli)})`,
   );
 }
-if (!dynamic.length) console.log('\ndist/static is self-contained — any static host will serve it.');
+if (!dynamic.length) console.log('\ndist/static is self-contained. Any static host will serve it.');

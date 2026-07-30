@@ -1,8 +1,8 @@
 // A page answers more than GET.
 //
-// `<form method="post">` is the oldest state machine on the web and the whole
-// reason a hypermedia app can work with no client JavaScript. The action does
-// the thing; `load` still decides what the page renders, whatever method asked.
+// `<form method="post">` is the oldest way to change state on the web, and the
+// reason an app can work with no client JavaScript. The action does the work.
+// `load` still decides what the page renders, whatever method asked.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -44,7 +44,7 @@ test('a page that does not answer the method says so, rather than nothing', asyn
   assert.equal(await runAction(pageOf(), {}, 'POST'), null);
 });
 
-test('null is 405, not 404 — the URL exists, the method does not', () => {
+test('null is 405, not 404, because the URL exists and the method does not', () => {
   // The distinction only matters because something has to choose the status,
   // and both servers choose it from this.
   assert.deepEqual(methodsOf(pageOf()), ['GET']);
@@ -122,9 +122,9 @@ test('after an action the page renders exactly as it does for a GET', async () =
   assert.match(html, /<body action=\{"added":"x"\}>/);
 });
 
-test('after an action one region renders, which is the hypermedia case', async () => {
+test('after an action one region can render on its own', async () => {
   // POST the form, get back the list. Same action, same loader, same compiled
-  // region the document uses — a fragment is a smaller answer, not another path.
+  // region the document uses. A fragment is a smaller answer, not another path.
   const html = await renderFragment(pageOf(), { action: { added: 'x' } }, { region: 'list' });
   assert.equal(html, '<list action={"added":"x"}>');
 });

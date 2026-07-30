@@ -185,7 +185,7 @@ test('variants are written, and each gets its own etag', async () => {
   assert.notEqual(page.encodings.get('br').etag, page.encodings.get('gzip').etag);
 });
 
-test('small files are left alone — framing would make them bigger', async () => {
+test('small files are left alone, because framing would make them bigger', async () => {
   const dir = fixture({ 'index.html': '<p>hi</p>' });
   const stats = await precompress([dir]);
 

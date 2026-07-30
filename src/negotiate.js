@@ -3,7 +3,7 @@
  *
  * Getting this wrong is not a missed optimisation, it is a corrupt response: a
  * client that did not ask for brotli must never be handed brotli. So the rules
- * are followed properly — q-values, `*`, and `q=0` as an explicit refusal.
+ * are followed properly: q-values, `*`, and `q=0` as a refusal.
  */
 export function pickEncoding(header, available = []) {
   if (!available.length) return null;

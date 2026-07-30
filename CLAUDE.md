@@ -101,42 +101,12 @@ app to run against.
   `bind` splits an already split text node. Guarded by `#bound`.
 - **Directive values are expressions, not interpolations.** `each="tag of tags"`
   has no `${}`. Parse it as an expression or the volatile set is wrong.
-- **`export const prerender = false`** on any page that reads the request.
-  `build.js` prerenders every static route otherwise.
-- **`moveBefore` is Chrome 133+.** Safari falls back to `insertBefore`, which
-  costs focus and nothing else. Measured. `captureFocus` carries it across. Node
-  identity, input values, caret and component state all survive. Safari 26.4 has
-  no `moveBefore`, so it is the browser that runs this path in `check.html`, and
-  it passes there. Chrome 150 and Firefox 152 both have it.
-- **VS Code joins all `<script>` blocks** into one virtual module, so every file
-  looks like a redeclaration. `.vscode/settings.json` turns
-  `html.validate.scripts` off.
 - **Fragment mode emits components bare, and the flag has to reach all the way
   down.** A fragment is swapped into a live document, and nothing that swaps HTML
   processes declarative shadow DOM, so `shadow()` returns `''` and the element
   paints itself on connect. `__fragment` threads through both `emitShadow` and
   `emitLight`. Drop it from the second one and a component inside a partial emits
   a shadow root nobody will process.
-- **Listen on `shadow`, not `host`, if the handler looks at the target.** A click
-  inside a shadow root does reach a listener on the host, but the target has been
-  retargeted by then: `event.target` is the host element, because not seeing
-  through the boundary is what a boundary is for. `closest("[data-tag]")` from
-  there finds nothing and the button does nothing, quietly. `<tag-picker>` shipped
-  that way and no test noticed. `event.composedPath()[0]` also works from the
-  host, but listening on the right side of the boundary needs no comment. A
-  handler that ignores the target, like `user-card`'s toggle, is fine on either.
-- **ARIA state needs the word, so `${boolean}` is wrong for it.** An interpolated
-  boolean goes through the framework's attribute rule: `false` drops the attribute
-  and `true` writes it bare. That is right for `disabled` and wrong for
-  `aria-expanded` and `aria-pressed`, where a missing attribute and `=""` both
-  mean no state to a screen reader. Write `${open ? 'true' : 'false'}`.
-- **`export const formAssociated = true` is the only other thing `<script>` may
-  export**, and it has to be a literal. It becomes a static class field, which is
-  the same for every element of the tag, so a computed value would look like a
-  per-element choice and could not be one. The compiler says so rather than
-  accepting it. A light element can opt in too. Being a form control needs no
-  shadow root, and it counts as behaviour for the "nothing to define, so define
-  nothing" rule.
 - **The form value is reported before the render, not after.** A form can be
   submitted between an attribute changing and the microtask that repaints, and what
   it sends has to match what the attribute already says, so `reportFormValue` runs
@@ -159,25 +129,12 @@ app to run against.
   analysis lives. The shim copies the same slices, so a change there needs the
   matching change in `emitMembers`, or tsc reports names the browser resolves.
 
-- **`/check?report` is how any browser reports back.** The page posts its results
-  to `/api/checks` and the dev server prints them. Neither Safari nor Firefox can
-  be driven from a shell without setup: Safari needs "Allow remote automation"
-  turned on by hand, and Firefox needs geckodriver installed. Posting the results
-  needs neither, so `open -a Safari 'http://localhost:5173/check?report'` and read
-  the log. It also reports a crash, which is the difference between a browser that
-  failed and a browser that never ran the page.
 - **`baseApp` refuses an option it does not know.** `dev.js` passed `publicRoot`
   to a function that takes `publicFiles`, so dev served no public files at all
   while production served them. The only sign was a Vite warning about one of the
   three files. Two guards now: the unknown key throws, and a test reads both
   servers' source for `publicFiles` and `serveStatic`, because leaving the key out
   entirely is still legal.
-- **Vite warns about a public file it does not own.** `transformIndexHtml` warms
-  up every `<script type="module" src>` in the served HTML, so a `<script head
-  src="/theme.js">` logs `Failed to load url /theme.js. Does the file exist?` on
-  every page load. It does exist and Hono serves it. Returning it from a plugin's
-  `resolveId` as external does not stop the load, and letting Vite serve the
-  public directory is the dev and production split this avoids. Live with it.
 - **Nothing here may import upward.** No `../../` and no `transclude.config.js`.
   Both were everywhere before:
   six files imported the config by relative path and four worked out the root as
@@ -209,21 +166,6 @@ app to run against.
   ps -o lstart= -p "$(lsof -nP -iTCP:3000 -sTCP:LISTEN -t)"   # vs. stat -f %Sm dist/server/entry.js
   grep -c EADDRINUSE <the server log>                          # must be 0
   ```
-- **A message in the URL is not a flash message.** `?added=x` after a redirect
-  looked tidy and was reported as a bug. Any GET of that URL announced a note that
-  was never added, and after a server restart the in-memory list was empty while
-  the message stayed. It can be replayed, it can be shared, and it outlives what it
-  describes. A flash is a short-lived signed cookie the loader reads and then
-  deletes, which is the one thing that crosses a redirect exactly once.
-- **`curl -L` does not send a cookie the redirect set on the hop it follows.** It
-  arrives on the next request instead. A browser does send it, so a flash looks
-  broken under curl and works in practice. Check this one in a browser.
-- **An action that changes data must answer with a redirect.** Returning rendered
-  markup from a POST leaves the browser on a POST, so every reload submits the form
-  again. Reported by holding down refresh and watching a list grow. Use 303, not
-  302: 303 is the one that turns the next request into a GET. The exceptions are a
-  rejected submission, which changed nothing, and a `fragment` request, which asked
-  for markup and cannot use a redirect. `build.test.js` guards it.
 - **`<style data-transclude="tag">` in `<head>` is an agreement, not decoration.** It is
   the only record of which light elements the document already has styles for, and
   `adoptStyles` reads it with exactly that selector before adding any. Change how
@@ -240,10 +182,6 @@ app to run against.
   server and the build both read `client.needed`. They each had their own copy of
   that condition once, and only one got updated, so dev served a page with no entry
   while the build gave it one.
-- **A background tab slows `setTimeout` to about once a second.** A poll loop in
-  `check.html` that finished in a second when focused hung for minutes when not.
-  Wait on a `MutationObserver`, which is not slowed, and use a timer only to give
-  up.
 - **An action runs after the region is known to exist.** `POST ?fragment=nope`
   used to change data and then 404. Anything that can refuse a request has to
   refuse it before `runAction`, not after. `hasRegion` is that check, in both
@@ -253,10 +191,6 @@ app to run against.
   types every handler's `ctx` from the same route context as the loader, and adds
   `{ request: Request }`. The request is null only while prerendering, and
   prerendering never runs an action.
-- **`ctx.action` is the union of what the page's own actions return.** So handlers
-  that return different shapes leave the loader unable to read either. Return one
-  shape from all of them. `Response` is left out of the union on purpose: returning
-  one answers the request, so the loader never sees it.
 - **`ctx.response` is shared by reference, and has to be.** Loaders are called with
   `{ ...ctx, layout }`, so `ctx.status = 404` would be written to a copy nobody
   reads. `responseOf()` returns the one object every loader in the chain and the
@@ -279,9 +213,6 @@ app to run against.
   files come before the route table, so a real file beats a `[...path]` catch-all.
   Both servers call the same builder, so there is no second copy of that order to
   get wrong.
-- **Middleware does not run during `npm run build`.** A page behind a guard has to
-  `export const prerender = false`, or the build writes a logged-out copy to a file
-  and the guard never sees a request for it.
 - **Invalidate before `ssrLoadModule` in dev.** The file watcher and Vite's own
   invalidation are separate handlers on the same event, so loading first hands back
   the module as it was. Measured: the first edit to `app/server.js` was ignored and
@@ -320,31 +251,11 @@ app to run against.
 - **`cookies.all()` has a null prototype.** That is Hono's doing and worth keeping.
   A cookie named `constructor` is attacker input, and on a plain object it would
   collide with something real.
-- **`COOKIE_SECRET` lives in `.env`, and each runtime loads it differently.** Node
-  needs `--env-file-if-exists=.env`, in the `dev` and `start` scripts. Deno needs
-  `--env-file`. Bun reads `.env` on its own. Wrangler reads `.dev.vars`, so
-  `.dev.vars` carries a copy of the same value. Adding a Node flag to the Bun or
-  wrangler script would break it. `.env.example` is the committed template. `.env`,
-  `.env.*` and `.dev.vars` are ignored.
 - **Only the dev server invents a cookie secret.** A fresh clone should run, so dev
   signs with a random value for that process and prints a notice. Production does
   not. A server that invented one would invalidate every session on restart and
   share none with a second instance, and a 500 naming `cookieSecret` is better than
   finding that out later.
-- **A `Response` body can be read once, so never share one.** A module-level
-  `const badRequest = new Response(...)` returned from an action worked for the
-  first request and then answered 200 with a rendered page, because the body was
-  already read. Build them in a function. This one bites because returning a
-  `Response` is now the convention in three places: loader, action, endpoint.
-- **An endpoint must return a `Response`.** There is no template to fall back to,
-  and a handler returning a plain object has forgotten `Response.json`. Verb
-  handlers are uppercase because `export const delete` is a syntax error and
-  `export const DELETE` is not, which is also why a page's `actions` had to be an
-  object and these do not.
-- **A `.js` file in `routes/` is a route.** A helper that lives there needs the `_`
-  prefix, or it becomes a URL. The dev watcher rebuilds the route table for `.js`
-  as well as `.html`. It only watched pages at first, so adding an endpoint needed
-  a restart and a 404 was the only hint.
 - **The core has no `node:` imports and no Node-only globals, and both are tested.**
   `app.js` is given bytes, hashing and compression. `production.js` is the Node
   wiring. An import creeping in would be caught by the import graph test. A global
@@ -355,27 +266,6 @@ app to run against.
   because htmx sends that header on every request, including ones that want the
   whole document. Turning on `fragmentHeader` also adds a header to `Vary`, which is
   why it is off by default.
-- **Four runtimes, one app, checked.** Node, Bun, Deno and workerd all answer the
-  same way over ten routes: same 301, same 403 on a forged post, same `Set-Cookie`,
-  same 304. The Node, Bun and Deno adapters are three lines each.
-  `bin/serve.worker.js` is longer because a worker really is different, and each
-  difference is one argument to `createApp`: bytes (`dist/server/assets.js` instead
-  of a disk), hashing (WebCrypto, which is why `hash` is awaited), compression
-  (`null`, because the edge does it), public files (a handler over the same map),
-  and config (see below). There is one real difference in behaviour. A worker
-  serves no byte ranges, so a Range request gets 200 rather than 206, because
-  ranges need a filesystem.
-- **On a worker, config arrives with the request, not the process.** There is no
-  `process.env`, so `bin/serve.worker.js` builds the app on the first request from
-  `env`. Reading a secret at import gave `undefined` and signing then refused. That
-  is correct and confusing at the same time, because the variable was set.
-  `transclude.config.js` uses `globalThis.process?.env` for the same reason: a bare
-  `process` is a ReferenceError there before anything runs.
-- **Workers has no JSON module type.** `dist/routes.json` arrives as a string under
-  a Text rule, and using it as an object gave a route table of `undefined` and a
-  site of 404s that looked like a routing bug. The adapter parses it.
-  `fallthrough: true` on that rule matters too, or it replaces the default text rule
-  rather than adding to it.
 - **Strip comments before grepping source in a test.** Two of these guards failed
   on the comment that explains the rule rather than on code breaking it: the
   Node-globals check and the `process.env` one.

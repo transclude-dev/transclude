@@ -1,7 +1,13 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all, tree } from '../lib/code.js';
 
   export default async () => ({
+    nested: tree(`app/routes/
+  _layout.html          wraps everything
+  index.html
+  docs/
+    _layout.html        wraps /docs and below, inside the one above
+    routing.html        /docs/routing`),
     s: await all({
       layout: `<script server>
   export default async ({ route }) => ({
@@ -21,15 +27,6 @@
     <p>Pages can fill this by declaring a named slot.</p>
   </slot>
 </aside>`,
-      nested: [
-        `app/routes/
-  _layout.html          wraps everything
-  index.html
-  docs/
-    _layout.html        wraps /docs and below, inside the one above
-    routing.html        /docs/routing`,
-        'text',
-      ],
       guard: [
         `export default async ({ cookies, url }) => {
   const session = await cookies.signed.get('session');
@@ -64,7 +61,7 @@
     page in that section gets both.
   </p>
 
-  ${html(s.nested)}
+  ${html(nested)}
 
   <p>
     Each one loads its own data, and each gets its own

@@ -9,6 +9,7 @@
 //   routes/docs/[...path].html   ->  /docs/:path{.+}
 //   routes/api/people.js         ->  /api/people, an endpoint rather than a page
 //   routes/404.html              ->  the not-found handler, not a route
+//   routes/500.html              ->  the error page, not a route
 //   routes/_partial.html         ->  ignored, as is anything under an _ directory
 
 import fs from 'node:fs';
@@ -23,11 +24,19 @@ const EXT = '.html';
  */
 const ENDPOINT_EXT = '.js';
 const NOT_FOUND = '404';
+/**
+ * Not a route either: nothing links to `/500`, and a request for it is not what
+ * makes it render — an unhandled throw is. Prerendered like the not-found page,
+ * because a page that renders when something is already broken should not need a
+ * loader, a database, or anything else that can also be broken.
+ */
+const ERROR = '500';
 
 export function scanRoutes(dir) {
   const routes = [];
   const endpoints = [];
   let notFound = null;
+  let error = null;
 
   const seen = new Map();
   for (const rel of walk(dir)) {
@@ -35,6 +44,10 @@ export function scanRoutes(dir) {
 
     if (route.kind === 'page' && route.id === NOT_FOUND) {
       notFound = route;
+      continue;
+    }
+    if (route.kind === 'page' && route.id === ERROR) {
+      error = route;
       continue;
     }
     // One pattern, one answer. A page and an endpoint claiming the same URL is
@@ -52,7 +65,7 @@ export function scanRoutes(dir) {
 
   routes.sort(bySpecificity);
   endpoints.sort(bySpecificity);
-  return { routes, endpoints, notFound };
+  return { routes, endpoints, notFound, error };
 }
 
 export function toRoute(rel, file) {

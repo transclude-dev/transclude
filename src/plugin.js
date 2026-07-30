@@ -59,7 +59,7 @@ export default function htmlFirst({
 
     const scanned = scanRoutes(resolveRoutesDir(app, routesDir));
     pages = new Map(
-      [...scanned.routes, scanned.notFound]
+      [...scanned.routes, scanned.notFound, scanned.error]
         .filter(Boolean)
         .map((route) => [route.id, route]),
     );
@@ -201,6 +201,9 @@ export default function htmlFirst({
           })),
           notFound: scanned.notFound
             ? { id: scanned.notFound.id, rel: scanned.notFound.rel, params: [], client: clientManifest(scanned.notFound) }
+            : null,
+          error: scanned.error
+            ? { id: scanned.error.id, rel: scanned.error.rel, params: [], client: clientManifest(scanned.error) }
             : null,
         };
       },

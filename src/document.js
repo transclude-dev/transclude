@@ -113,6 +113,27 @@ export async function runAction(page, ctx, method) {
 }
 
 /**
+ * A short-circuiting `Response`, carrying whatever the envelope collected.
+ *
+ * Set a session cookie and then redirect — the most ordinary thing an action
+ * does — and the cookie would otherwise be dropped: the action's `Response` is
+ * returned directly, and nothing looks at `ctx.response` on that path.
+ * `Response.redirect()` makes it worse than a silent loss, because its headers
+ * are immutable and appending to them throws.
+ *
+ * So the headers go onto a copy. `new Response(body, response)` keeps the status
+ * and every header the author set, and comes with a mutable guard.
+ */
+export function withEnvelope(response, ctx) {
+  const collected = [...(ctx?.response?.headers ?? [])];
+  if (!collected.length) return response;
+
+  const merged = new Response(response.body, response);
+  for (const [name, value] of collected) merged.headers.append(name, value);
+  return merged;
+}
+
+/**
  * Whether a page can answer for a region name. An empty name is the page's own
  * body, which always exists.
  *

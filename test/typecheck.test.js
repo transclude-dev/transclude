@@ -358,3 +358,141 @@ test('a prefix that merely starts the same way is still a prop', () => {
   const [diagnostic] = errorsFor('<user-card database="${id}" name="x"></user-card>');
   assert.match(diagnostic.message, /'database' does not exist/);
 });
+
+// ---- ctx.cookies is checked, not `any` -------------------------------------
+
+const serverErrors = (block) => {
+  const { dir, checker } = project({
+    'app/routes/index.html': `<script server>${block}</script><p>x</p>`,
+  });
+  return checker.check(path.join(dir, 'app/routes/index.html'));
+};
+
+test('a mistyped cookie method is an error', () => {
+  const [diagnostic] = serverErrors(`export default async ({ cookies }) => ({ a: cookies.gett('x') });`);
+  assert.match(diagnostic.message, /gett/);
+});
+
+test('a mistyped signed cookie method is an error', () => {
+  const [diagnostic] = serverErrors(
+    `export default async ({ cookies }) => ({ a: await cookies.signed.read('x') });`,
+  );
+  assert.match(diagnostic.message, /read/);
+});
+
+test('a cookie option that does not exist is an error', () => {
+  const [diagnostic] = serverErrors(
+    `export default async ({ cookies }) => { cookies.set('a', 'b', { htpOnly: true }); return {}; };`,
+  );
+  assert.match(diagnostic.message, /htpOnly/);
+});
+
+test('reading a cookie is a string or undefined, not any', () => {
+  // `any` would make `.toUpperCase()` legal on a cookie that was never sent.
+  const [diagnostic] = serverErrors(
+    `export default async ({ cookies }) => ({ a: cookies.get('x').toUpperCase() });`,
+  );
+  assert.match(diagnostic.message, /possibly 'undefined'/);
+});
+
+test('the correct calls produce nothing', () => {
+  assert.deepEqual(
+    serverErrors(
+      `export default async ({ cookies }) => {
+         cookies.set('a', 'b', { httpOnly: false, maxAge: 60, sameSite: 'Strict' });
+         cookies.delete('a');
+         return { seen: (await cookies.signed.get('s')) ?? 'none', all: cookies.all() };
+       };`,
+    ).map((d) => d.message),
+    [],
+  );
+});
+
+// ---- endpoints are checked too ----------------------------------------------
+//
+// A `.js` route was not in the tsc program at all: its `ctx` was an implicit
+// `any` and nothing held it to returning a Response.
+
+const endpointErrors = (source) => {
+  const { dir, checker } = project({
+    'app/routes/index.html': '<p>x</p>',
+    'app/routes/api/thing.js': source,
+  });
+  return checker.check(path.join(dir, 'app/routes/api/thing.js'));
+};
+
+test('an endpoint is in the program at all', () => {
+  const { dir, checker } = project({
+    'app/routes/index.html': '<p>x</p>',
+    'app/routes/api/thing.js': 'export const GET = () => new Response("ok");',
+  });
+  assert.ok(
+    checker.files().some((file) => file.endsWith(path.join('api', 'thing.js'))),
+    'files() decides what `npm run check` looks at',
+  );
+});
+
+test("a ctx field that does not exist is an error in a handler", () => {
+  const [diagnostic] = endpointErrors('export const GET = ({ nope }) => Response.json(nope);');
+  assert.match(diagnostic.message, /'nope' does not exist/);
+});
+
+test('a handler that returns nothing is an error', () => {
+  // TypeScript reports this *at the annotation*, which is generated text — with
+  // an unmapped position the diagnostic was dropped and this passed silently.
+  const [diagnostic] = endpointErrors('export const GET = () => {};');
+  assert.match(diagnostic.message, /not assignable to type 'Response \| Promise<Response>'/);
+});
+
+test('a handler that returns a bare object is an error', () => {
+  const [diagnostic] = endpointErrors('export const POST = () => ({ ok: true });');
+  assert.match(diagnostic.message, /not assignable to type 'Response \| Promise<Response>'/);
+});
+
+test('the error points into the real file, not into the shim', () => {
+  const source = 'export const GET = () => {};';
+  const { dir, checker } = project({
+    'app/routes/index.html': '<p>x</p>',
+    'app/routes/api/thing.js': source,
+  });
+  const [diagnostic] = checker.check(path.join(dir, 'app/routes/api/thing.js'));
+
+  assert.ok(diagnostic.offset >= 0 && diagnostic.offset <= source.length, 'offset is off the end');
+  assert.equal(source.slice(diagnostic.offset, diagnostic.offset + 6), 'export');
+});
+
+test('an export that is not a verb gets no signature', () => {
+  // A helper in an endpoint file is just a helper.
+  assert.deepEqual(
+    endpointErrors(
+      'export const shape = (p) => ({ id: p });\nexport const GET = () => Response.json(shape(1));',
+    ).map((d) => d.message),
+    [],
+  );
+});
+
+test('an async handler is fine, since a Promise<Response> satisfies it', () => {
+  assert.deepEqual(
+    endpointErrors('export const GET = async () => Response.json({});').map((d) => d.message),
+    [],
+  );
+});
+
+test('export function GET counts as much as export const GET', () => {
+  const [diagnostic] = endpointErrors('export function GET() { return { no: 1 }; }');
+  assert.match(diagnostic.message, /not assignable to type 'Response \| Promise<Response>'/);
+});
+
+test("an endpoint's ctx has no layout — nothing renders", () => {
+  const [diagnostic] = endpointErrors('export const GET = ({ layout }) => Response.json(layout);');
+  assert.match(diagnostic.message, /'layout' does not exist/);
+});
+
+test("an endpoint's request is never null, because prerendering never runs one", () => {
+  assert.deepEqual(
+    endpointErrors(
+      'export const POST = async ({ request }) => Response.json(await request.json());',
+    ).map((d) => d.message),
+    [],
+  );
+});

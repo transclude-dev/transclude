@@ -191,3 +191,26 @@ test('both present means the new one wins, with nothing thrown', () => {
   fs.mkdirSync(path.join(app, 'routes'));
   assert.equal(resolveRoutesDir(app, 'routes'), path.join(app, 'routes'));
 });
+
+// ---- the two pages that are not routes -------------------------------------
+
+test('404.html and 500.html are reached for, not routed to', () => {
+  const { routes, notFound, error } = scanRoutes(fixture(['index.html', '404.html', '500.html']));
+
+  assert.deepEqual(routes.map((r) => r.pattern), ['/'], 'neither is a URL anyone links to');
+  assert.equal(notFound.id, '404');
+  assert.equal(error.id, '500');
+});
+
+test('an app with neither gets null for both', () => {
+  const { notFound, error } = scanRoutes(fixture(['index.html']));
+  assert.equal(notFound, null);
+  assert.equal(error, null);
+});
+
+test('500.js is an endpoint, not the error page', () => {
+  // Same rule 404 already had: the special names are pages.
+  const { endpoints, error } = scanRoutes(fixture(['500.js']));
+  assert.equal(error, null);
+  assert.deepEqual(endpoints.map((r) => r.pattern), ['/500']);
+});

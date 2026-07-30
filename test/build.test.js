@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { renderRoute } from '../src/document.js';
+import { renderRoute, responseOf } from '../src/document.js';
+import { cookiesOf } from '../src/cookies.js';
 
 // framework/test -> framework -> project root
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -42,6 +43,10 @@ const serverRender = (id, url) => {
       request: null,
       fragment: null,
       action: null,
+      ...(() => {
+        const response = responseOf();
+        return { response, cookies: cookiesOf(null, response, 'a-secret-for-tests') };
+      })(),
     },
     { clientEntry: route.client, stylesheet },
   );
@@ -180,16 +185,36 @@ describe('a query value is escaped like any other interpolation', async () => {
 // the form again. It was reported by holding down refresh and watching the list
 // grow, which no unit test was going to notice.
 
-const postTo = (page, body, over = {}) =>
-  pages[page].actions.post({
+/** A loader's ctx, with the pieces it now reads. */
+const loadCtx = (page, over = {}) => {
+  const response = responseOf();
+  return {
+    url: `http://localhost/${page}`,
+    params: {},
+    route: { id: page, pattern: `/${page}`, path: `/${page}` },
+    request: null,
+    fragment: null,
+    action: null,
+    response,
+    cookies: cookiesOf(null, response, 'a-secret-for-tests'),
+    ...over,
+  };
+};
+
+const postTo = (page, body, over = {}) => {
+  const response = responseOf();
+  return pages[page].actions.post({
     url: `http://localhost/${page}`,
     fragment: null,
     request: new Request(`http://localhost/${page}`, {
       method: 'POST',
       body: new URLSearchParams(body),
     }),
+    response,
+    cookies: cookiesOf(null, response, 'a-secret-for-tests'),
     ...over,
   });
+};
 
 describe('a mutation answers with a redirect, so a reload repeats a GET', async () => {
   const result = await postTo('notes', { text: 'from a test' });
@@ -200,13 +225,13 @@ describe('a mutation answers with a redirect, so a reload repeats a GET', async 
 });
 
 describe('a rejected submission does not redirect, because nothing changed', async () => {
-  const before = (await pages.notes.load({ url: 'http://localhost/notes', action: null })).notes.length;
+  const before = (await pages.notes.load(loadCtx('notes'))).notes.length;
   const result = await postTo('notes', { text: '   ' });
 
   assert.ok(!(result instanceof Response), 'nothing was mutated, so there is nothing to redirect away from');
   assert.match(result.error, /needs some text/);
 
-  const after = (await pages.notes.load({ url: 'http://localhost/notes', action: null })).notes.length;
+  const after = (await pages.notes.load(loadCtx('notes'))).notes.length;
   assert.equal(after, before);
 });
 
@@ -214,4 +239,17 @@ describe('a fragment caller gets markup back, never a redirect', async () => {
   // A swap asked for HTML. A 303 would navigate the whole page instead.
   const result = await postTo('notes', { text: 'for a fragment' }, { fragment: 'list' });
   assert.ok(!(result instanceof Response));
+});
+
+// ---- the error page --------------------------------------------------------
+
+describe('500.html is prerendered to a file, like the not-found page', () => {
+  // It renders when something is already broken, so it must not need a loader, a
+  // database, or a request — anything that can also be broken.
+  assert.ok(fs.existsSync(path.join(dist, 'static/500.html')));
+  assert.match(read('static/500.html'), /<title>Something broke<\/title>/);
+});
+
+describe('the error page is in the manifest so the server can find it', () => {
+  assert.equal(manifest().error?.id, '500');
 });

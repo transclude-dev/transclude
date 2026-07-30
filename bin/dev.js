@@ -15,15 +15,32 @@ import {
   renderRoute,
   responseOf,
   runAction,
+  withEnvelope,
 } from '../src/document.js';
 import { clientEntryUrl, pageModuleId } from '../src/plugin.js';
 import { resolveRoutesDir, scanRoutes } from '../src/routes.js';
 import { baseApp, endpointMethods, runEndpoint, SERVER_FILE } from '../src/server.js';
+import { randomBytes } from 'node:crypto';
+import { cookiesOf } from '../src/cookies.js';
 import config from '../../html-first.config.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const routesDir = resolveRoutesDir(path.join(root, config.appDir), config.routesDir);
 const PORT = Number(process.env.PORT ?? 5173);
+
+/**
+ * A signing secret for this process only, when the config has none.
+ *
+ * Dev, and dev alone. Signed cookies stop working across a restart, which is a
+ * fair price for a fresh clone that runs. Production does *not* do this: a server
+ * that invents a secret invalidates every session whenever it restarts and shares
+ * none with a second instance, and finding that out in production is worse than
+ * being told at the first signed cookie.
+ */
+const cookieSecret = config.cookieSecret ?? randomBytes(32).toString('hex');
+if (!config.cookieSecret) {
+  console.log('[html-first] no cookieSecret — signing with a random one for this process');
+}
 
 const publicRoot = config.publicDir
   ? path.join(root, config.appDir, config.publicDir)
@@ -56,9 +73,22 @@ const contextFor = (route, c, extra = {}) => ({
   // is right for a form, and wrong for a caller that asked for markup.
   fragment: fragmentOf(c),
   action: null,
-  response: responseOf(),
-  ...extra,
+  ...withResponse(c, extra),
 });
+
+/**
+ * The envelope and the cookies that write into it, built together — the cookie
+ * helpers hold the same `response` the server will read, so a `set` in a loader
+ * lands on the way out.
+ */
+function withResponse(c, extra) {
+  const response = responseOf();
+  return {
+    response,
+    cookies: cookiesOf(c.req.raw, response, cookieSecret),
+    ...extra,
+  };
+}
 
 /** Whatever the loaders and actions put on `ctx.response`, on the way out. */
 const sendWith = (c, { response }, html, status) => {
@@ -77,7 +107,7 @@ const renderPage = async (route, c, status = null, extra = {}) => {
     stylesheet: config.stylesheet ? `/${config.stylesheet}` : null,
   });
   // A loader answered for itself: a redirect, or something that is not a page.
-  if (html instanceof Response) return html;
+  if (html instanceof Response) return withEnvelope(html, ctx);
 
   return sendWith(c, ctx, await vite.transformIndexHtml(c.req.path, html), status);
 };
@@ -97,7 +127,7 @@ const sendFragment = async (route, c, region, extra = {}) => {
   const ctx = contextFor(route, c, extra);
   const html = await renderFragment(page, ctx, { region: region || null });
 
-  if (html instanceof Response) return html;
+  if (html instanceof Response) return withEnvelope(html, ctx);
   if (html === null) return c.text(`no fragment "${region}" on ${route.rel}`, 404);
   // No Vite transform: a fragment is inserted into a document that already ran
   // the client entry, and injecting the HMR preamble again would run it twice.
@@ -122,16 +152,17 @@ const handleAction = async (route, c) => {
     return c.text(`no fragment "${region}" on ${route.rel}`, 404);
   }
 
-  const outcome = await runAction(page, contextFor(route, c), c.req.method);
+  const ctx = contextFor(route, c);
+  const outcome = await runAction(page, ctx, c.req.method);
 
   if (!outcome) {
     return c.text(`${c.req.method} not allowed on ${route.rel}`, 405, {
       Allow: methodsOf(page).join(', '),
     });
   }
-  if (outcome.response) return outcome.response;
+  if (outcome.response) return withEnvelope(outcome.response, ctx);
 
-  const extra = { action: outcome.action };
+  const extra = { action: outcome.action, cookies: ctx.cookies, response: ctx.response };
   return region === null
     ? renderPage(route, c, 200, extra)
     : sendFragment(route, c, region, extra);
@@ -238,7 +269,13 @@ let app = await buildApp();
 
 // Adding or removing a page changes the route table, not just a module.
 vite.watcher.on('all', async (event, file) => {
-  const routing = file.startsWith(routesDir) && file.endsWith('.html') && event !== 'change';
+  // `.js` as well as `.html`: an endpoint is a route too, and watching only for
+  // pages meant adding one needed a restart, with a 404 as the only hint.
+  const extension = path.extname(file);
+  const routing =
+    file.startsWith(routesDir) &&
+    (extension === '.html' || extension === '.js') &&
+    event !== 'change';
   // Middleware is registered once when the app is built, so a change to it needs
   // the app rebuilt — unlike a page, which is loaded per request.
   if (!routing && file !== serverFile) return;

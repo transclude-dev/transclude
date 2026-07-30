@@ -16,7 +16,7 @@ export { CompileError, ScriptError };
 const PAGE_EXPORTS = new Set(['css', 'load', 'render', 'renderHead', 'renderTitle', 'layouts', 'client', 'elements', 'headScript']);
 const COMPONENT_EXPORTS = new Set([
   'tag', 'light', 'css', 'elements', 'propDefs', 'propAttrs', 'stateDefs', 'members', 'render',
-  'coerce', 'def', 'init', 'define', 'default', 'bind', 'update', 'volatile',
+  'coerce', 'def', 'init', 'define', 'default', 'bind', 'update', 'volatile', 'formAssociated',
 ]);
 
 /**
@@ -181,6 +181,7 @@ ${client.lifted ? client.hoisted : 'const __members = {};'}
 
 export const tag = ${JSON.stringify(tag)};
 export const light = ${!shadow};
+export const formAssociated = ${client.formAssociated === true};
 export const css = ${JSON.stringify(shadow ? styles : scopeCss(styles, tag, nested))};
 export const propDefs = __propDefs;
 export const propAttrs = ${props.exports.includes('attributes') ? 'attributes' : '{}'};
@@ -202,11 +203,11 @@ ${template.blockDefs}
 ${bindingsCode(bindings)}
 export const def = {
   tag, light, css, elements, propDefs, propAttrs, stateDefs, members, render, coerce, bind,
-  update, volatile,
+  update, volatile, formAssociated,
 };
 export default def;
 
-export async function init(host, shadow, signal) {
+export async function init(host, shadow, signal, internals) {
 ${client.body}
 }
 

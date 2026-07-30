@@ -307,5 +307,8 @@ test('adoptedCallback is left alone — nothing implements it, so nothing breaks
 });
 
 test('the client block gets a signal alongside host and shadow', () => {
-  assert.match(component('<script>void signal;</script><p>a</p>'), /init\(host, shadow, signal\)/);
+  assert.match(
+    component('<script>void signal;</script><p>a</p>'),
+    /init\(host, shadow, signal, internals\)/,
+  );
 });

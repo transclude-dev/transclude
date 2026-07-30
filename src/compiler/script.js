@@ -66,6 +66,7 @@ export function toFunctionBody(blocks, label, { lift = null, binding = '__member
   const hoisted = [];
   const bodies = [];
   let lifted = null;
+  let formAssociated = false;
 
   for (const block of blocks) {
     const { code, line = 1 } = block;
@@ -109,9 +110,27 @@ export function toFunctionBody(blocks, label, { lift = null, binding = '__member
       }
       if (statement.type.startsWith('Export')) {
         if (plan && statement === plan.statement) continue;
+
+        const flag = booleanExport(statement, 'formAssociated');
+        if (flag !== null) {
+          // A static class field, decided once for every element of this tag — so
+          // it has to be a literal. A computed value would read like a per-element
+          // decision and could not be one.
+          formAssociated = flag;
+          cuts.push([statement.start, statement.end]);
+          continue;
+        }
+        if (namesExport(statement, 'formAssociated')) {
+          throw new ScriptError(
+            `${label}: \`formAssociated\` must be \`true\` or \`false\` — it becomes a static ` +
+              `class field, the same for every element of this tag, so it cannot be decided at ` +
+              `run time (line ${lineOf(statement, code, line)})`,
+          );
+        }
+
         throw new ScriptError(
           `${label}: a client <script> runs as setup code, so it cannot export` +
-            (lift ? ` anything but \`${lift}\`` : '') +
+            (lift ? ` anything but \`${lift}\` and \`formAssociated\`` : '') +
             ` (line ${lineOf(statement, code, line)})`,
         );
       }
@@ -125,11 +144,30 @@ export function toFunctionBody(blocks, label, { lift = null, binding = '__member
     hoisted: hoisted.join('\n\n'),
     body: bodies.join('\n'),
     lifted,
+    formAssociated,
   };
 }
 
 /** What only exists once the element does, and so cannot be reached from a prototype. */
-const PER_INSTANCE = ['host', 'shadow', 'signal'];
+const PER_INSTANCE = ['host', 'shadow', 'signal', 'internals'];
+
+/** `export const NAME = true` / `= false`, or null when it is not that. */
+function booleanExport(statement, name) {
+  const declared = namesExport(statement, name);
+  const init = declared?.init;
+  if (init?.type === 'Literal' && typeof init.value === 'boolean') return init.value;
+  return null;
+}
+
+function namesExport(statement, name) {
+  if (statement.type !== 'ExportNamedDeclaration') return null;
+  if (statement.declaration?.type !== 'VariableDeclaration') return null;
+  return (
+    statement.declaration.declarations.find(
+      (d) => d.id.type === 'Identifier' && d.id.name === name,
+    ) ?? null
+  );
+}
 
 /**
  * The plan for hoisting one named export out of a client block: the statement

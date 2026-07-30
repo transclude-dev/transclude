@@ -24,6 +24,13 @@ export default (app) => {
   heading="Middleware"
   lede="The server is Hono. An app adds its own middleware in app/server.js."
 >
+  <p>
+    The <code>app</code> you get is a <a href="https://hono.dev/">Hono</a>
+    instance, so anything in its
+    <a href="https://hono.dev/docs/guides/middleware">middleware guide</a> works
+    here, including the built-in middleware it ships.
+  </p>
+
   ${html(s.server)}
 
   <h2>The order</h2>

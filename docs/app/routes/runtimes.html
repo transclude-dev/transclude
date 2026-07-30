@@ -7,7 +7,7 @@
         `npm start                                              # Node
 bun node_modules/transclude/bin/serve.bun.js           # Bun
 deno run -A node_modules/transclude/bin/serve.deno.js  # Deno
-wrangler dev                                           # workerd`,
+wrangler dev                                           # Cloudflare Workers`,
         'shell',
       ],
     }),
@@ -15,7 +15,7 @@ wrangler dev                                           # workerd`,
 </script>
 
 <title>Runtimes · transclude</title>
-<meta name="description" content="The same app on Node, Bun, Deno and workerd." />
+<meta name="description" content="The same app on Node, Bun, Deno and Cloudflare Workers." />
 
 <doc-page
   heading="Runtimes"
@@ -38,7 +38,7 @@ wrangler dev                                           # workerd`,
         <tr>
           <th></th>
           <th>Node</th>
-          <th>workerd</th>
+          <th>Cloudflare</th>
         </tr>
       </thead>
       <tbody>
@@ -67,7 +67,7 @@ wrangler dev                                           # workerd`,
   </div>
 
   <doc-note label="A worker reads its config on the first request" tone="warn">
-    There is no <code>process.env</code> on workerd, so the app is built when the
+    There is no <code>process.env</code> on Workers, so the app is built when the
     first request comes in and takes its config from <code>env</code>. Reading a
     secret at import time gives <code>undefined</code>.
   </doc-note>

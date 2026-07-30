@@ -118,9 +118,9 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
       href="https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTMLUnsafe"
       >setHTMLUnsafe()</a
     >
-    processes declarative shadow roots. <code>innerHTML</code> does not, so a
-    component inside the fragment would arrive as a dead
-    <code>&lt;template&gt;</code>.
+    builds shadow roots from the markup it is given.
+    <code>innerHTML</code> skips them, so a component inside the fragment would
+    arrive without its contents and never start up.
   </doc-note>
 
   <h2>Swapped-in markup styles itself</h2>

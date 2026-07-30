@@ -12,6 +12,13 @@ import { fileURLToPath } from 'node:url';
 import { renderFragment, renderRoute, responseOf } from '../src/document.js';
 import { baseApp, endpointMethods, runEndpoint } from '../src/server.js';
 
+/** Source with comments removed, so a guard cannot pass on the text explaining it. */
+const codeOf = (url) =>
+  fs
+    .readFileSync(fileURLToPath(url), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/.*$/gm, '');
+
 const pageOf = (over = {}) => ({
   layouts: [],
   css: '',
@@ -363,6 +370,26 @@ test('a guard can refuse a public file', async () => {
     middleware: (a) => a.use('/private.txt', (c) => c.text('nope', 403)),
   });
   assert.equal((await app.request('http://x/private.txt')).status, 403);
+});
+
+test('a key baseApp does not know is refused, not ignored', () => {
+  // `publicRoot` instead of `publicFiles` cost dev every public file it had.
+  // Production served them, dev 404'd, and the only sign was a Vite warning
+  // about one of the three files.
+  assert.throws(
+    () => baseApp({ csrf: false, publicRoot: '/tmp' }),
+    /does not know publicRoot/,
+  );
+});
+
+test('both servers mount the public directory', () => {
+  // The other half of the same bug: omitting the key is still legal, so refusing
+  // an unknown one does not cover a server that simply never passes it.
+  for (const file of ['../bin/dev.js', '../src/production.js']) {
+    const source = codeOf(new URL(file, import.meta.url));
+    assert.match(source, /publicFiles\s*[,:]/, `${file} passes no publicFiles`);
+    assert.match(source, /serveStatic\(/, `${file} mounts nothing to serve them`);
+  }
 });
 
 test('no handler, and nothing is mounted', async () => {

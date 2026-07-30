@@ -22,12 +22,27 @@ import { trimTrailingSlash } from 'hono/trailing-slash';
  * `middleware` is the app's own `server.js`, and it runs after, so it can add
  * anything and cannot register itself ahead of the guard by mistake.
  */
-export function baseApp({
-  csrf: csrfOption = true,
-  trailingSlash = 'never',
-  publicFiles = null,
-  middleware = null,
-} = {}) {
+const OPTIONS = new Set(['csrf', 'trailingSlash', 'publicFiles', 'middleware']);
+
+export function baseApp(options = {}) {
+  const {
+    csrf: csrfOption = true,
+    trailingSlash = 'never',
+    publicFiles = null,
+    middleware = null,
+  } = options;
+
+  // A key this does not know is a caller that thinks it configured something.
+  // `publicRoot` instead of `publicFiles` was exactly that: dev served no public
+  // files at all, production served them, and nothing said why.
+  const unknown = Object.keys(options).filter((key) => !OPTIONS.has(key));
+  if (unknown.length) {
+    throw new Error(
+      `[html-first] baseApp does not know ${unknown.join(', ')}. ` +
+        `It takes ${[...OPTIONS].join(', ')}.`,
+    );
+  }
+
   if (trailingSlash !== 'never' && trailingSlash !== 'ignore') {
     throw new Error(
       `[html-first] trailingSlash must be 'never' or 'ignore', not ${JSON.stringify(trailingSlash)}`,

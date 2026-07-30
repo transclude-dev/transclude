@@ -1,7 +1,27 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      page: `<!-- app/routes/people/[name].html -->
+<script server>
+  import { db } from '../../data/db.js';
+
+  export default async ({ params }) => ({
+    person: await db.people.find(params.name),
+  });
+<\/script>
+
+<h1>\${person.name}</h1>
+<p>Joined \${person.since}</p>`,
+    }),
+  });
+</script>
+
 <title>transclude</title>
 <meta
   name="description"
-  content="Single-file .html routes, layouts and elements. The server renders HTML."
+  content="A server-side framework. Load data in an .html file, render it on the server, send HTML."
 />
 
 <style>
@@ -79,15 +99,27 @@
 
 <div class="body">
   <p>
-    You write a page as an <code>.html</code> file. The server renders it and
-    sends back plain HTML. There is no client framework to start up, and nothing
-    has to run before the page works.
+    transclude is a server-side framework. A page is one <code>.html</code> file
+    holding both halves: a <code>&lt;script server&gt;</code> block that loads
+    its data, and the markup that reads it. The server runs them together and
+    sends the result.
+  </p>
+</div>
+
+${html(s.page)}
+
+<div class="body">
+  <p>
+    What reaches the browser is finished HTML. No client framework starts up, no
+    second request fetches the data, and nothing has to run before the page
+    works.
   </p>
 
   <p>
-    Your folder structure is your routing. A page handles GET. Export
-    <code>POST</code> from it to handle a form. Put a <code>.js</code> file in
-    the same folder and it becomes an API endpoint. Hono runs the server.
+    Your folder structure is your routing. A page handles GET, and its loader is
+    given the URL, the path parameters and the cookies. Export <code>POST</code>
+    from the same file to handle a form. Put a <code>.js</code> file beside it
+    and it becomes an API endpoint. Hono runs the server.
   </p>
 
   <p>

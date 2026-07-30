@@ -33,7 +33,7 @@ if (flash) cookies.delete('flash');`,
 
 <doc-page
   heading="Cookies"
-  lede="ctx.cookies reads and writes. A signed cookie can be read by the client and not forged, which is what makes it usable as a session."
+  lede="ctx.cookies reads and writes. A signed cookie can be read by the client and not forged, so use one for a session."
 >
   ${html(s.read)}
 
@@ -77,8 +77,8 @@ if (flash) cookies.delete('flash');`,
   <h2>Signing</h2>
 
   <p>
-    <code>cookieSecret</code> is what makes <code>cookies.signed</code> work.
-    Without one it throws.
+    <code>cookies.signed</code> needs <code>cookieSecret</code>. Without one it
+    throws.
   </p>
 
   ${html(s.secret)}

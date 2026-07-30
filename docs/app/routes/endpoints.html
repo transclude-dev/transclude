@@ -1,7 +1,9 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all, tree } from '../lib/code.js';
 
   export default async () => ({
+    helpers: tree(`routes/api/people.js    /api/people
+routes/api/_shared.js   not a route`),
     s: await all({
       endpoint: [
         `// app/routes/api/people.js
@@ -15,11 +17,6 @@ export const POST = async ({ request }) => {
   return Response.json(body, { status: 201 });
 };`,
         'js',
-      ],
-      helpers: [
-        `routes/api/people.js    /api/people
-routes/api/_shared.js   not a route`,
-        'text',
       ],
     }),
   });
@@ -48,5 +45,5 @@ routes/api/_shared.js   not a route`,
     <code>_</code> prefix.
   </p>
 
-  ${html(s.helpers)}
+  ${html(helpers)}
 </doc-page>

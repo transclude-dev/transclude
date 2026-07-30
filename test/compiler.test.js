@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { splitBlocks, compileComponent } from '../src/compiler/index.js';
+import { splitBlocks, compileComponent, compilePage } from '../src/compiler/index.js';
 import { compileFragment, CompileError } from '../src/compiler/codegen.js';
 import * as rt from '../src/runtime/index.js';
 
@@ -311,4 +311,47 @@ test('the client block gets a signal alongside host and shadow', () => {
     component('<script>void signal;</script><p>a</p>'),
     /init\(host, shadow, signal, internals\)/,
   );
+});
+
+// ---- <script head> attributes ----------------------------------------------
+//
+// They used to be dropped, which turned `<script head src="/theme.js">` into
+// `<script></script>`: no error, no script, nothing to notice.
+
+const headOf = (source) => {
+  const { code } = compilePage(`${source}<p>x</p>`, { runtime: '/rt.js', filename: 'p' });
+  return JSON.parse(/export const headScript = (".*");/.exec(code)[1]);
+};
+
+test('src survives, so an external head script is actually loaded', () => {
+  assert.equal(headOf('<script head src="/theme.js"></script>'), '<script src="/theme.js"></script>');
+});
+
+test('every other attribute survives too, and `head` itself does not', () => {
+  const out = headOf('<script head src="/a.js" type="module" nonce="abc"></script>');
+  assert.equal(out, '<script src="/a.js" type="module" nonce="abc"></script>');
+  assert.doesNotMatch(out, /\bhead\b/);
+});
+
+test('a bare attribute stays bare', () => {
+  assert.equal(headOf('<script head defer src="/a.js"></script>'), '<script defer src="/a.js"></script>');
+});
+
+test('an inline block is unchanged', () => {
+  assert.equal(headOf('<script head>theme();</script>'), '<script>theme();</script>');
+});
+
+test('an attribute value is escaped, because this is serialized into markup', () => {
+  assert.equal(
+    headOf('<script head src="/a.js?a=1&b=2"></script>'),
+    '<script src="/a.js?a=1&amp;b=2"></script>',
+  );
+});
+
+test('src with a body is refused, since the browser would ignore one of them', () => {
+  assert.throws(() => headOf('<script head src="/a.js">code()</script>'), /cannot also have a body/);
+});
+
+test('an interpolated attribute is refused, since this is emitted before any data', () => {
+  assert.throws(() => headOf('<script head src="/${x}.js"></script>'), /cannot interpolate/);
 });

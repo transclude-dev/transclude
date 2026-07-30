@@ -63,7 +63,7 @@ export function splitBlocks(source) {
       // else. Some things have to run before the body parses — a theme applied
       // before first paint, or a `pagereveal` listener, which fires too early
       // for any script in the body to see.
-      else if (attrs.has('head')) out.head.push(block);
+      else if (attrs.has('head')) out.head.push({ ...block, attrs: node.attrs ?? [] });
       else out.client.push(block);
       continue;
     }
@@ -249,6 +249,7 @@ export function compilePage(
 ) {
   const blocks = splitBlocks(source);
   const where = `${filename}.html <script server>`;
+  const headWhere = `${filename}.html <script head>`;
 
   const server = blocks.server
     ? bindDefaultExport(blocks.server, '__load', where)
@@ -264,7 +265,7 @@ ${layoutImports(layouts)}
 ${server.code}
 
 export const css = ${JSON.stringify(blocks.styles.join('\n').trim())};
-export const headScript = ${JSON.stringify(headScript(blocks))};
+export const headScript = ${JSON.stringify(headScript(blocks, headWhere))};
 ${elementsExport(template.components)}
 export const hasTitle = ${template.hasTitle};
 export const layouts = [${layouts.map((_, i) => `__L${i}`).join(', ')}];
@@ -305,6 +306,7 @@ ${slotBodies(template)}
 export function compileLayout(source, { id, components = new Map(), shadowTags = new Set(), runtime }) {
   const blocks = splitBlocks(source);
   const where = `${id}/_layout.html <script server>`;
+  const headWhere = `${id}/_layout.html <script head>`;
 
   const server = blocks.server
     ? bindDefaultExport(blocks.server, '__load', where)
@@ -329,7 +331,7 @@ ${componentImports(template.components)}
 ${server.code}
 
 export const css = ${JSON.stringify(blocks.styles.join('\n').trim())};
-export const headScript = ${JSON.stringify(headScript(blocks))};
+export const headScript = ${JSON.stringify(headScript(blocks, headWhere))};
 ${elementsExport(template.components)}
 export const hasTitle = ${template.hasTitle};
 
@@ -598,9 +600,49 @@ function componentImports(used, { defines = false } = {}) {
  * the elements it pulled in. Nested ones come along through their own export,
  * and the document dedupes by tag.
  */
-/** `<script head>` blocks, verbatim, in the order they were written. */
-function headScript(blocks) {
-  return blocks.head.map((block) => `<script>${block.code}</script>`).join('\n');
+/**
+ * `<script head>` blocks, verbatim, in the order they were written. Attributes
+ * included.
+ *
+ * They used to be dropped, which turned `<script head src="/theme.js">` into
+ * `<script></script>`: no error, no script, nothing to see. `src` is the obvious
+ * one, but `type="module"`, `nonce`, `defer` and `integrity` all mean something
+ * here too.
+ */
+function headScript(blocks, where) {
+  return blocks.head
+    .map((block) => {
+      const attrs = (block.attrs ?? []).filter((attr) => attr.name !== 'head');
+      const external = attrs.find((attr) => attr.name === 'src');
+
+      // The browser ignores the body of a script with a src. Emitting both would
+      // silently throw away whichever the author meant.
+      if (external && block.code.trim()) {
+        throw new CompileError(
+          `${where}: a <script head src="${external.value}"> cannot also have a body. ` +
+            `the browser runs the file and ignores the code`,
+        );
+      }
+      // This is emitted as a static string, so there is nothing to interpolate
+      // into. Left alone it would ship a literal `${…}` as the URL.
+      for (const attr of attrs) {
+        if (!attr.value.includes('${')) continue;
+        throw new CompileError(
+          `${where}: \`${attr.name}\` on a <script head> cannot interpolate. ` +
+            `the block is emitted into <head> before any data exists`,
+        );
+      }
+
+      return `<script${attrs.map(serializeAttr).join('')}>${block.code}</script>`;
+    })
+    .join('\n');
+}
+
+/** A static attribute, escaped the way an HTML serializer must. */
+function serializeAttr({ name, value }) {
+  if (value === '') return ` ${name}`;
+  const escaped = value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  return ` ${name}="${escaped}"`;
 }
 
 function elementsExport(used) {

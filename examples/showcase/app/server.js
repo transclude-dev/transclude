@@ -31,7 +31,7 @@ export default function (app) {
   // app.use('/api/*', cors({ origin: 'https://app.example' }));
 
   // Lets a <form> send DELETE and PATCH through a hidden _method field, which
-  // HTML itself cannot do, so `actions.delete` becomes reachable from markup.
+  // HTML itself cannot do, so the page's `DELETE` becomes reachable from markup.
   // import { methodOverride } from 'hono/method-override';
   // app.use('*', methodOverride({ form: '_method' }));
 

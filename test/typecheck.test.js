@@ -210,17 +210,17 @@ test('an empty array without an annotation is usable, not never[]', () => {
   // "no annotation" from less checking into a page of errors about a type
   // nobody wrote.
   const { dir, checker } = project({
-    'app/components/data-table.html': `<script properties>export default { columns: [] };</script>
+    'app/elements/data-table.html': `<script properties>export default { columns: [] };</script>
 <th each="c of columns">\${c.length}</th>`,
   });
-  assert.deepEqual(checker.check(path.join(dir, 'app/components/data-table.html')), []);
+  assert.deepEqual(checker.check(path.join(dir, 'app/elements/data-table.html')), []);
 });
 
 test('an unannotated parameter is plain JavaScript, not an error', () => {
   // JSDoc is optional. A parameter with no declared type is `any`, the same as it
   // would be in any other .js file.
   const { dir, checker } = project({
-    'app/components/data-table.html': `<script properties>export default { columns: [] };</script>
+    'app/elements/data-table.html': `<script properties>export default { columns: [] };</script>
 <script>
   export const prototype = {
     add(column) { this.columns = [...this.columns, column]; },
@@ -229,14 +229,14 @@ test('an unannotated parameter is plain JavaScript, not an error', () => {
 </script>
 <th each="c of columns">\${c}</th>`,
   });
-  assert.deepEqual(checker.check(path.join(dir, 'app/components/data-table.html')), []);
+  assert.deepEqual(checker.check(path.join(dir, 'app/elements/data-table.html')), []);
 });
 
 test('a helper the prototype reads is resolvable in the shim', () => {
   // The helper is hoisted with the members in the generated module, so the shim
   // has to copy it too, or tsc reports a name the browser resolves fine.
   const { dir, checker } = project({
-    'app/components/data-table.html': `<script properties>export default { columns: [] };</script>
+    'app/elements/data-table.html': `<script properties>export default { columns: [] };</script>
 <script>
   const LIMIT = 3;
   export const prototype = {
@@ -247,25 +247,25 @@ test('a helper the prototype reads is resolvable in the shim', () => {
 </script>
 <th>\${columns.length}</th>`,
   });
-  assert.deepEqual(checker.check(path.join(dir, 'app/components/data-table.html')), []);
+  assert.deepEqual(checker.check(path.join(dir, 'app/elements/data-table.html')), []);
 });
 
 test('setup code is not checked, because host, shadow and signal are in scope', () => {
   const { dir, checker } = project({
-    'app/components/data-table.html': `<script properties>export default { columns: [] };</script>
+    'app/elements/data-table.html': `<script properties>export default { columns: [] };</script>
 <script>
   export const prototype = { go() { return this.columns; } };
   host.addEventListener('click', () => shadow.append(signal), { signal });
 </script>
 <th>\${columns.length}</th>`,
   });
-  assert.deepEqual(checker.check(path.join(dir, 'app/components/data-table.html')), []);
+  assert.deepEqual(checker.check(path.join(dir, 'app/elements/data-table.html')), []);
 });
 
 test('strict: true puts the annotations back on the critical path', () => {
   const { dir, checker } = project(
     {
-      'app/components/data-table.html': `<script properties>export default { columns: [] };</script>
+      'app/elements/data-table.html': `<script properties>export default { columns: [] };</script>
 <script>
   export const prototype = { add(column) { void column; } };
 </script>
@@ -273,7 +273,7 @@ test('strict: true puts the annotations back on the critical path', () => {
     },
     { strict: true },
   );
-  const [diagnostic] = checker.check(path.join(dir, 'app/components/data-table.html'));
+  const [diagnostic] = checker.check(path.join(dir, 'app/elements/data-table.html'));
   assert.match(diagnostic.message, /implicitly has an 'any' type/);
 });
 
@@ -282,21 +282,21 @@ test('a misspelled prop is still caught with no annotations anywhere', () => {
   // undeclared property off a type that came from an object literal in a .js
   // file, and that is the one check this framework most needs.
   const { dir, checker } = project({
-    'app/components/data-table.html': `<script properties>export default { columns: [] };</script>
+    'app/elements/data-table.html': `<script properties>export default { columns: [] };</script>
 <th>\${colums.length}</th>`,
   });
-  const [diagnostic] = checker.check(path.join(dir, 'app/components/data-table.html'));
+  const [diagnostic] = checker.check(path.join(dir, 'app/elements/data-table.html'));
   assert.match(diagnostic.message, /colums/);
 });
 
 test('the same file with an annotation checks clean', () => {
   const { dir, checker } = project({
-    'app/components/data-table.html': `<script properties>
+    'app/elements/data-table.html': `<script properties>
 /** @type {{ columns: string[] }} */
 export default { columns: [] };
 </script><th each="c of columns">\${c.length}</th>`,
   });
-  assert.deepEqual(checker.check(path.join(dir, 'app/components/data-table.html')), []);
+  assert.deepEqual(checker.check(path.join(dir, 'app/elements/data-table.html')), []);
 });
 
 test('a dash-case attribute is checked under its camelCase prop name', () => {
@@ -320,7 +320,7 @@ test('a dash-case attribute is checked under its camelCase prop name', () => {
 // to be.
 
 const withCard = (markup) => ({
-  'app/components/user-card.html': `<script properties>
+  'app/elements/user-card.html': `<script properties>
 export default { name: '' };
 </script>
 <h3>\${name}</h3>`,

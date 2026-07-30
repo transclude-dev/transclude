@@ -1,7 +1,7 @@
 <title>transclude</title>
 <meta
   name="description"
-  content="Single-file .html routes, layouts, partials and components. The server renders HTML."
+  content="Single-file .html routes, layouts and elements. The server renders HTML."
 />
 
 <style>
@@ -119,10 +119,10 @@
     </p>
   </div>
   <div class="cell">
-    <h2>Partials before components</h2>
+    <h2>Light DOM by default</h2>
     <p>
-      A partial is plain HTML inside your page. Your CSS reaches it and it ships
-      no JavaScript.
+      An element renders into your page's own DOM. Your CSS reaches it and it
+      ships no JavaScript. Opt in to a shadow root when you want one.
     </p>
   </div>
   <div class="cell">
@@ -144,8 +144,8 @@
   </p>
 
   <p>
-    This framework does it twice. A <strong>partial</strong> is markup pulled into
-    the page that calls it. A <strong>fragment</strong> is a piece of a page that
+    This framework does it twice. An <strong>element</strong> is markup pulled
+    into the page that calls it. A <strong>fragment</strong> is a piece of a page that
     keeps a URL of its own, so you can render it in place or fetch it by itself.
     Either way there is one copy of the markup.
   </p>

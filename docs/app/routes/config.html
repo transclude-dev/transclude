@@ -7,8 +7,7 @@
         `export default {
   appDir: 'app',
   routesDir: 'routes',
-  componentsDir: 'components',
-  partialsDir: 'partials',
+  elementsDir: 'elements',
   publicDir: 'public',
   stylesheet: 'app/styles/global.css',
 
@@ -53,9 +52,9 @@
           <td>Where the app lives, relative to the project root.</td>
         </tr>
         <tr>
-          <td><code>componentsDir</code></td>
-          <td><code>'components'</code></td>
-          <td>Shadow root reuse.</td>
+          <td><code>elementsDir</code></td>
+          <td><code>'elements'</code></td>
+          <td>Custom elements. Relative to <code>appDir</code>.</td>
         </tr>
         <tr>
           <td><code>cookieSecret</code></td>
@@ -90,11 +89,6 @@
           <td><code>outDir</code></td>
           <td><code>'dist'</code></td>
           <td>Where the build writes.</td>
-        </tr>
-        <tr>
-          <td><code>partialsDir</code></td>
-          <td><code>'partials'</code></td>
-          <td>Light DOM reuse.</td>
         </tr>
         <tr>
           <td><code>publicDir</code></td>

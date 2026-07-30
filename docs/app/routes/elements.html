@@ -3,7 +3,7 @@
 
   export default async () => ({
     s: await all({
-      partial: `<!-- app/partials/site-note.html -->
+      light: `<!-- app/elements/site-note.html -->
 <script properties>
   export default {
     tone: 'neutral',
@@ -22,7 +22,26 @@
 </style>
 
 <p><slot>Nothing to say.</slot></p>`,
-      use: `<site-note tone="warn">A partial, in the page's own DOM.</site-note>`,
+      use: `<site-note tone="warn">Rendered into the page's own DOM.</site-note>`,
+      shadow: `<!-- app/elements/user-card.html -->
+<script properties>
+  export default {
+    name: '',
+    tags: [],
+  };
+
+  export const shadow = true;
+<\/script>
+
+<style>
+  h3 { margin: 0; }
+</style>
+
+<h3>\${name}</h3>
+<ul>
+  <li each="tag of tags">\${tag}</li>
+</ul>
+<slot></slot>`,
       behavior: `<script>
   document.addEventListener(
     'keydown',
@@ -41,28 +60,11 @@
 };`,
         'js',
       ],
-      component: `<!-- app/components/user-card.html -->
-<script properties>
-  export default {
-    name: '',
-    tags: [],
-  };
-<\/script>
-
-<style>
-  h3 { margin: 0; }
-</style>
-
-<h3>\${name}</h3>
-<ul>
-  <li each="tag of tags">\${tag}</li>
-</ul>
-<slot></slot>`,
       json: `<user-card
   name="Ada Lovelace"
   tags='["math", "engines"]'
 ></user-card>`,
-      form: `<!-- app/components/tag-picker.html -->
+      form: `<!-- app/elements/tag-picker.html -->
 <script properties>
   export default {
     name: '',
@@ -73,13 +75,6 @@
 <\/script>
 
 <button type="button">\${value || 'Pick tags'}</button>`,
-      formScript: `<script>
-  export const formAssociated = true;
-
-  host.addEventListener('click', () => {
-    host.setAttribute('value', next(host.getAttribute('value')));
-  });
-<\/script>`,
       formUse: `<form method="post">
   <input name="text" />
   <tag-picker name="tags"></tag-picker>
@@ -89,37 +84,54 @@
   });
 </script>
 
-<title>Partials and components · transclude</title>
-<meta name="description" content="A partial is light DOM. A component is a Web Component." />
+<title>Elements · transclude</title>
+<meta
+  name="description"
+  content="One .html file becomes a custom element. Light DOM by default, shadow root opt-in."
+/>
 
 <doc-page
-  heading="Partials and components"
-  lede="A partial renders into the page's own DOM. A component is a Web Component with a shadow root. The folder a file sits in says which one it is."
+  heading="Elements"
+  lede="An .html file in app/elements/ becomes a custom element. It renders into the page's own DOM unless it asks for a shadow root."
 >
+  <p>The file name is the tag name, and it needs a dash.</p>
+
+  ${html(s.light)}
+
+  ${html(s.use)}
+
+  <p>
+    The style block is hoisted into <code>&lt;head&gt;</code> once, however many
+    times the element appears. <code>:scope</code> is the element itself.
+  </p>
+
+  <h2>Asking for a shadow root</h2>
+
+  <p>
+    Export <code>shadow</code> and the element gets a
+    <a
+      href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM"
+      >shadow root</a
+    >, a working <code>&lt;slot&gt;</code>, and a re-render when its attributes
+    change.
+  </p>
+
+  ${html(s.shadow)}
+
   <div class="scroller">
     <table>
       <thead>
         <tr>
           <th></th>
-          <th>Partial</th>
-          <th>Component</th>
+          <th>Light, the default</th>
+          <th><code>shadow = true</code></th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>Lives in</td>
-          <td><code>partials/</code></td>
-          <td><code>components/</code></td>
-        </tr>
-        <tr>
-          <td>Boundary</td>
-          <td>None. Light DOM.</td>
-          <td>Shadow root.</td>
-        </tr>
-        <tr>
           <td>Page CSS reaches it</td>
           <td>Yes</td>
-          <td>Only inherited properties</td>
+          <td>Inherited properties and <code>::part()</code></td>
         </tr>
         <tr>
           <td><code>&lt;label for&gt;</code> works</td>
@@ -136,29 +148,28 @@
           <td>No</td>
           <td>Yes</td>
         </tr>
+        <tr>
+          <td>Server-rendered</td>
+          <td>Inline in the page</td>
+          <td>As a declarative shadow root</td>
+        </tr>
       </tbody>
     </table>
   </div>
 
   <p>
-    Reach for a partial first. It is the cheaper of the two and covers most
-    reuse. Choose a component when you want its styles and DOM sealed off from
-    the page, its markup and behavior kept together in one file, and the same tag
-    usable anywhere without the page knowing how it works.
+    Stay light unless you need one. A light element is cheaper, your CSS reaches
+    it, and it renders the same way whether the browser asked for a whole page or
+    one fragment of it. Reach for a shadow root when you want the element's
+    styles and DOM sealed off from the page, or when it has to re-render on its
+    own.
   </p>
 
-  <h2>A partial</h2>
-
-  <p>The file name is the tag name.</p>
-
-  ${html(s.partial)}
-
-  ${html(s.use)}
-
-  <p>
-    The style block is hoisted into <code>&lt;head&gt;</code> once, however many
-    times the partial appears.
-  </p>
+  <doc-note label="A shadow root in a fragment paints on connect" tone="warn">
+    Nothing that swaps HTML into a live page builds a declarative shadow root, so
+    an element with one is sent bare in a fragment response and renders itself
+    when it connects. A light element has no such split.
+  </doc-note>
 
   <h2>Giving it behavior</h2>
 
@@ -188,22 +199,7 @@
     <code>host</code> in one is a compile error rather than a bug you find later.
   </doc-note>
 
-  <h2>A component</h2>
-
-  <p>
-    The same file shape, in <code>components/</code>. You get a real
-    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components"
-      >Web Component</a
-    >: a
-    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM"
-      >shadow root</a
-    >, a working <code>&lt;slot&gt;</code>, and a re-render when its attributes
-    change.
-  </p>
-
-  ${html(s.component)}
-
-  <h3>Objects and arrays</h3>
+  <h2>Objects and arrays</h2>
 
   <p>Anything that is not a string is written as JSON in the attribute.</p>
 
@@ -215,32 +211,17 @@
     rather than putting a large array in an attribute.
   </doc-note>
 
-  <h3>A component a form can submit</h3>
+  <h2>An element a form can submit</h2>
 
   <p>
-    Export <code>formAssociated</code> and the browser treats the element as a
+    Export <code>formAssociated</code> and the browser treats it as a
     <a
       href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements#form-associated_custom_elements"
       >form-associated custom element</a
-    >.
+    >. It needs no shadow root.
   </p>
 
   ${html(s.form)}
-
-  <p>
-    It can go in <code>&lt;script properties&gt;</code> or in
-    <code>&lt;script&gt;</code>. Use whichever block the element already has. An
-    element that only needs to be a form control needs no
-    <code>&lt;script&gt;</code> at all.
-  </p>
-
-  ${html(s.formScript)}
-
-  <doc-note label="Say it once" tone="warn">
-    Declaring it in both blocks is a compile error. Write <code>true</code>
-    directly rather than a variable: it becomes a static field on the class, the
-    same for every element of that tag.
-  </doc-note>
 
   <p>
     Drop it into a form and it behaves like an input. Its value is submitted
@@ -251,5 +232,11 @@
 
   ${html(s.formUse)}
 
-  <p>A partial can do this too. Being a form control needs no shadow root.</p>
+  <doc-note label="Say a flag once" tone="warn">
+    <code>shadow</code> and <code>formAssociated</code> can go in
+    <code>&lt;script properties&gt;</code> or in <code>&lt;script&gt;</code>,
+    whichever the element already has. Declaring one in both blocks is a compile
+    error. Write <code>true</code> directly rather than a variable: each becomes
+    a static field on the class, the same for every element of that tag.
+  </doc-note>
 </doc-page>

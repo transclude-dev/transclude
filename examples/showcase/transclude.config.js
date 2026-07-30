@@ -12,8 +12,9 @@ export default {
   // a `.js` file is an endpoint, and the thing they have in common is being a
   // route. The extension decides which.
   routesDir: 'routes',
-  componentsDir: 'components',
-  partialsDir: 'partials',
+  // One directory for every element. A shadow root is opt-in per file:
+  // `export const shadow = true`, in either script block.
+  elementsDir: 'elements',
 
   // The global stylesheet, relative to the project root. Served through Vite,
   // so nesting, @import and PostCSS all work. Set to null for none.

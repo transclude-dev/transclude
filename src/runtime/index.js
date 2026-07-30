@@ -740,15 +740,44 @@ export function defineLight(def, init) {
   // <script> nor a <script element> is markup that was already rendered, and it
   // ships no JavaScript at all — including no accessors. That is the trade the
   // zero-JS default makes.
-  if (!init && !hasMembers(def)) return;
+  //
+  // Being a form control counts as behaviour: a shadow root is not required to be
+  // one, and an element that submits a value has to exist to do it.
+  if (!init && !hasMembers(def) && !def.formAssociated) return;
 
   class Light extends HTMLElement {
+    static observedAttributes = def.formAssociated
+      ? Object.keys(def.propDefs ?? {}).map(attrName)
+      : [];
+    static formAssociated = def.formAssociated === true;
+
+    #internals = null;
     #cleanup = null;
     #abort = null;
 
+    constructor() {
+      super();
+      if (def.formAssociated) this.#internals = this.attachInternals();
+    }
+
+    get internals() {
+      return this.#internals;
+    }
+
+    reportFormValue() {
+      if (!this.#internals) return;
+      const value = formValueOf(def, this);
+      if (value !== undefined) this.#internals.setFormValue(value);
+    }
+
+    attributeChangedCallback() {
+      this.reportFormValue();
+    }
+
     connectedCallback() {
       this.#abort = new AbortController();
-      this.#cleanup = init?.(this, null, this.#abort.signal);
+      this.#cleanup = init?.(this, null, this.#abort.signal, this.#internals);
+      this.reportFormValue();
       // A light element is never repainted, so this fires once per connect
       // rather than once per render. Same meaning either way: the DOM is there.
       this.updated?.();
@@ -763,6 +792,7 @@ export function defineLight(def, init) {
   }
 
   defineProps(Light, def.propDefs, def.propAttrs);
+  if (def.formAssociated) defineFormMembers(Light, def);
   defineMembers(Light, def.members, def.tag);
   customElements.define(def.tag, Light);
 }
@@ -785,13 +815,81 @@ function release(cleanup) {
   });
 }
 
+/**
+ * Form association, for an element that opted in with `export const
+ * formAssociated = true`.
+ *
+ * A custom element in a `<form>` contributes nothing by default — the browser has
+ * no reason to think it is a control. This is the platform's answer: a static
+ * flag, `attachInternals()` for the handle, and `setFormValue` to say what would
+ * be submitted.
+ *
+ * The value comes from a `value` prop, serialized exactly the way its attribute
+ * is, so what is submitted is what the DOM says. A form-associated element with
+ * no `value` prop can still be useful — it can report validity — so this reports
+ * nothing rather than complaining.
+ */
+function formValueOf(def, element) {
+  if (!('value' in (def.propDefs ?? {}))) return undefined;
+
+  const value = element.value;
+  if (value === null || value === undefined || value === false) return null;
+  if (typeof value === 'string') return value;
+  return typeof value === 'object' ? JSON.stringify(value) : String(value);
+}
+
+/** The callbacks a form calls on its controls. Identical for both kinds. */
+function defineFormMembers(Class, def) {
+  Object.defineProperties(Class.prototype, {
+    /**
+     * Reset puts the prop back to the default its `<script properties>` block
+     * declared — which is the same thing `value` returns when the attribute is
+     * absent, so removing it is the whole job.
+     */
+    formResetCallback: {
+      value() {
+        if ('value' in (def.propDefs ?? {})) this.removeAttribute(attrName('value'));
+        this.reportFormValue?.();
+      },
+      configurable: true,
+    },
+
+    /** A fieldset or form went disabled. Mirrored to an attribute if declared. */
+    formDisabledCallback: {
+      value(disabled) {
+        if (!('disabled' in (def.propDefs ?? {}))) return;
+        if (disabled) this.setAttribute('disabled', '');
+        else this.removeAttribute('disabled');
+      },
+      configurable: true,
+    },
+
+    /**
+     * The browser restoring a value after a back-navigation or a crash. Same
+     * shape as a submit, so writing the attribute is enough.
+     */
+    formStateRestoreCallback: {
+      value(state) {
+        if (!('value' in (def.propDefs ?? {}))) return;
+        if (typeof state === 'string') this.setAttribute(attrName('value'), state);
+        this.reportFormValue?.();
+      },
+      configurable: true,
+    },
+  });
+}
+
 export function defineComponent(def, init) {
   if (typeof customElements === 'undefined') return;
   if (customElements.get(def.tag)) return;
 
   class Component extends HTMLElement {
     static observedAttributes = Object.keys(def.propDefs ?? {}).map(attrName);
+    // The platform's own switch. Without it a `<form>` has no reason to think
+    // this element is a control, and nothing it holds is ever submitted.
+    static formAssociated = def.formAssociated === true;
 
+    #internals = null;
     #ready = false;
     #cleanup = null;
     #abort = null;
@@ -801,6 +899,25 @@ export function defineComponent(def, init) {
     #was = null;
     #pending = null;
     #settle = null;
+
+    constructor() {
+      super();
+      // In the constructor, which is where it belongs and where it can only
+      // happen once. For a server-rendered element that is upgrade time.
+      if (def.formAssociated) this.#internals = this.attachInternals();
+    }
+
+    /** What this element would submit, if it is a control. */
+    reportFormValue() {
+      if (!this.#internals) return;
+      const value = formValueOf(def, this);
+      if (value !== undefined) this.#internals.setFormValue(value);
+    }
+
+    /** For `setValidity` and the rest — the same handle the platform hands out. */
+    get internals() {
+      return this.#internals;
+    }
 
     /**
      * Resolves once the render for the changes made so far has happened.
@@ -845,7 +962,8 @@ export function defineComponent(def, init) {
       // way out has to come back on the way in.
       this.#ready = true;
       this.#abort = new AbortController();
-      this.#cleanup = init?.(this, this.shadowRoot, this.#abort.signal);
+      this.#cleanup = init?.(this, this.shadowRoot, this.#abort.signal, this.#internals);
+      this.reportFormValue();
       this.updated?.();
     }
 
@@ -859,6 +977,10 @@ export function defineComponent(def, init) {
     }
 
     attributeChangedCallback() {
+      // Before the render, and not only when ready: a form can be submitted
+      // between an attribute change and the microtask that repaints, and what it
+      // submits should be what the attribute already says.
+      this.reportFormValue();
       if (this.#ready) this.schedule();
     }
 
@@ -922,6 +1044,7 @@ export function defineComponent(def, init) {
 
   defineProps(Component, def.propDefs, def.propAttrs);
   defineState(Component, def.stateDefs, (element) => element.schedule());
+  if (def.formAssociated) defineFormMembers(Component, def);
   defineMembers(Component, def.members, def.tag);
   customElements.define(def.tag, Component);
 }

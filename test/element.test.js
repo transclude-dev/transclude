@@ -22,6 +22,16 @@ class FakeHTMLElement {
     this.shadowRoot = createRoot();
     return this.shadowRoot;
   }
+  /** Enough ElementInternals to see what would be submitted. */
+  attachInternals() {
+    this.reported = [];
+    const reported = this.reported;
+    return {
+      form: null,
+      setFormValue: (value) => reported.push(value),
+      setValidity() {},
+    };
+  }
   getAttribute(name) {
     return this.#attrs.has(name) ? this.#attrs.get(name) : null;
   }
@@ -583,5 +593,126 @@ test('a property setter writes the attribute through the converter', async () =>
 
     await el.updateComplete;
     assert.match(el.shadowRoot.html, /<time>1843<\/time>/);
+  });
+});
+
+
+// ---- form association ------------------------------------------------------
+//
+// The browser half — does a <form> count it as a field, does reset work — is in
+// app/routes/check.html, because nothing here has a real form. What *is* worth
+// checking here is the rule for turning a prop into something submittable.
+
+const controlOf = (overrides = {}) => ({
+  ...defOf(overrides),
+  formAssociated: true,
+  propDefs: { value: '', ...(overrides.propDefs ?? {}) },
+  coerce: (props) => coerceProps({ value: '', ...(overrides.propDefs ?? {}) }, props),
+});
+
+test('the static flag is what a form reads to decide it is a control', async () => {
+  // Nothing in Node models a form, so this is the only place the flag itself can
+  // be checked here — app/routes/check.html checks the consequence in a browser.
+  await withDom(async ({ defineComponent }, registry) => {
+    defineComponent(controlOf(), null);
+    assert.equal(registry.get('x-card').formAssociated, true);
+  });
+});
+
+test('a control reports its value when it connects', async () => {
+  await withDom(async ({ defineComponent }, registry) => {
+    defineComponent(controlOf(), null);
+    const element = new (registry.get('x-card'))();
+    element.setAttribute('value', 'ada');
+    element.connect();
+
+    assert.deepEqual(element.reported.at(-1), 'ada');
+  });
+});
+
+test('a change is reported before the render, not after', async () => {
+  // A form can be submitted between the attribute changing and the microtask that
+  // repaints. What it sends has to be what the attribute already says.
+  await withDom(async ({ defineComponent }, registry) => {
+    defineComponent(controlOf(), null);
+    const element = new (registry.get('x-card'))();
+    element.connect();
+    element.reported.length = 0;
+
+    element.value = 'grace';
+    assert.deepEqual(element.reported, ['grace'], 'nothing was reported synchronously');
+  });
+});
+
+test('an object value is serialized the way its attribute is', async () => {
+  // What gets submitted is what the DOM says, rather than "[object Object]".
+  await withDom(async ({ defineComponent }, registry) => {
+    defineComponent(controlOf({ propDefs: { value: [] } }), null);
+    const element = new (registry.get('x-card'))();
+    element.connect();
+    element.reported.length = 0;
+
+    element.value = ['a', 'b'];
+    assert.equal(element.reported.at(-1), '["a","b"]');
+    assert.equal(element.getAttribute('value'), '["a","b"]');
+  });
+});
+
+test('an absent value is reported as null, not as the string "null"', async () => {
+  await withDom(async ({ defineComponent }, registry) => {
+    defineComponent(controlOf({ propDefs: { value: null } }), null);
+    const element = new (registry.get('x-card'))();
+    element.connect();
+
+    assert.equal(element.reported.at(-1), null);
+  });
+});
+
+test('a control with no value prop reports nothing rather than guessing', async () => {
+  // It can still be useful — setValidity is on internals — so this is allowed.
+  await withDom(async ({ defineComponent }, registry) => {
+    defineComponent({ ...defOf(), formAssociated: true, propDefs: { label: '' } }, null);
+    const element = new (registry.get('x-card'))();
+    element.connect();
+
+    assert.deepEqual(element.reported, []);
+  });
+});
+
+test('reset removes the attribute rather than blanking it', async () => {
+  // Removing is what puts the prop back to the default its properties block
+  // declared, because that is what the getter falls back to.
+  await withDom(async ({ defineComponent }, registry) => {
+    defineComponent(controlOf({ propDefs: { value: 'default' } }), null);
+    const element = new (registry.get('x-card'))();
+    element.connect();
+    element.value = 'changed';
+
+    element.formResetCallback();
+    assert.equal(element.getAttribute('value'), null);
+    assert.equal(element.value, 'default');
+  });
+});
+
+test('a form disabling its controls mirrors to the attribute, if declared', async () => {
+  await withDom(async ({ defineComponent }, registry) => {
+    defineComponent(controlOf({ propDefs: { value: '', disabled: false } }), null);
+    const element = new (registry.get('x-card'))();
+    element.connect();
+
+    element.formDisabledCallback(true);
+    assert.equal(element.getAttribute('disabled'), '');
+    element.formDisabledCallback(false);
+    assert.equal(element.getAttribute('disabled'), null);
+  });
+});
+
+test('an ordinary component gets no internals and reports nothing', async () => {
+  await withDom(async ({ defineComponent }, registry) => {
+    defineComponent(defOf(), null);
+    const Class = registry.get('x-card');
+
+    assert.equal(Class.formAssociated, false);
+    assert.equal(new Class().internals, null);
   });
 });

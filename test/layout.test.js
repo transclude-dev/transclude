@@ -305,9 +305,9 @@ test('it comes before anything the compiler generates, so a page can override', 
 
 // ---- interactivity ---------------------------------------------------------
 
-test('a <script> block becomes init(host, shadow, signal)', () => {
+test('a <script> block becomes init(host, shadow, signal, internals)', () => {
   const { code } = element('<p>x</p><script>host.dataset.ready = "1";</script>');
-  assert.match(code, /export async function init\(host, shadow, signal\)/);
+  assert.match(code, /export async function init\(host, shadow, signal, internals\)/);
   assert.match(code, /host\.dataset\.ready = "1";/);
 });
 

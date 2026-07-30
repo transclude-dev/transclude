@@ -75,16 +75,17 @@ npm start        # serves dist/ on 3000`,
   <h2>Error pages</h2>
 
   <p>
-    <code>404.html</code> and <code>500.html</code> are prerendered and sent as
-    bytes.
+    <code>404.html</code> and <code>500.html</code> are rendered at build time
+    and served as static files.
   </p>
 
   <p>
-    Production logs the throw and keeps it out of the body. Dev sends the stack
-    instead.
+    In production the error is logged and kept out of the page. In dev you get
+    the stack instead.
   </p>
 
-  <doc-note label="Shipping only what is used">
-    A page ships a client entry only if something on it needs one.
+  <doc-note label="JavaScript only where it is used">
+    A page loads a script only if something on it needs one. A page of plain
+    markup and partials ships none at all.
   </doc-note>
 </doc-page>

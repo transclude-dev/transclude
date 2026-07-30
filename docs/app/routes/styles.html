@@ -57,7 +57,15 @@
     </li>
   </ul>
 
-  <p>So a global stylesheet can theme a component, and cannot style one.</p>
+  <p>
+    So a global stylesheet themes a component through custom properties. To let
+    it style something inside, the component marks that element with a
+    <code>part</code> attribute, which
+    <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/::part"
+      ><code>::part()</code></a
+    >
+    then selects. The component decides what it exposes.
+  </p>
 
   <h2>Styles in a file</h2>
 

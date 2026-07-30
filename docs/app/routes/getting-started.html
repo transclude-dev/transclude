@@ -1,0 +1,125 @@
+<script server>
+  // A code sample that shows interpolation cannot be written in the template,
+  // because the compiler would read it as one. It arrives as data instead, and
+  // interpolation escapes, so the markup in it needs no entities.
+  export default async () => ({
+    interpolation: '${value}',
+    page: [
+      '<script server>',
+      '  export default async () => ({',
+      "    title: 'Hello',",
+      "    items: ['one', 'two', 'three'],",
+      '  });',
+      '<\/script>',
+      '',
+      '<title>${title}</title>',
+      '',
+      '<h1>${title}</h1>',
+      '<ul>',
+      '  <li each="item of items">${item}</li>',
+      '</ul>',
+    ].join('\n'),
+  });
+</script>
+
+<title>Getting started · transclude</title>
+<meta name="description" content="Install it, write a page, run the server." />
+
+<doc-page
+  heading="Getting started"
+  lede="Install the package, write one .html file, and the directory it sits in is its URL."
+>
+  <h2>Install</h2>
+
+  <pre><code>npm install transclude vite typescript</code></pre>
+
+  <p>
+    Vite and TypeScript are peer dependencies. Vite builds, and TypeScript is
+    what <code>transclude-check</code> runs over your templates.
+  </p>
+
+  <h2>Two files to start</h2>
+
+  <p>
+    An app is a directory with a <code>transclude.config.js</code> in it. That
+    file says where everything lives, and it is the whole interface to the
+    framework.
+  </p>
+
+  <pre><code>// transclude.config.js
+export default {
+  appDir: 'app',
+  routesDir: 'routes',
+  partialsDir: 'partials',
+  componentsDir: 'components',
+  stylesheet: 'app/styles/global.css',
+  publicDir: 'public',
+  outDir: 'dist',
+};</code></pre>
+
+  <pre><code>// vite.config.js
+import { defineConfig } from 'vite';
+import transclude from 'transclude';
+import config from './transclude.config.js';
+
+export default defineConfig({
+  appType: 'custom',
+  plugins: [transclude(config)],
+});</code></pre>
+
+  <h2>A page</h2>
+
+  <p>
+    <code>app/routes/index.html</code> answers <code>/</code>. The
+    <code>&lt;script server&gt;</code> block runs on the server and returns the
+    data the markup reads.
+  </p>
+
+  <pre><code>${page}</code></pre>
+
+  <h2>Scripts</h2>
+
+  <pre><code>{
+  "scripts": {
+    "dev": "transclude-dev",
+    "build": "transclude-build",
+    "start": "transclude-serve",
+    "check": "transclude-check"
+  }
+}</code></pre>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Command</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>transclude-dev</code></td>
+          <td>Hono and Vite together, on 5173. Edits appear without a restart.</td>
+        </tr>
+        <tr>
+          <td><code>transclude-build</code></td>
+          <td>Writes <code>dist/</code>. Static routes are rendered to files.</td>
+        </tr>
+        <tr>
+          <td><code>transclude-serve</code></td>
+          <td>Serves <code>dist/</code> on 3000.</td>
+        </tr>
+        <tr>
+          <td><code>transclude-check</code></td>
+          <td>Runs tsc over every template and route.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <doc-note label="Interpolation is escaped">
+    <code>${interpolation}</code> is escaped. To pass markup through on purpose,
+    wrap it in <code>html()</code>, which says at the call site that you meant
+    it.
+  </doc-note>
+</doc-page>

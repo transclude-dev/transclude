@@ -1,0 +1,75 @@
+<title>Middleware · transclude</title>
+<meta name="description" content="The order middleware runs in, and where an app adds its own." />
+
+<doc-page
+  heading="Middleware"
+  lede="The server is Hono. An app adds its own middleware in app/server.js, and the order everything runs in is fixed."
+>
+  <pre><code>// app/server.js
+export default (app) =&gt; {
+  app.use('*', async (c, next) =&gt; {
+    c.header('X-Frame-Options', 'DENY');
+    await next();
+  });
+};</code></pre>
+
+  <h2>The order</h2>
+
+  <p>Both servers build from the same function, so there is one order.</p>
+
+  <ol>
+    <li>
+      <strong>Trailing-slash redirect.</strong> First, because it cleans up the
+      URL everything after it reads.
+    </li>
+    <li><strong>CSRF.</strong></li>
+    <li>
+      <strong><code>app/server.js</code>.</strong> Before anything that serves
+      bytes, so a guard can cover prerendered pages and public files.
+    </li>
+    <li>
+      <strong>Public files.</strong> Before the route table, so a real file beats
+      a <code>[...path]</code> catch-all.
+    </li>
+    <li><strong>Routes.</strong></li>
+  </ol>
+
+  <p>Every position does a job.</p>
+
+  <doc-note label="A guard needs prerender: false" tone="warn">
+    Middleware does not run during the build. A page behind a guard that is
+    prerendered gets written to a file in its logged-out state, and the guard
+    never sees a request for it.
+  </doc-note>
+
+  <h2>Trailing slashes</h2>
+
+  <p>
+    <code>trailingSlash</code> sets both the router mode and the redirect,
+    because the two exclude each other. The loose router strips the slash from
+    the path before any middleware runs, so a redirect could never fire.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Value</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>'never'</code></td>
+          <td>Strict routing and a 301. One URL per page.</td>
+        </tr>
+        <tr>
+          <td><code>'ignore'</code></td>
+          <td>
+            The loose router. Two URLs answer with 200 and neither is canonical.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</doc-page>

@@ -1,0 +1,75 @@
+<title>Runtimes · transclude</title>
+<meta name="description" content="The same app on Node, Bun, Deno and workerd." />
+
+<doc-page
+  heading="Runtimes"
+  lede="One app, four runtimes. The core is given bytes, hashing and compression, so it names no runtime of its own."
+>
+  <pre><code>npm start                                          # Node
+bun node_modules/transclude/bin/serve.bun.js       # Bun
+deno run -A node_modules/transclude/bin/serve.deno.js
+wrangler dev                                       # workerd</code></pre>
+
+  <p>
+    The Node, Bun and Deno adapters come from the package and only listen.
+    <code>worker.js</code> belongs to the app, because every import in it names
+    something the app owns.
+  </p>
+
+  <h2>What differs</h2>
+
+  <p>
+    Each difference from Node is one argument to <code>createApp</code>: where
+    bytes come from, how to hash, how to compress, how to serve public files,
+    and where config comes from.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Node</th>
+          <th>workerd</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Bytes</td>
+          <td>The filesystem</td>
+          <td><code>dist/server/assets.js</code></td>
+        </tr>
+        <tr>
+          <td>Hashing</td>
+          <td><code>node:crypto</code></td>
+          <td>WebCrypto, so <code>hash</code> is awaited</td>
+        </tr>
+        <tr>
+          <td>Compression</td>
+          <td><code>node:zlib</code></td>
+          <td><code>null</code>, because the edge does it</td>
+        </tr>
+        <tr>
+          <td>Range requests</td>
+          <td>206</td>
+          <td>200, because ranges need a filesystem</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <doc-note label="On a worker, config arrives with the request" tone="warn">
+    There is no <code>process.env</code>, so the worker builds the app on the
+    first request from <code>env</code>. Reading a secret at import time gives
+    <code>undefined</code> and signing then refuses, which is correct and
+    confusing at the same time.
+  </doc-note>
+
+  <h2>The core imports nothing from a runtime</h2>
+
+  <p>
+    No <code>node:</code> specifier and no Node-only global. Both are tested,
+    because an import creeping in would be caught by the import graph and a
+    global would not.
+  </p>
+</doc-page>

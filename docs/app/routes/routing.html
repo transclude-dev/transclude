@@ -1,0 +1,176 @@
+<script server>
+  export default async () => ({
+    empty: '${}',
+    loader: [
+      '<script server>',
+      "  import { people } from '../data/people.js';",
+      '',
+      '  export default async ({ params, url, route }) => {',
+      '    const person = people.find((p) => p.slug === params.name);',
+      '    return { person };',
+      '  };',
+      '<\/script>',
+      '',
+      '<h1>${person.name}</h1>',
+    ].join('\n'),
+    directives: [
+      '<li each="tag of tags">${tag}</li>',
+      '<li each="note of notes" key="note.id">${note.text}</li>',
+      '',
+      '<p if="query">Searching for ${query}</p>',
+      '<p else-if="people.length > 2">More than two.</p>',
+      '<p else>Not many here.</p>',
+    ].join('\n'),
+  });
+</script>
+
+<title>Pages and routes · transclude</title>
+<meta name="description" content="The directory tree is the route table." />
+
+<doc-page
+  heading="Pages and routes"
+  lede="A file's path is its URL. The extension decides whether it is a page or an endpoint."
+>
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>URL</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>routes/index.html</code></td>
+          <td><code>/</code></td>
+        </tr>
+        <tr>
+          <td><code>routes/about.html</code></td>
+          <td><code>/about</code></td>
+        </tr>
+        <tr>
+          <td><code>routes/people/index.html</code></td>
+          <td><code>/people</code></td>
+        </tr>
+        <tr>
+          <td><code>routes/people/[name].html</code></td>
+          <td><code>/people/:name</code></td>
+        </tr>
+        <tr>
+          <td><code>routes/docs/[...path].html</code></td>
+          <td><code>/docs/*</code></td>
+        </tr>
+        <tr>
+          <td><code>routes/api/ping.js</code></td>
+          <td><code>/api/ping</code>, an endpoint</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    No URL this framework generates ends in a slash, so
+    <code>/about/</code> answers with a 301 to <code>/about</code>.
+  </p>
+
+  <h2>The loader</h2>
+
+  <p>
+    A <code>&lt;script server&gt;</code> block runs on the server. Its default
+    export takes the request context and returns the data the markup reads.
+  </p>
+
+  <pre><code>${loader}</code></pre>
+
+  <h3>What the context holds</h3>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>What it is</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>params</code></td>
+          <td>The path segments this route captured.</td>
+        </tr>
+        <tr>
+          <td><code>url</code></td>
+          <td>The full URL as a string. <code>null</code> while prerendering.</td>
+        </tr>
+        <tr>
+          <td><code>route</code></td>
+          <td>The matched route, including its <code>path</code>.</td>
+        </tr>
+        <tr>
+          <td><code>action</code></td>
+          <td>What this page's action returned, if one ran.</td>
+        </tr>
+        <tr>
+          <td><code>fragment</code></td>
+          <td>
+            The region asked for, or <code>null</code> for a whole document.
+          </td>
+        </tr>
+        <tr>
+          <td><code>cookies</code></td>
+          <td>Read and write, signed or plain.</td>
+        </tr>
+        <tr>
+          <td><code>response</code></td>
+          <td>The status and headers this request will answer with.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Returning a Response</h2>
+
+  <p>
+    A loader that returns a <code>Response</code> answers the request, and the
+    render never runs. It is the same rule an action has, so there is one rule
+    rather than two.
+  </p>
+
+  <pre><code>export default async ({ params }) => {
+  const person = find(params.name);
+  if (!person) return new Response('no such person', { status: 404 });
+  return { person };
+};</code></pre>
+
+  <h2>Status and headers</h2>
+
+  <p>
+    <code>ctx.response</code> is one object shared by every loader in the chain
+    and by the server. Writing to it is how a page answers with something other
+    than 200.
+  </p>
+
+  <pre><code>export default async ({ params, response }) => {
+  const person = find(params.name);
+  if (!person) response.status = 404;
+  return { person };
+};</code></pre>
+
+  <h2>Directives</h2>
+
+  <p>
+    Attributes on an element, read as expressions rather than as strings. There
+    is no <code>${empty}</code> inside one.
+  </p>
+
+  <pre><code>${directives}</code></pre>
+
+  <p>
+    <code>key</code> tells the browser which item is which when a list is
+    re-rendered, so input values and focus survive a reorder.
+  </p>
+
+  <doc-note label="Filtering belongs in the loader">
+    A template expression is not a whole language, on purpose. Sorting,
+    filtering and formatting are the loader's job.
+  </doc-note>
+</doc-page>

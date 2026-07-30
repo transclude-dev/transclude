@@ -1,0 +1,192 @@
+<script server>
+  // The nav lives here rather than in each page, so a new page is one file and
+  // one line. `route.path` marks the current link.
+  export default async ({ route }) => ({
+    path: route.path,
+    sections: [
+      {
+        title: 'Start',
+        links: [
+          { href: '/', label: 'Overview' },
+          { href: '/getting-started', label: 'Getting started' },
+          { href: '/project-layout', label: 'Project layout' },
+        ],
+      },
+      {
+        title: 'Routing',
+        links: [
+          { href: '/routing', label: 'Pages and routes' },
+          { href: '/actions', label: 'Actions' },
+          { href: '/endpoints', label: 'Endpoints' },
+          { href: '/layouts', label: 'Layouts' },
+        ],
+      },
+      {
+        title: 'Hypermedia',
+        links: [
+          { href: '/regions', label: 'Regions' },
+          { href: '/partials-and-components', label: 'Partials and components' },
+        ],
+      },
+      {
+        title: 'The server',
+        links: [
+          { href: '/styles', label: 'Styles' },
+          { href: '/cookies', label: 'Cookies' },
+          { href: '/middleware', label: 'Middleware' },
+          { href: '/runtimes', label: 'Runtimes' },
+        ],
+      },
+      {
+        title: 'Reference',
+        links: [
+          { href: '/production', label: 'The production build' },
+          { href: '/types', label: 'Types' },
+          { href: '/config', label: 'Configuration' },
+        ],
+      },
+    ],
+  });
+</script>
+
+<title>transclude</title>
+
+<style>
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+    height: 3.5rem;
+    padding: 0 1.5rem;
+    background: color-mix(in srgb, var(--ground) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .logo .hash {
+    color: var(--link);
+  }
+
+  .repo {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .repo:hover {
+    color: var(--ink);
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    gap: 3rem;
+    max-width: 76rem;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 7rem;
+    align-items: start;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+  }
+
+  .group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .group h2 {
+    font-family: var(--sans);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 0.45rem;
+    padding: 0;
+    border: 0;
+  }
+  .group a {
+    font-size: 0.875rem;
+    letter-spacing: -0.008em;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.3rem 0.6rem;
+    border-left: 2px solid transparent;
+    border-radius: 4px;
+  }
+  .group a:hover {
+    color: var(--ink);
+    background: var(--surface);
+  }
+  .group a[aria-current] {
+    color: var(--link);
+    font-weight: 600;
+    background: var(--surface);
+    border-left-color: var(--link);
+    border-radius: 0 4px 4px 0;
+  }
+
+  main {
+    min-width: 0;
+  }
+
+  footer {
+    margin-top: 4rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  @media (max-width: 56rem) {
+    .shell {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2rem;
+    }
+    .sidebar {
+      position: static;
+    }
+  }
+</style>
+
+<header class="topbar">
+  <a class="logo" href="/"><span class="hash">#</span>transclude</a>
+  <a class="repo" href="https://github.com/joedakroub/transclude">Source</a>
+</header>
+
+<div class="shell">
+  <nav class="sidebar" aria-label="Documentation">
+    <div class="group" each="section of sections">
+      <h2>${section.title}</h2>
+      <a
+        each="link of section.links"
+        href="${link.href}"
+        aria-current="${link.href === path ? 'page' : false}"
+        >${link.label}</a
+      >
+    </div>
+  </nav>
+
+  <main>
+    <slot></slot>
+    <footer>HTML is the product.</footer>
+  </main>
+</div>

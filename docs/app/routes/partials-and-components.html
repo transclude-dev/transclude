@@ -1,0 +1,177 @@
+<script server>
+  export default async () => ({
+    component: [
+      '<script properties>',
+      '  export default {',
+      "    name: '',",
+      '    tags: [],',
+      '  };',
+      '<\/script>',
+      '',
+      '<style>',
+      '  /* Scoped by the shadow boundary. Page CSS cannot reach in. */',
+      '  h3 { margin: 0; }',
+      '</style>',
+      '',
+      '<h3>${name}</h3>',
+      '<ul>',
+      '  <li each="tag of tags">${tag}</li>',
+      '</ul>',
+      '<slot></slot>',
+    ].join('\n'),
+  });
+</script>
+
+<title>Partials and components · transclude</title>
+<meta name="description" content="A partial is light DOM. A component gets a shadow root." />
+
+<doc-page
+  heading="Partials and components"
+  lede="Reuse has two kinds and the plain one is the default. The directory decides which; nothing in the file says."
+>
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Partial</th>
+          <th>Component</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Lives in</td>
+          <td><code>partials/</code></td>
+          <td><code>components/</code></td>
+        </tr>
+        <tr>
+          <td>Boundary</td>
+          <td>None. Light DOM.</td>
+          <td>Shadow root.</td>
+        </tr>
+        <tr>
+          <td>Page CSS reaches it</td>
+          <td>Yes</td>
+          <td>No, only inherited properties</td>
+        </tr>
+        <tr>
+          <td><code>&lt;label for&gt;</code> works</td>
+          <td>Yes</td>
+          <td>No, ids are scoped</td>
+        </tr>
+        <tr>
+          <td>Ships JavaScript</td>
+          <td>Only if it declares behavior</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td>Re-renders on attribute change</td>
+          <td>No</td>
+          <td>Yes</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Reach for a partial first. A component answers a narrower question than most
+    pages ask, and it is what makes an element survive being moved around a live
+    page.
+  </p>
+
+  <h2>A partial</h2>
+
+  <pre><code>&lt;script properties&gt;
+  export default {
+    tone: 'neutral',
+  };
+&lt;/script&gt;
+
+&lt;style&gt;
+  /* Hoisted into &lt;head&gt; once, however many times this appears. */
+  :scope {
+    display: block;
+    border-left: 3px solid var(--rule);
+    padding: 0.5rem 0.9rem;
+  }
+  :scope[tone='warn'] {
+    border-color: #b4232c;
+  }
+&lt;/style&gt;
+
+&lt;p&gt;&lt;slot&gt;Nothing to say.&lt;/slot&gt;&lt;/p&gt;</code></pre>
+
+  <p>Used as an element, with its props as attributes.</p>
+
+  <pre><code>&lt;site-note tone="warn"&gt;A partial, in the page's own DOM.&lt;/site-note&gt;</code></pre>
+
+  <h2>Giving it behavior</h2>
+
+  <p>
+    A plain <code>&lt;script&gt;</code> block runs once per element.
+    <code>host</code> is the element, <code>shadow</code> is its shadow root or
+    <code>null</code>, and <code>signal</code> aborts when the element leaves the
+    document.
+  </p>
+
+  <pre><code>&lt;script&gt;
+  // A listener given the signal removes itself. Nothing has to name the
+  // teardown, and nothing can forget it.
+  document.addEventListener(
+    'keydown',
+    (event) =&gt; {
+      if (event.key === 'Escape') host.dismiss();
+    },
+    { signal },
+  );
+&lt;/script&gt;</code></pre>
+
+  <h3>A public API</h3>
+
+  <p>
+    <code>export const prototype</code> puts members on the class, shared by
+    every element of that tag. The rest of the block runs once per element, so
+    where a declaration sits decides its lifetime.
+  </p>
+
+  <pre><code>export const prototype = {
+  dismiss() {
+    this.hidden = true;
+    this.dispatchEvent(new CustomEvent('dismiss', { bubbles: true }));
+  },
+};</code></pre>
+
+  <doc-note label="A prototype member cannot reach the element" tone="warn">
+    <code>host</code>, <code>shadow</code>, <code>signal</code> and
+    <code>internals</code> belong to one element. Reading one from a prototype
+    member is a compile error rather than a value shared without anyone asking.
+  </doc-note>
+
+  <h2>A component</h2>
+
+  <p>
+    The same file shape, in <code>components/</code>. It gets a shadow root, a
+    real <code>&lt;slot&gt;</code>, and it re-renders when its attributes change.
+  </p>
+
+  <pre><code>${component}</code></pre>
+
+  <p>
+    An object or array prop is written as JSON in the attribute, and read back as
+    a value.
+  </p>
+
+  <h2>A component a form submits</h2>
+
+  <p>
+    <code>export const formAssociated = true</code> makes the browser treat the
+    element as a field. It has to be a literal, because it becomes a static class
+    field and is the same for every element of that tag. A partial can opt in
+    too; being a form control needs no shadow root.
+  </p>
+
+  <p>
+    The value is reported at the top of the attribute change, before the render,
+    so what a form submits matches what the DOM already says.
+  </p>
+</doc-page>

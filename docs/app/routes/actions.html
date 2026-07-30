@@ -1,0 +1,97 @@
+<title>Actions · transclude</title>
+<meta name="description" content="A page answers GET. Its actions answer POST and the other verbs." />
+
+<doc-page
+  heading="Actions"
+  lede="A plain form posts to the page it sits on. The action runs, then the loader renders what it left behind."
+>
+  <pre><code>&lt;script server&gt;
+  export default async ({ action }) =&gt; ({
+    notes,
+    error: action?.error ?? null,
+  });
+
+  export const actions = {
+    async post({ request, url }) {
+      const form = await request.formData();
+      const text = String(form.get('text') ?? '').trim();
+      if (!text) return { error: 'a note needs some text' };
+
+      notes.push({ id: nextId++, text });
+      return Response.redirect(new URL(url), 303);
+    },
+  };
+&lt;/script&gt;
+
+&lt;form method="post"&gt;
+  &lt;input name="text" /&gt;
+  &lt;button&gt;Add&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+
+  <h2>Keyed by method</h2>
+
+  <p>
+    <code>actions</code> is an object rather than a set of exports, because
+    <code>export const delete</code> is a syntax error and an object key is not.
+  </p>
+
+  <pre><code>export const actions = {
+  async post(ctx) { … },
+  async delete(ctx) { … },
+  async put(ctx) { … },
+};</code></pre>
+
+  <p>
+    A <code>&lt;form&gt;</code> can only send GET or POST. That is HTML, not a
+    limit here, so a form posts an intent and a <code>fetch</code> caller uses
+    the method it already has.
+  </p>
+
+  <h2>Answer a mutation with a redirect</h2>
+
+  <p>
+    Returning rendered markup from a POST leaves the browser on a POST, so every
+    reload submits the form again. Use 303: it is the status that turns the next
+    request into a GET.
+  </p>
+
+  <p>
+    There are two exceptions. A rejected submission changed nothing, so it comes
+    straight back with the reason. A region request asked for markup, and a
+    redirect is not markup.
+  </p>
+
+  <pre><code>async post({ request, url, fragment }) {
+  const result = await save(request);
+  if (result.error) return result;
+
+  // A swap has nowhere to redirect to, because the browser never left.
+  if (fragment !== null) return result;
+
+  return Response.redirect(new URL(url), 303);
+}</code></pre>
+
+  <h2>One shape from every handler</h2>
+
+  <p>
+    <code>ctx.action</code> is typed as the union of what the handlers return. If
+    two of them return different shapes, the loader can read neither. Return one
+    shape from all of them.
+  </p>
+
+  <doc-note label="A Response body can be read once" tone="warn">
+    Build them in a function, never share one. A module-level
+    <code>const badRequest = new Response(…)</code> works for the first request
+    and then answers with an empty body.
+  </doc-note>
+
+  <h2>CSRF</h2>
+
+  <p>
+    On by default, and the only middleware the framework registers for you. It
+    is scoped to the hole a form opens: non-GET requests carrying one of the
+    three content types a form element can send. Set
+    <code>csrf: false</code> to turn it off, or pass an object to allow another
+    origin.
+  </p>
+</doc-page>

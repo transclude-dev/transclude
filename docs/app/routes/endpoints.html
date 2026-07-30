@@ -1,0 +1,53 @@
+<title>Endpoints · transclude</title>
+<meta name="description" content="A .js file in routes/ is an endpoint that returns a Response." />
+
+<doc-page
+  heading="Endpoints"
+  lede="A .js file in the route tree answers with a Response. There is no template behind it."
+>
+  <pre><code>// app/routes/api/people.js
+import { people } from '../../data/people.js';
+
+export const GET = (ctx) =&gt; Response.json(people);
+
+export const POST = async ({ request }) =&gt; {
+  const body = await request.json();
+  people.push(body);
+  return Response.json(body, { status: 201 });
+};</code></pre>
+
+  <h2>Uppercase verbs</h2>
+
+  <p>
+    A page's <code>actions</code> had to be an object because
+    <code>export const delete</code> is a syntax error.
+    <code>export const DELETE</code> is not, so an endpoint exports one per verb.
+  </p>
+
+  <pre><code>export const GET = (ctx) =&gt; …;
+export const POST = (ctx) =&gt; …;
+export const DELETE = (ctx) =&gt; …;</code></pre>
+
+  <doc-note label="Prefer export const">
+    TypeScript ignores <code>@satisfies</code> on a function declaration, so
+    <code>export const GET = (ctx) =&gt; …</code> gets its parameter typed and
+    <code>export function GET(ctx)</code> does not.
+  </doc-note>
+
+  <h2>It must return a Response</h2>
+
+  <p>
+    There is no template to fall back to. A handler that returns a plain object
+    has forgotten <code>Response.json</code>.
+  </p>
+
+  <h2>Helpers</h2>
+
+  <p>
+    A <code>.js</code> file in <code>routes/</code> is a route. A helper that
+    lives there needs a <code>_</code> prefix, or it becomes a URL.
+  </p>
+
+  <pre><code>routes/api/people.js    /api/people
+routes/api/_shared.js   not a route</code></pre>
+</doc-page>

@@ -30,12 +30,12 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
 
 <doc-page
   heading="Fragments"
-  lede="Any element with an id can be asked for on its own URL. The same compiled markup serves it inside the page and on its own."
+  lede="Give an element an id and you can fetch just that piece from its own URL. It comes from the same compiled markup as the full page."
 >
   <p>
-    Give an element an id and a <code>fragment</code> attribute. It renders in
-    the page, and it answers at the same path with <code>?fragment=</code> and
-    that id.
+    Add an id and a <code>fragment</code> attribute. The element renders inside
+    the page as usual, and you can also request it on its own at the same path
+    with <code>?fragment=</code> and that id.
   </p>
 
   ${html(s.markup)}
@@ -80,7 +80,8 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
 
   <p>
     The markup is compiled once, so what comes back matches what a full page load
-    would have rendered. There is no second template to keep in step.
+    would have rendered. There is no second template to keep in step. This is
+    transclusion, which is where the framework gets its name.
   </p>
 
   <h2>Asking for one</h2>

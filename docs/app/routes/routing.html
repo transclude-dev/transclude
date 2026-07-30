@@ -132,7 +132,7 @@
         </tr>
         <tr>
           <td><code>response</code></td>
-          <td>The status and headers to answer with.</td>
+          <td>The status and headers for the response.</td>
         </tr>
       </tbody>
     </table>
@@ -140,7 +140,10 @@
 
   <h2>Returning a Response</h2>
 
-  <p>A loader that returns a <code>Response</code> answers the request. The render never runs.</p>
+  <p>
+    Return a <code>Response</code> from a loader and that becomes the response.
+    The render is skipped.
+  </p>
 
   ${html(s.response)}
 

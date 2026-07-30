@@ -327,63 +327,48 @@ test('a nonsense value is refused rather than silently ignored', () => {
 
 // ---- public files ----------------------------------------------------------
 
-test('a public root is served, and a miss falls through to the routes', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-public-'));
-  fs.writeFileSync(path.join(dir, 'robots.txt'), 'User-agent: *\n');
+/** What Node hands in is Hono's serveStatic; a test hands in something smaller. */
+const filesFrom = (map) => async (c, next) => {
+  const body = map[c.req.path];
+  return body === undefined ? next() : c.text(body);
+};
 
-  const app = baseApp({ csrf: false, publicRoot: dir });
+test('a public file beats a route, and a miss falls through', async () => {
+  const app = baseApp({ csrf: false, publicFiles: filesFrom({ '/robots.txt': 'User-agent: *' }) });
   app.get('/robots.txt', (c) => c.text('a route, which should never be reached'));
   app.get('/missing.txt', (c) => c.text('fell through'));
 
-  const file = await app.request('http://x/robots.txt');
-  assert.equal(await file.text(), 'User-agent: *\n', 'a real file has to beat a route');
-
-  const miss = await app.request('http://x/missing.txt');
-  assert.equal(await miss.text(), 'fell through');
+  assert.equal(await (await app.request('http://x/robots.txt')).text(), 'User-agent: *');
+  assert.equal(await (await app.request('http://x/missing.txt')).text(), 'fell through');
 });
 
 test("the app's middleware sees public file requests too", async () => {
   // Mounted after the middleware, so a guard covers these as well — a file being
   // public by default is not the same as being unguardable.
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-public-'));
-  fs.writeFileSync(path.join(dir, 'secret.txt'), 'shh');
-
   const seen = [];
   const app = baseApp({
     csrf: false,
-    publicRoot: dir,
+    publicFiles: filesFrom({ '/secret.txt': 'shh' }),
     middleware: (a) => a.use('*', async (c, next) => (seen.push(c.req.path), next())),
   });
 
-  const out = await app.request('http://x/secret.txt');
-  assert.equal(await out.text(), 'shh');
+  assert.equal(await (await app.request('http://x/secret.txt')).text(), 'shh');
   assert.deepEqual(seen, ['/secret.txt'], 'middleware registered after this could not guard it');
 });
 
 test('a guard can refuse a public file', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-public-'));
-  fs.writeFileSync(path.join(dir, 'private.txt'), 'shh');
-
   const app = baseApp({
     csrf: false,
-    publicRoot: dir,
+    publicFiles: filesFrom({ '/private.txt': 'shh' }),
     middleware: (a) => a.use('/private.txt', (c) => c.text('nope', 403)),
   });
-
-  const out = await app.request('http://x/private.txt');
-  assert.equal(out.status, 403);
+  assert.equal((await app.request('http://x/private.txt')).status, 403);
 });
 
-test('no public root, and nothing is mounted', async () => {
-  const app = baseApp({ csrf: false, publicRoot: null });
-  app.get('/robots.txt', (c) => c.text('the route answers'));
-  assert.equal(await (await app.request('http://x/robots.txt')).text(), 'the route answers');
-});
-
-test('a public root that does not exist is not mounted either', async () => {
-  // Hono's serveStatic logs to stderr for a missing root; not mounting it at all
-  // is quieter and means the same thing.
-  const app = baseApp({ csrf: false, publicRoot: path.join(os.tmpdir(), 'hf-nope-does-not-exist') });
+test('no handler, and nothing is mounted', async () => {
+  // Whether there is anything to serve is the adapter's question, not this one's:
+  // Node checks the directory exists, a runtime with a binding checks the binding.
+  const app = baseApp({ csrf: false, publicFiles: null });
   app.get('/robots.txt', (c) => c.text('the route answers'));
   assert.equal(await (await app.request('http://x/robots.txt')).text(), 'the route answers');
 });

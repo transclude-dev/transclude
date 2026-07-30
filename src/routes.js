@@ -1,5 +1,5 @@
 // File-based routing. The directory tree is the route table; Hono does the
-// matching. Pure functions only — the plugin and the server both scan, and they
+// matching. Pure functions only. The plugin and the server both scan, and they
 // must not be able to disagree.
 //
 //   routes/index.html            ->  /
@@ -19,14 +19,14 @@ const EXT = '.html';
 /**
  * A `.js` file in the routes tree is an endpoint: a route with no template, no
  * layout and no regions, which answers with a `Response` of its own. Same
- * filename conventions as a page — `[param]`, `[...rest]`, `index` — because it
- * is the same route table.
+ * filename rules as a page, so `[param]`, `[...rest]` and `index` all work,
+ * because it is the same route table.
  */
 const ENDPOINT_EXT = '.js';
 const NOT_FOUND = '404';
 /**
  * Not a route either: nothing links to `/500`, and a request for it is not what
- * makes it render — an unhandled throw is. Prerendered like the not-found page,
+ * makes it render. An unhandled throw is. Prerendered like the not-found page,
  * because a page that renders when something is already broken should not need a
  * loader, a database, or anything else that can also be broken.
  */
@@ -55,7 +55,7 @@ export function scanRoutes(dir) {
     const clash = seen.get(route.pattern) ?? seen.get(route.id);
     if (clash) {
       throw new Error(
-        `[html-first] ${rel} and ${clash} collide (${route.pattern}, id ${route.id}) — rename one`,
+        `[html-first] ${rel} and ${clash} collide (${route.pattern}, id ${route.id}). Rename one`,
       );
     }
     seen.set(route.pattern, rel);
@@ -120,8 +120,8 @@ function patternOf(segments) {
  *
  * The separator must not be a dot. Vite decides whether to run a request
  * through its transform pipeline partly by extension, and `people._name` parses
- * as the extension `._name` — so dotted ids fall straight past the dev server
- * and get answered by the app as a 404 page. Silent, and only on nested routes.
+ * as the extension `._name`, so dotted ids fall straight past the dev server and
+ * get answered by the app as a 404 page. Silent, and only on nested routes.
  */
 function idOf(parts) {
   return parts
@@ -163,9 +163,9 @@ function walk(dir, base = dir, out = []) {
  * The routes directory, or a migration error.
  *
  * It was `pages/` until it started holding `.js` endpoints as well as `.html`
- * pages — at which point the name was telling you something false. A missing
- * directory otherwise produces an empty route table and a site of 404s, which is
- * a confusing way to learn about a rename.
+ * pages, at which point the name was no longer true. A missing directory otherwise
+ * produces an empty route table and a site of 404s, which is a confusing way to
+ * learn about a rename.
  */
 export function resolveRoutesDir(app, routesDir) {
   const dir = path.resolve(app, routesDir);
@@ -174,7 +174,7 @@ export function resolveRoutesDir(app, routesDir) {
   const legacy = path.resolve(app, 'pages');
   if (fs.existsSync(legacy)) {
     throw new Error(
-      `[html-first] ${path.relative(app, legacy)}/ is now ${routesDir}/ — it holds .js ` +
+      `[html-first] ${path.relative(app, legacy)}/ is now ${routesDir}/. It holds .js ` +
         `endpoints as well as .html pages. Rename the directory, or set ` +
         `\`routesDir\` in html-first.config.js.`,
     );

@@ -61,7 +61,7 @@ test('ids are URL-safe, because they travel through /@id/', () => {
     const { id } = route(rel);
     assert.match(id, /^[A-Za-z0-9_-]+$/);
     // A dot would read as a file extension and the dev server would never
-    // transform the module — the page would silently ship no client JS.
+    // transform the module, and the page would ship no client JS.
     assert.doesNotMatch(id, /\./);
   }
 });
@@ -148,7 +148,7 @@ test('an _ prefixed .js file is a helper, not an endpoint', () => {
   assert.deepEqual(endpoints, []);
 });
 
-test('404.js is not the not-found handler — that is a page', () => {
+test('404.js is not the not-found handler, that is a page', () => {
   const { endpoints, notFound } = scanRoutes(fixture(['404.js']));
   assert.equal(notFound, null);
   assert.deepEqual(endpoints.map((r) => r.pattern), ['/404']);
@@ -163,8 +163,8 @@ test('the routes directory resolves when it exists', () => {
 });
 
 test('the old name is a migration error, not an empty route table', () => {
-  // Silence here means every URL 404s and nothing says why — which is a poor way
-  // to find out a directory was renamed.
+  // Silence here means every URL 404s and nothing says why, which is a poor way to
+  // find out a directory was renamed.
   const app = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-app-'));
   fs.mkdirSync(path.join(app, 'pages'));
 
@@ -180,7 +180,7 @@ test('a custom routesDir still reports the old directory if it is the one there'
   assert.throws(() => resolveRoutesDir(app, 'urls'), /is now urls\//);
 });
 
-test('neither directory is not an error — an empty app is allowed', () => {
+test('neither directory is not an error, an empty app is allowed', () => {
   const app = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-app-'));
   assert.equal(resolveRoutesDir(app, 'routes'), path.join(app, 'routes'));
 });

@@ -79,8 +79,8 @@ class Codegen {
     // inside a loop renders from them, so its function has to take them.
     this.loops = [];
     this.components = components;
-    // Which of them render into a shadow root. Everything else renders inline —
-    // and that depends on the child's own declaration, not its parent's.
+    // Which of them render into a shadow root. Everything else renders inline.
+    // That depends on the child's own declaration, not its parent's.
     this.shadowTags = shadowTags;
     this.page = page;
     this.layout = layout;
@@ -190,7 +190,7 @@ class Codegen {
       if (dirs?.has('else-if') || dirs?.has('else')) {
         const name = dirs.has('else') ? 'else' : 'else-if';
         throw new CompileError(
-          `orphaned "${name}" on <${node.tagName}> — no preceding sibling carries "if"`,
+          `"${name}" on <${node.tagName}> has no "if" before it`,
           node,
         );
       }
@@ -273,8 +273,8 @@ class Codegen {
     const dirs = directivesOf(node);
     if (dirs.has('each') && BRANCH.some((b) => dirs.has(b))) {
       throw new CompileError(
-        `<${node.tagName}> carries both "each" and "${BRANCH.find((b) => dirs.has(b))}" — ` +
-          `precedence would be ambiguous. Wrap one in a <template>.`,
+        `<${node.tagName}> carries both "each" and "${BRANCH.find((b) => dirs.has(b))}". ` +
+          `Which runs first would be unclear. Wrap one in a <template>.`,
         node,
       );
     }
@@ -298,10 +298,10 @@ class Codegen {
   /**
    * The name of the addressable region this element is, or null.
    *
-   * The name is the element's `id`, deliberately, rather than a second one that
-   * could disagree with it. The URL that asks for the region and the selector
-   * that swaps it in are then the same word — `?fragment=results` targets
-   * `#results` — and there is nothing to keep in sync.
+   * The name is the element's `id`, on purpose, rather than a second name that
+   * could disagree with it. The URL that asks for the region and the selector that
+   * swaps it in are the same word, so `?fragment=results` targets `#results` and
+   * there is nothing to keep in sync.
    */
   regionOf(node, dirs) {
     const attr = node.attrs?.find((a) => a.name === 'fragment');
@@ -318,7 +318,7 @@ class Codegen {
     if (clash) {
       throw new CompileError(
         `<${node.tagName}> carries both "fragment" and "${clash}". A region is one ` +
-          `element with one id, so it cannot be conditional or repeated — put the ` +
+          `element with one id, so it cannot be conditional or repeated. Put the ` +
           `"${clash}" on something inside it.`,
         node,
       );
@@ -335,7 +335,7 @@ class Codegen {
     if (!id) {
       throw new CompileError(
         `<${node.tagName}> carries "fragment" but has no id. The id is the region's ` +
-          `name — it is what the URL asks for and what a swap targets.`,
+          `name. It is what the URL asks for and what a swap targets.`,
         node,
       );
     }
@@ -348,7 +348,7 @@ class Codegen {
     }
     if (attr.value !== '') {
       throw new CompileError(
-        `"fragment" takes no value — the region is named by its id, which is ` +
+        `"fragment" takes no value. The region is named by its id, which is ` +
           `"${id}" here.`,
         node,
       );
@@ -360,8 +360,8 @@ class Codegen {
   }
 
   emitEach(el, out, scope, topLevel) {
-    // The loops enclosing this one — not this one, whose own variables the
-    // block's html brings into existence itself.
+    // The loops around this one, not this one. This loop's own variables are
+    // created by the block's html.
     const args = this.loopArgs();
 
     if (this.standalone()) {
@@ -398,7 +398,7 @@ class Codegen {
     this.emitEachBody(el, out, scope, topLevel);
   }
 
-  /** `list`, `key` and `item` — one loop, taken apart so it can reconcile. */
+  /** `list`, `key` and `item`. One loop, taken apart so it can be reconciled. */
   eachPieces(el, scope, topLevel, enclosing, ranged) {
     const spec = parseEach(el.attrs.find((a) => a.name === 'each').value, el);
     const id = ++this.uid;
@@ -588,8 +588,8 @@ class Codegen {
 
   /**
    * `ref` is the component this element is, when it is one. Its own converters
-   * decide how a value becomes an attribute — the parent has no way to know
-   * that a Date crosses as an ISO string rather than as JSON.
+   * decide how a value becomes an attribute. The parent has no way to know that a
+   * Date crosses as an ISO string rather than as JSON.
    */
   emitAttrs(el, out, scope, ref = null) {
     for (const attr of el.attrs) {
@@ -643,7 +643,7 @@ export const ANCHOR_CLOSE = '<!--]-->';
 
 /**
  * `else` / `else-if` bind to the `if` before them, so a chain is one unit. Both
- * passes have to agree on where it ends — sharing the walk is how they do.
+ * passes have to agree on where it ends, so they share the same walk.
  */
 export function gatherChain(nodes, i) {
   const dirs = directivesOf(nodes[i]);
@@ -703,7 +703,7 @@ function parseEach(value, node) {
   const m = /^\s*([A-Za-z_$][\w$]*)\s*(?:,\s*([A-Za-z_$][\w$]*)\s*)?\s+of\s+([\s\S]+?)\s*$/.exec(value);
   if (!m) {
     throw new CompileError(
-      `each="${value}" is malformed — expected each="item of list" or each="item, index of list"`,
+      `each="${value}" is malformed. Expected each="item of list" or each="item, index of list"`,
       node,
     );
   }

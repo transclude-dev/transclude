@@ -1,4 +1,4 @@
-// `npm run check` — type checks every .html file through TypeScript.
+// `npm run check`. Type checks every .html file through TypeScript.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,7 +13,7 @@ const checker = createChecker({ root, ...config });
 
 // hf-env.d.ts is an output, not an input: the shims are self-contained, so the
 // types can be written from what tsc made of them rather than the other way
-// round. Nothing downstream reads it — it exists for the author and the editor.
+// round. Nothing downstream reads it. It exists for the author and the editor.
 const types = path.join(root, config.typesFile);
 const next = emitTypes(checker.describe());
 if (!fs.existsSync(types) || fs.readFileSync(types, 'utf8') !== next) {

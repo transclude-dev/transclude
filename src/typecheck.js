@@ -2,8 +2,8 @@
 //
 // Shims live in memory at `<file>.html.js`, never on disk. Naming them after the
 // source file is what makes their relative imports resolve the way the author
-// wrote them — a shim in a mirror directory would have to rewrite every
-// specifier, and rewriting is where source mapping goes to die.
+// wrote them. A shim in a parallel directory would have to rewrite every import,
+// and rewriting is where source mapping breaks down.
 //
 // JavaScript rather than TypeScript because a JSDoc `@type` in the author's own
 // `<script props>` is honoured in a .js file and silently ignored in a .ts one.
@@ -22,9 +22,9 @@ import { resolveRoutesDir, scanRoutes } from './routes.js';
 /**
  * Annotations are optional, so `noImplicitAny` is off: an unannotated parameter
  * is `any` rather than an error, and the author writes plain modern JavaScript.
- * What that would normally cost — undeclared property reads being allowed on a
- * type that came from an object literal — the shim buys back by remapping the
- * keys, so `${user.nmae}` is still an error.
+ * That would normally allow reading an undeclared property on a type that came
+ * from an object literal. The shim gets that back by remapping the keys, so
+ * `${user.nmae}` is still an error.
  *
  * `strictNullChecks` stays on: `querySelector` really can return null, and that
  * is a bug rather than a matter of taste. `strict: true` in the config turns the
@@ -98,7 +98,7 @@ export function createChecker({
 
   const sourceOf = (file) => overlays.get(file) ?? fs.readFileSync(file, 'utf8');
 
-  /** The type of one of a shim's marker exports — what tsc made of the file. */
+  /** The type of one of a shim's marker exports. What tsc made of the file. */
   const exportTypeOf = (file, name) => {
     const program = service.getProgram();
     const source = program?.getSourceFile(shimPath(file));
@@ -177,16 +177,16 @@ export function createChecker({
         '{}',
       );
 
-  // `request` is the platform's `Request`, not a router's wrapper — reading a
-  // form is `await request.formData()` and nothing to look up. It is null while
+  // `request` is the platform's `Request`, not a router's wrapper. Reading a form
+  // is `await request.formData()` and nothing to look up. It is null while
   // prerendering, where there is no request to read.
   //
   // `action` is whatever the page's handler for this method returned, so a POST
   // and a GET render through the same loader.
   //
-  // `response` is the part of the answer that is not markup. Mutate it — the
-  // object is shared with every loader in the chain and with the server — or
-  // return a `Response` to answer for yourself and skip rendering.
+  // `response` is the part of the answer that is not markup. Change it, since the
+  // object is shared with every loader in the chain and with the server, or return
+  // a `Response` to answer the request yourself and skip rendering.
   //
   // `cookies` reads the request and writes into that same envelope. `__Cookies`
   // is defined by the shim, which is the only thing that reads this string.
@@ -228,11 +228,11 @@ export function createChecker({
       const blocks = splitBlocks(sourceOf(file));
       componentProps.set(tag, propTypeOf(file));
       // A partial with neither block registers no custom element, so it has no
-      // accessors and no members — saying otherwise in hf-env.d.ts would be a
-      // lie the browser does not back up.
+      // accessors and no members. Saying otherwise in hf-env.d.ts would be a claim
+      // the browser does not back up.
       // Members live in the client block now, so the shim is what knows whether
-      // there are any — an empty `__Members` means the block exported no
-      // `prototype`, and a client block at all is reason enough to upgrade.
+      // there are any. An empty `__Members` means the block exported no
+      // `prototype`, and having a client block at all is reason enough to upgrade.
       const members = memberTypeOf(file);
       componentMembers.set(tag, {
         members: members && members !== '{}' ? members : null,
@@ -370,8 +370,8 @@ export function createChecker({
       ]) {
         const offset = originalOffset(shim.chunks, diagnostic.start ?? 0);
         // A diagnostic with no home is one about generated scaffolding. Dropping
-        // it is right — but it means anything that can carry a diagnostic has to
-        // be mapped, or it disappears silently.
+        // it is right, but it means anything that can carry a diagnostic has to be
+        // mapped, or it disappears without a word.
         if (offset === null) continue;
 
         out.push({

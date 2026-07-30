@@ -19,8 +19,8 @@ import { trimTrailingSlash } from 'hono/trailing-slash';
  * content types a form element can send. JSON already needs a preflight, so it
  * is not the way in.
  *
- * `middleware` is the app's own `server.js`, run after — so it can add anything
- * and cannot accidentally register itself ahead of the guard.
+ * `middleware` is the app's own `server.js`, and it runs after, so it can add
+ * anything and cannot register itself ahead of the guard by mistake.
  */
 export function baseApp({
   csrf: csrfOption = true,
@@ -35,21 +35,21 @@ export function baseApp({
   }
 
   /**
-   * One decision, two halves — which is why this is a single config key and not
-   * a router option plus a middleware the author remembers to add.
+   * One decision with two halves, which is why it is a single config key rather
+   * than a router option plus a middleware the author has to remember to add.
    *
    * `strict: false` does not merely match /about/ as well as /about: it strips
-   * the slash from `c.req.path` before any middleware runs. Measured — with it
-   * on, `trimTrailingSlash` never fires, because the thing it looks for is gone
-   * by the time it looks. The two do not compose; they exclude each other.
+   * the slash from `c.req.path` before any middleware runs. Measured: with it on,
+   * `trimTrailingSlash` never fires, because the thing it looks for is gone by the
+   * time it looks. The two do not work together. They exclude each other.
    *
-   * So 'never' means strict routing plus a 301 to the canonical form, and every
+   * So 'never' means strict routing plus a 301 to the one URL, and every
    * URL this framework generates is already that form: `routes/about.html` is
-   * `/about`. 'ignore' is the loose router, which answers both with 200 — two
-   * URLs for one page, and nothing emits <link rel="canonical">.
+   * `/about`. 'ignore' is the loose router, which answers both with 200. Two URLs
+   * for one page, and nothing emits <link rel="canonical">.
    *
    * `alwaysRedirect` matters because Hono's default only redirects a request that
-   * already 404'd — and a catch-all route answers before it can. `/docs/intro/`
+   * already 404'd, and a catch-all route answers before it can. `/docs/intro/`
    * would match `/docs/:path{.+}` as `intro/` and return 200, which is the exact
    * duplicate this setting exists to remove. Redirecting ahead of the router also
    * spares a doomed request the route table and every middleware after this one.
@@ -100,7 +100,7 @@ export async function runEndpoint(mod, ctx, method) {
 
   throw new Error(
     `${method.toUpperCase()} answered with ${out === undefined ? 'nothing' : typeof out}, ` +
-      `not a Response — an endpoint has no template to render instead`,
+      `not a Response. An endpoint has no template to render instead`,
   );
 }
 

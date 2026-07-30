@@ -1,5 +1,5 @@
 // Starts the language server for workspaces that look like an html-first
-// project. Anything else is left alone — the grammar is harmless everywhere,
+// project. Anything else is left alone. The grammar is harmless everywhere, and
 // the checker only makes sense where html-first.config.js exists.
 
 const path = require('node:path');

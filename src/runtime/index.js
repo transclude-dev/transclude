@@ -38,8 +38,8 @@ export function str(value) {
 }
 
 /**
- * Dynamic attribute. false/null/undefined drop the attribute entirely rather
- * than stringifying — otherwise you get class="false" in the output.
+ * Dynamic attribute. false, null and undefined drop the attribute rather than
+ * becoming a string, or you get class="false" in the output.
  * true emits a bare boolean attribute. Objects/arrays serialize as JSON so the
  * client can read them back off the element.
  */
@@ -52,8 +52,8 @@ export function attr(name, value) {
 
 /**
  * `pageSize` <-> `page-size`. HTML lowercases attribute names, so a camelCase
- * prop would never match the attribute it came from — the same rule Lit uses,
- * for the same reason.
+ * prop would never match the attribute it came from. Lit has the same rule, for
+ * the same reason.
  */
 export function attrName(prop) {
   return /[A-Z]/.test(prop) ? prop.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`) : prop;
@@ -64,8 +64,8 @@ export function attrName(prop) {
  *
  * The default's own type covers string, number, boolean and anything JSON
  * round-trips. A `from` in the block's `attributes` export takes over for
- * everything else — a Date, a Set, a comma-separated list — because there is
- * no type the framework could have guessed that from.
+ * everything else, such as a Date, a Set or a comma-separated list. There is no
+ * type the framework could have guessed those from.
  */
 export function coerceProps(defs, props, specs) {
   const out = {};
@@ -112,7 +112,7 @@ export function coerceProps(defs, props, specs) {
   return out;
 }
 
-// ---- surgical updates -----------------------------------------------------
+// ---- updates in place -----------------------------------------------------
 //
 // The compiler emits a `bind` that locates every node an expression owns, and
 // an `update` that writes to them. Nothing is destroyed, so focus, selection,
@@ -123,13 +123,13 @@ export function coerceProps(defs, props, specs) {
  * The text node a ${} owns, carved out of the one the parser actually built.
  *
  * `Hello ${name}!` is a single text node reading "Hello Ada!". Both static
- * sides have compile-time known lengths, so the dynamic middle splits out
- * exactly — no marker comments in the served HTML, and nothing evaluated.
+ * sides have lengths known at compile time, so the dynamic middle splits out
+ * exactly. No marker comments in the served HTML, and nothing evaluated.
  */
 export function textAt(parent, node, prefix, suffix) {
   // An expression that rendered to nothing left no text node behind, and every
   // index after it would be short by one. Putting an empty one back is what
-  // keeps the rest of the paths honest.
+  // keeps every path after it correct.
   if (!node || node.nodeType !== 3) {
     const text = (parent.ownerDocument ?? document).createTextNode('');
     parent.insertBefore(text, node ?? null);
@@ -178,8 +178,8 @@ export function setParts(node, parts) {
 // `if` and `each` change how many nodes there are, so they cannot be addressed
 // by a compile-time index. Each one is wrapped in a pair of comment anchors at
 // render time, and owns everything between them. That is the only thing in the
-// served HTML that exists for the client's benefit — 14 bytes per block, and
-// only in components.
+// served HTML that exists for the client's benefit. 14 bytes per block, and only
+// in components.
 
 /** The matching closing anchor, counting nested ones on the way. */
 function closingAnchor(open) {
@@ -281,9 +281,9 @@ function render(state, html) {
 }
 
 /**
- * Reordering reuses the nodes a key already owns. `moveBefore` moves them
- * without resetting anything — an iframe keeps loading, focus stays, a running
- * animation keeps running — which plain insertBefore cannot promise.
+ * Reordering reuses the nodes a key already owns. `moveBefore` moves them without
+ * resetting anything. An iframe keeps loading, focus stays, and a running
+ * animation keeps running. Plain insertBefore cannot promise that.
  */
 function updateKeyed(state, block, props, args) {
   const parent = state.start.parentNode;
@@ -293,9 +293,9 @@ function updateKeyed(state, block, props, args) {
   const restoreFocus = captureFocus(parent);
 
   /**
-   * Inserted before it is bound, deliberately: a part reads `__n.parentNode` to
-   * find where its own top-level nodes live, and before insertion that is the
-   * scratch element the markup was parsed in.
+   * Inserted before it is bound, on purpose. A part reads `__n.parentNode` to find
+   * where its own top-level nodes live, and before insertion that is the scratch
+   * element the markup was parsed in.
    */
   const build = (item, index, reference) => {
     const html = block.item(props, ...args, item, index);
@@ -324,8 +324,8 @@ function updateKeyed(state, block, props, args) {
       continue;
     }
 
-    // An item whose content changed is written into, not replaced — the row
-    // keeps its identity, and with it anything the user was doing in it.
+    // An item whose content changed is written into, not replaced. The row keeps
+    // its identity, and with it anything the user was doing in it.
     const wrote = part
       ? part.update(entry.bindings, props, ...args, item, index)
       : entry.html === block.item(props, ...args, item, index);
@@ -377,7 +377,7 @@ function removeRange(entry) {
 }
 
 /**
- * The focused element, following shadow roots down — `document.activeElement`
+ * The focused element, following shadow roots down. `document.activeElement`
  * only ever names the outermost host.
  */
 function deepActiveElement() {
@@ -391,10 +391,10 @@ function deepActiveElement() {
  * Where `moveBefore` is unavailable, a move is a removal followed by an insert,
  * and removing a node blurs whatever was focused inside it.
  *
- * Measured, that is the *only* casualty: the node itself is reused, and its
- * value, its selection, its shadow root and its component state all come
- * through. So focus is the one thing worth carrying across by hand — and where
- * `moveBefore` exists, none of this runs.
+ * Measured, focus is the only thing lost. The node itself is reused, and its
+ * value, its selection, its shadow root and its component state all come through.
+ * So focus is the one thing worth carrying across by hand. Where `moveBefore`
+ * exists, none of this runs.
  */
 function captureFocus(parent) {
   if (parent.moveBefore) return null;
@@ -438,8 +438,8 @@ function place(parent, node, reference) {
 
 /**
  * Parsing has to happen inside an element of the same kind as the destination,
- * or the parser discards what cannot legally live there — a bare <tr> in a
- * <div> is dropped outright.
+ * or the parser drops what cannot live there. A bare <tr> in a <div> is thrown
+ * away.
  */
 function parseInContext(parent, html) {
   const holder = document.createElement(parent.nodeType === 1 ? parent.tagName : 'div');
@@ -499,8 +499,8 @@ function defineState(Class, defs, schedule) {
  */
 function volatileChanged(names, next, prev, state, prevState) {
   for (const name of names ?? []) {
-    // A volatile name is whatever the template read — which may be state, and
-    // state has no attribute to compare.
+    // A volatile name is whatever the template read. That may be state, and state
+    // has no attribute to compare.
     if (name in state) {
       if (!Object.is(state[name], prevState[name])) return true;
     } else if (next[attrName(name)] !== prev[attrName(name)]) {
@@ -532,9 +532,9 @@ export function writeProp(element, prop, value, fallback, specs) {
 }
 
 /**
- * An accessor per declared prop, generated from `<script props>` — the shape is
- * already stated there, so stating it again as a getter/setter would be saying
- * the same thing twice.
+ * An accessor per declared prop, generated from `<script props>`. The shape is
+ * already stated there, so writing a getter and setter for each would say the
+ * same thing twice.
  *
  * The attribute is the only state. A getter reads and coerces it; a setter
  * writes it, which for a component triggers attributeChangedCallback and a
@@ -563,8 +563,8 @@ function defineProps(Class, defs, specs) {
  * `<script element>` exports an object; its members land on the prototype so
  * they are shared, inherited, and visible to `in`.
  *
- * Descriptors, not `Object.assign` — assigning would *invoke* every getter once
- * at define time and copy the results as plain values.
+ * Descriptors, not `Object.assign`. Assigning would call every getter once at
+ * define time and copy the results as plain values.
  *
  * The collision check is `in`, which walks the whole chain up through
  * HTMLElement. That is exhaustive and needs no table of DOM member names to
@@ -591,7 +591,7 @@ function defineMembers(Class, members, tag) {
 
 /**
  * The prop an attribute name belongs to. Without a rename the mapping is just
- * dash-casing, so this is its inverse — over a handful of declared names.
+ * dash-casing, so this reverses it, over a handful of declared names.
  */
 function propFor(def, attr) {
   return Object.keys(def.propDefs ?? {}).find((key) => attrName(key) === attr);
@@ -600,7 +600,7 @@ function propFor(def, attr) {
 /**
  * A component's attribute, serialized the way that component reads it back.
  * The parent's template cannot know that a Date crosses the boundary as an ISO
- * string rather than as JSON — the child's `to` does.
+ * string rather than as JSON. The child's `to` does.
  */
 export function attrProp(def, name, value) {
   const to = def.propAttrs?.[propFor(def, name)]?.to;
@@ -618,16 +618,16 @@ export function setAttrProp(def, element, name, value) {
  * before any JS runs. Nested DSD works because the HTML parser handles it.
  *
  * Except in a fragment. A fragment is swapped into a document that is already
- * live, and nothing that does the swapping — innerHTML, DOMParser, any of the
- * hypermedia libraries built on them — processes a declarative shadow root. The
- * template would land inert and the component would never exist.
+ * live, and nothing that does the swapping processes a declarative shadow root.
+ * Not innerHTML, not DOMParser, and none of the libraries built on them. The
+ * template would land dead and the component would never exist.
  *
  * So a fragment ships the element bare: the tag and its attributes, nothing
  * inside. `connectedCallback` finds no shadow root, attaches one and paints,
- * and that paint goes through setHTMLUnsafe, which *does* process the nested
- * declarative roots underneath it. Nothing is lost by leaving it out either —
- * server rendering buys a correct first paint, and a fragment arrives long
- * after first paint.
+ * and that paint goes through setHTMLUnsafe, which does process the nested
+ * declarative roots underneath it. Nothing is lost by leaving it out. Server
+ * rendering buys a correct first paint, and a fragment arrives long after first
+ * paint.
  */
 export function shadow(def, props, fragment = false) {
   if (fragment) return '';
@@ -639,10 +639,10 @@ export function shadow(def, props, fragment = false) {
  * A partial rendered for insertion into a live document: its own light markup,
  * with any component inside it left bare for the client to paint.
  *
- * Its styles are not included, and deliberately: they are one `<style>` per tag
- * in <head>, not per occurrence, so inlining them here would ship a copy on
- * every swap. When the swapped markup names a partial the document has never
- * rendered, `watch` notices the tag and `adoptStyles` puts them there — once.
+ * Its styles are left out on purpose. They are one `<style>` per tag in <head>,
+ * not one per use, so putting them here would ship a copy on every swap. When the
+ * swapped markup names a partial the document has never rendered, `watch` notices
+ * the tag and `adoptStyles` adds them once.
  */
 export function fragment(def, props = {}, slots = {}) {
   return def.render(def.coerce(props), slots, true);
@@ -652,10 +652,10 @@ export function fragment(def, props = {}, slots = {}) {
  * A light element's styles, in <head>, at most once per tag.
  *
  * The server writes the same `<style data-hf="tag">` for every light element the
- * document rendered, so the marker is the whole handshake: if one is already
- * there, these styles are already applied and this does nothing. That is why the
- * attribute is on the server's output too — a page that renders <site-note> and
- * a swap that brings one in must not end up with two copies.
+ * document rendered, so the marker is the whole agreement. If one is already
+ * there, these styles are applied and this does nothing. That is why the
+ * attribute is on the server's output too. A page that renders <site-note> and a
+ * swap that brings one in must not end up with two copies.
  *
  * Inserted *before* the document's own <style>, not appended, because that is
  * where the server would have put it: a page's rules override an element's.
@@ -675,14 +675,13 @@ export function adoptStyles(def) {
  * Loads element definitions for tags that arrive after the page did.
  *
  * A page's client entry defines what the page can render. A fragment swapped in
- * from another route can contain anything, and it arrives as plain markup —
- * unstyled if it is a partial, unupgraded if it is a component.
+ * from another route can contain anything, and it arrives as plain markup. A
+ * partial arrives with no styles, a component with no definition.
  *
- * The framework does not do the swapping. Whoever does — htmx, Turbo, a hand
- * written fetch — cannot be counted on to announce it, and half of them use
- * plain innerHTML. So this watches the outcome rather than the mechanism:
- * whatever put the tag in the document, it is in the document, and that is the
- * signal. It is the one piece of client code that exists to make somebody
+ * The framework does not do the swapping. Whoever does, whether htmx, Turbo or a
+ * short fetch, cannot be counted on to announce it, and half of them use plain
+ * innerHTML. So this watches the result rather than the cause. Whatever put the
+ * tag in the document, it is in the document, and that is the signal. It is the one piece of client code that exists to make somebody
  * else's swapper work.
  *
  * `loaders` is tag -> dynamic import, so a tag that never appears costs one
@@ -704,8 +703,8 @@ export function watch(loaders, root = globalThis.document) {
     for (const tag of pending) {
       if (!root.querySelector(tag)) continue;
       pending.delete(tag);
-      // A failed chunk should say so and not take the sweep down with it —
-      // every other tag on the page is independent of this one.
+      // A failed chunk should say so and not take the sweep down with it. Every
+      // other tag on the page is independent of this one.
       Promise.resolve()
         .then(loaders[tag])
         .then((mod) => mod?.define?.())
@@ -721,8 +720,8 @@ export function watch(loaders, root = globalThis.document) {
 
 /**
  * Client side of the same component. On first connect the shadow root already
- * exists (the parser attached it from the DSD template), so we do not repaint —
- * that is the whole point of rendering it server side.
+ * exists, because the parser attached it from the DSD template, so nothing
+ * repaints. Rendering it on the server is what makes that possible.
  */
 /**
  * A light element has no shadow root to repaint, and repainting would destroy
@@ -738,7 +737,7 @@ export function defineLight(def, init) {
   if (customElements.get(def.tag)) return;
   // No behaviour to attach means nothing to register. A partial with neither a
   // <script> nor a <script element> is markup that was already rendered, and it
-  // ships no JavaScript at all — including no accessors. That is the trade the
+  // ships no JavaScript at all, accessors included. That is the trade the
   // zero-JS default makes.
   //
   // Being a form control counts as behaviour: a shadow root is not required to be
@@ -803,7 +802,8 @@ function hasMembers(def) {
 
 /**
  * A `<script>` block may end by returning a function. That function runs when
- * the element leaves the document — for teardown that has no signal of its own.
+ * the element leaves the document. Use it for cleanup that has no signal of its
+ * own.
  * Listeners do not need it: they get `signal` as the third argument.
  *
  * It is a promise because the block is compiled to an async function, so a
@@ -819,15 +819,15 @@ function release(cleanup) {
  * Form association, for an element that opted in with `export const
  * formAssociated = true`.
  *
- * A custom element in a `<form>` contributes nothing by default — the browser has
- * no reason to think it is a control. This is the platform's answer: a static
- * flag, `attachInternals()` for the handle, and `setFormValue` to say what would
- * be submitted.
+ * A custom element in a `<form>` sends nothing by default, because the browser
+ * has no reason to think it is a control. The platform's answer is a static flag,
+ * `attachInternals()` for the handle, and `setFormValue` to say what would be
+ * submitted.
  *
  * The value comes from a `value` prop, serialized exactly the way its attribute
  * is, so what is submitted is what the DOM says. A form-associated element with
- * no `value` prop can still be useful — it can report validity — so this reports
- * nothing rather than complaining.
+ * no `value` prop can still report validity, so this reports nothing rather than
+ * complaining.
  */
 function formValueOf(def, element) {
   if (!('value' in (def.propDefs ?? {}))) return undefined;
@@ -843,7 +843,7 @@ function defineFormMembers(Class, def) {
   Object.defineProperties(Class.prototype, {
     /**
      * Reset puts the prop back to the default its `<script properties>` block
-     * declared — which is the same thing `value` returns when the attribute is
+     * declared. That is the same thing `value` returns when the attribute is
      * absent, so removing it is the whole job.
      */
     formResetCallback: {
@@ -914,23 +914,23 @@ export function defineComponent(def, init) {
       if (value !== undefined) this.#internals.setFormValue(value);
     }
 
-    /** For `setValidity` and the rest — the same handle the platform hands out. */
+    /** For `setValidity` and the rest. The same handle the platform hands out. */
     get internals() {
       return this.#internals;
     }
 
     /**
      * Resolves once the render for the changes made so far has happened.
-     * Reading it when nothing is pending is not an error — it is already done.
+     * Reading it when nothing is pending is not an error. It is already done.
      */
     get updateComplete() {
       return this.#pending ?? Promise.resolve();
     }
 
     /**
-     * Renders are coalesced into a microtask, so `a = 1; b = 2` is one render
-     * and not two. Setting a prop still writes its attribute synchronously —
-     * it is only the rendering that waits.
+     * Renders are collected into one microtask, so `a = 1; b = 2` is one render
+     * and not two. Setting a prop still writes its attribute right away. Only the
+     * rendering waits.
      */
     schedule() {
       if (this.#pending) return;
@@ -952,9 +952,9 @@ export function defineComponent(def, init) {
         this.#paint();
       } else if (!this.#bound) {
         // Server-rendered: the markup is already right, so this only has to
-        // find the nodes each expression owns. Once — moving an element in the
-        // document reconnects it, and binding a second time would split an
-        // already-split text node down the middle.
+        // find the nodes each expression owns. Once only. Moving an element in
+        // the document reconnects it, and binding a second time would split an
+        // already split text node down the middle.
         this.#adopt();
       }
       // Runs on every connect, not just the first: moving an element in the DOM
@@ -1007,7 +1007,7 @@ export function defineComponent(def, init) {
     }
 
     /** What the template sees: state first, so a prop of the same name cannot
-     *  be shadowed by one — the compiler rejects that collision anyway. */
+     *  be hidden by one. The compiler rejects that clash anyway. */
     #data(raw) {
       this.#was = { ...stateOf(this, def.stateDefs) };
       return { ...this.#was, ...def.coerce(raw) };

@@ -1,7 +1,7 @@
 // Cookies, on the two things a loader already has: `ctx.request` to read and
 // `ctx.response.headers` to write.
 //
-// The server has no platform cookie API — `document.cookie` is the browser's, and
+// The server has no built-in cookie API. `document.cookie` is the browser's, and
 // on this side there is only a header to parse and a header to format. So this is
 // the one place the framework has to supply something rather than point at the
 // platform. The parsing and formatting are Hono's, which are already a dependency
@@ -14,9 +14,9 @@ import { parse, parseSigned, serialize, serializeSigned } from 'hono/utils/cooki
  * `set` appends rather than replaces: two cookies are two `Set-Cookie` headers,
  * and `Headers.set` would throw the first one away.
  *
- * `secret` comes from the config, which is the app's file — so where it comes
- * from (an env var, a secret manager) is the app's decision and not a framework
- * one. Without it, signing is an error rather than a silent downgrade to
+ * `secret` comes from the config, which is the app's file, so where it comes from,
+ * whether an env var or a secret manager, is the app's decision and not the
+ * framework's. Without it, signing is an error rather than a silent downgrade to
  * unsigned, because a signature nobody checks is worse than none.
  */
 export function cookiesOf(request, response, secret = null) {
@@ -27,7 +27,7 @@ export function cookiesOf(request, response, secret = null) {
   const requireSecret = (what) => {
     if (secret) return secret;
     throw new Error(
-      `[html-first] ${what} needs a secret — set \`cookieSecret\` in ` +
+      `[html-first] ${what} needs a secret. Set \`cookieSecret\` in ` +
         `html-first.config.js (read it from the environment there, not from a literal)`,
     );
   };
@@ -54,7 +54,7 @@ export function cookiesOf(request, response, secret = null) {
     },
 
     /**
-     * Expiry in the past is how a cookie is removed — there is no delete verb.
+     * Expiry in the past is how a cookie is removed. There is no delete verb.
      * The path has to match the one it was set with or the browser keeps it.
      */
     delete(name, options = {}) {
@@ -67,13 +67,13 @@ export function cookiesOf(request, response, secret = null) {
      * it, keep the rest on the server.
      *
      * Async because verifying is a crypto operation. A tampered or unsigned
-     * value reads as undefined rather than throwing — it is untrusted input, and
+     * value reads as undefined rather than throwing. It is untrusted input, and
      * "no valid cookie" is the honest answer.
      *
      * Hono reports absent and present-but-forged differently: a missing name is a
-     * missing key, a bad signature is `false`. Both mean the same thing here —
-     * there is nothing the caller can trust — and collapsing them is what keeps
-     * `?? fallback` doing what it looks like it does.
+     * missing key, a bad signature is `false`. Both mean the same thing here,
+     * that there is nothing the caller can trust, and turning them into one value
+     * is what keeps `?? fallback` doing what it looks like it does.
      */
     signed: {
       async get(name) {
@@ -104,8 +104,8 @@ export function cookiesOf(request, response, secret = null) {
  * Defaults worth having rather than defaults the spec gives you. A cookie with
  * no `Path` is scoped to the current directory, which is almost never what was
  * meant; without `HttpOnly` a script can read a session id; and `SameSite=Lax`
- * is what stops it riding along on a cross-site request — the same hole CSRF
- * protection closes from the other side.
+ * is what stops it riding along on a cross-site request. That is the same hole
+ * CSRF protection closes from the other side.
  */
 function withDefaults(options) {
   return { path: '/', httpOnly: true, sameSite: 'Lax', ...options };

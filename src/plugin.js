@@ -35,8 +35,8 @@ export default function htmlFirst({
   fragmentParam = 'fragment',
 } = {}) {
   // Fragment routing on means markup can arrive after the page did, from any
-  // route — so every page carries the loader that defines what shows up. Off,
-  // and a page ships exactly what it renders, which is the content-site case.
+  // route, so every page carries the loader that defines what shows up. With it
+  // off, a page ships exactly what it renders, which is the content-site case.
   const watchElements = Boolean(fragmentParam);
   let root;
   let app;
@@ -64,25 +64,25 @@ export default function htmlFirst({
         .map((route) => [route.id, route]),
     );
     endpoints = new Map(scanned.endpoints.map((route) => [route.id, route]));
-    // A dash keeps these valid custom element names — which is what makes a
-    // partial an *undefined* custom element rather than an unknown one, and what
-    // lets its styles be scoped to its own tag with no class or hash.
+    // A dash keeps these valid custom element names. That is what makes a partial
+    // an undefined custom element rather than an unknown one, and what lets its
+    // styles be scoped to its own tag with no class or hash.
     for (const tag of [...components.keys()]) {
       if (!tag.includes('-')) {
         components.delete(tag);
-        console.warn(`[html-first] ignoring ${tag}.html — element names need a dash`);
+        console.warn(`[html-first] ignoring ${tag}.html. Element names need a dash`);
       }
     }
 
     shadowTags = new Set([...shadow.keys()].filter((tag) => components.has(tag)));
 
-    // One tag, one meaning — otherwise the component silently wins and the
-    // partial never renders.
+    // One tag, one meaning. Otherwise the component wins and the partial never
+    // renders, with nothing said.
     for (const tag of shadow.keys()) {
       if (!light.has(tag)) continue;
       throw new Error(
         `[html-first] <${tag}> is both a component and a partial ` +
-          `(${componentsDir}/${tag}.html and ${partialsDir}/${tag}.html) — rename one`,
+          `(${componentsDir}/${tag}.html and ${partialsDir}/${tag}.html). Rename one`,
       );
     }
 
@@ -121,8 +121,8 @@ export default function htmlFirst({
       }
     }
 
-    // A light element with no script has nothing to define — it is markup that
-    // was already rendered. A shadow one registers so it can re-render.
+    // A light element with no script has nothing to define. It is markup that was
+    // already rendered. A shadow one registers so it can re-render.
     return [...out]
       .filter((tag) => {
         if (shadowTags.has(tag)) return true;
@@ -162,9 +162,9 @@ export default function htmlFirst({
       // Asked by the dev server and by the build, which is the point: two copies
       // of this rule is two servers that disagree about which pages ship JS.
       //
-      // Elements to define or script to run, and otherwise nothing at all —
-      // except with fragments on, where any page can be swapped into and needs
-      // the loader that defines whatever arrives.
+      // Elements to define or script to run, and otherwise nothing at all. The
+      // exception is fragments, where any page can be swapped into and needs the
+      // loader that defines whatever arrives.
       needed: watchElements || tags.length > 0 || hasScript,
     };
   };
@@ -191,8 +191,8 @@ export default function htmlFirst({
             params: route.params,
             client: clientManifest(route),
           })),
-          // No client entry, no prerendering, no layouts — an endpoint is a
-          // route and nothing else.
+          // No client entry, no prerendering, no layouts. An endpoint is a route
+          // and nothing else.
           endpoints: scanned.endpoints.map((route) => ({
             id: route.id,
             pattern: route.pattern,
@@ -260,7 +260,7 @@ export default function htmlFirst({
         const hasMiddleware = fs.existsSync(serverFile);
         const specifier = '/' + path.relative(root, serverFile).split(path.sep).join('/');
 
-        // An endpoint is already a module. It needs no compiling — only pulling
+        // An endpoint is already a module. It needs no compiling, only pulling
         // into the same graph, so production reads it from `dist` like everything
         // else rather than importing app source at runtime.
         const apiIds = [...endpoints.keys()];
@@ -448,8 +448,8 @@ function read(file) {
   return fs.readFileSync(file, 'utf8');
 }
 
-// A broken file should not take the whole type pass down with it — the module
-// load for that file will report the real error.
+// A broken file should not take the whole type pass down with it. The module load
+// for that file will report the real error.
 function safely(fn) {
   try {
     return fn();

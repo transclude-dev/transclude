@@ -19,7 +19,7 @@ const manifest = () => JSON.parse(read('routes.json'));
 
 /**
  * A page left to the server has no file to read, so the assertions about its
- * output render it the way the server does — same bundle, same entry point.
+ * output render it the way the server does: same bundle, same entry point.
  * Nothing about the compiler's output differs between the two paths; what
  * differs is that this one can see the request.
  */
@@ -93,7 +93,7 @@ describe('layout chrome and layout data are baked in', () => {
 });
 
 describe('the page title beats the layout title in built output', () => {
-  assert.match(home, /<title>Single-file components — html-first spike<\/title>/);
+  assert.match(home, /<title>Single-file components · html-first<\/title>/);
   assert.match(read('static/404.html'), /<title>Not found<\/title>/);
 });
 
@@ -121,7 +121,7 @@ describe('the site stylesheet is one hashed, cacheable file', () => {
   const html = home;
   const links = html.match(/<link[^>]+stylesheet[^>]*>/g) ?? [];
 
-  assert.equal(links.length, 1, 'exactly one — it is shared by every page');
+  assert.equal(links.length, 1, 'exactly one, shared by every page');
   assert.match(links[0], /href="\/assets\/[^"]+-[A-Za-z0-9_-]{8}\.css"/);
 
   // Everything the compiler produces still travels inline: no second request.
@@ -222,7 +222,7 @@ describe('a mutation answers with a redirect, so a reload repeats a GET', async 
   assert.ok(result instanceof Response, 'a rendered page here means reload re-submits');
   assert.equal(result.status, 303, '303 turns the POST into a GET; 302 may not');
   // A clean URL. The message used to ride here as `?added=…`, which meant any GET
-  // of that URL claimed a note had been added — see the flash tests below.
+  // of that URL claimed a note had been added. See the flash tests below.
   assert.match(result.headers.get('location') ?? '', /\/notes$/);
 });
 
@@ -247,7 +247,7 @@ describe('a fragment caller gets markup back, never a redirect', async () => {
 
 describe('500.html is prerendered to a file, like the not-found page', () => {
   // It renders when something is already broken, so it must not need a loader, a
-  // database, or a request — anything that can also be broken.
+  // database, or a request. Anything that can also be broken.
   assert.ok(fs.existsSync(path.join(dist, 'static/500.html')));
   assert.match(read('static/500.html'), /<title>Something broke<\/title>/);
 });
@@ -261,7 +261,7 @@ describe('the error page is in the manifest so the server can find it', () => {
 //
 // Reported: after a server restart and a reload, the page said "Added This is a
 // test" for a note that was never added and did not exist. The message was in the
-// URL — `?added=x` — which is replayable, shareable, and outlives the thing it
+// URL, as `?added=x`, which can be replayed and shared and outlives the thing it
 // describes.
 
 describe('a successful mutation redirects to a clean URL', async () => {

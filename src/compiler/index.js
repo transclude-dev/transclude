@@ -43,8 +43,8 @@ export function splitBlocks(source) {
       else if (attrs.has('properties')) out.properties = block;
       else if (attrs.has('props')) {
         throw new CompileError(
-          '`<script props>` is now `<script properties>` — a property is what the ' +
-            'platform calls it, and what the element actually gets.',
+          '`<script props>` is now `<script properties>`. A property is what the ' +
+            'platform calls it, and what the element gets.',
           node,
         );
       }
@@ -53,16 +53,16 @@ export function splitBlocks(source) {
       else if (attrs.has('element')) {
         throw new CompileError(
           '`<script element>` is gone. Move its members into `<script>` as ' +
-            '`export const prototype = { … }` — the same object, next to the code that uses it.',
+            '`export const prototype = { … }`. The same object, next to the code that uses it.',
           node,
         );
       }
       // `<script state>` is the component's own, not in the document.
       else if (attrs.has('state')) out.state = block;
       // `<script head>` is emitted verbatim into <head>, ahead of everything
-      // else. Some things have to run before the body parses — a theme applied
-      // before first paint, or a `pagereveal` listener, which fires too early
-      // for any script in the body to see.
+      // else. Some things have to run before the body parses: a theme applied
+      // before first paint, or a `pagereveal` listener, which fires too early for
+      // any script in the body to see.
       else if (attrs.has('head')) out.head.push({ ...block, attrs: node.attrs ?? [] });
       else out.client.push(block);
       continue;
@@ -83,7 +83,7 @@ export function splitBlocks(source) {
 
 /**
  * Compiles a partial or a component. Which one it is comes from the directory it
- * lives in — one declaration, in one place, visible in the file tree.
+ * lives in. One decision, in one place, visible in the file tree.
  *
  * A partial is light DOM: styles scoped with `@scope`, markup inline, page CSS
  * reaching it, form controls and label references working because there is no
@@ -158,7 +158,7 @@ export function compileComponent(
   if (stray) {
     throw new CompileError(
       shadow
-        ? `<${tag}> is a component, so its shadow root is already implied — drop the ` +
+        ? `<${tag}> is a component, so it already has a shadow root. Drop the ` +
           `<template shadowrootmode> wrapper and write the markup directly`
         : `<${tag}> is a partial and has no shadow root. Move it to the components ` +
           `directory if it needs one.`,
@@ -212,9 +212,9 @@ ${client.body}
 }
 
 // Defining an element defines what it renders. A page's entry lists the whole
-// closure up front for first paint, but an element that arrives on its own — in
-// a fragment, found by the element watcher — has only itself to start from, and
-// a shadow root it paints is out of reach of anything watching the document.
+// set up front for first paint. An element that arrives on its own, in a fragment
+// found by the element watcher, has only itself to start from, and a shadow root
+// it paints is out of reach of anything watching the document.
 //
 // The flag is for the cycle: an element may render itself.
 let __defined = false;
@@ -322,7 +322,7 @@ export function compileLayout(source, { id, components = new Map(), shadowTags =
 
   const warnings = [...template.warnings];
   if (!/__slots\[/.test(template.body)) {
-    warnings.push('no <slot> — nothing rendered inside this layout would ever appear');
+    warnings.push('no <slot>, so nothing rendered inside this layout would appear');
   }
 
   const code = `
@@ -365,7 +365,7 @@ export default { css, headScript, elements, hasTitle, load, renderTitle, renderH
 }
 
 /**
- * Wraps a light element's styles in `@scope`, rooted at its own tag — a custom
+ * Wraps a light element's styles in `@scope`, rooted at its own tag. A custom
  * element name is already a valid selector, so nothing has to be hashed.
  *
  * The `to` clause is the donut: styles stop at any light element nested inside,
@@ -378,7 +378,7 @@ export function scopeCss(css, tag, nested = []) {
   return `@scope (${tag})${limit} {\n${indented}\n}`;
 }
 
-/** Component tags a template actually uses — the basis for shipping only those. */
+/** Component tags a template uses. This is how only those get shipped. */
 export function usedComponents(source, registry) {
   const found = new Set();
 
@@ -397,7 +397,7 @@ export function usedComponents(source, registry) {
 /**
  * Browser entry: define every component, then run the page's own client code.
  * This one is a real module, so the client block keeps its imports and may use
- * top-level await — it only gets validated, not rewritten.
+ * top-level await. It is only checked, not rewritten.
  *
  * `elements` adds the loader for everything else: the page's own tags are
  * imported statically and defined before first paint, and any other tag in the
@@ -409,8 +409,8 @@ export function compileClientEntry(sources, { tags = [] } = {}, { runtime, eleme
     assertModule(splitBlocks(source).client, `${filename} <script>`),
   );
 
-  // Markup can arrive after the page did — from a swapper this framework does
-  // not provide — and whatever it names has to be able to define itself.
+  // Markup can arrive after the page did, from something this framework does not
+  // provide, and whatever it names has to be able to define itself.
   const imports = elements
     ? `import { watch as __watch } from ${JSON.stringify(runtime)};\n` +
       `import { elements as __elements } from ${JSON.stringify(ELEMENTS_ENTRY)};`
@@ -453,8 +453,8 @@ export function compileElementsEntry(tags) {
 
 /**
  * `bind` finds the node behind every expression the compiler could place, once;
- * `update` writes to them. `volatile` is the honest part: prop names whose
- * change needs a full repaint because nothing here can reach them.
+ * `update` writes to them. `volatile` is the list of prop names whose change needs
+ * a full repaint, because nothing here can reach them.
  *
  * A partial gets the same shape with nothing in it, so the runtime does not
  * have to ask whether it exists.
@@ -506,8 +506,8 @@ function objectKeys(defaultNode) {
 }
 
 /**
- * Props and state share one namespace in the template — `${open}` cannot say
- * which it meant — so a name can only belong to one of them.
+ * Props and state share one set of names in the template. `${open}` cannot say
+ * which one it meant, so a name can only belong to one of them.
  */
 function assertDistinct(propsNode, stateNode, tag) {
   const declared = new Set(objectKeys(propsNode));
@@ -530,7 +530,7 @@ function assertNoLifecycle(defaultNode, label) {
     const name = prop.key.type === 'Identifier' ? prop.key.name : String(prop.key.value);
     const advice = RESERVED_LIFECYCLE[name];
     if (advice) {
-      throw new CompileError(`${label}: \`${name}\` is the framework's — ${advice}`, prop);
+      throw new CompileError(`${label}: \`${name}\` belongs to the framework. ${advice}`, prop);
     }
   }
 }
@@ -541,9 +541,9 @@ function escapeRegExp(text) {
 
 /**
  * A prop nobody reads is usually a rename that only got half done. A prop can
- * legitimately never appear in the template — `compact` drives `:host([compact])`
- * in CSS and is toggled from the client block — so a plain word match against
- * <style> and <script> is what keeps this quiet enough to leave on.
+ * fairly never appear in the template. `compact` drives `:host([compact])` in CSS
+ * and is toggled from the client block. So a plain word match against <style> and
+ * <script> is what keeps this quiet enough to leave on.
  */
 function unusedProps(defaultNode, reads, blocks) {
   if (defaultNode?.type !== 'ObjectExpression') return [];
@@ -562,7 +562,7 @@ function unusedProps(defaultNode, reads, blocks) {
     .filter((name) => !new RegExp(`\\b${escapeRegExp(name)}\\b`).test(elsewhere))
     .map(
       (name) =>
-        `prop \`${name}\` is declared but never used — it is not read in the template, ` +
+        `prop \`${name}\` is declared but never used. It is not read in the template, ` +
         `and does not appear in <style> or <script>`,
     );
 }
@@ -581,9 +581,9 @@ function layoutImports(layouts) {
 
 /**
  * `defines` pulls each nested element's `define` in alongside its def, so a
- * component can register the elements it renders. Only a component needs that —
- * a page or layout never renders itself into a document that has not already
- * loaded its entry.
+ * component can register the elements it renders. Only a component needs that. A
+ * page or layout never renders itself into a document that has not already loaded
+ * its entry.
  */
 function componentImports(used, { defines = false } = {}) {
   return used
@@ -681,8 +681,8 @@ function blockOf(node) {
  */
 function slotBodies(template) {
   // A slot this level does not render belongs to one further out, so it is
-  // handed on rather than dropped — otherwise a page could only ever fill a
-  // slot in its nearest layout.
+  // handed on rather than dropped. Without that, a page could only fill a slot in
+  // its nearest layout.
   const consumed = JSON.stringify([...(template.consumed ?? []), 'default']);
   const parts = [
     `  const __pass = new Set(${consumed});`,

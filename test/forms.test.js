@@ -1,8 +1,8 @@
 // A custom element that a <form> submits.
 //
-// The compiler half is here; the part that needs a real form — does the browser
-// count it as a control, does reset work — is in app/routes/check.html, because
-// nothing in Node has an ElementInternals to hand out.
+// The compiler half is here. The part that needs a real form is in
+// app/routes/check.html: whether the browser counts it as a control, and whether
+// reset works. Nothing in Node has an ElementInternals to hand out.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -72,7 +72,7 @@ test('the module exports it and puts it on the def', () => {
 
 test('a component that never mentions it says so rather than leaving it undefined', () => {
   // `def.formAssociated === true` is the runtime check, so a missing value would
-  // work — but an explicit false is what makes the static field explicit too.
+  // work, but writing false is what puts the static field in the output too.
   assert.match(componentOf('<p>x</p>'), /export const formAssociated = false;/);
 });
 
@@ -83,7 +83,7 @@ test('the block is handed internals alongside host, shadow and signal', () => {
   );
 });
 
-test('a light element can be a control too — a shadow root is not required', () => {
+test('a light element can be a control too, no shadow root required', () => {
   const code = componentOf('<script>export const formAssociated = true;</script><p>x</p>', {
     shadow: false,
   });

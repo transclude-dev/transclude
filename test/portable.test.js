@@ -34,7 +34,7 @@ function graphOf(entry) {
 
 test('the core imports nothing from node:', () => {
   // The property that makes it portable. It is one import away from being lost,
-  // and nothing else would notice — the Node server would keep working.
+  // and nothing else would notice. The Node server would keep working.
   const { node } = graphOf(path.join(src, 'app.js'));
   assert.deepEqual(node, [], `node: imports found: ${node.join(', ')}`);
 });
@@ -46,7 +46,7 @@ test('the core reaches only the modules that are also portable', () => {
 
 test('the core touches no Node-only global either', () => {
   // An import is not the only way to depend on a runtime. `Buffer` is a global,
-  // so the graph check above cannot see it — and swapping `TextEncoder` for
+  // so the graph check above cannot see it. Swapping `TextEncoder` for
   // `Buffer.from` broke nothing here, because the tests run on Node.
   const forbidden = /\b(Buffer|process|__dirname|__filename|require)\b/;
   const { files } = graphOf(path.join(src, 'app.js'));
@@ -198,7 +198,7 @@ test('the ETag comes from the injected hash, not from node:crypto', async () => 
 test('a conditional request is answered before anything is compressed', async () => {
   // The body has to be over the floor and the client has to accept an encoding,
   // or compression would not have been attempted either way and this proves
-  // nothing — which is exactly how it passed with the check in the wrong place.
+  // nothing. That is how it passed with the check in the wrong place.
   const long = '<p>' + 'x'.repeat(COMPRESSIBLE_FLOOR * 2) + '</p>';
   let compressed = 0;
   const app = inMemory({
@@ -228,7 +228,7 @@ test('the worker adapter imports nothing from node:', () => {
   const file = path.resolve(src, '../bin/serve.worker.js');
   const source = fs.readFileSync(file, 'utf8');
 
-  assert.doesNotMatch(source, /from 'node:/, 'the whole point is that it cannot');
+  assert.doesNotMatch(source, /from 'node:/, 'this file must not need Node');
   const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   assert.doesNotMatch(code, /\b(Buffer|process|__dirname|require)\b/);
 });
@@ -244,7 +244,7 @@ test('the worker adapter uses the shared app rather than its own', () => {
 
 test('the worker adapter builds the app per request, not at import', () => {
   // `env` arrives with the request. A secret read at import time is undefined, and
-  // signing then refuses while the variable *is* set — which is what happened.
+  // signing then refuses while the variable is set. That is what happened.
   const source = fs.readFileSync(path.resolve(src, '../bin/serve.worker.js'), 'utf8');
   assert.match(source, /fetch:\s*\(request, env/, 'it never sees env');
   assert.match(source, /env\.COOKIE_SECRET/, 'it does not read config from env');
@@ -252,10 +252,10 @@ test('the worker adapter builds the app per request, not at import', () => {
 
 test('the config never touches `process` at import', () => {
   // The worker build imports this module, and a runtime with no Node
-  // compatibility has no `process` — a bare reference throws before anything runs.
+  // compatibility has no `process`, and a bare reference throws before anything runs.
   const source = fs.readFileSync(path.resolve(src, '../../html-first.config.js'), 'utf8');
-  // Comments are allowed to name it — the one explaining this rule does. Code is
-  // not, and checking the raw text failed on the comment rather than the code.
+  // Comments are allowed to name it, and the one explaining this rule does. Code
+  // is not, and checking the raw text failed on the comment rather than the code.
   const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 
   assert.doesNotMatch(code, /(?<!globalThis\.)\bprocess\.env/);
@@ -297,7 +297,7 @@ test('a header naming something that is not a region is ignored, not a 404', asy
   assert.match(await out.text(), /<p>rendered<\/p>/);
 });
 
-test('an unknown region in the query is still a 404 — that one was typed', async () => {
+test('an unknown region in the query is still a 404, since that one was typed', async () => {
   const out = await htmx().request('http://x/?fragment=not-a-region');
   assert.equal(out.status, 404);
 });

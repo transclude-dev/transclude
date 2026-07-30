@@ -13,8 +13,8 @@ const VOID = new Set([
 const RAW_TEXT = new Set(['script', 'style']);
 
 // Focus, only as far as the runtime needs it: an element can hold it, and
-// removing a node that contains it drops it — which is what an insertBefore
-// move does, and the whole reason the runtime carries focus across one.
+// removing a node that contains it drops it. That is what an insertBefore move
+// does, and why the runtime carries focus across one.
 let focused = null;
 
 class Node {

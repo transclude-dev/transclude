@@ -57,9 +57,9 @@ export function bindDefaultExport(block, name, label) {
  * have to stay at module top level) and everything else is left alone, blanked
  * in place so line and column numbers still line up with the .html file.
  *
- * `lift` names one export that is not setup code — the element's members. It
- * goes to module scope, and so does anything it reads, because a prototype is
- * shared by every instance and the function body is not.
+ * `lift` names one export that is not setup code: the element's members. It goes
+ * to module scope, and so does anything it reads, because a prototype is shared by
+ * every instance and the function body is not.
  */
 export function toFunctionBody(blocks, label, { lift = null, binding = '__members' } = {}) {
   const imports = [];
@@ -71,7 +71,7 @@ export function toFunctionBody(blocks, label, { lift = null, binding = '__member
   for (const block of blocks) {
     const { code, line = 1 } = block;
     // This block becomes a function body, so a top-level `return` is legal here
-    // even though it would not be in a module — that is the cleanup contract.
+    // even though it would not be in a module. That is how cleanup is declared.
     const ast = parseOrThrow(code, label, line, { allowReturnOutsideFunction: true });
     const cuts = [];
 
@@ -113,16 +113,16 @@ export function toFunctionBody(blocks, label, { lift = null, binding = '__member
 
         const flag = booleanExport(statement, 'formAssociated');
         if (flag !== null) {
-          // A static class field, decided once for every element of this tag — so
-          // it has to be a literal. A computed value would read like a per-element
-          // decision and could not be one.
+          // A static class field, decided once for every element of this tag, so
+          // it has to be a literal. A computed value would look like a per-element
+          // choice and could not be one.
           formAssociated = flag;
           cuts.push([statement.start, statement.end]);
           continue;
         }
         if (namesExport(statement, 'formAssociated')) {
           throw new ScriptError(
-            `${label}: \`formAssociated\` must be \`true\` or \`false\` — it becomes a static ` +
+            `${label}: \`formAssociated\` must be \`true\` or \`false\`. It becomes a static ` +
               `class field, the same for every element of this tag, so it cannot be decided at ` +
               `run time (line ${lineOf(statement, code, line)})`,
           );
@@ -171,8 +171,8 @@ function namesExport(statement, name) {
 
 /**
  * The plan for hoisting one named export out of a client block: the statement
- * itself, its initializer, and the top-level declarations it reads — which have
- * to come along, or the hoisted code refers to names that stayed behind.
+ * itself, its initializer, and the top-level declarations it reads. Those have to
+ * come along, or the hoisted code names things that stayed behind.
  *
  * Shared with the shim, which copies the same slices so tsc resolves what the
  * generated module resolves.
@@ -395,7 +395,7 @@ function namedExportsOf(ast, code, lineOffset, label) {
   for (const statement of ast.body) {
     if (statement.type === 'ExportAllDeclaration') {
       throw new ScriptError(
-        `${label}: \`export *\` is not supported here — its names cannot be checked ` +
+        `${label}: \`export *\` is not supported here. Its names cannot be checked ` +
           `against the generated module (line ${lineOf(statement, code, lineOffset)})`,
       );
     }

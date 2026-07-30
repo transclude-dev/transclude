@@ -1,8 +1,8 @@
 // The production app, with nothing in it that names a runtime.
 //
-// Zero `node:` imports, and a test asserts that about the whole import graph —
-// because the moment one appears, this stops working anywhere without a
-// filesystem and nothing else would notice.
+// No `node:` imports, and a test checks that across the whole import graph. The
+// moment one appears, this stops working anywhere without a filesystem, and
+// nothing else would notice.
 //
 // What genuinely differs between runtimes is injected: where bytes come from,
 // how to hash them, whether the runtime can compress. Node reads a disk and uses
@@ -26,7 +26,7 @@ import { cookiesOf } from './cookies.js';
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 const REVALIDATE = 'public, max-age=0, must-revalidate';
 
-/** Below this, framing overhead eats the gain — a 91 byte file gzips to 120. */
+/** Below this, the framing costs more than it saves. A 91 byte file gzips to 120. */
 export const COMPRESSIBLE_FLOOR = 512;
 
 /**
@@ -69,8 +69,8 @@ export function createApp({
 
   /**
    * What every loader, action and endpoint is handed. `request` is the platform's
-   * own `Request` rather than the server's wrapper — the framework should not be
-   * the reason an author learns a router's API to read a form.
+   * own `Request` rather than the server's wrapper. The framework should not be
+   * the reason an author has to learn a router's API to read a form.
    */
   const contextFor = (route, c, extra = {}) => {
     const response = responseOf();
@@ -95,8 +95,8 @@ export function createApp({
   /**
    * The region this request asked for, or undefined for the whole document.
    *
-   * The query parameter is the contract: explicit, addressable, and strict — an
-   * unknown name is a 404, because someone typed it. A header is the opposite:
+   * The query parameter is the agreement. It is written out, it can be linked to,
+   * and it is strict: an unknown name is a 404, because someone typed it. A header is the opposite:
    * clients send `HX-Target` on every request, including the boosted ones that
    * want a whole document, so a name that is not a region is ignored rather than
    * refused. Guessing wrong there would break more than it fixed.
@@ -124,7 +124,7 @@ export function createApp({
    * Fragments and actions come first, and for every route rather than only the
    * dynamic ones: a page whose document was prerendered still has regions worth
    * asking for and mutations worth accepting, and the prerendered handler below
-   * matches on path alone — it would answer either with a static document.
+   * matches on path alone, so it would answer either one with a static document.
    */
   for (const route of manifest.routes ?? []) {
     app.get(route.pattern, async (c, next) => {
@@ -210,11 +210,11 @@ export function createApp({
   /**
    * Every route, not only the ones the build could not enumerate.
    *
-   * A prerendered URL never gets here — the static handler above answered it.
+   * A prerendered URL never gets here. The static handler above answered it.
    * What does get here is a URL the route matches but `paths` never listed:
    * `/people/nobody`. Leaving those to the not-found handler is what made dev and
-   * production disagree — dev matched the route and rendered the page's own "not
-   * found" body with a 200, production answered the 404 page. Now both render the
+   * production disagree. Dev matched the route and rendered the page's own "not
+   * found" body with a 200, while production answered the 404 page. Now both render the
    * page, and the page's loader is what decides the status.
    */
   for (const route of manifest.routes ?? []) {
@@ -273,9 +273,9 @@ export function createApp({
 
   /**
    * A response rendered for this request. There is no prebuilt variant to reach
-   * for, so the ETag is computed here and the body compressed on the way out —
-   * and the conditional check happens first, so a revalidating client pays for a
-   * hash and nothing else.
+   * for, so the ETag is computed here and the body is compressed on the way out.
+   * The conditional check happens first, so a revalidating client pays for a hash
+   * and nothing else.
    *
    * `TextEncoder` rather than `Buffer`: the latter is Node's, and this file is not.
    */

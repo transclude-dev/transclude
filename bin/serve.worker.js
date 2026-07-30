@@ -5,10 +5,10 @@
 // differently from Node:
 //
 //   bytes        no filesystem, so `dist/server/assets.js` is imported instead
-//   hashing      no `node:crypto`, so WebCrypto — which is why `hash` is awaited
+//   hashing      no `node:crypto`, so WebCrypto, which is why `hash` is awaited
 //   compression  none, because the edge does it; `compress: null` says so
 //   public files not a directory, so the same asset map serves them
-//   config       `env` arrives with the request, not with the process — so the app
+//   config       `env` arrives with the request, not with the process, so the app
 //                is built on the first one rather than at import
 //
 // The cost of having no filesystem is that the assets are in the bundle. Identity
@@ -48,8 +48,8 @@ function provider(map) {
 }
 
 /**
- * A synchronous ETag for bytes that are fixed at build time — hashing them with
- * WebCrypto would make building the provider async for no gain. Content length
+ * A synchronous ETag for bytes that are fixed at build time. Hashing them with
+ * WebCrypto would make building the provider async for nothing. Content length
  * plus an FNV-1a pass is a cache key, not a signature.
  */
 function etagOf(bytes) {
@@ -78,8 +78,8 @@ const entry = (page) =>
  * Built once, on the first request, because that is when `env` exists.
  *
  * There is no `process.env` here. A secret read at import time would be undefined
- * and signing would refuse — correctly, and confusingly, since the variable *is*
- * set. Configuration on this runtime arrives with the request.
+ * and signing would refuse. That is correct and confusing at the same time,
+ * because the variable is set. Config on this runtime arrives with the request.
  */
 let app = null;
 
@@ -92,8 +92,8 @@ function appFor(env) {
     middleware,
     statics: provider(statics),
     assets: provider(assets),
-    // A handler rather than a directory. No byte ranges — that is what a
-    // filesystem buys, and this runtime has none.
+    // A handler rather than a directory. No byte ranges, because those need a
+    // filesystem and this runtime has none.
     publicFiles: async (c, next) => {
       const hit = files.get(c.req.path);
       if (!hit) return next();

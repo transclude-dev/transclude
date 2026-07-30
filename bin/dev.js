@@ -1,5 +1,5 @@
-// Hono routes; Vite compiles. The route table is the directory tree — see
-// src/routes.js for the conventions.
+// Hono routes; Vite compiles. The route table is the directory tree. See
+// src/routes.js for the rules.
 
 import fs from 'node:fs';
 import http from 'node:http';
@@ -39,7 +39,7 @@ const PORT = Number(process.env.PORT ?? 5173);
  */
 const cookieSecret = config.cookieSecret ?? randomBytes(32).toString('hex');
 if (!config.cookieSecret) {
-  console.log('[html-first] no cookieSecret — signing with a random one for this process');
+  console.log('[html-first] no cookieSecret, so signing with a random one for this process');
 }
 
 const publicRoot = config.publicDir
@@ -51,15 +51,15 @@ const vite = await createViteServer({
   appType: 'custom',
   server: { middlewareMode: true },
   // Vite would serve these itself, ahead of Hono, and production would serve
-  // them a different way — which is how dev and production come to disagree.
-  // One mechanism instead: `baseApp` mounts Hono's static middleware in both.
+  // them a different way, which is how dev and production come to disagree. One
+  // way instead: `baseApp` mounts Hono's static middleware in both.
   publicDir: false,
 });
 
 /**
  * What every loader and action is handed. `request` is the platform's own
- * `Request` rather than the server's wrapper — the framework should not be the
- * reason an author learns a router's API to read a form.
+ * `Request` rather than the server's wrapper. The framework should not be the
+ * reason an author has to learn a router's API to read a form.
  */
 const contextFor = (route, c, extra = {}) => ({
   url: c.req.url,
@@ -77,7 +77,7 @@ const contextFor = (route, c, extra = {}) => ({
 });
 
 /**
- * The envelope and the cookies that write into it, built together — the cookie
+ * The envelope and the cookies that write into it, built together. The cookie
  * helpers hold the same `response` the server will read, so a `set` in a loader
  * lands on the way out.
  */
@@ -137,9 +137,9 @@ const sendFragment = async (route, c, region, extra = {}) => {
 /**
  * A form submission, or anything else that is not a GET.
  *
- * The action runs first; then the request is answered the same way a GET is —
- * the whole document, or one region if the URL asked for one. That last part is
- * the hypermedia payoff: POST a form to `?fragment=list` and what comes back is
+ * The action runs first, then the request is answered the same way a GET is: the
+ * whole document, or one region if the URL asked for one. That last part is what
+ * regions are for. POST a form to `?fragment=list` and what comes back is
  * the list, already rendered, by the same compiled region the page uses.
  */
 const handleAction = async (route, c) => {
@@ -183,8 +183,8 @@ const serverFile = path.join(root, config.appDir, SERVER_FILE);
  *
  * Invalidated first, and not for tidiness: the watcher below and Vite's own
  * invalidation are separate handlers on the same event, and if this runs before
- * Vite's, `ssrLoadModule` hands back the module as it was. Measured — the first
- * edit was silently ignored and the second appeared to work.
+ * Vite's, `ssrLoadModule` hands back the module as it was. Measured: the first
+ * edit was ignored and the second appeared to work.
  */
 async function loadMiddleware() {
   if (!fs.existsSync(serverFile)) return null;
@@ -220,7 +220,7 @@ async function buildApp() {
 
     // Registered for every route rather than only the ones with an action, so
     // a POST to a page that has none is a 405 with an `Allow` header instead of
-    // the not-found page — the URL exists, the method does not.
+    // the not-found page. The URL exists, the method does not.
     app.on(ACTION_METHODS, route.pattern, async (c) => {
       try {
         return await handleAction(route, c);
@@ -277,7 +277,7 @@ vite.watcher.on('all', async (event, file) => {
     (extension === '.html' || extension === '.js') &&
     event !== 'change';
   // Middleware is registered once when the app is built, so a change to it needs
-  // the app rebuilt — unlike a page, which is loaded per request.
+  // the app rebuilt, unlike a page, which is loaded per request.
   if (!routing && file !== serverFile) return;
   try {
     app = await buildApp();

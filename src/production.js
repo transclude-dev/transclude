@@ -2,8 +2,8 @@
 //
 // `app.js` is the app, and it names no runtime. This file is the four things that
 // do: bytes off a disk, a hash from `node:crypto`, compression from `node:zlib`,
-// and Hono's Node `serveStatic` for the public directory — worth keeping separate
-// because it does byte ranges, which an in-memory map cannot.
+// and Hono's Node `serveStatic` for the public directory. That last one is kept
+// separate because it does byte ranges, which an in-memory map cannot.
 //
 // A runtime with no filesystem writes its own version of this file. It is about
 // thirty lines, and `app.js` does not change.
@@ -26,8 +26,8 @@ export const noBuild = !fs.existsSync(path.join(dist, 'routes.json'));
 
 /**
  * This server reads `dist`, never the source. An edit made since the last build
- * is invisible here, which looks exactly like the edit not working — so say so
- * rather than let it be discovered.
+ * is not visible here, which looks the same as the edit not working, so say so
+ * rather than leave it to be found.
  */
 function newestSource() {
   const roots = [path.join(root, config.appDir), path.join(root, 'framework/src')];
@@ -86,8 +86,8 @@ export const app = createApp({
   statics,
   assets,
   // `serveStatic` joins `root` onto the request path, so it resolves against the
-  // working directory — this file computes from its own location precisely so it
-  // does not depend on where the process was started.
+  // working directory. This file works from its own location so it does not depend
+  // on where the process was started.
   publicFiles: fs.existsSync(publicRoot)
     ? serveStatic({ root: relativeToCwd(publicRoot), precompressed: true })
     : null,

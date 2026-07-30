@@ -1,7 +1,7 @@
 // The custom element half of the runtime: members on the prototype, the
 // updated() hook, and the abort signal.
 //
-// The fake DOM is deliberately tiny. It implements only what defineComponent
+// The fake DOM is small on purpose. It implements only what defineComponent
 // and defineLight actually touch, so a test failing here means the runtime
 // changed, not that the fake fell behind a browser.
 
@@ -273,7 +273,7 @@ test('a light element gets updated() once per connect, since it never repaints',
   });
 });
 
-// ---- surgical updates -----------------------------------------------------
+// ---- updates in place -----------------------------------------------------
 
 const bindingDef = (overrides = {}) => {
   // Stands in for what the compiler emits: one text binding, one attribute.
@@ -599,9 +599,10 @@ test('a property setter writes the attribute through the converter', async () =>
 
 // ---- form association ------------------------------------------------------
 //
-// The browser half — does a <form> count it as a field, does reset work — is in
-// app/routes/check.html, because nothing here has a real form. What *is* worth
-// checking here is the rule for turning a prop into something submittable.
+// The browser half is in app/routes/check.html, because nothing here has a real
+// form. That is where a <form> counting it as a field, and reset working, are
+// checked. What is worth checking here is the rule for turning a prop into
+// something a form can submit.
 
 const controlOf = (overrides = {}) => ({
   ...defOf(overrides),
@@ -612,7 +613,7 @@ const controlOf = (overrides = {}) => ({
 
 test('the static flag is what a form reads to decide it is a control', async () => {
   // Nothing in Node models a form, so this is the only place the flag itself can
-  // be checked here — app/routes/check.html checks the consequence in a browser.
+  // be checked here. app/routes/check.html checks the result in a browser.
   await withDom(async ({ defineComponent }, registry) => {
     defineComponent(controlOf(), null);
     assert.equal(registry.get('x-card').formAssociated, true);
@@ -669,7 +670,7 @@ test('an absent value is reported as null, not as the string "null"', async () =
 });
 
 test('a control with no value prop reports nothing rather than guessing', async () => {
-  // It can still be useful — setValidity is on internals — so this is allowed.
+  // It can still report validity through internals, so this is allowed.
   await withDom(async ({ defineComponent }, registry) => {
     defineComponent({ ...defOf(), formAssociated: true, propDefs: { label: '' } }, null);
     const element = new (registry.get('x-card'))();

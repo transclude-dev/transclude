@@ -1,20 +1,20 @@
 // A second pass over the same parse5 tree the renderer walks, emitting code
 // that *updates* the rendered DOM instead of producing it.
 //
-// The whole point is that nothing has to be discovered at runtime. The compiler
-// already knows where every ${} lands, so a binding is a path — no diffing, no
-// vdom, and the only thing in the served HTML that exists for the client is a
-// pair of comment anchors around each `if` and `each`.
+// Nothing has to be worked out at runtime. The compiler already knows where every
+// ${} lands, so a binding is a path. No diffing, no vdom, and the only thing in
+// the served HTML that exists for the client is a pair of comment anchors around
+// each `if` and `each`.
 //
 // Addressing works in two modes. Where the shape up to a node is known it is
-// `parent.childNodes[i]`. Past a block — whose node count is not knowable at
-// compile time — the walk switches to a cursor stepping sibling by sibling from
-// the block's closing anchor. Both only ever run once: after bind, everything
+// `parent.childNodes[i]`. Past a block, whose node count is not known at compile
+// time, the walk switches to a cursor stepping sibling by sibling from the
+// block's closing anchor. Both only ever run once: after bind, everything
 // is held by reference.
 //
 // A block is not a wall. Each branch of an `if` and the item of an `each` get
 // their own bind/update pair, so a block is re-rendered only when its
-// *structure* changes — a different branch, a new key — and its contents are
+// structure changes, meaning a different branch or a new key. Its contents are
 // written into like anything else. That is what keeps a form field inside an
 // `if` from being destroyed because some text beside it changed.
 //
@@ -125,7 +125,7 @@ class Bindgen {
   }
 
   /**
-   * A directive's value is an expression outright, not an interpolation — so
+   * A directive's value is an expression, not an interpolation, so
    * `if="tags.length"` has no ${} in it and reading it as text finds nothing.
    */
   giveUpAll(node, scope = this.scope) {
@@ -177,7 +177,7 @@ class Bindgen {
   // ---- traversal ----------------------------------------------------------
 
   /**
-   * `at` is either `{ parent, index }` — the shape up to here is known — or
+   * `at` is either `{ parent, index }`, when the shape up to here is known, or
    * `{ parent, from }`, a node expression to start stepping from.
    */
   walk(nodes, at) {
@@ -263,7 +263,7 @@ class Bindgen {
         branch.kind === 'else' ? String(at) : `${this.js(branch.cond)} ? ${at} : ${rest}`,
       '-1',
     );
-    // The condition may read the loop variables, so pick takes them too — the
+    // The condition may read the loop variables, so pick takes them too. The
     // runtime hands every piece of a block the same arguments.
     const outer = this.frame.loopArgs;
     this.parts.push(`__blk${id}.pick = (${['__d', ...outer].join(', ')}) => (${pick});`);
@@ -300,8 +300,8 @@ class Bindgen {
   /**
    * A part is bind/update over a run of nodes starting at a node handed in
    * rather than at a known index. Null where anything inside could not be
-   * bound, which leaves the block re-rendering whole — correct, just not
-   * surgical.
+   * bound, which leaves the block re-rendering as a whole. Still correct, just
+   * less precise.
    */
   emitPart(nodes, extra, scope = new Scope(this.scope), bare = false, loopArgs = []) {
     this.frames.push(new Frame(scope, loopArgs));
@@ -325,9 +325,9 @@ class Bindgen {
   }
 
   /**
-   * A ${} in mixed content is not its own text node — `Hello ${name}!` is one
-   * node reading "Hello Ada!". Both static sides have compile-time known
-   * lengths, so the dynamic middle splits out of it exactly.
+   * A ${} in mixed content is not its own text node. `Hello ${name}!` is one node
+   * reading "Hello Ada!". Both static sides have lengths known at compile time,
+   * so the dynamic middle splits out of it exactly.
    *
    * Two or more of them have no findable boundary between them, so the whole
    * node is rewritten instead. Same result, one node rather than five.
@@ -376,8 +376,8 @@ class Bindgen {
 
     let ref = null;
     // `update` runs long after `bind` returned, so anything it touches has to be
-    // held in the bindings array — a path like `__root.childNodes[0]` means
-    // nothing there.
+    // held in the bindings array. A path like `__root.childNodes[0]` means nothing
+    // there.
     const slotFor = () => {
       if (ref === null) {
         ref = this.next();
@@ -449,8 +449,8 @@ function contentOf(node) {
 /**
  * The child list as the browser will build it: comments are dropped by the
  * renderer, adjacent text runs become one node, and an if/else chain is a
- * single region — including the whitespace between its branches, which the
- * renderer never emits.
+ * single region, including the whitespace between its branches, which the renderer
+ * never emits.
  */
 function renderedChildren(nodes, bare = false) {
   const out = [];

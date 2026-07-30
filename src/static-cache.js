@@ -1,8 +1,8 @@
 // Built output, held in memory with an ETag per representation.
 //
-// The files are immutable for the life of the process — they were produced at
-// build time — so the only reason to touch the disk again is if there are more
-// of them than we are willing to hold.
+// The files never change for the life of the process, because they were produced
+// at build time. The only reason to touch the disk again is if there are more of
+// them than we are willing to hold.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -82,9 +82,9 @@ function read(file) {
   const etag = etagOf(body);
   const encodings = new Map();
 
-  // Each encoding is a distinct representation, so it needs a distinct ETag —
-  // otherwise a shared cache can hand a brotli body to a client that asked for
-  // gzip, and the mismatch is invisible until it fails to decode.
+  // Each encoding is a different set of bytes, so it needs its own ETag. Otherwise
+  // a shared cache can hand a brotli body to a client that asked for gzip, and
+  // nothing shows the mismatch until it fails to decode.
   for (const [encoding, suffix] of [['br', '.br'], ['gzip', '.gz']]) {
     const variant = `${file}${suffix}`;
     if (!fs.existsSync(variant)) continue;

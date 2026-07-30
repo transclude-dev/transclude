@@ -2,7 +2,7 @@
 //
 // A region renders inline as part of its page *and* compiles to a function that
 // renders it alone. One compiled region either way, so a swap cannot drift from
-// the document it replaces part of. The name is the element's id — the word in
+// the document it replaces part of. The name is the element's id, so the word in
 // the URL and the word a swap targets are the same word.
 
 import test from 'node:test';
@@ -42,7 +42,7 @@ test('the directive is stripped, the id is kept', () => {
   assert.match(run(body), /id="results"/);
 });
 
-test('a region renders inline as well — one region, two uses', () => {
+test('a region renders inline as well: one region, two uses', () => {
   const { body, regions } = compile('<p>before</p><ul id="results" fragment><li>a</li></ul>');
   assert.equal(run(body), '<p>before</p><ul id="results"><li>a</li></ul>');
   assert.ok(run(body).includes(run(regions.results)), 'the page contains exactly what the swap sends');
@@ -65,7 +65,7 @@ test('a page with no regions exports an empty map', () => {
 
 // ---- what it refuses ------------------------------------------------------
 
-test('a region needs an id — the id is its name', () => {
+test('a region needs an id, because the id is its name', () => {
   assert.throws(() => compile('<ul fragment><li>a</li></ul>'), /no id/);
 });
 
@@ -127,7 +127,7 @@ test('an unknown region is null, so the caller can say 404', async () => {
   assert.equal(await renderFragment(pageOf(), {}, { region: 'nope' }), null);
 });
 
-test('layout loaders still run — the page reads what they returned', async () => {
+test('layout loaders still run, since the page reads what they returned', async () => {
   // Skipping them would quietly change the data the region renders from.
   const ran = [];
   const page = pageOf({

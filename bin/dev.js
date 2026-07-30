@@ -6,6 +6,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getRequestListener } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
 import { createServer as createViteServer } from 'vite';
 import {
   ACTION_METHODS,
@@ -45,6 +46,13 @@ if (!config.cookieSecret) {
 const publicRoot = config.publicDir
   ? path.join(root, config.appDir, config.publicDir)
   : null;
+
+// The same handler production mounts, over the source directory rather than the
+// copy in dist. Not `precompressed`: nothing has written a .br next to these yet.
+const publicFiles =
+  publicRoot && fs.existsSync(publicRoot)
+    ? serveStatic({ root: path.relative(process.cwd(), publicRoot) || '.' })
+    : null;
 
 const vite = await createViteServer({
   root,
@@ -202,7 +210,7 @@ async function buildApp() {
   const app = baseApp({
     csrf: config.csrf,
     trailingSlash: config.trailingSlash,
-    publicRoot,
+    publicFiles,
     middleware: await loadMiddleware(),
   });
 

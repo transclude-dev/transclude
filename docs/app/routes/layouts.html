@@ -1,0 +1,59 @@
+<title>Layouts · transclude</title>
+<meta name="description" content="_layout.html wraps every route beside and below it." />
+
+<doc-page
+  heading="Layouts"
+  lede="A _layout.html wraps every route in its directory and below. Layouts nest, and each one loads its own data."
+>
+  <pre><code>&lt;script server&gt;
+  export default async ({ route }) =&gt; ({
+    path: route.path,
+  });
+&lt;/script&gt;
+
+&lt;header&gt;
+  &lt;nav&gt;…&lt;/nav&gt;
+&lt;/header&gt;
+
+&lt;main&gt;
+  &lt;slot&gt;&lt;/slot&gt;
+&lt;/main&gt;</code></pre>
+
+  <p>
+    The page renders into <code>&lt;slot&gt;</code>. A layout can offer more than
+    one by naming them.
+  </p>
+
+  <pre><code>&lt;aside&gt;
+  &lt;slot name="aside"&gt;
+    &lt;p&gt;Pages can fill this by declaring a named slot.&lt;/p&gt;
+  &lt;/slot&gt;
+&lt;/aside&gt;</code></pre>
+
+  <h2>A layout can answer the request</h2>
+
+  <p>
+    A layout loader that returns a <code>Response</code> stops the chain, and
+    nothing below it runs. That is what makes a login redirect a layout's job.
+  </p>
+
+  <pre><code>export default async ({ cookies, url }) =&gt; {
+  const session = await cookies.signed.get('session');
+  if (!session) return Response.redirect(new URL('/login', url), 303);
+
+  return { user: await load(session) };
+};</code></pre>
+
+  <doc-note label="Middleware does not run during the build" tone="warn">
+    A page behind a guard needs
+    <code>export const prerender = false</code>, or the build writes a
+    logged-out copy to a file and the guard never sees a request for it.
+  </doc-note>
+
+  <h2>Sharing the response</h2>
+
+  <p>
+    Every loader in the chain holds the same <code>ctx.response</code> object, so
+    a layout that sets a status is setting the one the server will send.
+  </p>
+</doc-page>

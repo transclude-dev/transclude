@@ -1,0 +1,105 @@
+<title>Cookies · transclude</title>
+<meta name="description" content="Read and write cookies, signed or plain." />
+
+<doc-page
+  heading="Cookies"
+  lede="ctx.cookies reads and writes. A signed cookie is one the client can read and cannot forge, which is what makes it usable as a session."
+>
+  <pre><code>export default async ({ cookies }) =&gt; {
+  const theme = cookies.get('theme') ?? 'light';
+  const user = await cookies.signed.get('user');
+
+  return { theme, user };
+};</code></pre>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Call</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>cookies.get(name)</code></td>
+          <td>The value, or <code>undefined</code>.</td>
+        </tr>
+        <tr>
+          <td><code>cookies.set(name, value, options)</code></td>
+          <td>Writes it on the response.</td>
+        </tr>
+        <tr>
+          <td><code>cookies.delete(name)</code></td>
+          <td>Expires it.</td>
+        </tr>
+        <tr>
+          <td><code>cookies.all()</code></td>
+          <td>Every cookie, on an object with a null prototype.</td>
+        </tr>
+        <tr>
+          <td><code>cookies.signed.get(name)</code></td>
+          <td>The value if the signature holds, else <code>undefined</code>.</td>
+        </tr>
+        <tr>
+          <td><code>cookies.signed.set(name, value, options)</code></td>
+          <td>Signs and writes.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Signing</h2>
+
+  <p>
+    <code>cookieSecret</code> in the config is what makes
+    <code>cookies.signed</code> work. Without one it throws rather than quietly
+    writing an unsigned cookie. Read it from the environment; where the secret
+    lives is the app's decision.
+  </p>
+
+  <pre><code>// transclude.config.js
+export default {
+  cookieSecret: globalThis.process?.env?.COOKIE_SECRET ?? null,
+};</code></pre>
+
+  <p>
+    <code>globalThis.process?.env</code>, not <code>process.env</code>: this file
+    is imported by the worker build too, and a runtime with no Node
+    compatibility has no <code>process</code>. A bare reference throws before
+    anything runs.
+  </p>
+
+  <doc-note label="Only dev invents a secret">
+    A fresh clone should run, so the dev server signs with a random value for
+    that process and prints a notice. Production does not. A server that
+    invented one would invalidate every session on restart and share none with a
+    second instance.
+  </doc-note>
+
+  <h2>A forged cookie is not a missing one</h2>
+
+  <p>
+    Absent means no cookie. Present but invalid means somebody changed it.
+    <code>cookies.signed.get</code> turns both into <code>undefined</code>, so
+    <code>?? fallback</code> cannot sail past the second one.
+  </p>
+
+  <h2>A flash message</h2>
+
+  <p>
+    A short-lived signed cookie, read once and then deleted, is the one thing
+    that crosses a redirect exactly once. A message in the URL can be replayed,
+    can be shared, and outlives what it describes.
+  </p>
+
+  <pre><code>const flash = await cookies.signed.get('flash');
+if (flash) cookies.delete('flash');</code></pre>
+
+  <doc-note label="A cookie set beside a redirect survives" tone="warn">
+    <code>Response.redirect()</code> has headers that cannot be changed, so the
+    envelope copies the response to attach anything the action wrote. Under
+    <code>curl -L</code> the cookie arrives on the next request rather than the
+    followed hop, so check a flash in a browser.
+  </doc-note>
+</doc-page>

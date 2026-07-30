@@ -1,0 +1,115 @@
+<title>transclude</title>
+<meta
+  name="description"
+  content="Single-file .html routes, layouts, partials and components. The server renders HTML."
+/>
+
+<style>
+  .pitch {
+    font-family: var(--serif);
+    font-size: 1.35rem;
+    line-height: 1.5;
+    letter-spacing: -0.008em;
+    margin: 0.8rem 0 2rem;
+  }
+
+  .body {
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.68;
+    max-width: var(--measure);
+  }
+  .body p {
+    margin: 0 0 1.1em;
+  }
+
+  .grid {
+    display: grid;
+    gap: 1px;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin: 2.5rem 0;
+    max-width: var(--measure);
+  }
+  .cell {
+    background: var(--ground);
+    padding: 1.1rem 1.2rem;
+  }
+  .cell h2 {
+    margin: 0 0 0.4rem;
+    padding: 0;
+    border: 0;
+    font-size: 0.95rem;
+    letter-spacing: -0.008em;
+  }
+  .cell p {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 0.94rem;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  .next {
+    display: inline-block;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+</style>
+
+<h1>transclude</h1>
+
+<p class="pitch">HTML is the product.</p>
+
+<div class="body">
+  <p>
+    A page is an <code>.html</code> file, the server renders it, and what arrives
+    is markup a browser already knows how to display. Nothing has to run for the
+    page to be correct.
+  </p>
+
+  <p>
+    The directory tree is the route table. A page answers GET, its
+    <code>actions</code> answer POST and the other verbs, and a
+    <code>.js</code> file in the same tree is an endpoint that returns a
+    <code>Response</code>. The server is Hono.
+  </p>
+
+  <p>
+    This site is built with it. Every page here is an <code>.html</code> file in
+    <code>docs/app/routes/</code>.
+  </p>
+</div>
+
+<div class="grid">
+  <div class="cell">
+    <h2>One file is one route</h2>
+    <p>
+      A loader, the markup, the styles and the behavior, in the file the URL
+      names.
+    </p>
+  </div>
+  <div class="cell">
+    <h2>A region is a resource</h2>
+    <p>
+      Any element with an id can be asked for on its own URL, from the same
+      compiled markup.
+    </p>
+  </div>
+  <div class="cell">
+    <h2>Partials before components</h2>
+    <p>
+      A partial has no boundary, page CSS reaches it, and it ships no
+      JavaScript.
+    </p>
+  </div>
+  <div class="cell">
+    <h2>Four runtimes</h2>
+    <p>The same app runs on Node, Bun, Deno and workerd.</p>
+  </div>
+</div>
+
+<a class="next" href="/getting-started">Getting started &rarr;</a>

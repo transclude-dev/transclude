@@ -1,0 +1,86 @@
+<title>The production build · transclude</title>
+<meta name="description" content="What transclude-build writes, and how the server answers with it." />
+
+<doc-page
+  heading="The production build"
+  lede="transclude-build writes dist/. A route with no per-request state is rendered to a file at build time."
+>
+  <pre><code>npm run build
+npm start        # serves dist/ on 3000</code></pre>
+
+  <h2>Prerendering</h2>
+
+  <p>
+    Every static route is rendered to a file. A page that reads the request needs
+    to say so, or the one file written for it becomes the answer to every URL
+    that resolves there.
+  </p>
+
+  <pre><code>export const prerender = false;</code></pre>
+
+  <p>
+    A page reading <code>?q</code>, a page behind a guard, and a page whose data
+    changes are all in that group.
+  </p>
+
+  <h2>Compressed at rest</h2>
+
+  <p>
+    Build output is compressed once, at build time, and each encoding gets its
+    own strong ETag. A revalidating client pays for a hash and nothing else.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>What</th>
+          <th>Cache-Control</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Hashed assets</td>
+          <td><code>public, max-age=31536000, immutable</code></td>
+        </tr>
+        <tr>
+          <td>Prerendered pages</td>
+          <td><code>public, max-age=0, must-revalidate</code></td>
+        </tr>
+        <tr>
+          <td>The 500 page</td>
+          <td><code>no-store</code>, and no ETag</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Public files</h2>
+
+  <p>
+    <code>app/public/</code> is copied to <code>dist/public</code> and served by
+    Hono's static middleware, not from the in-memory cache the build output uses.
+    These files belong to the app, can be large, and can be media. Media needs
+    byte ranges, and the in-memory path answers 200 where a 206 was asked for.
+  </p>
+
+  <h2>Error pages</h2>
+
+  <p>
+    <code>404.html</code> and <code>500.html</code> are prerendered and sent as
+    bytes. They are reached for, not routed to: a page that has to be rendered
+    when a request has already failed can fail too.
+  </p>
+
+  <p>
+    Production logs the throw and sends the 500 page without putting the error in
+    the body. Dev sends the stack instead, which is what you want when you are
+    the one fixing it.
+  </p>
+
+  <doc-note label="Shipping only what is used">
+    A page ships a client entry only if something on it needs one. One rule
+    decides, read by both the dev server and the build, so a page cannot get an
+    entry in one and not the other.
+  </doc-note>
+</doc-page>

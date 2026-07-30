@@ -1,0 +1,21 @@
+{
+  "name": "transclude-docs",
+  "private": true,
+  "type": "module",
+  "description": "The documentation site. An app built against the framework beside it.",
+  "scripts": {
+    "dev": "transclude-dev",
+    "build": "transclude-build",
+    "start": "transclude-serve",
+    "check": "transclude-check",
+    "test": "node --test \"test/**/*.test.js\"",
+    "preview": "npm run build && npm start"
+  },
+  "dependencies": {
+    "transclude": "file:.."
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5"
+  }
+}

@@ -72,7 +72,7 @@ when to merge.
   the same for every element of the tag, so a computed value would look like a
   per-element choice and could not be one. The compiler says so rather than
   accepting it. A light element can opt in too. Being a form control needs no
-  shadow root, and it counts as behaviour for the "nothing to define, so define
+  shadow root, and it counts as behavior for the "nothing to define, so define
   nothing" rule.
 - **`static formAssociated` can only be checked in a browser.** Nothing in Node
   models a form, so setting it to `false` broke no test until one read the flag
@@ -162,7 +162,7 @@ when to merge.
   difference from Node is one argument to `createApp`: bytes (`dist/server/assets.js`
   instead of a disk), hashing (WebCrypto, which is why `hash` is awaited),
   compression (`null`, because the edge does it), public files (a handler over the
-  same map), and config (see below). There is one real difference in behaviour. A worker
+  same map), and config (see below). There is one real difference in behavior. A worker
   serves no byte ranges, so a Range request gets 200 rather than 206, because
   ranges need a filesystem.
 - **On a worker, config arrives with the request, not the process.** There is no

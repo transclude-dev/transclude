@@ -1,0 +1,137 @@
+<title>Configuration · transclude</title>
+<meta name="description" content="Every key in transclude.config.js." />
+
+<doc-page
+  heading="Configuration"
+  lede="transclude.config.js is the whole interface to the framework. Every path it needs is here, and the package names none of its own."
+>
+  <p>
+    An unknown key throws. A misspelled one that was quietly ignored would be a
+    setting that looks applied and is not.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Key</th>
+          <th>Default</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>appDir</code></td>
+          <td><code>'app'</code></td>
+          <td>Where the app lives, relative to the project root.</td>
+        </tr>
+        <tr>
+          <td><code>routesDir</code></td>
+          <td><code>'routes'</code></td>
+          <td>Pages and endpoints. Relative to <code>appDir</code>.</td>
+        </tr>
+        <tr>
+          <td><code>partialsDir</code></td>
+          <td><code>'partials'</code></td>
+          <td>Light DOM reuse.</td>
+        </tr>
+        <tr>
+          <td><code>componentsDir</code></td>
+          <td><code>'components'</code></td>
+          <td>Shadow root reuse.</td>
+        </tr>
+        <tr>
+          <td><code>publicDir</code></td>
+          <td><code>'public'</code></td>
+          <td>
+            Copied as-is to the site root. Relative to <code>appDir</code>, like
+            every other directory key.
+          </td>
+        </tr>
+        <tr>
+          <td><code>stylesheet</code></td>
+          <td>—</td>
+          <td>
+            One global stylesheet, relative to the project root.
+            <code>null</code> for none.
+          </td>
+        </tr>
+        <tr>
+          <td><code>outDir</code></td>
+          <td><code>'dist'</code></td>
+          <td>Where the build writes.</td>
+        </tr>
+        <tr>
+          <td><code>typesFile</code></td>
+          <td>—</td>
+          <td>Where the generated declarations go.</td>
+        </tr>
+        <tr>
+          <td><code>strict</code></td>
+          <td><code>false</code></td>
+          <td>Full TypeScript strictness.</td>
+        </tr>
+        <tr>
+          <td><code>fragmentParam</code></td>
+          <td><code>'fragment'</code></td>
+          <td>
+            The query parameter that asks for a region.
+            <code>null</code> ships no region loader on any page.
+          </td>
+        </tr>
+        <tr>
+          <td><code>fragmentHeader</code></td>
+          <td><code>null</code></td>
+          <td>
+            A request header that may name a region. Setting it adds that header
+            to <code>Vary</code>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>csrf</code></td>
+          <td><code>true</code></td>
+          <td>
+            <code>false</code> to turn it off, or an object passed to
+            <code>hono/csrf</code>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>trailingSlash</code></td>
+          <td><code>'never'</code></td>
+          <td>
+            <code>'never'</code> is strict routing and a 301.
+            <code>'ignore'</code> is the loose router.
+          </td>
+        </tr>
+        <tr>
+          <td><code>cookieSecret</code></td>
+          <td><code>null</code></td>
+          <td>
+            Signs cookies. Without one, <code>cookies.signed</code> throws.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>A whole file</h2>
+
+  <pre><code>export default {
+  appDir: 'app',
+  routesDir: 'routes',
+  componentsDir: 'components',
+  partialsDir: 'partials',
+  publicDir: 'public',
+  stylesheet: 'app/styles/global.css',
+
+  strict: false,
+  fragmentParam: 'fragment',
+  fragmentHeader: null,
+  csrf: true,
+  trailingSlash: 'never',
+  cookieSecret: globalThis.process?.env?.COOKIE_SECRET ?? null,
+
+  outDir: 'dist',
+  typesFile: 'app/transclude-env.d.ts',
+};</code></pre>
+</doc-page>

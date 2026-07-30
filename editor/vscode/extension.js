@@ -18,12 +18,20 @@ function activate(context) {
   const root = folder.uri.fsPath;
   if (!fs.existsSync(path.join(root, 'transclude.config.js'))) return;
 
+  // Installed, the server is in the package. In the framework's own repo it is
+  // beside this file. Try both rather than assume a layout.
+  const server = [
+    path.join(root, 'node_modules/transclude/editor/server.js'),
+    path.join(root, 'editor/server.js'),
+  ].find((file) => fs.existsSync(file));
+  if (!server) return;
+
   client = new LanguageClient(
     'transclude',
     'transclude',
     {
-      run: { module: path.join(root, 'framework/editor/server.js'), transport: TransportKind.stdio },
-      debug: { module: path.join(root, 'framework/editor/server.js'), transport: TransportKind.stdio },
+      run: { module: server, transport: TransportKind.stdio },
+      debug: { module: server, transport: TransportKind.stdio },
     },
     {
       documentSelector: [{ scheme: 'file', language: 'html' }],

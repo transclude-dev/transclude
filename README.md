@@ -1,15 +1,26 @@
 # transclude
 
-One `.html` file is the unit of authorship. It compiles once into three things:
+HTML is the product. A page is an `.html` file, the server renders it, and what
+arrives is markup a browser already knows how to display. Nothing has to run for
+the page to be correct.
 
-- server-rendered markup
-- a declarative shadow root (`<template shadowrootmode="open">`) inlined into it
-- a custom element that adopts that shadow root instead of repainting it
+One `.html` file is the unit of authorship, and the directory tree is the route
+table. A page answers GET. Its `actions` answer POST and the other verbs, so a
+plain `<form method="post">` works. A `.js` file in the same tree is an endpoint
+that returns a `Response`. The server side is built on Hono.
 
-The server side is built on Hono. The directory tree is the route table. A page
-answers GET, its `actions` answer POST and the other verbs, and a `.js` file in the
-same tree is an endpoint that returns a `Response`. Any element in a page can be
-given an id and asked for on its own URL.
+Any element in a page can be given an id and asked for on its own URL. That is
+the hypermedia part: a region of a page is a resource, so a client can ask for
+one piece and swap it in, and the same markup renders inline for a full page
+load. The framework ships nothing that does the swapping. htmx, Turbo or a short
+`fetch` drives it.
+
+Reuse comes in two kinds, and the plain one is the default. A **partial** is
+markup pulled into its caller: no boundary, page CSS reaches it, `<label for>`
+works, and it ships no JavaScript. A **component** gets a shadow root, a real
+`<slot>` and re-renders when its attributes change. Components matter, and they
+are what makes an element that survives being moved around a live page, but they
+are the answer to a narrower question than most pages ask.
 
 The same app runs on Node, Bun, Deno and workerd. A page ships no client
 JavaScript unless it uses a component, and the browser downloads no runtime
@@ -17,39 +28,80 @@ dependencies.
 
 ```
 npm install
-npm run dev     # http://localhost:5173
-npm run build   # -> dist/
-npm start       # http://localhost:3000, serves dist/
-npm run preview # build, then serve. Usually the one you want
-npm run check   # type check every .html and .js route through tsc
-npm test        # 537 tests
-
-npm run start:bun    # same app, Bun
-npm run start:deno   # same app, Deno
-npm run start:worker # same app, workerd via `wrangler dev`
+npm test        # 515 tests
 ```
 
-`COOKIE_SECRET` goes in `.env`. Copy `.env.example`. Without it the dev server
-signs with a random per-process value and says so; production refuses.
+The demo app lives in its own repository and installs this one as a dependency.
+It is where `npm run dev`, `npm run build` and the browser checks live, because
+those need an app to run against.
 
-`/check` is the client half: a page that asserts, in a real browser, the things
-the server cannot. It runs a classic inline script while the page is parsing, before any module
-runs, so it can look at the document before a single component is defined.
+## What a page looks like
 
-All 53 pass in Chrome 150, Safari 26.4 and Firefox 152. The ones that matter
-most:
+```html
+<script server>
+  import { notes } from '../data/notes.js';
 
-| check | why it proves something |
-| --- | --- |
-| the parser attached a real shadow root from the DSD template | asserted with `customElements.get(...) === undefined`, so nothing had upgraded yet |
-| upgrade adopted the shadow root instead of repainting | compares **DOM node identity** across the upgrade, not markup |
-| re-render keeps nested shadow roots alive | swapping `setHTMLUnsafe` for `innerHTML` makes exactly this one fail, with 2 inert `<template>` nodes left behind |
-| a reorder keeps the value, focus and caret in an input | Safari has no `moveBefore`, so it is the browser that runs the fallback path |
+  // Answers GET. Whatever it returns is what the template reads.
+  export default async () => ({ notes: notes.all() });
 
-Open `/check?report` and the run is posted to `/api/checks`, which prints it in
-the server log. That is how the two browsers above were measured: neither can be
-driven from here without setup, since Safari needs "Allow remote automation"
-turned on by hand and Firefox needs geckodriver installed.
+  // Answers everything else. A <form method="post"> reaches this.
+  export const actions = {
+    async post({ request, url }) {
+      notes.add((await request.formData()).get('text'));
+      // 303, so a reload is a GET and does not submit again.
+      return Response.redirect(new URL(url).origin + '/notes', 303);
+    },
+  };
+</script>
+
+<title>Notes</title>
+
+<form method="post">
+  <input name="text" required />
+  <button>Add</button>
+</form>
+
+<!-- An id plus `fragment` makes this a resource: /notes?fragment=list -->
+<ul id="list" fragment>
+  <li each="note of notes">${note.text}</li>
+</ul>
+```
+
+That page works with JavaScript turned off. It also answers
+`GET /notes?fragment=list` with just the `<ul>`, from the same compiled markup,
+so a swap cannot drift from the page it replaces part of.
+
+## Using it in an app
+
+An app is a directory with a `transclude.config.js` in it. That file is the whole
+interface: every path the framework needs is named there, and nothing in the
+package names a path of its own.
+
+```jsonc
+// package.json
+{
+  "dependencies": { "transclude": "^0.1.0" },
+  "scripts": {
+    "dev": "transclude-dev",       // Hono + Vite, http://localhost:5173
+    "build": "transclude-build",   // -> dist/
+    "start": "transclude-serve",   // serves dist/
+    "check": "transclude-check"    // tsc over every .html and .js route
+  }
+}
+```
+
+Bun and Deno run the same built app through their own adapters, which are files
+rather than bins because a bin's shebang would run them under node:
+
+```
+bun node_modules/transclude/bin/serve.bun.js
+deno run -A node_modules/transclude/bin/serve.deno.js
+```
+
+`COOKIE_SECRET` comes from the environment, through the config. Without one the
+dev server signs with a random per-process value and says so. Production refuses,
+because a server that invents its own would issue cookies a second instance
+rejects, and that looks like random logouts rather than a configuration error.
 
 ## The production build
 
@@ -71,13 +123,12 @@ dynamic route has as many as it says it has:
 </script>
 ```
 
-A route with no `paths` export is rendered by the server. The catch-all in this
-repo cannot list its own URLs, so it is the one thing `npm start` still renders
-per request. When every route prerenders, `dist/static` is self-contained and any static
+A route with no `paths` export is rendered by the server. A catch-all cannot list
+its own URLs, so it is the kind of route the server still renders per request. When every route prerenders, `dist/static` is self-contained and any static
 host will serve it; the build says so when that happens.
 
-The prerender pass runs eight pages at a time (`TRANSCLUDE_BUILD_CONCURRENCY`). Rendering
-itself is synchronous, so that alone changes nothing. Loaders wait on I/O, and a
+The prerender pass runs eight pages at a time (`TRANSCLUDE_BUILD_CONCURRENCY`).
+Rendering itself is synchronous, so that alone changes nothing. Loaders wait on I/O, and a
 hundred pages should not mean a hundred waits one after another. A
 page that throws is reported with its URL and fails the build; it does not take
 the other pages down with it.
@@ -164,7 +215,7 @@ app/routes/_layout.html          ->  wraps everything
 app/routes/blog/_layout.html     ->  wraps everything under /blog, inside the root one
 ```
 
-`framework/src/routes.js` is a pure function from directory to manifest; the plugin and the
+`src/routes.js` is a pure function from directory to manifest; the plugin and the
 server both call it, so they cannot disagree about what exists. Routes are sorted
 static, then dynamic, then catch-all, and registered in that order. Matching is
 the same whatever router is underneath. Two files
@@ -261,6 +312,36 @@ Three rules, each of which was a bug first:
   `const badRequest = new Response(...)` works for the first request and then
   answers 200 with a rendered page. Build it in a function.
 
+## Regions
+
+Any element in a page can be addressed on its own.
+
+```html
+<div id="list" fragment>
+  <li each="note of notes">${note.text}</li>
+</div>
+```
+
+```
+GET  /notes?fragment=list   ->  just that <div>
+POST /notes?fragment=list   ->  the action runs, then just that <div>
+GET  /notes                 ->  the whole document, containing it
+```
+
+It compiles twice from the same source: once inline as part of the document, and
+once on its own. The two cannot drift apart. The `id` is the name, so the word in
+the URL and the word in the markup are the same word.
+
+The framework ships no code that swaps a region into a page. A region has a plain
+HTTP URL, and htmx, Turbo, or a short `fetch` can drive it. What the framework does
+ship is the part those tools cannot do for themselves: when a tag appears in the
+DOM that this page never rendered, `watch` imports its definition and `adoptStyles`
+adds its CSS to `<head>` once.
+
+Set `fragmentHeader: 'HX-Target'` and htmx needs no query parameter. It already
+sends the target element's id, which is the same thing as a region name. This is
+off by default, because turning it on adds a header to `Vary`.
+
 ## The response envelope
 
 `ctx.response` is one object, a status and a `Headers`, shared by every loader in
@@ -319,131 +400,55 @@ Returning a `Response` is required. There is no template to fall back to, and a
 handler that returns a plain object has forgotten `Response.json`. The `ctx` is
 type checked like a page's, without the parts only a page has.
 
-## Regions
+## Partials and components
 
-Any element in a page can be addressed on its own.
-
-```html
-<div id="list" fragment>
-  <li each="note of notes">${note.text}</li>
-</div>
-```
+Two directories, because they are two things you reach for at different moments.
+Both resolve by filename with no import line, and both need a dash in the name.
 
 ```
-GET  /notes?fragment=list   ->  just that <div>
-POST /notes?fragment=list   ->  the action runs, then just that <div>
-GET  /notes                 ->  the whole document, containing it
+app/partials/site-note.html     ->  <site-note>    light DOM
+app/components/user-card.html   ->  <user-card>    shadow DOM
 ```
 
-It compiles twice from the same source: once inline as part of the document, and
-once on its own. The two cannot drift apart. The `id` is the name, so the word in
-the URL and the word in the markup are the same word.
+The words are the traditional ones. A partial has always meant "render this
+markup into my context". Statamic, Rails, Blade, Liquid, Twig and Hugo all have
+partials, and all of them take parameters, so props are not what separates the
+two. This is: a partial is inlined into its caller, a component is kept apart
+from it. Elsewhere that is a convention. Here it is a fact about the DOM.
 
-The framework ships no code that swaps a region into a page. A region has a plain
-HTTP URL, and htmx, Turbo, or a short `fetch` can drive it. What the framework does
-ship is the part those tools cannot do for themselves: when a tag appears in the
-DOM that this page never rendered, `watch` imports its definition and `adoptStyles`
-adds its CSS to `<head>` once.
+A **partial** is markup reuse. Styles are scoped to the tag with `@scope` and
+hoisted into `<head>` once; markup renders inline; page CSS reaches it; form
+controls and `<label for>` work because there is no boundary.
 
-Set `fragmentHeader: 'HX-Target'` and htmx needs no query parameter. It already
-sends the target element's id, which is the same thing as a region name. This is
-off by default, because turning it on adds a header to `Vary`.
+A **component** is a widget with its own boundary. It gets a shadow root, a real
+`<slot>`, and re-renders when its attributes change.
 
-## Middleware, and the four defaults
-
-`app/server.js` default-exports a function handed the Hono app before any route is
-registered. Plain Hono, with no wrapper to learn.
-
-```js
-export default function (app) {
-  app.use('/admin/*', basicAuth({ username: 'me', password: process.env.PW }));
-}
-```
-
-The order things are registered in decides how they behave, so it lives in one
-function that both servers call: trailing-slash redirect, CSRF, your middleware,
-public files, then routes. A guard added after the static handler would not cover a
-prerendered page.
-
-Middleware does not run during `npm run build`, so a page behind one needs
-`export const prerender = false` or the build writes a logged-out copy to a file.
-
-Four things the config decides, and the reasoning for each:
-
-| key | default | why |
+| | partial | component |
 | --- | --- | --- |
-| `csrf` | `true` | the whole form story is `<form method="post">`, which a cross-origin page can send. Hono's guard covers exactly that hole; JSON already needs a preflight |
-| `trailingSlash` | `'never'` | one canonical URL. `strict: false` and `trimTrailingSlash` exclude each other, because the loose router strips the slash before any middleware sees it |
-| `publicDir` | `'public'` | served by Hono's `serveStatic`, not the in-memory cache, because these are yours: they can be large and they can be media, which needs byte ranges |
-| `fragmentHeader` | `null` | on widens the cache key, and most apps will not use it |
+| styles | `@scope (tag)`, hoisted once | inline, per instance |
+| page CSS reaches it | yes | no |
+| forms and `<label for>` | work | need `ElementInternals` |
+| `<slot>` | compile-time hole | real, live projection |
+| `<script>` | runs on connect | runs, plus re-render on attribute change |
+| no `<script>` at all | ships no JS | ships no JS |
 
-`compress` and `etag` are not Hono's. The build writes brotli at quality 11 next to
-every file, measured at 70% smaller against gzip's 64%, and `CompressionStream` has
-no brotli at all. Each encoding also gets its own strong ETag, because with
-`Vary: Accept-Encoding` the plain and brotli bodies are different bytes.
+Which rendering a usage gets follows the **child's** own directory, not its
+parent's, so a partial can contain a component and the reverse.
 
-## The same app on four runtimes
+**Reach for a partial first.** A shadow root costs a copy of the stylesheet for
+every instance. `adoptedStyleSheets` is JS-only, so a server render cannot share
+one. Before partials existed here, component CSS was 41% of the home page, and 56%
+of that was the same rules repeated. A boundary is worth that when you hand
+something to a page you do not control. Inside a page you own, you pay it and get
+nothing back.
 
-`src/app.js` has no `node:` imports. A test checks the whole import graph, and a
-second test checks for Node-only globals, because `Buffer` is a global and the graph
-check cannot see it. What differs per runtime is passed in: where bytes come from,
-how to hash them, and whether the runtime can compress.
+**A partial is an undefined custom element, not an unknown one.** The dash makes
+`<site-note>` a valid custom element name, so it is an `HTMLElement` waiting to be
+defined. Define a class for that tag later and every instance upgrades in place,
+with its server-rendered DOM intact.
 
-```
-npm start             Node      fs, node:crypto, node:zlib
-npm run start:bun     Bun       same, and Bun reads .env itself
-npm run start:deno    Deno      same, but needs --env-file
-npm run start:worker  workerd   no filesystem, so bytes come from an emitted module,
-                                  hashing from WebCrypto, compression from the edge
-```
-
-All four answer the same way over ten routes: same 301, same 403 on a forged post,
-same `Set-Cookie`, same 304. There is one difference. A worker cannot serve byte
-ranges, because that needs a filesystem.
-
-Two things only running it revealed:
-
-- Config arrives with the request, not the process. There is no `process.env`, so a
-  secret read at import time is `undefined` and signing refuses. That is correct and
-  confusing at the same time, because the variable is set.
-- Workers has no JSON module type. `routes.json` arrives as a string, and using it
-  as an object gives a route table of `undefined` and a site of 404s that looks like
-  a routing bug.
-
-## A component that a form submits
-
-A custom element in a `<form>` sends nothing by default. One line turns it on:
-
-```html
-<script properties>
-  export default { value: '' };
-</script>
-
-<script>
-  export const formAssociated = true;
-  internals.setValidity({});
-</script>
-```
-
-Declare a `value` prop and the framework does the rest: `attachInternals()`,
-`setFormValue` on every change, and `formResetCallback`, `formDisabledCallback` and
-`formStateRestoreCallback`. `internals` is the fourth thing a `<script>` block gets,
-after `host`, `shadow` and `signal`. A light element can opt in too, because being a
-form control does not need a shadow root.
-
-It has to be a literal. It becomes a `static` class field, which is the same for
-every element of that tag, so a computed value would look like a per-element choice
-and could not be one.
-
-Two details that were wrong at first:
-
-- The value is reported before the render. A form can be submitted between an
-  attribute changing and the microtask that repaints, so what it sends has to match
-  what the attribute already says. It is serialized the same way the attribute is,
-  so objects become JSON rather than `[object Object]`.
-- `formResetCallback` removes the attribute instead of setting it to an empty
-  string. Removing it is what makes the getter fall back to the declared default.
-
+One tag cannot be both. The scan refuses it by name, because the component would
+silently win and the partial would never render.
 
 ## Layouts
 
@@ -625,6 +630,96 @@ is how `import './x.css'` works), but a `<link rel="stylesheet">` sends
 `Accept: text/css` and gets the stylesheet. Editing it swaps the href rather than reloading the page, so it needs no help from
 the framework's own watcher.
 
+## Middleware, and the four defaults
+
+`app/server.js` default-exports a function handed the Hono app before any route is
+registered. Plain Hono, with no wrapper to learn.
+
+```js
+export default function (app) {
+  app.use('/admin/*', basicAuth({ username: 'me', password: process.env.PW }));
+}
+```
+
+The order things are registered in decides how they behave, so it lives in one
+function that both servers call: trailing-slash redirect, CSRF, your middleware,
+public files, then routes. A guard added after the static handler would not cover a
+prerendered page.
+
+Middleware does not run during `npm run build`, so a page behind one needs
+`export const prerender = false` or the build writes a logged-out copy to a file.
+
+Four things the config decides, and the reasoning for each:
+
+| key | default | why |
+| --- | --- | --- |
+| `csrf` | `true` | the whole form story is `<form method="post">`, which a cross-origin page can send. Hono's guard covers exactly that hole; JSON already needs a preflight |
+| `trailingSlash` | `'never'` | one canonical URL. `strict: false` and `trimTrailingSlash` exclude each other, because the loose router strips the slash before any middleware sees it |
+| `publicDir` | `'public'` | served by Hono's `serveStatic`, not the in-memory cache, because these are yours: they can be large and they can be media, which needs byte ranges |
+| `fragmentHeader` | `null` | on widens the cache key, and most apps will not use it |
+
+`compress` and `etag` are not Hono's. The build writes brotli at quality 11 next to
+every file, measured at 70% smaller against gzip's 64%, and `CompressionStream` has
+no brotli at all. Each encoding also gets its own strong ETag, because with
+`Vary: Accept-Encoding` the plain and brotli bodies are different bytes.
+
+## The same app on four runtimes
+
+`src/app.js` has no `node:` imports. A test checks the whole import graph, and a
+second test checks for Node-only globals, because `Buffer` is a global and the graph
+check cannot see it. What differs per runtime is passed in: where bytes come from,
+how to hash them, and whether the runtime can compress.
+
+```
+npm start             Node      fs, node:crypto, node:zlib
+npm run start:bun     Bun       same, and Bun reads .env itself
+npm run start:deno    Deno      same, but needs --env-file
+npm run start:worker  workerd   no filesystem, so bytes come from an emitted module,
+                                  hashing from WebCrypto, compression from the edge
+```
+
+All four answer the same way over ten routes: same 301, same 403 on a forged post,
+same `Set-Cookie`, same 304. There is one difference. A worker cannot serve byte
+ranges, because that needs a filesystem.
+
+Two things only running it revealed:
+
+- Config arrives with the request, not the process. There is no `process.env`, so a
+  secret read at import time is `undefined` and signing refuses. That is correct and
+  confusing at the same time, because the variable is set.
+- Workers has no JSON module type. `routes.json` arrives as a string, and using it
+  as an object gives a route table of `undefined` and a site of 404s that looks like
+  a routing bug.
+
+## Browser checks
+
+Some things can only be answered by a browser, and they live in the demo app
+because they need an app to run against. `/check` is a page of assertions that
+runs a classic inline script while the page is parsing, before any module runs,
+so it can look at the document before a single component is defined.
+
+All 53 pass in Chrome 150, Safari 26.4 and Firefox 152. The ones that prove the
+most:
+
+| check | why it proves something |
+| --- | --- |
+| a region renders the same inline and on its own URL | the swap cannot drift from the page it replaces part of |
+| an adopted partial's styles land before the page's own | so a page still overrides an element it did not render |
+| the parser attached a real shadow root from the DSD template | asserted with `customElements.get(...) === undefined`, so nothing had upgraded yet |
+| upgrade adopted the shadow root instead of repainting | compares DOM node identity across the upgrade, not markup |
+| re-render keeps nested shadow roots alive | swapping `setHTMLUnsafe` for `innerHTML` makes exactly this one fail, with 2 dead `<template>` nodes left behind |
+| a reorder keeps the value, focus and caret in an input | Safari has no `moveBefore`, so it is the browser that runs the fallback path |
+
+Open `/check?report` and the run is posted to an endpoint that prints it in the
+server log. That is how Safari and Firefox were measured: neither can be driven
+from a shell without setup, since Safari needs "Allow remote automation" turned
+on by hand and Firefox needs geckodriver installed. Posting the results needs
+neither.
+
+Separating the two repositories cost this repository its browser coverage. The
+checks still run, but they run in the app, so a change here is not measured in a
+browser until the app is built against it.
+
 ## Giving an element behaviour
 
 A `<script>` block in a partial or a component is its behaviour. `host` and
@@ -702,6 +797,41 @@ already rendered and ships no JavaScript. There is no class, so there are no
 properties.
 Read its attributes directly, or give it a `<script>` if it needs an API.
 
+## A component that a form submits
+
+A custom element in a `<form>` sends nothing by default. One line turns it on:
+
+```html
+<script properties>
+  export default { value: '' };
+</script>
+
+<script>
+  export const formAssociated = true;
+  internals.setValidity({});
+</script>
+```
+
+Declare a `value` prop and the framework does the rest: `attachInternals()`,
+`setFormValue` on every change, and `formResetCallback`, `formDisabledCallback` and
+`formStateRestoreCallback`. `internals` is the fourth thing a `<script>` block gets,
+after `host`, `shadow` and `signal`. A light element can opt in too, because being a
+form control does not need a shadow root.
+
+It has to be a literal. It becomes a `static` class field, which is the same for
+every element of that tag, so a computed value would look like a per-element choice
+and could not be one.
+
+Two details that were wrong at first:
+
+- The value is reported before the render. A form can be submitted between an
+  attribute changing and the microtask that repaints, so what it sends has to match
+  what the attribute already says. It is serialized the same way the attribute is,
+  so objects become JSON rather than `[object Object]`.
+- `formResetCallback` removes the attribute instead of setting it to an empty
+  string. Removing it is what makes the getter fall back to the declared default.
+
+
 ## Something in `<head>`
 
 `<script head>` is emitted verbatim into `<head>`, ahead of the stylesheet:
@@ -715,56 +845,6 @@ Read its attributes directly, or give it a `<script>` if it needs an API.
 For the things that have to run before the body parses: a theme applied before
 first paint, an analytics snippet, a `pagereveal` listener. A `<link>` blocks the
 scripts after it, which is why these go first.
-
-## Partials and components
-
-Two directories, because they are two things you reach for at different moments.
-Both resolve by filename with no import line, and both need a dash in the name.
-
-```
-app/partials/site-note.html     ->  <site-note>    light DOM
-app/components/user-card.html   ->  <user-card>    shadow DOM
-```
-
-The words are the traditional ones. A partial has always meant "render this
-markup into my context". Statamic, Rails, Blade, Liquid, Twig and Hugo all have
-partials, and all of them take parameters, so props are not what separates the
-two. This is: a partial is inlined into its caller, a component is kept apart
-from it. Elsewhere that is a convention. Here it is a fact about the DOM.
-
-A **partial** is markup reuse. Styles are scoped to the tag with `@scope` and
-hoisted into `<head>` once; markup renders inline; page CSS reaches it; form
-controls and `<label for>` work because there is no boundary.
-
-A **component** is a widget with its own boundary. It gets a shadow root, a real
-`<slot>`, and re-renders when its attributes change.
-
-| | partial | component |
-| --- | --- | --- |
-| styles | `@scope (tag)`, hoisted once | inline, per instance |
-| page CSS reaches it | yes | no |
-| forms and `<label for>` | work | need `ElementInternals` |
-| `<slot>` | compile-time hole | real, live projection |
-| `<script>` | runs on connect | runs, plus re-render on attribute change |
-| no `<script>` at all | ships no JS | ships no JS |
-
-Which rendering a usage gets follows the **child's** own directory, not its
-parent's, so a partial can contain a component and the reverse.
-
-**Reach for a partial first.** A shadow root costs a copy of the stylesheet for
-every instance. `adoptedStyleSheets` is JS-only, so a server render cannot share
-one. Before partials existed here, component CSS was 41% of the home page, and 56%
-of that was the same rules repeated. A boundary is worth that when you hand
-something to a page you do not control. Inside a page you own, you pay it and get
-nothing back.
-
-**A partial is an undefined custom element, not an unknown one.** The dash makes
-`<site-note>` a valid custom element name, so it is an `HTMLElement` waiting to be
-defined. Define a class for that tag later and every instance upgrades in place,
-with its server-rendered DOM intact.
-
-One tag cannot be both. The scan refuses it by name, because the component would
-silently win and the partial would never render.
 
 ## Shipping only what is used
 
@@ -880,80 +960,75 @@ file paths. Vite's html middleware would otherwise intercept a request for
 
 ## Layout
 
-Two packages, and one file between them.
+Two repositories. This one is the package. The app is its own, and installs it.
 
-`framework/` is the package `transclude`. The app depends on it by name, through
-`"transclude": "file:./framework"`, so `node_modules/transclude` is a link to it.
-Publishing it is `npm publish` from that directory. Using it from another project
-is `npm install transclude` and a config file.
+```
+package.json               its exports, its bin, its own dependencies
+bin/dev.js                 Hono + Vite middleware, routes from the manifest
+bin/build.js               client bundle, SSR bundle, prerender pass
+bin/serve.js               Node adapter: three lines over src/production.js
+bin/serve.bun.js           Bun adapter
+bin/serve.deno.js          Deno adapter
+bin/check.js               transclude-check
+editor/server.js           language server: diagnostics and hovers, no deps
+editor/vscode/             grammar and extension
+src/plugin.js              Vite plugin, virtual module ids, registries
+src/routes.js              directory tree -> route manifest (pure)
+src/app.js                 the app itself: zero `node:` imports, all injected
+src/production.js          the Node wiring for it: fs, crypto, zlib
+src/worker.js              the wiring a runtime with no filesystem needs
+src/project.js             finds the project root and loads its config
+src/server.js              the Hono app dev and production both start from
+src/cookies.js             read and write, signed or not
+src/document.js            slot folding, head merging, document shell
+src/typecheck.js           in-memory shims, TypeScript language service
+src/compiler/
+  shim.js                  .html -> checkable .js, with source mapping
+  index.js                 block splitting, module assembly
+  codegen.js               parse5 walk -> render function body
+  expr.js                  jsep AST -> JS source, scope chain
+  script.js                acorn rewriting of <script> blocks
+  types.js                 transclude-env.d.ts assembly, from tsc's type strings
+  interp.js                ${...} splitting, quote-aware
+src/runtime/index.js       escape/attr/coerce, shadow(), defineComponent()
+src/static-cache.js        built output in memory, one ETag per representation
+src/negotiate.js           Accept-Encoding parsing, q-values and all
+src/compress.js            build-time brotli and gzip
+src/pool.js                bounded concurrency, order preserving
+test/                      515 tests, and they need no app
+```
+
+The app on the other side of the boundary looks like this:
 
 ```
 transclude.config.js       where the app is. The whole interface
-
-framework/                 the package `transclude`
-  package.json             its exports, its bin, its own dependencies
-  bin/dev.js               Hono + Vite middleware, routes from the manifest
-  bin/build.js             client bundle, SSR bundle, prerender pass
-  bin/serve.js             Node adapter: three lines over src/production.js
-  bin/serve.bun.js         Bun adapter
-  bin/serve.deno.js        Deno adapter
-  bin/check.js             npm run check
-  editor/server.js         language server: diagnostics and hovers, no deps
-  editor/vscode/           grammar and extension
-  src/plugin.js            Vite plugin, virtual module ids, registries
-  src/routes.js            directory tree -> route manifest (pure)
-  src/app.js               the app itself: zero `node:` imports, all injected
-  src/production.js        the Node wiring for it: fs, crypto, zlib
-  src/worker.js            the wiring a runtime with no filesystem needs
-  src/project.js           finds the project root and loads its config
-  src/server.js            the Hono app dev and production both start from
-  src/cookies.js           read and write, signed or not
-  src/document.js          slot folding, head merging, document shell
-  src/typecheck.js         in-memory shims, TypeScript language service
-  src/compiler/
-    shim.js                .html -> checkable .js, with source mapping
-    index.js               block splitting, module assembly
-    codegen.js             parse5 walk -> render function body
-    expr.js                jsep AST -> JS source, scope chain
-    script.js              acorn rewriting of <script> blocks
-    types.js               transclude-env.d.ts assembly, from tsc's type strings
-    interp.js              ${...} splitting, quote-aware
-  src/runtime/index.js     escape/attr/coerce, shadow(), defineComponent()
-  src/static-cache.js      built output in memory, one ETag per representation
-  src/negotiate.js         Accept-Encoding parsing, q-values and all
-  src/compress.js          build-time brotli and gzip
-  src/pool.js              bounded concurrency, order preserving
-  test/                    the framework's own tests
-
-worker.js                  the app's workerd entry, wiring src/worker.js
-test/                      the app's own tests, about the two files above
-
-app/                       the site
+worker.js                  its workerd entry, wiring transclude/worker
+test/                      its own tests, about the two files above
+app/
   routes/                  pages, endpoints, layouts, the 404 and 500
-  server.js                the app's own Hono middleware
+  server.js                its own Hono middleware
   public/                  served as-is at the root: favicon, robots.txt
   partials/                light DOM, @scope styles
   components/              shadow DOM, with their own boundary
   styles/global.css        tokens, reset, base typography. One linked file
-  data/people.js           plain modules the loaders import
-  transclude-env.d.ts      generated by npm run check
+  transclude-env.d.ts      generated by transclude-check
 ```
 
-The boundary holds in both directions, and a test says so. Nothing under `app/`
-names the framework by path. Nothing under `framework/` imports anything above
-itself, and nothing there imports `transclude.config.js`.
+Nothing here imports anything above itself, and nothing here imports
+`transclude.config.js`. A test checks module specifiers for both, reading
+specifiers rather than text so that an error message may still name the config
+file.
 
-Two things used to break that and were the whole of the extraction. Six files
+Two things used to break that and were the whole of the separation. Six files
 imported the config by relative path, and four worked out the project root as two
 directories up from their own location. Both are true only while the framework
 sits inside the app it serves. Installed, two directories up is another package.
 `src/project.js` is the one place that answers either question now: the root comes
 from where the command was run, and the config is loaded from there.
 
-The worker entry moved for the same reason. Every import in it names something the
-app owns, so it is `worker.js` at the project root, and what a worker does
-differently from Node is `transclude/worker`.
-
+The worker entry moved to the app for the same reason. Every import in it names
+something the app owns, so what a worker does differently from Node is
+`transclude/worker` and the wiring is the app's.
 
 ## Script blocks
 
@@ -1103,7 +1178,7 @@ JS. `jsconfig.json` is what makes an editor pick the file up.
 
 ### Editor support
 
-`framework/editor/server.js` is a language server that any LSP-capable editor can
+`editor/server.js` is a language server that any LSP-capable editor can
 run. It is hand-rolled JSON-RPC with no dependencies. It reports diagnostics as you
 type, from the buffer rather than from disk, and answers hovers:
 
@@ -1112,7 +1187,7 @@ hovering ${person} in the template
   (property) person: { slug: string; name: string; … } | null
 ```
 
-`framework/editor/vscode/` adds a TextMate injection grammar that highlights
+`editor/vscode/` adds a TextMate injection grammar that highlights
 `${…}` as JavaScript, colours `each`/`if`/`else-if`/`else` as keywords, and treats
 `<script server>` and `<script properties>` as JS, plus an extension that starts
 the server for any HTML file in the workspace.
@@ -1154,14 +1229,17 @@ Three things that are not type errors, so tsc has no opinion on them:
   needs a shadow root.
 - `@scope` is soft scoping. A partial's styles can be overridden by page CSS of
   equal specificity: a feature for content, a hazard for widgets.
-- Entry scripts live in `bin/` because a `check.js` at the root hides the `/check`
-  route. Vite matches a bare path against root files by extension.
-- `npm run check` is a separate step. The dev server compiles without it, so a
-  type error does not stop a page rendering. It stops `npm run check`.
+- Entry scripts live in `bin/` because a `check.js` at an app's root hides its
+  `/check` route. Vite matches a bare path against root files by extension.
+- `transclude-check` is a separate step. The dev server compiles without it, so a
+  type error does not stop a page rendering. It stops the check.
 - The unused-prop check word-matches `<style>` and `<script>`, so a prop
   mentioned incidentally in either is assumed used.
-- Chrome, Safari and Firefox are measured. Nothing older is, and no mobile
-  browser is. `/check?report` is how to add one.
+- Chrome, Safari and Firefox are measured. Nothing older is, and no mobile browser
+  is. `/check?report` in the demo app is how to add one.
+- The browser checks live in the demo app, so a change here is not measured in a
+  browser until that app is built against it. That is what separating the two
+  repositories cost.
 - In dev, Vite logs `Failed to load url /theme.js` for a `<script head src>` that
   points at a public file. Vite does not own that file, Hono serves it, and the
   browser gets it. The warning is wrong and there is no way to turn it off
@@ -1171,3 +1249,6 @@ Three things that are not type errors, so tsc has no opinion on them:
   the runtime semantics are verified and the platform is not.
 - The demo's notes live in memory and reset on restart. Storage is not the point
   of the demo, but it does mean a restart looks like data loss.
+- Published as version 0.1.0 and installed from a path, not from a registry. The
+  exports map is the public surface and nothing has depended on it from outside
+  one repository yet.

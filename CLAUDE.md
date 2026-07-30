@@ -1,17 +1,29 @@
 # transclude
 
-One `.html` file is the unit of authorship. It compiles once into server markup,
-a declarative shadow root inlined into that markup, and a custom element that
-adopts the shadow root.
+HTML is the product. A page is an `.html` file, the server renders it, and what
+arrives is markup a browser already knows how to display. Nothing has to run for
+the page to be correct.
 
-The server is Hono. The directory tree is the route table. A page answers GET, its
-`actions` answer the other verbs, and a `.js` file in the same tree is an endpoint
-that returns a `Response`. Regions of a page have their own URLs.
+The directory tree is the route table. A page answers GET, its `actions` answer
+POST and the other verbs, and a `.js` file in the same tree is an endpoint that
+returns a `Response`. The server is Hono.
+
+Any element with an id can be asked for on its own URL. That is the hypermedia
+part: a region is a resource, and the same compiled markup serves it inline and
+alone. This framework ships nothing that swaps one in. htmx, Turbo or a short
+`fetch` does that.
+
+Reuse has two kinds and the plain one is the default. A partial is markup pulled
+into its caller: no boundary, page CSS reaches it, `<label for>` works, no
+JavaScript shipped. A component gets a shadow root and re-renders on an attribute
+change. Components matter and are the harder half of the compiler, but they answer
+a narrower question than most pages ask. Reach for a partial first.
 
 The same app runs on Node, Bun, Deno and workerd. The browser downloads no runtime
 dependencies.
 
-`npm test` (node:test) · `npm run check` (tsc over generated shims) · `npm run dev` · `npm run build`
+This repository is the package. The demo app is its own repository and installs
+this one. `npm test` runs 515 tests here and needs no app.
 
 ## House style
 
@@ -20,7 +32,9 @@ cannot. Leave it out otherwise.
 
 Words: short and plain. No jargon. No em dashes. Write so that someone reading
 English as a second language gets it on the first pass. This applies to comments,
-commit messages, the README, and anything else written here.
+commit messages, the README, and anything else written here. `hypermedia`,
+`partial` and `component` are the exceptions: they name things this framework is
+about, so use them and say what they mean the first time.
 
 Tone: declarative. State what is true and stop. Do not sell the design, and do not
 call a decision clever or important.
@@ -30,23 +44,26 @@ when to merge.
 
 ## Layout
 
-- `framework/src/compiler/`. `index.js` splits blocks and assembles the module.
-  `codegen.js` emits render. `bind.js` emits bind and update. `shim.js` emits the
-  JS that tsc checks. `script.js` does every acorn rewrite.
-- `framework/src/runtime/index.js`. Shared by the server render and the browser
-  element.
-- `framework/src/server.js`. The Hono app both servers start from, plus endpoints.
-- `framework/src/production.js`. The built app. `bin/serve.js` (Node),
-  `bin/serve.bun.js` and `bin/serve.deno.js` are adapters that only listen.
-- `framework/src/project.js`. Finds the project root and loads its config. The one
-  place that answers where the app is.
-- `worker.js` and `test/` at the project root belong to the app, not the package.
-- `app/`. The demo. `routes/check.html` is a set of assertions that run in a
-  browser. `app/server.js` is the app's own Hono middleware.
+- `src/compiler/`. `index.js` splits blocks and assembles the module. `codegen.js`
+  emits render. `bind.js` emits bind and update. `shim.js` emits the JS that tsc
+  checks. `script.js` does every acorn rewrite.
+- `src/runtime/index.js`. Shared by the server render and the browser element.
+- `src/server.js`. The Hono app both servers start from, plus endpoints.
+- `src/production.js`. The built app. `bin/serve.js` (Node), `bin/serve.bun.js`
+  and `bin/serve.deno.js` are adapters that only listen.
+- `src/project.js`. Finds the project root and loads its config. The one place
+  that answers where the app is.
+- `test/`. 515 tests. They need no app, and a change that makes them need one is
+  the boundary breaking.
 
 Directory decides kind: `components/` gets a shadow root, `partials/` is light DOM.
 Nothing in the file says which. In `routes/`, extension decides: `.html` is a page,
 `.js` is an endpoint.
+
+The app is a separate repository. It owns `transclude.config.js`, its `worker.js`,
+its own tests, and `app/` with the routes, partials, components and public files.
+The browser checks live there, in `app/routes/check.html`, because they need an
+app to run against.
 
 ## Gotchas
 
@@ -161,13 +178,15 @@ Nothing in the file says which. In `routes/`, extension decides: `.html` is a pa
   every page load. It does exist and Hono serves it. Returning it from a plugin's
   `resolveId` as external does not stop the load, and letting Vite serve the
   public directory is the dev and production split this avoids. Live with it.
-- **`framework/` is the package `transclude`, and nothing in it may import
-  upward.** No `../../` and no `transclude.config.js`. Both were everywhere before:
+- **Nothing here may import upward.** No `../../` and no `transclude.config.js`.
+  Both were everywhere before:
   six files imported the config by relative path and four worked out the root as
   two directories up from themselves. That is true only while the package sits
   inside the app. Installed, two directories up is another package.
   `portable.test.js` checks module specifiers only, because `cookies.js` names the
-  config file in an error message and should.
+  config file in an error message and should. A test that starts needing an app is
+  the same boundary breaking from the other side: `production.js` loads whatever
+  project it runs in, so its test writes a config into a temp directory.
 - **A bin needs `#!/usr/bin/env node`.** Without it npm's `node_modules/.bin` entry
   is handed to the shell, which reads `import fs from 'node:fs';` as a command and
   hangs with no output. It only shows up once the bins are run as bins, which is

@@ -1,16 +1,41 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      read: [
+        `export default async ({ cookies }) => {
+  const theme = cookies.get('theme') ?? 'light';
+  const user = await cookies.signed.get('user');
+
+  return { theme, user };
+};`,
+        'js',
+      ],
+      secret: [
+        `// transclude.config.js
+export default {
+  cookieSecret: globalThis.process?.env?.COOKIE_SECRET ?? null,
+};`,
+        'js',
+      ],
+      flash: [
+        `const flash = await cookies.signed.get('flash');
+if (flash) cookies.delete('flash');`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
 <title>Cookies · transclude</title>
 <meta name="description" content="Read and write cookies, signed or plain." />
 
 <doc-page
   heading="Cookies"
-  lede="ctx.cookies reads and writes. A signed cookie is one the client can read and cannot forge, which is what makes it usable as a session."
+  lede="ctx.cookies reads and writes. A signed cookie can be read by the client and not forged, which is what makes it usable as a session."
 >
-  <pre><code>export default async ({ cookies }) =&gt; {
-  const theme = cookies.get('theme') ?? 'light';
-  const user = await cookies.signed.get('user');
-
-  return { theme, user };
-};</code></pre>
+  ${html(s.read)}
 
   <div class="scroller">
     <table>
@@ -35,7 +60,7 @@
         </tr>
         <tr>
           <td><code>cookies.all()</code></td>
-          <td>Every cookie, on an object with a null prototype.</td>
+          <td>Every cookie, on a null-prototype object.</td>
         </tr>
         <tr>
           <td><code>cookies.signed.get(name)</code></td>
@@ -52,54 +77,42 @@
   <h2>Signing</h2>
 
   <p>
-    <code>cookieSecret</code> in the config is what makes
-    <code>cookies.signed</code> work. Without one it throws rather than quietly
-    writing an unsigned cookie. Read it from the environment; where the secret
-    lives is the app's decision.
+    <code>cookieSecret</code> is what makes <code>cookies.signed</code> work.
+    Without one it throws.
   </p>
 
-  <pre><code>// transclude.config.js
-export default {
-  cookieSecret: globalThis.process?.env?.COOKIE_SECRET ?? null,
-};</code></pre>
+  ${html(s.secret)}
 
   <p>
-    <code>globalThis.process?.env</code>, not <code>process.env</code>: this file
-    is imported by the worker build too, and a runtime with no Node
-    compatibility has no <code>process</code>. A bare reference throws before
+    Use <code>globalThis.process?.env</code>. A runtime with no Node
+    compatibility has no <code>process</code>, and a bare reference throws before
     anything runs.
   </p>
 
   <doc-note label="Only dev invents a secret">
-    A fresh clone should run, so the dev server signs with a random value for
-    that process and prints a notice. Production does not. A server that
-    invented one would invalidate every session on restart and share none with a
-    second instance.
+    The dev server signs with a random value for that process and prints a
+    notice. Production does not.
   </doc-note>
 
   <h2>A forged cookie is not a missing one</h2>
 
   <p>
-    Absent means no cookie. Present but invalid means somebody changed it.
-    <code>cookies.signed.get</code> turns both into <code>undefined</code>, so
-    <code>?? fallback</code> cannot sail past the second one.
+    <code>cookies.signed.get</code> returns <code>undefined</code> for both, so
+    <code>?? fallback</code> cannot slip past a tampered value.
   </p>
 
   <h2>A flash message</h2>
 
   <p>
-    A short-lived signed cookie, read once and then deleted, is the one thing
-    that crosses a redirect exactly once. A message in the URL can be replayed,
-    can be shared, and outlives what it describes.
+    A short-lived signed cookie, read once and then deleted, crosses a redirect
+    exactly once.
   </p>
 
-  <pre><code>const flash = await cookies.signed.get('flash');
-if (flash) cookies.delete('flash');</code></pre>
+  ${html(s.flash)}
 
-  <doc-note label="A cookie set beside a redirect survives" tone="warn">
-    <code>Response.redirect()</code> has headers that cannot be changed, so the
-    envelope copies the response to attach anything the action wrote. Under
-    <code>curl -L</code> the cookie arrives on the next request rather than the
-    followed hop, so check a flash in a browser.
+  <doc-note label="Check a flash in a browser" tone="warn">
+    <code>curl -L</code> does not send a cookie the redirect set on the hop it
+    follows. It arrives on the next request instead, so a flash looks broken
+    under curl and works in practice.
   </doc-note>
 </doc-page>

@@ -12,6 +12,7 @@
     "preview": "npm run build && npm start"
   },
   "dependencies": {
+    "shiki": "^4.3.1",
     "transclude": "file:.."
   },
   "devDependencies": {

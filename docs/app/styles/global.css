@@ -172,6 +172,21 @@ pre code {
   font-size: inherit;
 }
 
+/* Shiki writes both themes as custom properties on every token and sets no
+   color of its own, so the choice is made here. The block keeps the site's
+   surface; only the tokens come from GitHub. */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+}
+
+@media (prefers-color-scheme: dark) {
+  .shiki,
+  .shiki span {
+    color: var(--shiki-dark);
+  }
+}
+
 table {
   border-collapse: collapse;
   width: 100%;

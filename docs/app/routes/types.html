@@ -1,53 +1,55 @@
 <script server>
+  import { all } from '../lib/code.js';
+
   export default async () => ({
     passThrough: 'hx-get="/x?id=${id}"',
+    s: await all({
+      check: ['npm run check', 'shell'],
+      jsdoc: `<script server>
+  /** @param {{ params: { name: string } }} ctx */
+  export default async ({ params }) => {
+    return { name: params.name };
+  };
+<\/script>`,
+    }),
   });
 </script>
 
 <title>Types · transclude</title>
-<meta name="description" content="transclude-check runs tsc over every template and route." />
+<meta name="description" content="transclude-check runs TypeScript over every template and route." />
 
 <doc-page
   heading="Types"
-  lede="transclude-check runs TypeScript over every .html and .js route. Annotations are optional; the checks that matter work without them."
+  lede="transclude-check runs TypeScript over every .html and .js route. Annotations are optional."
 >
-  <pre><code>npm run check</code></pre>
+  ${html(s.check)}
 
   <p>
-    With no annotations at all it still catches a misspelled field in a
-    template, an unknown prop on a component, and a prop given the wrong type.
-    Those come from what the loader returns and what
-    <code>&lt;script properties&gt;</code> declares.
+    With no annotations it still catches a misspelled field in a template, an
+    unknown prop on a component, and a prop given the wrong type.
   </p>
 
   <p>
-    <code>strict: true</code> in the config turns on full TypeScript strictness,
-    which additionally wants a declared type on every parameter.
+    <code>strict: true</code> turns on full TypeScript strictness, which also
+    wants a declared type on every parameter.
   </p>
 
   <h2>Where the types come from</h2>
 
   <ol>
     <li>What the loader's return value infers to.</li>
-    <li>What <code>&lt;script properties&gt;</code> declares for a component.</li>
+    <li>What <code>&lt;script properties&gt;</code> declares.</li>
     <li>JSDoc, where inference is not enough.</li>
   </ol>
 
-  <pre><code>&lt;script server&gt;
-  /** @param {{ params: { name: string } }} ctx */
-  export default async ({ params }) =&gt; {
-    return { name: params.name };
-  };
-&lt;/script&gt;</code></pre>
+  ${html(s.jsdoc)}
 
   <h2>Attributes that are not props</h2>
 
   <p>
     <code>hx-*</code>, <code>data-*</code> and <code>aria-*</code> pass through.
-    They are still checked as expressions, but the claim that the name was
-    declared goes away, so
-    <code>${passThrough}</code> on a component is not a type error for a
-    page that works.
+    They are still checked as expressions, so
+    <code>${passThrough}</code> on a component is not an error.
   </p>
 
   <h2>transclude-env.d.ts</h2>
@@ -55,11 +57,6 @@
   <p>
     Generated from the compiled routes and written where
     <code>typesFile</code> says. It is an output, so it belongs in
-    <code>.gitignore</code> and is rebuilt by <code>transclude-check</code>.
+    <code>.gitignore</code>.
   </p>
-
-  <doc-note label="A parse error is reported directly">
-    A syntax error in a <code>&lt;script&gt;</code> block is reported against the
-    block it is in, with the position mapped back to the source file.
-  </doc-note>
 </doc-page>

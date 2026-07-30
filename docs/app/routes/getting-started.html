@@ -1,24 +1,58 @@
 <script server>
-  // A code sample that shows interpolation cannot be written in the template,
-  // because the compiler would read it as one. It arrives as data instead, and
-  // interpolation escapes, so the markup in it needs no entities.
+  import { all } from '../lib/code.js';
+
   export default async () => ({
     interpolation: '${value}',
-    page: [
-      '<script server>',
-      '  export default async () => ({',
-      "    title: 'Hello',",
-      "    items: ['one', 'two', 'three'],",
-      '  });',
-      '<\/script>',
-      '',
-      '<title>${title}</title>',
-      '',
-      '<h1>${title}</h1>',
-      '<ul>',
-      '  <li each="item of items">${item}</li>',
-      '</ul>',
-    ].join('\n'),
+    s: await all({
+      install: ['npm install transclude', 'shell'],
+      config: [
+        `export default {
+  appDir: 'app',
+  routesDir: 'routes',
+  partialsDir: 'partials',
+  componentsDir: 'components',
+  stylesheet: 'app/styles/global.css',
+  publicDir: 'public',
+  outDir: 'dist',
+};`,
+        'js',
+      ],
+      vite: [
+        `import { defineConfig } from 'vite';
+import transclude from 'transclude';
+import config from './transclude.config.js';
+
+export default defineConfig({
+  appType: 'custom',
+  plugins: [transclude(config)],
+});`,
+        'js',
+      ],
+      page: `<script server>
+  export default async () => ({
+    title: 'Hello',
+    items: ['one', 'two', 'three'],
+  });
+<\/script>
+
+<title>\${title}</title>
+
+<h1>\${title}</h1>
+<ul>
+  <li each="item of items">\${item}</li>
+</ul>`,
+      scripts: [
+        `{
+  "scripts": {
+    "dev": "transclude-dev",
+    "build": "transclude-build",
+    "start": "transclude-serve",
+    "check": "transclude-check"
+  }
+}`,
+        'json',
+      ],
+    }),
   });
 </script>
 
@@ -31,48 +65,24 @@
 >
   <h2>Install</h2>
 
-  <pre><code>npm install transclude</code></pre>
+  ${html(s.install)}
 
-  <p>
-    Vite and TypeScript are peer dependencies, and npm installs them alongside
-    it. Vite builds, and TypeScript is what <code>transclude-check</code> runs
-    over your templates.
-  </p>
+  <p>Vite and TypeScript come with it.</p>
 
   <doc-note label="Declare Vite yourself if you import it">
-    Your <code>vite.config.js</code> imports <code>vite</code>, so a package
-    manager that does not hoist peers will not resolve it. Adding it to your own
-    <code>package.json</code> costs nothing and holds everywhere.
+    Your <code>vite.config.js</code> imports <code>vite</code>. A package manager
+    that does not hoist peer dependencies will not resolve it unless your own
+    <code>package.json</code> names it.
   </doc-note>
 
   <h2>Two files to start</h2>
 
   <p>
-    An app is a directory with a <code>transclude.config.js</code> in it. That
-    file says where everything lives, and it is the whole interface to the
-    framework.
+    An app is a directory with a <code>transclude.config.js</code> in it. It says
+    where everything lives.
   </p>
 
-  <pre><code>// transclude.config.js
-export default {
-  appDir: 'app',
-  routesDir: 'routes',
-  partialsDir: 'partials',
-  componentsDir: 'components',
-  stylesheet: 'app/styles/global.css',
-  publicDir: 'public',
-  outDir: 'dist',
-};</code></pre>
-
-  <pre><code>// vite.config.js
-import { defineConfig } from 'vite';
-import transclude from 'transclude';
-import config from './transclude.config.js';
-
-export default defineConfig({
-  appType: 'custom',
-  plugins: [transclude(config)],
-});</code></pre>
+  ${html(s.config)} ${html(s.vite)}
 
   <h2>A page</h2>
 
@@ -82,18 +92,11 @@ export default defineConfig({
     data the markup reads.
   </p>
 
-  <pre><code>${page}</code></pre>
+  ${html(s.page)}
 
   <h2>Scripts</h2>
 
-  <pre><code>{
-  "scripts": {
-    "dev": "transclude-dev",
-    "build": "transclude-build",
-    "start": "transclude-serve",
-    "check": "transclude-check"
-  }
-}</code></pre>
+  ${html(s.scripts)}
 
   <div class="scroller">
     <table>
@@ -106,11 +109,11 @@ export default defineConfig({
       <tbody>
         <tr>
           <td><code>transclude-dev</code></td>
-          <td>Hono and Vite together, on 5173. Edits appear without a restart.</td>
+          <td>Runs on 5173. Edits appear without a restart.</td>
         </tr>
         <tr>
           <td><code>transclude-build</code></td>
-          <td>Writes <code>dist/</code>. Static routes are rendered to files.</td>
+          <td>Writes <code>dist/</code>.</td>
         </tr>
         <tr>
           <td><code>transclude-serve</code></td>
@@ -118,15 +121,14 @@ export default defineConfig({
         </tr>
         <tr>
           <td><code>transclude-check</code></td>
-          <td>Runs tsc over every template and route.</td>
+          <td>Type-checks every template and route.</td>
         </tr>
       </tbody>
     </table>
   </div>
 
   <doc-note label="Interpolation is escaped">
-    <code>${interpolation}</code> is escaped. To pass markup through on purpose,
-    wrap it in <code>html()</code>, which says at the call site that you meant
-    it.
+    <code>${interpolation}</code> is escaped. Wrap a value in
+    <code>html()</code> to pass markup through.
   </doc-note>
 </doc-page>

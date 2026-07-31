@@ -109,6 +109,15 @@
           <td>Where the build writes.</td>
         </tr>
         <tr>
+          <td><code>feed</code></td>
+          <td><code>false</code></td>
+          <td>
+            <code>{ hostname, title, items }</code> mounts a feed and writes it
+            into the build. See
+            <a href="/feeds">sitemap and feeds</a>.
+          </td>
+        </tr>
+        <tr>
           <td><code>port</code></td>
           <td><code>1960</code></td>
           <td>
@@ -135,8 +144,7 @@
           <td><code>false</code></td>
           <td>
             <code>{ hostname }</code> mounts <code>/sitemap.xml</code> and writes
-            it into the build. Takes <code>entries</code>,
-            <code>exclude</code> and <code>limit</code> too.
+            it into the build. See <a href="/feeds">sitemap and feeds</a>.
           </td>
         </tr>
         <tr>

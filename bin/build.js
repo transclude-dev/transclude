@@ -17,6 +17,7 @@ import { build } from 'vite';
 import transclude from '../src/plugin.js';
 import { loadProject } from '../src/project.js';
 import { absoluteFrom, renderRoute, responseOf } from '../src/document.js';
+import { feed, feedPath } from '../src/feed.js';
 import { sitemap } from '../src/sitemap.js';
 import { loadAssets, loadStatic } from '../src/static-cache.js';
 import { cookiesOf } from '../src/cookies.js';
@@ -229,6 +230,12 @@ const prerendered = outcomes.filter((outcome) => outcome.ok).map((outcome) => ou
 if (config.sitemap) {
   write('sitemap.xml', await sitemap({ routes: manifest.routes }, pages, config.sitemap));
   prerendered.push('/sitemap.xml');
+}
+
+if (config.feed) {
+  const at = feedPath(config.feed);
+  write(at.replace(/^\//, ''), await feed(config.feed));
+  prerendered.push(at);
 }
 
 if (failures.length) {

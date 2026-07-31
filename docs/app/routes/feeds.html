@@ -1,0 +1,140 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      sitemap: [
+        `export default {
+  sitemap: { hostname: 'https://acme.com' },
+};`,
+        'js',
+      ],
+      sitemapEntries: [
+        `import { posts } from './app/lib/posts.js';
+
+export default {
+  sitemap: {
+    hostname: 'https://acme.com',
+    entries: async () =>
+      (await posts()).map((post) => ({ path: \`/posts/\${post.slug}\`, lastmod: post.date })),
+    exclude: ['/admin', /^\\/draft\\//],
+  },
+};`,
+        'js',
+      ],
+      feed: [
+        `import { posts } from './app/lib/posts.js';
+
+export default {
+  feed: {
+    hostname: 'https://acme.com',
+    title: 'Acme',
+    description: 'Latest from Acme.',
+    items: async () =>
+      (await posts()).map((post) => ({
+        title: post.title,
+        path: \`/posts/\${post.slug}\`,
+        date: post.date,
+        description: post.summary,
+      })),
+  },
+};`,
+        'js',
+      ],
+      atom: [
+        `feed: {
+  hostname: 'https://acme.com',
+  title: 'Acme',
+  format: 'atom',
+  author: { name: 'Ada Lovelace' },
+  path: '/atom.xml',
+  items: async () => [],
+}`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
+<title>Sitemap and feeds · transclude</title>
+<meta
+  name="description"
+  content="A sitemap from the route table, and a feed from a list you supply."
+/>
+
+<doc-page
+  heading="Sitemap and feeds"
+  lede="Two files for machines. Both are served by the app and written into the build, so a host that runs none of this still has them."
+>
+  <h2>Sitemap</h2>
+
+  <p>
+    A hostname mounts <code>/sitemap.xml</code>. Every page route with no
+    parameters is listed, and a parameter route is listed as whatever its
+    <code>paths()</code> export names, which is the same list the build
+    prerenders.
+  </p>
+
+  ${html(s.sitemap)}
+
+  <p>
+    A route with no <code>paths()</code> is left out, because the pattern itself
+    is not a URL. Anything else goes in <code>entries</code>, as an array or a
+    function, and <code>exclude</code> takes a path or a pattern.
+  </p>
+
+  ${html(s.sitemapEntries)}
+
+  <p>
+    Past 50,000 URLs the bare path becomes an index and each
+    <code>?p=</code> is a slice of the list. Lower <code>limit</code> to see it
+    on a small site.
+  </p>
+
+  <h2>Feeds</h2>
+
+  <p>
+    A sitemap comes from the route table, because a URL is all it lists. A feed
+    needs a title, a date and something to read, so the items are yours to pass
+    in.
+  </p>
+
+  ${html(s.feed)}
+
+  <p>
+    That mounts <code>/feed.xml</code> as RSS 2.0. Each item needs a
+    <code>title</code> and a <code>path</code>. <code>date</code>,
+    <code>description</code>, <code>content</code> and <code>author</code> are
+    optional, and <code>content</code> is where full HTML goes.
+  </p>
+
+  <p>
+    Items are published newest first and capped at 50. Set <code>limit</code> for
+    a different number.
+  </p>
+
+  <h3>Atom</h3>
+
+  <p>
+    <code>format: 'atom'</code> writes Atom 1.0 instead. The spec requires an
+    author and a date, so the feed needs an <code>author</code> or every item
+    needs its own, and at least one item needs a <code>date</code>.
+  </p>
+
+  ${html(s.atom)}
+
+  <doc-note label="Dates come from the items">
+    Nothing here reads the clock. The feed is stamped from the newest item it
+    holds, so a build that changes nothing writes the same bytes, and a
+    prerendered feed can be compressed once and cached like any other file. A
+    feed whose items have no dates can set <code>updated</code> itself.
+  </doc-note>
+
+  <h2>Where they end up</h2>
+
+  <p>
+    Both are served by the app and both are written into
+    <code>dist/static</code> by the build. A host serving the directory has them
+    without running anything.
+  </p>
+</doc-page>

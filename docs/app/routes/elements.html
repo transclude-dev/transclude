@@ -3,6 +3,39 @@
 
   export default async () => ({
     s: await all({
+      state: `<!-- app/elements/tally-box.html -->
+<script properties>
+  export default {
+    label: 'tally',
+  };
+<\/script>
+
+<script state>
+  export default {
+    n: 0,
+  };
+<\/script>
+
+<output>\${n}</output>
+<span>\${label}</span>
+
+<script>
+  export const prototype = {
+    bump(by = 1) {
+      this.n += by;
+    },
+  };
+
+  host.addEventListener('click', () => host.bump(), { signal });
+<\/script>`,
+      stateUse: `<tally-box label="clicks"></tally-box>
+
+<script type="module">
+  const box = document.querySelector('tally-box');
+  box.n = 10;         // schedules a re-render
+  box.bump();         // 11
+  await box.updateComplete;
+<\/script>`,
       light: `<!-- app/elements/site-note.html -->
 <script properties>
   export default {
@@ -264,6 +297,44 @@
     per element. A <code>prototype</code> member is shared by every element of
     that tag, so it reaches its own element with <code>this</code>. Using
     <code>host</code> in one is a compile error rather than a bug you find later.
+  </doc-note>
+
+  <h2>State</h2>
+
+  <p>
+    A prop comes from the outside and lives in an attribute. State is the
+    element's own, and nothing outside sets it.
+    <code>&lt;script state&gt;</code> declares it, and each element gets its own
+    copy.
+  </p>
+
+  ${html(s.state)}
+
+  <p>
+    Every name becomes a property on the element. Setting one schedules a
+    re-render, the same as changing an attribute does, and
+    <code>updateComplete</code> resolves once it has been written.
+  </p>
+
+  ${html(s.stateUse)}
+
+  <p>
+    The template reads props and state from one namespace, so
+    <code>${'$'}{n}</code> above does not say which it is. Declaring the same
+    name in both blocks is a compile error.
+  </p>
+
+  <p>
+    State renders on the server too. The value in the markup a visitor receives
+    is the default the block declares, so the first paint is not empty and does
+    not change when the element connects.
+  </p>
+
+  <doc-note label="State is not an attribute">
+    Nothing outside the element can set it: not the page's markup, not a parent
+    element, not a URL. Anything a caller has to be able to say belongs in
+    <code>&lt;script properties&gt;</code>. Setting <code>n</code> from the page
+    works only because that is the element's own property, reached from script.
   </doc-note>
 
   <h2>Objects and arrays</h2>

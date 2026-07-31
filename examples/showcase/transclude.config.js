@@ -5,6 +5,9 @@
 export default {
   appDir: 'app',
 
+  // Dev and production both listen here, so this app has one port.
+  port: 1961,
+
   // Relative to appDir. Named rather than assumed so the convention is stated
   // somewhere a reader can find it.
   //

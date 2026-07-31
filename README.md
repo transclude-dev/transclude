@@ -29,7 +29,7 @@ dependencies.
 npm install
 npm test           # 515 tests, and they need no app
 npm run test:examples # the demo's own tests, against a build
-npm run showcase   # the showcase on http://localhost:5173
+npm run showcase   # the showcase on http://localhost:1961
 ```
 
 `examples/showcase` is an app built against this package, the same way any other
@@ -81,7 +81,7 @@ package names a path of its own.
 {
   "dependencies": { "transclude": "^0.1.0" },
   "scripts": {
-    "dev": "transclude-dev",       // Hono + Vite, http://localhost:5173
+    "dev": "transclude-dev",       // Hono + Vite, http://localhost:1960
     "build": "transclude-build",   // -> dist/
     "start": "transclude-serve",   // serves dist/
     "check": "transclude-check"    // tsc over every .html and .js route

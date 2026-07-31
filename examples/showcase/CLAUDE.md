@@ -85,7 +85,7 @@ when to merge.
   to `/api/checks` and the dev server prints them. Neither Safari nor Firefox can
   be driven from a shell without setup: Safari needs "Allow remote automation"
   turned on by hand, and Firefox needs geckodriver installed. Posting the results
-  needs neither, so `open -a Safari 'http://localhost:5173/check?report'` and read
+  needs neither, so `open -a Safari 'http://localhost:1961/check?report'` and read
   the log. It also reports a crash, which is the difference between a browser that
   failed and a browser that never ran the page.
 - **Vite warns about a public file it does not own.** `transformIndexHtml` warms
@@ -99,17 +99,17 @@ when to merge.
   `adoptStyles` looked fine and one browser check failed. Nothing in Node models
   `dataset`, so the whole Node suite passed. The browser checks caught it.
 - **Check that the listener is yours before believing a server test.** Three wrong
-  diagnoses so far. "Something is listening on :3000" is not the check. A server
+  diagnoses so far. "Something is listening on :1961" is not the check. A server
   someone else started, including the person you are helping, in their own browser,
   answers happily and serves an old `dist`, while your own `npm start` dies with
   `EADDRINUSE` into a log you did not read. Kill the port, wait for it to free,
   start, then confirm the listener is younger than the build:
 
   ```sh
-  pid=$(lsof -nP -iTCP:3000 -sTCP:LISTEN -t); [ -n "$pid" ] && kill $pid
-  for i in $(seq 20); do lsof -nP -iTCP:3000 -sTCP:LISTEN -t >/dev/null || break; sleep 0.5; done
+  pid=$(lsof -nP -iTCP:1961 -sTCP:LISTEN -t); [ -n "$pid" ] && kill $pid
+  for i in $(seq 20); do lsof -nP -iTCP:1961 -sTCP:LISTEN -t >/dev/null || break; sleep 0.5; done
   # start it, then:
-  ps -o lstart= -p "$(lsof -nP -iTCP:3000 -sTCP:LISTEN -t)"   # vs. stat -f %Sm dist/server/entry.js
+  ps -o lstart= -p "$(lsof -nP -iTCP:1961 -sTCP:LISTEN -t)"   # vs. stat -f %Sm dist/server/entry.js
   grep -c EADDRINUSE <the server log>                          # must be 0
   ```
 - **A message in the URL is not a flash message.** `?added=x` after a redirect

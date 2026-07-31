@@ -15,6 +15,9 @@ import { htmlAttrsOf, renderRoute, responseOf } from '../src/document.js';
 /** What the browser will compute, from a library that is not the one under test. */
 const expected = (source) => `'sha256-${createHash('sha256').update(source).digest('base64')}'`;
 
+/** Both directives hashed, for the tests that are about the mechanism. */
+const HASH_BOTH = { 'script-src': ["'self'", "'hashes'"], 'style-src': ["'self'", "'hashes'"] };
+
 const doc = (head = '', body = '<p>x</p>') =>
   `<!doctype html>\n<html lang="en">\n<head>\n${head}\n</head>\n<body>\n${body}\n</body>\n</html>\n`;
 
@@ -52,7 +55,7 @@ test('a hash is a real SHA-256, checked against node:crypto', async () => {
 });
 
 test('script hashes and style hashes do not cross', async () => {
-  const policy = await policyFor(doc('<script>a()</script>\n<style>b{}</style>'));
+  const policy = await policyFor(doc('<script>a()</script>\n<style>b{}</style>'), { directives: HASH_BOTH });
   const [, scriptSrc] = policy.match(/script-src ([^;]+)/);
   const [, styleSrc] = policy.match(/style-src ([^;]+)/);
 
@@ -89,6 +92,35 @@ test("`'hashes'` is where a page's own digests go, and only there", async () => 
   });
 
   assert.doesNotMatch(policy, /sha256/, 'a directive that did not ask for them got them');
+});
+
+// ---- inline style attributes ----------------------------------------------
+
+test('the default policy does not block a style attribute', async () => {
+  // The check that was missing. Hashing `<style>` blocks was verified and the
+  // page still looked wrong, because `style="…"` on an element is a different
+  // thing: a hash never covers an attribute. Every shiki token carries one, and
+  // `style="view-transition-name: …"` is ordinary here.
+  const policy = await policyFor(doc('<style>p{}</style>', '<span style="color:red">x</span>'));
+  const [, styleSrc] = policy.match(/style-src ([^;]+)/);
+
+  assert.ok(styleSrc.includes("'unsafe-inline'"), 'style attributes would be blocked');
+  assert.ok(!styleSrc.includes('sha256'), "a hash makes 'unsafe-inline' ignored, allowing nothing");
+});
+
+test('script stays strict while style does not', async () => {
+  const policy = await policyFor(doc('<script>a()</script>'));
+
+  assert.match(policy, /script-src 'self' 'sha256-/);
+  assert.doesNotMatch(policy, /script-src[^;]*unsafe-inline/);
+});
+
+test("style-src can still be hashed by hand, for a page with no style attributes", async () => {
+  const policy = await policyFor(doc('<style>p{}</style>'), {
+    directives: { 'style-src': ["'self'", "'hashes'"] },
+  });
+
+  assert.match(policy, /style-src 'self' 'sha256-/);
 });
 
 // ---- how it is delivered --------------------------------------------------
@@ -153,7 +185,7 @@ const ctxOf = () => ({
 });
 
 test('a rendered page covers its own head script and its own styles', async () => {
-  const html = await renderRoute(pageOf(), ctxOf(), { csp: true });
+  const html = await renderRoute(pageOf(), ctxOf(), { csp: { directives: HASH_BOTH } });
 
   assert.match(html, new RegExp(escape(expected('queueMicrotask(() => {})'))));
   assert.match(html, new RegExp(escape(expected('\np { color: red }\n'))));
@@ -161,8 +193,9 @@ test('a rendered page covers its own head script and its own styles', async () =
 
 test('the hashes match the bytes that shipped, not what we meant to ship', async () => {
   // The one property worth having. Re-hash the document as delivered and check
-  // every block in it is named by the policy.
-  const html = await renderRoute(pageOf(), ctxOf(), { csp: true });
+  // every block in it is named by the policy. Both directives hashed, so this
+  // covers styles as well as scripts.
+  const html = await renderRoute(pageOf(), ctxOf(), { csp: { directives: HASH_BOTH } });
   // The http-equiv one. `<meta name="viewport">` comes first in the document and
   // has a `content` too, which is what a looser match picks up.
   const policy = html.match(/http-equiv="content-security-policy" content="([^"]+)"/)[1];

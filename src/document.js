@@ -22,6 +22,52 @@ export function responseOf() {
 }
 
 /**
+ * Attributes for the `<html>` element, shared by reference the way the response
+ * is. Every loader in the chain holds the same object, so a layout can set the
+ * theme and a page can add to it.
+ *
+ * A null prototype because these are names, and a loader writing `constructor`
+ * should not reach anything.
+ */
+export function htmlAttrsOf() {
+  return { __proto__: null };
+}
+
+/** A name that cannot break out of the tag it is written into. */
+const ATTR_NAME = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+
+// The same four the runtime's `attr` escapes. A quoted value only strictly needs
+// `&` and `"`, but two escapers that disagree is a difference somebody has to
+// hold in their head.
+const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
+
+const escapeAttr = (value) => String(value).replace(/[&<>"]/g, (c) => ESCAPES[c]);
+
+/**
+ * `<html …>`, with `lang` first and whatever a loader added after it.
+ *
+ * Values are escaped, because the reason this exists is putting a preference on
+ * the element, and a preference usually comes from a cookie. `true` writes the
+ * name bare and `false` drops it, the same rule the template compiler uses.
+ */
+function htmlOpenTag(lang, attrs) {
+  const parts = [];
+
+  for (const [name, value] of Object.entries({ lang, ...attrs })) {
+    if (value === false || value === null || value === undefined) continue;
+    if (!ATTR_NAME.test(name)) {
+      throw new Error(
+        `[transclude] \`${name}\` cannot be an attribute on <html>. ` +
+          `Use lowercase letters, digits and dashes.`,
+      );
+    }
+    parts.push(value === true ? name : `${name}="${escapeAttr(value)}"`);
+  }
+
+  return `<html ${parts.join(' ')}>`;
+}
+
+/**
  * Loads a page's chain and renders the document, or returns the `Response` a
  * loader answered with instead.
  *
@@ -46,7 +92,8 @@ export async function renderRoute(page, ctx, options = {}) {
     if (mod !== page) inherited = { ...inherited, ...data };
   }
 
-  return renderDocument(chain, datas, options);
+  // The loaders have run, so whatever they put on `ctx.htmlAttrs` is final.
+  return renderDocument(chain, datas, { ...options, htmlAttrs: ctx.htmlAttrs });
 }
 
 /**
@@ -150,7 +197,11 @@ export function methodsOf(page) {
   return ['GET', ...ACTION_METHODS.filter((method) => typeof page?.[method] === 'function')];
 }
 
-export function renderDocument(chain, datas, { clientEntry, stylesheet, lang = 'en' } = {}) {
+export function renderDocument(
+  chain,
+  datas,
+  { clientEntry, stylesheet, lang = 'en', htmlAttrs = null } = {},
+) {
   // Each level renders to a slot map and hands it to the level above, so a page
   // can fill more than one hole in its layout.
   let slots = {};
@@ -205,7 +256,7 @@ export function renderDocument(chain, datas, { clientEntry, stylesheet, lang = '
   ];
 
   return `<!doctype html>
-<html lang="${lang}">
+${htmlOpenTag(lang, htmlAttrs ?? {})}
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

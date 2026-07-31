@@ -30,7 +30,16 @@
 };`,
         'js',
       ],
-      directives: `<li each="tag of tags">\${tag}</li>
+      htmlAttrs: [
+      `export default async ({ cookies, htmlAttrs }) => {
+  htmlAttrs['data-theme'] = cookies.get('theme') ?? 'auto';
+  htmlAttrs.dir = 'rtl';
+
+  return {};
+};`,
+      'js',
+    ],
+    directives: `<li each="tag of tags">\${tag}</li>
 <li each="note of notes" key="note.id">\${note.text}</li>
 
 <p if="query">Searching for \${query}</p>
@@ -132,6 +141,10 @@
           <td><code>response</code></td>
           <td>The status and headers for the response.</td>
         </tr>
+        <tr>
+          <td><code>htmlAttrs</code></td>
+          <td>Attributes for the <code>&lt;html&gt;</code> element.</td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -150,6 +163,22 @@
   <p>Write to <code>ctx.response</code> to answer with something other than 200.</p>
 
   ${html(s.status)}
+
+  <h2>Attributes on the document</h2>
+
+  <p>
+    <code>ctx.htmlAttrs</code> is written onto <code>&lt;html&gt;</code>. Every
+    loader in the chain holds the same object, so a layout can set a theme and a
+    page can add to it.
+  </p>
+
+  ${html(s.htmlAttrs)}
+
+  <p>
+    Values are escaped, <code>true</code> writes the name bare and
+    <code>false</code> drops it. <code>lang</code> is there already and can be
+    overwritten.
+  </p>
 
   <h2>Directives</h2>
 

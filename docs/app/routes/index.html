@@ -179,8 +179,11 @@ ${html(s.page)}
   </p>
 
   <p>
-    HTML has always done this for images and scripts and never for text. There is
-    no way to write <em>include that paragraph from that page</em>.
+    HTML has always pulled in a whole resource by pointing at it: an image, a
+    stylesheet, a script, another page in an <code>&lt;iframe&gt;</code>. What it
+    has never had is a way to take one part of a document and make it part of
+    another. An iframe is a separate document in a box, with its own styles and
+    its own layout. It never becomes your text.
   </p>
 
   <p>

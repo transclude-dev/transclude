@@ -187,6 +187,13 @@ ${html(s.page)}
   </p>
 
   <p>
+    SVG is the one place the platform does this.
+    <code>&lt;use href="#icon"&gt;</code> points at an element by id and renders
+    it in place, which is transclusion, shipped and working. It does shapes, not
+    paragraphs.
+  </p>
+
+  <p>
     transclude does that two ways. An <strong>element</strong> is markup pulled
     into the page that calls it. A <strong>fragment</strong> is a piece of a page
     that keeps a URL of its own, so you can render it in place or fetch it by

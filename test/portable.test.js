@@ -136,6 +136,26 @@ test('a region still answers', async () => {
   assert.equal(await out.text(), '<ul>region</ul>');
 });
 
+test('an endpoint that sets a cookie and redirects keeps the cookie', async () => {
+  // Every other path wrapped its `Response` in the envelope and this one did
+  // not, so a handler that set a cookie and answered 303 lost the cookie. The
+  // redirect worked, which is what made it hard to see.
+  const app = inMemory({
+    endpoints: {
+      'api-ping': {
+        POST: async (ctx) => {
+          ctx.cookies.set('theme', 'dark', { path: '/' });
+          return Response.redirect('http://x/back', 303);
+        },
+      },
+    },
+  });
+
+  const out = await app.request('http://x/api/ping', { method: 'POST' });
+  assert.equal(out.status, 303);
+  assert.match(out.headers.get('set-cookie') ?? '', /theme=dark/);
+});
+
 test('an endpoint still answers', async () => {
   const out = await inMemory().request('http://x/api/ping');
   assert.deepEqual(await out.json(), { ok: true });

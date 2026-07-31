@@ -587,7 +587,7 @@ class Codegen {
 
     this.c(
       out,
-      `__o += ${ref}.render(${ref}.coerce({${props}}), ` +
+      `__o += ${ref}.render(__data(${ref}, {${props}}), ` +
         `{ default: ${children.length ? `__sl${id}` : `''`} }` +
         `${this.fragments ? ', __fragment' : ''});`,
     );

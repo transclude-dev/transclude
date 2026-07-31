@@ -1,0 +1,45 @@
+<script properties>
+  /**
+   * A light element whose value is state, not an attribute. Nothing observes
+   * state, so the setter is what schedules the write.
+   *
+   * @typedef {{ label: string }} Props
+   */
+
+  /** @type {Props} */
+  export default {
+    label: "tally",
+  };
+</script>
+
+<script state>
+  /** @type {{ n: number }} */
+  export default {
+    n: 0,
+  };
+</script>
+
+<style>
+  :scope {
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: baseline;
+  }
+  output {
+    font-size: 1.4rem;
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+
+<output>${n}</output>
+<span>${label}</span>
+
+<script>
+  export const prototype = {
+    bump(by = 1) {
+      this.n += by;
+    },
+  };
+
+  host.addEventListener("click", () => host.bump(), { signal });
+</script>

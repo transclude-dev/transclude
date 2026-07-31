@@ -27,6 +27,15 @@
     <p>Pages can fill this by declaring a named slot.</p>
   </slot>
 </aside>`,
+      htmlAttrs: [
+        `export default async ({ cookies, htmlAttrs }) => {
+  htmlAttrs['data-theme'] = cookies.get('theme') ?? 'auto';
+  htmlAttrs.dir = 'rtl';
+
+  return {};
+};`,
+        'js',
+      ],
       guard: [
         `export default async ({ cookies, url }) => {
   const session = await cookies.signed.get('session');
@@ -82,6 +91,23 @@
     <code>export const prerender = false</code>. Otherwise the build writes a
     logged-out copy to a file.
   </doc-note>
+
+  <h2>Attributes on &lt;html&gt;</h2>
+
+  <p>
+    The root layout owns the document, so it is where a theme or a text
+    direction belongs. <code>ctx.htmlAttrs</code> is written onto
+    <code>&lt;html&gt;</code>.
+  </p>
+
+  ${html(s.htmlAttrs)}
+
+  <p>
+    Every loader in the chain holds the same object, so a layout can set the
+    theme and a page below it can still add to it. Values are escaped,
+    <code>true</code> writes the name bare and <code>false</code> drops it.
+    <code>lang</code> is there already and can be overwritten.
+  </p>
 
   <h2>Sharing the response</h2>
 

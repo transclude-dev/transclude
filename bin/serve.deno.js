@@ -2,12 +2,14 @@
 //
 // `Deno.serve` takes the same (Request) => Response the other two do.
 
-import { app, noBuild, summary } from '../src/production.js';
+import { app, noBuild, port as configured, summary } from '../src/production.js';
 
 if (noBuild) {
   console.error('No build found. Run `npm run build` first.');
   Deno.exit(1);
 }
 
-const port = Number(Deno.env.get('PORT') ?? 3000);
+// Deno reads its own environment, so PORT is applied here rather than
+// through the `process` shim.
+const port = Number(Deno.env.get('PORT') ?? configured);
 Deno.serve({ port, onListen: () => summary(port) }, app.fetch);

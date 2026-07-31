@@ -179,6 +179,14 @@ against.
   config file in an error message and should. A test that starts needing an app is
   the same boundary breaking from the other side: `production.js` loads whatever
   project it runs in, so its test writes a config into a temp directory.
+- **An app has one port, and `PORT` beats the config.** `portOf` in `project.js`
+  is the only answer, shared by `dev.js` and `production.js`, so dev and
+  production listen on the same place rather than two. The default was 3000 and
+  5173, which are the two most crowded ports on a developer's machine: a Next.js
+  server someone else started answers on 3000 happily and looks exactly like
+  yours. `PORT=` in a `.env` file reads as an empty string and `Number('')` is 0,
+  which binds to whatever the OS hands out, so the value is checked rather than
+  coerced.
 - **A bin needs `#!/usr/bin/env node`.** Without it npm's `node_modules/.bin` entry
   is handed to the shell, which reads `import fs from 'node:fs';` as a command and
   hangs with no output. It only shows up once the bins are run as bins, which is
@@ -188,17 +196,17 @@ against.
   `adoptStyles` looked fine and one browser check failed. Nothing in Node models
   `dataset`, so the whole Node suite passed. The browser checks caught it.
 - **Check that the listener is yours before believing a server test.** Three wrong
-  diagnoses so far. "Something is listening on :3000" is not the check. A server
+  diagnoses so far. "Something is listening on :1961" is not the check. A server
   someone else started, including the person you are helping, in their own browser,
   answers happily and serves an old `dist`, while your own `npm start` dies with
   `EADDRINUSE` into a log you did not read. Kill the port, wait for it to free,
   start, then confirm the listener is younger than the build:
 
   ```sh
-  pid=$(lsof -nP -iTCP:3000 -sTCP:LISTEN -t); [ -n "$pid" ] && kill $pid
-  for i in $(seq 20); do lsof -nP -iTCP:3000 -sTCP:LISTEN -t >/dev/null || break; sleep 0.5; done
+  pid=$(lsof -nP -iTCP:1961 -sTCP:LISTEN -t); [ -n "$pid" ] && kill $pid
+  for i in $(seq 20); do lsof -nP -iTCP:1961 -sTCP:LISTEN -t >/dev/null || break; sleep 0.5; done
   # start it, then:
-  ps -o lstart= -p "$(lsof -nP -iTCP:3000 -sTCP:LISTEN -t)"   # vs. stat -f %Sm dist/server/entry.js
+  ps -o lstart= -p "$(lsof -nP -iTCP:1961 -sTCP:LISTEN -t)"   # vs. stat -f %Sm dist/server/entry.js
   grep -c EADDRINUSE <the server log>                          # must be 0
   ```
 - **`<style data-transclude="tag">` in `<head>` is an agreement, not decoration.** It is

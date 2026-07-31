@@ -15,10 +15,12 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { createApp } from './app.js';
 import { etagOf, loadAssets, loadStatic } from './static-cache.js';
 import { compressResponse } from './compress.js';
-import { loadProject } from './project.js';
+import { loadProject, portOf } from './project.js';
 
 const { root, config, configFile } = await loadProject();
 const dist = path.join(root, config.outDir);
+
+export const port = portOf(config, process.env.PORT);
 
 export const noBuild = !fs.existsSync(path.join(dist, 'routes.json'));
 

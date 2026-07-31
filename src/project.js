@@ -15,6 +15,31 @@ import { pathToFileURL } from 'node:url';
 export const CONFIG_FILE = 'transclude.config.js';
 
 /**
+ * The port an app listens on when it does not name one.
+ *
+ * 3000 and 5173 are the two most crowded ports on a developer's machine, and a
+ * server someone else started answering yours is a bad half hour. 1960 is the
+ * year Project Xanadu began, which is where transclusion comes from.
+ */
+export const DEFAULT_PORT = 1960;
+
+/**
+ * `PORT` beats the config, so a host that assigns one is obeyed without an edit.
+ * Dev and production share this, so an app has one port rather than two.
+ */
+export function portOf(config = {}, env = undefined) {
+  const asked = env ?? config.port ?? DEFAULT_PORT;
+  const port = Number(asked);
+
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(
+      `[transclude] port must be a whole number from 1 to 65535, not ${JSON.stringify(asked)}`,
+    );
+  }
+  return port;
+}
+
+/**
  * The nearest directory at or above `from` holding the config file.
  *
  * npm runs a script with the package root as the working directory, so the

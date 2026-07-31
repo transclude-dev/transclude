@@ -147,6 +147,7 @@ async function render(route, { url, params }) {
   const html = await renderRoute(pages[route.id], ctx, {
     clientEntry: assets.get(route.id) ?? null,
     stylesheet,
+    csp: config.csp,
   });
 
   if (html instanceof Response) {

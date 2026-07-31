@@ -62,6 +62,7 @@ export function createApp({
 
   const app = baseApp({
     csrf: config.csrf,
+    csp: config.csp,
     trailingSlash: config.trailingSlash,
     publicFiles,
     middleware,

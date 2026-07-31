@@ -1,0 +1,134 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      on: [`// transclude.config.js
+export default {
+  csp: true,
+};`, 'js'],
+      report: [`csp: { reportOnly: true },`, 'js'],
+      custom: [`csp: {
+  directives: {
+    'default-src': ["'self'"],
+    'script-src': ["'self'", "'hashes'"],
+    'style-src': ["'self'", "'unsafe-inline'"],
+    'img-src': ["'self'", 'data:', 'https://cdn.example.com'],
+    'connect-src': ["'self'", 'https://api.example.com'],
+    'object-src': ["'none'"],
+    'frame-ancestors': ["'self'"],
+  },
+},`, 'js'],
+      output: `<meta http-equiv="content-security-policy" content="default-src 'self';
+  script-src 'self' 'sha256-7FPrfhNtDZ…'; style-src 'self' 'unsafe-inline'; …">`,
+    }),
+  });
+</script>
+
+<title>Security · transclude</title>
+<meta
+  name="description"
+  content="A Content-Security-Policy built from the hashes of what each page inlines."
+/>
+
+<doc-page
+  heading="Security"
+  lede="A Content-Security-Policy tells the browser which scripts and styles may run, so an injected one never does. Turn it on with a config key."
+>
+  ${html(s.on)}
+
+  <p>
+    That is the whole setup. Each page gets a policy built from what that page
+    inlines, and CSRF is already on by default.
+  </p>
+
+  <h2>Hashes, not a nonce</h2>
+
+  <p>
+    Most frameworks nonce their inline blocks: a fresh random value per request,
+    named in the policy and stamped on every
+    <code>&lt;script&gt;</code>. That cannot work here. A nonce has to be
+    different every time, so a page carrying one cannot be a file, and most
+    pages here are files: rendered once at build time, compressed once, and sent
+    as bytes. Swapping a fresh nonce into the body would mean decompressing and
+    recompressing every response.
+  </p>
+
+  <p>
+    A hash needs none of that. The inline content is fixed when the page renders,
+    so the policy is fixed with it. It is written into the file and stays
+    correct, and a host that has never heard of this framework serves it
+    unchanged.
+  </p>
+
+  ${html(s.output)}
+
+  <doc-note label="Nothing to write">
+    You do not stamp anything. The policy is built from the document after it
+    renders, so it names what actually shipped rather than what was meant to.
+  </doc-note>
+
+  <h2>Why styles are not hashed</h2>
+
+  <p>
+    <code>script-src</code> carries hashes and <code>style-src</code> does not.
+    That looks inconsistent and is the only combination that works.
+  </p>
+
+  <p>
+    A hash never covers an attribute. <code>style="color:red"</code> on an
+    element is checked against <code>style-src</code>, and a hash there applies
+    to <code>&lt;style&gt;</code> blocks only. Adding
+    <code>'unsafe-inline'</code> alongside does not help either: a directive
+    carrying any hash <em>ignores</em> <code>'unsafe-inline'</code> outright. So
+    hashing styles means no element on the page may carry a
+    <code>style</code> attribute, and
+    <code>style="view-transition-name: …"</code> is an ordinary thing to write.
+  </p>
+
+  <p>
+    Script is where the protection matters, and CSS cannot run code. Put
+    <code>'hashes'</code> in <code>style-src</code> yourself if your pages have
+    no style attributes at all.
+  </p>
+
+  <h2>What rides in a header</h2>
+
+  <p>
+    <code>frame-ancestors</code>, <code>report-uri</code>,
+    <code>report-to</code> and <code>sandbox</code> are ignored in a
+    <code>&lt;meta&gt;</code> tag, so they are sent as a response header instead.
+    None of them names a hash, so that header is the same for every page and
+    costs a prerendered one nothing.
+  </p>
+
+  <p>
+    A static host serves the meta half and not the header. Set those directives
+    at the host if you export the site and need them.
+  </p>
+
+  <h2>Your own directives</h2>
+
+  <p>
+    Pass <code>directives</code> to replace the defaults.
+    <code>'hashes'</code> in a source list is where that page's own digests go,
+    so you decide which directives get them.
+  </p>
+
+  ${html(s.custom)}
+
+  <p>
+    A directive left with no sources is dropped rather than written empty, since
+    an empty list means <code>'none'</code> and saying that by accident breaks
+    the page rather than protecting it.
+  </p>
+
+  <h2>Report before you enforce</h2>
+
+  <p>
+    The browser reports what would have been blocked and blocks nothing, so a
+    policy can be tightened against real traffic first.
+  </p>
+
+  ${html(s.report)}
+</doc-page>

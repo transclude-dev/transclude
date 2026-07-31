@@ -35,6 +35,9 @@ export const CSP_DEFAULTS = {
   'object-src': ["'none'"],
   'base-uri': ["'self'"],
   'form-action': ["'self'"],
+  // Clickjacking. A meta tag cannot carry it, so it rides in the header the
+  // server sets, which is the reason there is a header at all.
+  'frame-ancestors': ["'self'"],
 };
 
 /**
@@ -116,6 +119,37 @@ export async function policyFor(html, { directives = CSP_DEFAULTS } = {}) {
  * be delivered this way and are dropped; set those as real headers at the host.
  */
 const META_ONLY = new Set(['frame-ancestors', 'report-uri', 'report-to', 'sandbox']);
+
+/**
+ * The directives a meta tag cannot carry, as a header.
+ *
+ * None of them names a hash, so this string is the same for every page: it can
+ * be set once as middleware, ahead of any route, and it costs a prerendered page
+ * nothing. That is why the split is worth having rather than reading the meta
+ * back out of a body that is already compressed.
+ *
+ * `null` when there are none, which is the default. Adding a header nobody asked
+ * for is a header to explain later.
+ */
+export function headerPolicy(config) {
+  if (!config) return null;
+
+  const options = config === true ? {} : config;
+  const directives = options.directives ?? CSP_DEFAULTS;
+
+  const parts = Object.entries(directives)
+    .filter(([name]) => META_ONLY.has(name))
+    .map(([name, sources]) => `${name} ${[...new Set(sources)].join(' ')}`);
+
+  if (!parts.length) return null;
+
+  return {
+    name: options.reportOnly
+      ? 'Content-Security-Policy-Report-Only'
+      : 'Content-Security-Policy',
+    value: parts.join('; '),
+  };
+}
 
 export async function withPolicy(html, config) {
   if (!config) return html;

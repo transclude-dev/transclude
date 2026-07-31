@@ -1,7 +1,7 @@
 <script server>
   // A form-shaped page. Everything below works with JavaScript turned off: the
   // browser submits, the server changes the data, the page comes back. With a
-  // client, the same page is asked for one region instead of the document. Same
+  // client, the same page is asked for one fragment instead of the document. Same
   // action, same loader, same compiled markup.
 
   // In memory, because the point here is the request cycle rather than storage.
@@ -121,7 +121,7 @@
    * lands on is a GET and a refresh repeats *that*. Skipping this is how a form
    * adds the same note again every time the page is reloaded.
    *
-   * Except when a region was asked for. That caller wanted markup back, and a
+   * Except when a fragment was asked for. That caller wanted markup back, and a
    * redirect is not markup. `fragment` is how an action tells the difference
    * between a browser submitting a form and a swap fetching a piece.
    *
@@ -223,7 +223,7 @@
 
 <h1>Notes</h1>
 <p class="lede">
-  Nothing here needs JavaScript to work. The form submits, <code>actions.post</code>
+  Nothing here needs JavaScript to work. The form submits, <code>POST</code>
   runs, and the loader renders what it left behind. The oldest way to change state
   on the web, and still the one that works everywhere.
 </p>
@@ -233,7 +233,7 @@
   exception. Nothing changed, so it comes straight back with the reason.
 </p>
 <p class="lede">
-  The list below is a <strong>region</strong>: it renders here as part of the
+  The list below is a <strong>fragment</strong>: it renders here as part of the
   document and answers on its own at <code>/notes?fragment=notes</code>, from
   the same compiled markup. Swapping it in without a reload is a client's job,
   and this framework does not ship one. Bring htmx, Turbo, or ten lines of
@@ -257,7 +257,7 @@
      path, and `ctx.fragment` is how it knows which was asked for.
 
      It wraps the message as well as the list, because both are part of what
-     changed. A region that covered only the <ul> would leave a stale "Added …"
+     changed. A fragment that covered only the <ul> would leave a stale "Added …"
      sitting above a list that had moved on. -->
 <div id="notes" fragment>
   <p class="said bad" if="error">${error}</p>

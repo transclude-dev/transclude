@@ -94,7 +94,7 @@ describe('layout chrome and layout data are baked in', () => {
 });
 
 describe('the page title beats the layout title in built output', () => {
-  assert.match(home, /<title>Single-file components · transclude<\/title>/);
+  assert.match(home, /<title>Single-file elements · transclude<\/title>/);
   assert.match(read('static/404.html'), /<title>Not found<\/title>/);
 });
 

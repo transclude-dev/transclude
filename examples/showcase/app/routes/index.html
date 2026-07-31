@@ -15,7 +15,7 @@
       : people;
 
     return {
-    heading: "Single-file components",
+    heading: "Single-file elements",
     // A hostile string on purpose. It must arrive escaped.
     note: '<script>alert(1)<\/script> & "quotes"',
     trusted: "<strong>trusted markup<\/strong>",
@@ -44,7 +44,7 @@
 <style>
   /* The whole card is the link. `color: inherit` and `text-decoration: none`
      are inherited properties, so they cross into the shadow root. That is the
-     only reason this works without reaching inside the component. */
+     only reason this works without reaching inside the element. */
   .card-link {
     display: block;
     color: inherit;
@@ -74,7 +74,7 @@
 </p>
 
 <site-note tone="warn">
-  A partial: light DOM, styles scoped with <code>@scope</code>, rendered on the
+  An element: light DOM, styles scoped with <code>@scope</code>, rendered on the
   server only. It inherits the page's own CSS variables.
 </site-note>
 
@@ -89,7 +89,7 @@
 </div>
 
 <site-note class="tinted">
-  A partial, also wearing <code>.tinted</code>. Light DOM, so a global class lands
+  An element, also wearing <code>.tinted</code>. Light DOM, so a global class lands
   on it.
 </site-note>
 
@@ -101,7 +101,7 @@
 <p>Untrusted: ${note}</p>
 <p>Opted out with <code>html()</code>: ${html(trusted)}</p>
 
-<h2>Components in a loop</h2>
+<h2>Elements in a loop</h2>
 <section class="cards">
   <!-- A view-transition-name has to be unique per document, so it is derived
        from the data. The detail page names its heading the same way, and the
@@ -141,9 +141,9 @@
 
 <h2>Fragments</h2>
 
-<!-- An addressable region. It renders here as part of the document, and the
+<!-- An addressable fragment. It renders here as part of the document, and the
      same markup is served on its own from `/?fragment=matches`. One compiled
-     region, so the swap cannot drift from the page it replaces part of.
+     fragment, so the swap cannot drift from the page it replaces part of.
 
      The id is the name: the URL asks for `matches` and a swap targets
      `#matches`. Nothing to keep in sync, because there is only one word. -->
@@ -153,7 +153,7 @@
   </p>
   <p else>All ${people.length} people. Add <code>?q=ada</code> to narrow it.</p>
 
-  <!-- A partial inside the region, on purpose. Swapped into a page that has
+  <!-- A light element inside the fragment, on purpose. Swapped into a page that has
        never rendered a <data-table>, this markup would arrive with no styles, so the
        element loader on that page notices the tag, imports it, and its styles
        land in <head> once. /check does exactly that and asserts it. -->

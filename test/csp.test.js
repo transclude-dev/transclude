@@ -208,3 +208,39 @@ test('the hashes match the bytes that shipped, not what we meant to ship', async
 function escape(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+// ---- the half a meta tag cannot carry -------------------------------------
+
+test('frame-ancestors rides in a header, since a meta tag ignores it', async () => {
+  const { headerPolicy } = await import('../src/csp.js');
+  const header = headerPolicy(true);
+
+  assert.equal(header.name, 'Content-Security-Policy');
+  assert.equal(header.value, "frame-ancestors 'self'");
+});
+
+test('the header names no hash, so it is the same for every page', async () => {
+  // That is what makes it middleware rather than something read back out of a
+  // body that has already been compressed.
+  const { headerPolicy } = await import('../src/csp.js');
+  assert.doesNotMatch(headerPolicy(true).value, /sha256/);
+});
+
+test('the two halves do not overlap', async () => {
+  const { headerPolicy } = await import('../src/csp.js');
+  const inMeta = await withPolicy(doc(), true);
+
+  assert.doesNotMatch(inMeta, /frame-ancestors/);
+  assert.match(headerPolicy(true).value, /frame-ancestors/);
+});
+
+test('no meta-only directive means no header at all', async () => {
+  const { headerPolicy } = await import('../src/csp.js');
+  assert.equal(headerPolicy({ directives: { 'default-src': ["'self'"] } }), null);
+  assert.equal(headerPolicy(false), null);
+});
+
+test('reportOnly names the other header here too', async () => {
+  const { headerPolicy } = await import('../src/csp.js');
+  assert.equal(headerPolicy({ reportOnly: true }).name, 'Content-Security-Policy-Report-Only');
+});

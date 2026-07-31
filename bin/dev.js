@@ -55,10 +55,16 @@ const publicFiles =
     ? serveStatic({ root: path.relative(process.cwd(), publicRoot) || '.' })
     : null;
 
+// Built before Vite, because Vite needs it: in middleware mode with no `hmr`
+// option Vite starts its own WebSocket server on another port, the browser
+// refuses that socket as cross-origin, and every edit needs a manual reload.
+// Handing it this server puts the socket on the same origin as the page.
+const server = http.createServer();
+
 const vite = await createViteServer({
   root,
   appType: 'custom',
-  server: { middlewareMode: true },
+  server: { middlewareMode: true, hmr: { server } },
   // Vite would serve these itself, ahead of Hono, and production would serve
   // them a different way, which is how dev and production come to disagree. One
   // way instead: `baseApp` mounts Hono's static middleware in both.
@@ -304,10 +310,10 @@ vite.watcher.on('all', async (event, file) => {
 const hono = getRequestListener((request) => app.fetch(request));
 
 // Vite owns /@id/, /@vite/client and /src/*; Hono gets everything else.
-http
-  .createServer((req, res) => {
-    vite.middlewares(req, res, () => hono(req, res));
-  })
-  .listen(PORT, () => {
-    console.log(`http://localhost:${PORT}`);
-  });
+server.on('request', (req, res) => {
+  vite.middlewares(req, res, () => hono(req, res));
+});
+
+server.listen(PORT, () => {
+  console.log(`http://localhost:${PORT}`);
+});

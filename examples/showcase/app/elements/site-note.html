@@ -5,7 +5,7 @@
 </script>
 
 <style>
-  /* Hoisted into <head> once, however many times this partial appears, and
+  /* Hoisted into <head> once, however many times this element appears, and
      scoped to its own tag. Page CSS reaches in, because there is no shadow root. */
   :scope {
     display: block;
@@ -39,7 +39,7 @@
     },
   };
 
-  // A partial upgrades for behaviour. `host` is the element; there is no shadow
+  // A light element upgrades for behaviour. `host` is the element; there is no shadow
   // root, so `shadow` is null.
   //
   // `signal` aborts when the element leaves the document, so a listener given

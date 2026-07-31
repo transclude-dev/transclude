@@ -103,7 +103,6 @@ export type RootLayoutContext = {
 
 /** Data returned by `root/_layout.html`. */
 export type RootLayoutData = {
-  theme: string;
   path: string;
   links: {
     href: string;
@@ -121,7 +120,6 @@ export type PeopleLayoutContext = {
     path: string
   };
   layout: {
-    theme: string;
     path: string;
     links: {
       href: string;
@@ -154,7 +152,6 @@ export type CheckContext = {
     path: string
   };
   layout: {
-    theme: string;
     path: string;
     links: {
       href: string;
@@ -192,7 +189,6 @@ export type NotesContext = {
     path: string
   };
   layout: {
-    theme: string;
     path: string;
     links: {
       href: string;
@@ -232,7 +228,6 @@ export type IndexContext = {
     path: string
   };
   layout: {
-    theme: string;
     path: string;
     links: {
       href: string;
@@ -296,7 +291,6 @@ export type PeopleNameContext = {
     path: string
   };
   layout: Omit<{
-    theme: string;
     path: string;
     links: {
       href: string;
@@ -357,7 +351,6 @@ export type DocsPathRestContext = {
     path: string
   };
   layout: {
-    theme: string;
     path: string;
     links: {
       href: string;
@@ -391,7 +384,6 @@ export type _404Context = {
     path: string
   };
   layout: {
-    theme: string;
     path: string;
     links: {
       href: string;

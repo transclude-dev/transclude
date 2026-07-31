@@ -1,14 +1,7 @@
 <script server>
-  // Layouts load their own data. This one needs the current path, to mark the
-  // active link and to send the theme form somewhere to come back to.
-  export default async ({ route, cookies, htmlAttrs }) => {
-    // `auto` is the absence of a choice: no attribute, so the media query in the
-    // stylesheet decides. The cookie only ever holds `light` or `dark`.
-    const theme = cookies.get('theme');
-    if (theme === 'light' || theme === 'dark') htmlAttrs['data-theme'] = theme;
-
-    return {
-    theme: theme ?? 'auto',
+  // Layouts load their own data. This one only needs the current path, so it can
+  // mark the active link. That comes from ctx, the same way a page gets it.
+  export default async ({ route }) => ({
     path: route.path,
     links: [
       { href: "/", label: "Home" },
@@ -17,8 +10,7 @@
       { href: "/check", label: "Client checks" },
       { href: "/nope", label: "404" },
     ],
-    };
-  };
+  });
 </script>
 
 <title>transclude</title>
@@ -30,28 +22,6 @@
     max-width: 68rem;
     margin: 0 auto;
     padding: 2rem clamp(1rem, 4vw, 3rem) 3rem;
-  }
-
-  .theme {
-    display: flex;
-    gap: 0.25rem;
-    justify-content: flex-end;
-    margin-bottom: 0.75rem;
-  }
-  .theme button {
-    font: inherit;
-    font-size: 0.75rem;
-    padding: 0.2rem 0.55rem;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: none;
-    color: var(--muted);
-    cursor: pointer;
-  }
-  .theme button[aria-pressed="true"] {
-    background: var(--ink);
-    border-color: var(--ink);
-    color: var(--paper);
   }
 
   header nav {
@@ -97,6 +67,10 @@
     font-size: 0.8rem;
   }
 </style>
+
+<!-- An external head script. `src` and every other attribute survive now; they
+     used to be dropped, which emitted `<script></script>` and loaded nothing. -->
+<script head src="/theme.js" type="module"></script>
 
 <script head>
   // View transition diagnostics. Off unless asked for:
@@ -178,18 +152,6 @@
 
 <div class="shell">
   <header>
-    <!-- No JavaScript anywhere in this. The button submits, `routes/theme.js`
-         sets a cookie and answers 303, and the loader above reads it back. -->
-    <form class="theme" method="post" action="/theme">
-      <input type="hidden" name="from" value="${path}" />
-      <button
-        each="choice of ['light', 'dark', 'auto']"
-        name="theme"
-        value="${choice}"
-        aria-pressed="${choice === theme ? 'true' : 'false'}"
-      >${choice}</button>
-    </form>
-
     <nav>
       <a
         each="link of links"

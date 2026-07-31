@@ -1,5 +1,5 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all } from "../lib/code.js";
 
   export default async () => ({
     s: await all({
@@ -12,7 +12,7 @@
 <article each="post of posts">
   <h2><a href="/posts/\${post.slug}">\${post.title}</a></h2>
 </article>`,
-        'html',
+        "html",
       ],
     }),
   });
@@ -48,9 +48,9 @@
 
   <p>
     The common shape today is a server that returns JSON and a client that turns
-    it into HTML. That client is a second application. It has its own router, its
-    own copy of the data, and its own idea of what the page currently is, and
-    keeping the two in agreement is most of the work.
+    it into HTML. That client is a second application. It has its own router,
+    its own copy of the data, and its own idea of what the page currently is,
+    and keeping the two in agreement is most of the work.
   </p>
 
   <p>
@@ -69,12 +69,14 @@
 
   <p>
     Roy Fielding named this constraint in
-    <a href="https://ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm"
+    <a
+      href="https://ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm"
       >the chapter of his dissertation that defines REST</a
-    >: hypermedia as the engine of application state. What the client can do next
-    comes from the representation the server just sent, not from knowledge the
-    client was built with. He wrote about how widely that is missed in
-    <a href="https://roy.gbiv.com/untangled/2008/rest-apis-must-be-hypertext-driven"
+    >: hypermedia as the engine of application state. What the client can do
+    next comes from the representation the server just sent, not from knowledge
+    the client was built with. He wrote about how widely that is missed in
+    <a
+      href="https://roy.gbiv.com/untangled/2008/rest-apis-must-be-hypertext-driven"
       >REST APIs must be hypertext-driven</a
     >. An interface that returns JSON and relies on a client that already knows
     every URL is not doing this.
@@ -83,14 +85,16 @@
   <p>
     <a href="http://www.thetednelson.com/">Ted Nelson</a> coined
     <em>transclusion</em> in the 1960s: the same piece of writing appearing in
-    more than one document while remaining one piece. That is what this framework
-    is named for, and what
-    <a href="/fragments">fragments</a> are. Any element with an id has its own
-    URL, and the same compiled markup serves it inline and alone.
+    more than one document while remaining one piece. That is what this
+    framework is named for, and what <a href="/fragments">fragments</a> are. Any
+    element with an id has its own URL, and the same compiled markup serves it
+    inline and alone.
   </p>
 
   <p>
-    <a href="https://four.htmx.org/essays">Carson Gross and others have written</a>
+    <a href="https://four.htmx.org/essays"
+      >Carson Gross and others have written</a
+    >
     extensively on building this way, including case studies of applications
     moved off a JavaScript client.
   </p>
@@ -124,7 +128,6 @@
     Those choices are yours. The platform has custom elements,
     <code>fetch</code>, the History API and view transitions, and every page and
     fragment here is HTML on a URL, so a client of any size can be built on top.
-    The framework ships none of that and replaces none of it.
   </p>
 
   <doc-note label="Where to start">

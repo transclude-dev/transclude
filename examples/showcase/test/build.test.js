@@ -315,3 +315,16 @@ describe('reading it clears it, so a reload does not repeat it', async () => {
   });
   assert.equal(again.added, null);
 });
+
+describe('the build writes the feed, and it is well-formed', () => {
+  // The config, the mount and the build write are three separate places. Only
+  // reading the built file proves all three agree.
+  const xml = read(path.join('static', 'feed.xml'));
+
+  assert.match(xml, /<rss version="2.0"/);
+  assert.equal(xml.match(/<item>/g).length, 3, 'one item per person');
+  // Newest first, so the most recently joined leads.
+  assert.match(xml, /<item>\s*<title>Radia Perlman<\/title>/);
+  // A description carrying real punctuation survives as text, not as entities.
+  assert.match(xml, /<!\[CDATA\[Designed the spanning-tree protocol/);
+});

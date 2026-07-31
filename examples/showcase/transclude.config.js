@@ -2,8 +2,25 @@
 // the package needs is here, and nothing in the package names one of its own.
 // `transclude` is a dependency now, so this file is all that connects them.
 
+import { people } from './app/data/people.js';
+
 export default {
   appDir: 'app',
+
+  // A feed of the people pages. The items are the app's to supply: a route
+  // table holds URLs and a feed needs something to read.
+  feed: {
+    hostname: 'https://showcase.example',
+    title: 'Showcase people',
+    description: 'Everyone with a page here.',
+    items: () =>
+      people.map((person) => ({
+        title: person.name,
+        path: `/people/${person.slug}`,
+        date: person.joined,
+        description: person.note,
+      })),
+  },
 
   // Dev and production both listen here, so this app has one port.
   port: 1961,

@@ -391,6 +391,16 @@ against.
   redirect lost the cookie. The redirect worked, which is what made it hard to
   see. Found by writing an endpoint that stores a preference and sends you back,
   which is the shape that hits it.
+- **A feed reads no clock.** `src/feed.js` stamps the document from the newest
+  item it holds, and takes `updated` from the config when there is none. A
+  prerendered feed is a file, written once and compressed once, so a build-time
+  `new Date()` would change the bytes on every run for a feed whose contents did
+  not change, and every ETag with them. Atom requires both an author and a date,
+  so it refuses rather than inventing either.
+- **`]]>` has to be split, and it turns up in ordinary code.** A CDATA section
+  cannot hold that sequence, and `<script>if (a[b[c]]>0)</script>` is markup
+  someone will put in a feed item. Writing it as two sections is what a parser
+  puts back together as the three original characters.
 - **`prerender` is read off the page, never off its layouts.** `build.js` checks
   `pages[route.id]?.prerender`, so a layout that reads the request makes every
   page under it request-dependent and nothing says so. The prerendered ones are

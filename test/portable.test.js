@@ -41,7 +41,7 @@ test('the core imports nothing from node:', () => {
 
 test('the core reaches only the modules that are also portable', () => {
   const { files } = graphOf(path.join(src, 'app.js'));
-  assert.deepEqual(files.sort(), ['app.js', 'cookies.js', 'csp.js', 'document.js', 'negotiate.js', 'server.js', 'sitemap.js']);
+  assert.deepEqual(files.sort(), ['app.js', 'cache.js', 'cookies.js', 'csp.js', 'document.js', 'negotiate.js', 'server.js', 'sitemap.js']);
 });
 
 test('the core touches no Node-only global either', () => {

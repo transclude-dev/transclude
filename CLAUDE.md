@@ -371,6 +371,13 @@ against.
   with means the script is refused, so this needs a real digest. `crypto.subtle`
   and `btoa` are globals on all four runtimes, so the core keeps its no-`node:`
   property.
+- **Reading a cookie is what makes a page personal, not writing one.** The cache
+  first refused to hold a page whose loader set a header, which is the rule the
+  build uses to decide a route can be a file. It is not enough. `/notes` renders
+  "you have added N of these" from a cookie it only *reads*, sets nothing, and
+  was cached: the next visitor got the first one's count. `cookiesOf` records the
+  read and `cacheable` checks it. The unit test for the flag passed the whole
+  time; only a request through `createApp` catches this.
 - **A literal `${` cannot be written in a template.** There is no escape for it.
   The compiler reads every one as an interpolation, so `${}` in prose fails with
   `bad expression "": empty expression` and a line number in the compiled file

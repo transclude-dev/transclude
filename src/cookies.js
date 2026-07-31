@@ -20,7 +20,15 @@ import { parse, parseSigned, serialize, serializeSigned } from 'hono/utils/cooki
  * unsigned, because a signature nobody checks is worse than none.
  */
 export function cookiesOf(request, response, secret = null) {
-  const header = () => request?.headers?.get('cookie') ?? '';
+  // Reading one is what makes a page personal, and a personal page must not be
+  // held in a shared cache. Writing a header is not the whole test: a page that
+  // only *reads* `mine` and renders a count sets nothing, and caching it would
+  // hand one visitor's count to the next. So the read is what is recorded.
+  let read = false;
+  const header = () => {
+    read = true;
+    return request?.headers?.get('cookie') ?? '';
+  };
 
   const write = (value) => response.headers.append('Set-Cookie', value);
 
@@ -33,6 +41,11 @@ export function cookiesOf(request, response, secret = null) {
   };
 
   return {
+    /** Whether anything asked what the request carried. Read by the cache. */
+    get personal() {
+      return read;
+    },
+
     /** One cookie, or undefined. */
     get(name) {
       return parse(header(), name)[name];

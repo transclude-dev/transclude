@@ -14,6 +14,7 @@ import {
   hasRegion,
   methodsOf,
   renderFragment,
+  htmlAttrsOf,
   renderRoute,
   responseOf,
   runAction,
@@ -86,6 +87,7 @@ export function createApp({
       action: null,
       response,
       cookies: cookiesOf(c.req.raw, response, config.cookieSecret),
+      htmlAttrs: htmlAttrsOf(),
       ...extra,
     };
   };

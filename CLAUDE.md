@@ -327,6 +327,15 @@ against.
   in `app/elements/`, find nothing, and every tag would render as an unmatched
   custom element with no styles and no error. Same guard as the old `pages`
   directory name.
+- **`ctx.htmlAttrs` is shared by reference, like `ctx.response`, and for the same
+  reason.** Loaders are called with `{ ...ctx, layout }`, so anything assigned
+  onto `ctx` itself lands on a copy nobody reads. `renderRoute` passes
+  `ctx.htmlAttrs` to `renderDocument` after the chain has run, which is why a
+  layout can set the theme and the page below it can still add to it. Values are
+  escaped with the same four characters `attr` escapes in the runtime: the reason
+  the hook exists is rendering a stored preference, and a preference comes from a
+  cookie. Names are checked against a pattern rather than escaped, because a name
+  that needs escaping is a mistake and should say so.
 - **A literal `${` cannot be written in a template.** There is no escape for it.
   The compiler reads every one as an interpolation, so `${}` in prose fails with
   `bad expression "": empty expression` and a line number in the compiled file

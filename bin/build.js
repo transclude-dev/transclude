@@ -16,7 +16,7 @@ import { pathToFileURL } from 'node:url';
 import { build } from 'vite';
 import transclude from '../src/plugin.js';
 import { loadProject } from '../src/project.js';
-import { renderRoute, responseOf } from '../src/document.js';
+import { htmlAttrsOf, renderRoute, responseOf } from '../src/document.js';
 import { loadAssets, loadStatic } from '../src/static-cache.js';
 import { cookiesOf } from '../src/cookies.js';
 import { pool } from '../src/pool.js';
@@ -141,6 +141,7 @@ async function render(route, { url, params }) {
     action: null,
     response,
     cookies: cookiesOf(null, response, config.cookieSecret),
+    htmlAttrs: htmlAttrsOf(),
   };
 
   const html = await renderRoute(pages[route.id], ctx, {

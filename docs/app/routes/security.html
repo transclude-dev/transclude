@@ -19,6 +19,19 @@ export default {
     'frame-ancestors': ["'self'"],
   },
 },`, 'js'],
+      escaped: `<script server>
+  export default async () => ({
+    // Whatever a visitor typed.
+    comment: '<script>alert(1)<\\/script>',
+  });
+<\/script>
+
+<p>\${comment}</p>`,
+      escapedOut: [`<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>`, 'html'],
+      trusted: `<p>\${html(post.renderedMarkdown)}</p>`,
+      parseOrder: `<!-- The comment ends at the first --> in the file, and an
+     interpolation cannot put one there later. -->
+<p>\${html(fromSomewhereElse)}</p>`,
       output: `<meta http-equiv="content-security-policy" content="default-src 'self';
   script-src 'self' 'sha256-7FPrfhNtDZ…'; style-src 'self' 'unsafe-inline'; …">`,
     }),
@@ -41,6 +54,41 @@ export default {
     That is the whole setup. Each page gets a policy built from what that page
     inlines, and CSRF is already on by default.
   </p>
+
+  <h2>Escaping</h2>
+
+  <p>
+    Every <code>\${…}</code> is escaped. A value carrying markup arrives as
+    text, so a page rendering something a visitor typed cannot run it.
+  </p>
+
+  ${html(s.escaped)}
+
+  ${html(s.escapedOut)}
+
+  <p>
+    <code>html()</code> turns that off for one value. It is a claim that the
+    markup is yours: rendered Markdown you control, or output a library you trust
+    produced.
+  </p>
+
+  ${html(s.trusted)}
+
+  <doc-note label="It trusts, it does not clean" tone="warn">
+    <code>html()</code> sanitizes nothing. Wrapping anything a visitor typed is
+    how a page runs somebody else's script, and no
+    Content-Security-Policy below will save you: the script came from your own
+    origin, in your own document.
+  </doc-note>
+
+  <p>
+    HTML is parsed before any interpolation runs, so a value cannot open or close
+    anything structural. Markup arriving through <code>html()</code> lands inside
+    whatever element already surrounded it, and a comment ends where the file
+    ends it.
+  </p>
+
+  ${html(s.parseOrder)}
 
   <h2>Hashes, not a nonce</h2>
 

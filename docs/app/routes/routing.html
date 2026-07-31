@@ -30,7 +30,10 @@
 };`,
         'js',
       ],
-      directives: `<li each="tag of tags">\${tag}</li>
+      interpolation: `<p>\${name}</p>
+
+<p>\${html(body)}</p>`,
+    directives: `<li each="tag of tags">\${tag}</li>
 <li each="note of notes" key="note.id">\${note.text}</li>
 
 <p if="query">Searching for \${query}</p>
@@ -150,6 +153,23 @@
   <p>Write to <code>ctx.response</code> to answer with something other than 200.</p>
 
   ${html(s.status)}
+
+  <h2>Interpolation</h2>
+
+  <p>
+    <code>\${…}</code> reads what the loader returned and is always escaped, so
+    a value carrying <code>&lt;script&gt;</code> arrives as text.
+    <code>html()</code> is the one way out, and it is in scope in every file with
+    nothing to import.
+  </p>
+
+  ${html(s.interpolation)}
+
+  <doc-note label="html() trusts, it does not clean" tone="warn">
+    It marks a value as markup you vouch for. It sanitizes nothing, so
+    <code>html()</code> around anything a visitor typed is how a page runs
+    somebody else's script. <a href="/security">Security</a> has the rest.
+  </doc-note>
 
   <h2>Directives</h2>
 

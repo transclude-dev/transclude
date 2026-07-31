@@ -1,0 +1,128 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      page: [
+        `<script server>
+  export default async () => ({ posts: await db.recent() });
+<\/script>
+
+<h1>Posts</h1>
+<article each="post of posts">
+  <h2><a href="/posts/\${post.slug}">\${post.title}</a></h2>
+</article>`,
+        'html',
+      ],
+    }),
+  });
+</script>
+
+<title>Why transclude · transclude</title>
+<meta
+  name="description"
+  content="A page is an HTML file. The server renders it, and the browser gets markup."
+/>
+
+<doc-page
+  heading="Why transclude"
+  lede="The browser already knows how to display a document, follow a link and submit a form. A framework does not have to replace any of that."
+>
+  <h2>HTML is the product</h2>
+
+  <p>
+    A page here is an <code>.html</code> file. The server renders it, and what
+    arrives is markup a browser already knows how to display. Nothing has to run
+    for the page to be correct.
+  </p>
+
+  ${html(s.page)}
+
+  <p>
+    That file is the whole page. There is no component tree to reconcile, no
+    hydration step, and no build output the browser has to execute before the
+    text appears. View source shows what you wrote.
+  </p>
+
+  <h2>Not another JavaScript framework</h2>
+
+  <p>
+    The common shape today is a server that returns JSON and a client that turns
+    it into HTML. That client is a second application. It has its own router, its
+    own copy of the data, and its own idea of what the page currently is, and
+    keeping the two in agreement is most of the work.
+  </p>
+
+  <p>
+    Here the server returns the HTML. There is no second copy of the state,
+    because there is no second application. The docs site you are reading ships
+    zero bytes of JavaScript.
+  </p>
+
+  <h2>Hypermedia</h2>
+
+  <p>
+    The page is the state of your app, and links and forms are what change it.
+    Follow a link and you have the next state. Nothing on the client had to know
+    what the link meant beforehand.
+  </p>
+
+  <p>
+    Roy Fielding named this constraint in his work on REST: application state is
+    driven by the hypertext the server sends, not by knowledge the client was
+    built with. He wrote about how widely that is missed in
+    <a href="https://roy.gbiv.com/untangled/2008/rest-apis-must-be-hypertext-driven"
+      >REST APIs must be hypertext-driven</a
+    >. An interface that returns JSON and relies on a client that already knows
+    every URL is not doing this.
+  </p>
+
+  <p>
+    <a href="http://www.thetednelson.com/">Ted Nelson</a> coined
+    <em>transclusion</em> in the 1960s: the same piece of writing appearing in
+    more than one document while remaining one piece. That is what this framework
+    is named for, and what
+    <a href="/fragments">fragments</a> are. Any element with an id has its own
+    URL, and the same compiled markup serves it inline and alone.
+  </p>
+
+  <p>
+    <a href="https://four.htmx.org/essays">Carson Gross and others have written</a>
+    extensively on building this way, including case studies of applications
+    moved off a JavaScript client.
+  </p>
+
+  <h2>Foundations</h2>
+
+  <p>
+    What you learn here is mostly not about this framework. Elements are custom
+    elements. Styles are CSS. A form is a <code>&lt;form&gt;</code>, and it
+    submits without JavaScript. Routes are files in a directory.
+  </p>
+
+  <p>
+    That matters for anyone new to the platform. Learning the web and learning a
+    framework are usually two jobs, and the second one expires. Here they are
+    closer to the same job, and the part that lasts is the larger part.
+  </p>
+
+  <h2>What this does not do</h2>
+
+  <p>
+    This framework ships nothing that swaps a fragment into a page.
+    <a href="https://htmx.org">htmx</a>, Turbo or a short <code>fetch</code> does
+    that. A fragment has a plain HTTP URL, and that is the whole agreement.
+  </p>
+
+  <p>
+    An app that is genuinely a client application, where the interesting state
+    lives in the browser and outlives any single page, is not what this is for. A
+    document that reads from a database and changes through links and forms is.
+  </p>
+
+  <doc-note label="Where to start">
+    <a href="/">The overview</a> covers what the framework does.
+    <a href="/getting-started">Getting started</a> is the install and the first
+    page.
+  </doc-note>
+</doc-page>

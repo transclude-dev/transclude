@@ -44,14 +44,6 @@ when to merge.
 
 ## Gotchas
 
-- **The theme reaches a page the server renders, and not one that is a file.**
-  `routes/theme.js` sets a cookie and answers 303; the root layout reads it and
-  puts `data-theme` on `<html>`. A prerendered page was written with no request,
-  so it carries no attribute and falls back to `prefers-color-scheme`. Nothing
-  warns about this: `build.js` reads `prerender` off the page and never looks at
-  its layouts, so a layout reading a cookie is silent. `/`, `/notes` and
-  `/docs/*` honour the choice; `/check` and `/people/*` do not, and they stay
-  prerendered because they are what demonstrates prerendering.
 - **`export const prerender = false`** on any page that reads the request.
   `build.js` prerenders every static route otherwise.
 - **`moveBefore` is Chrome 133+.** Safari falls back to `insertBefore`, which

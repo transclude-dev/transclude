@@ -1,6 +1,6 @@
 // Turns a single .html file into one JS module that serves both renders.
 
-import { parseFragment } from 'parse5';
+import { parse, parseFragment } from 'parse5';
 import { compileFragment, childrenOf, CompileError } from './codegen.js';
 import { compileBindings } from './bind.js';
 import {
@@ -14,7 +14,7 @@ import {
 
 export { CompileError, ScriptError };
 
-const PAGE_EXPORTS = new Set(['css', 'load', 'render', 'renderHead', 'renderTitle', 'layouts', 'client', 'elements', 'headScript']);
+const PAGE_EXPORTS = new Set(['css', 'load', 'render', 'renderHead', 'renderTitle', 'renderHtmlAttrs', 'layouts', 'client', 'elements', 'headScript']);
 const COMPONENT_EXPORTS = new Set([
   'tag', 'light', 'css', 'elements', 'propDefs', 'propAttrs', 'stateDefs', 'members', 'render',
   'coerce', 'def', 'init', 'define', 'default', 'bind', 'update', 'volatile', 'formAssociated',
@@ -91,7 +91,16 @@ export function readFlags(source, label = 'element') {
  */
 export function splitBlocks(source) {
   const doc = parseFragment(source, { sourceCodeLocationInfo: true });
-  const out = { server: null, properties: null, state: null, client: [], head: [], styles: [], nodes: [] };
+
+  // A second parse, in document mode, only to read `<html>`. The fragment parser
+  // above drops it: a nested html start tag cannot appear in a body, so it goes
+  // away with its attributes. In document mode it is the element it names, and a
+  // `<html>` inside a script block or a comment is still not one, because this
+  // is the real parser rather than a search for a string.
+  const html =
+    parse(source, { sourceCodeLocationInfo: true }).childNodes.find((n) => n.nodeName === 'html') ??
+    null;
+  const out = { server: null, properties: null, state: null, client: [], head: [], styles: [], nodes: [], html };
 
   for (const node of doc.childNodes) {
     if (node.nodeName === 'script') {
@@ -324,7 +333,7 @@ export function compilePage(
   assertNoCollisions(server.exports, PAGE_EXPORTS, where);
   assertNoActionsObject(server.exports, where);
 
-  const template = compileFragment(blocks.nodes, { components, shadowTags, page: true });
+  const template = compileFragment(blocks.nodes, { components, shadowTags, page: true, html: blocks.html });
 
   const code = `
 ${runtimeImport(runtime)}
@@ -349,6 +358,10 @@ export function renderTitle(__d) {
   let __o = '';
 ${indent(template.title)}
   return __o;
+}
+
+export function renderHtmlAttrs(__d) {
+  return ${template.htmlAttrs ?? '{}'};
 }
 
 export function renderHead(__d) {
@@ -387,6 +400,7 @@ export function compileLayout(source, { id, components = new Map(), shadowTags =
     shadowTags,
     page: true,
     layout: true,
+    html: blocks.html,
   });
 
   const warnings = [...template.warnings];
@@ -415,6 +429,10 @@ ${indent(template.title)}
   return __o;
 }
 
+export function renderHtmlAttrs(__d) {
+  return ${template.htmlAttrs ?? '{}'};
+}
+
 export function renderHead(__d) {
   let __o = '';
 ${indent(template.head)}
@@ -427,7 +445,7 @@ ${slotBodies(template)}
   return __out;
 }
 
-export default { css, headScript, elements, hasTitle, load, renderTitle, renderHead, render };
+export default { css, headScript, elements, hasTitle, load, renderTitle, renderHead, renderHtmlAttrs, render };
 `;
 
   return { code, warnings, components: template.components.map((c) => c.tag) };

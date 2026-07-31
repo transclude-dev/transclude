@@ -327,15 +327,20 @@ against.
   in `app/elements/`, find nothing, and every tag would render as an unmatched
   custom element with no styles and no error. Same guard as the old `pages`
   directory name.
-- **`ctx.htmlAttrs` is shared by reference, like `ctx.response`, and for the same
-  reason.** Loaders are called with `{ ...ctx, layout }`, so anything assigned
-  onto `ctx` itself lands on a copy nobody reads. `renderRoute` passes
-  `ctx.htmlAttrs` to `renderDocument` after the chain has run, which is why a
-  layout can set the theme and the page below it can still add to it. Values are
-  escaped with the same four characters `attr` escapes in the runtime: the reason
-  the hook exists is rendering a stored preference, and a preference comes from a
-  cookie. Names are checked against a pattern rather than escaped, because a name
-  that needs escaping is a mistake and should say so.
+- **`<html>` is read with a second parse, because the fragment parser drops it.**
+  A nested html start tag cannot appear in a body, so `parseFragment` throws it
+  away attributes and all, and it never reaches `emitElement`. `splitBlocks`
+  parses the source again in document mode purely to read that element. Using the
+  real parser rather than searching the text is what makes `<html>` inside a
+  script block or a comment stay a string.
+- **`renderHtmlAttrs` returns an object, not markup.** The chain merges by name,
+  innermost winning per attribute, so a root layout setting the theme and a page
+  setting `dir` both survive. Concatenating serialized attributes instead would
+  put two `data-theme` in one tag, and the parser takes the *first*, which is the
+  outermost, which is backwards. `renderDocument` serializes once. Values are
+  escaped with the same four characters `attr` escapes in the runtime, because a
+  theme comes from a cookie. Names are checked against a pattern rather than
+  escaped: a name needing an escape is a mistake and should say so.
 - **An endpoint's `Response` goes through the envelope too.** Every other path
   wrapped one and this did not, so an endpoint that set a cookie and answered a
   redirect lost the cookie. The redirect worked, which is what made it hard to

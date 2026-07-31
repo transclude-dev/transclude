@@ -192,8 +192,12 @@ export function createApp({
     app.all(route.pattern, async (c) => {
       const mod = endpoints[route.id];
       try {
-        const out = await runEndpoint(mod, contextFor(route, c), c.req.method);
-        if (out) return out;
+        // The same envelope every other path gets. An endpoint that sets a
+        // cookie and returns a redirect is an ordinary thing to write, and the
+        // `Set-Cookie` was dropped without it.
+        const ctx = contextFor(route, c);
+        const out = await runEndpoint(mod, ctx, c.req.method);
+        if (out) return withEnvelope(out, ctx);
         return c.text(`${c.req.method} not allowed`, 405, {
           Allow: endpointMethods(mod).join(', '),
         });

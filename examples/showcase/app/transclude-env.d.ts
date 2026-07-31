@@ -97,7 +97,8 @@ export type RootLayoutContext = {
     status: number;
     headers: Headers
   };
-  cookies: __Cookies
+  cookies: __Cookies;
+  htmlAttrs: Record<string, string | boolean | null>
 };
 
 /** Data returned by `root/_layout.html`. */
@@ -132,7 +133,8 @@ export type PeopleLayoutContext = {
     status: number;
     headers: Headers
   };
-  cookies: __Cookies
+  cookies: __Cookies;
+  htmlAttrs: Record<string, string | boolean | null>
 };
 
 /** Data returned by `people/_layout.html`. */
@@ -163,7 +165,8 @@ export type CheckContext = {
     status: number;
     headers: Headers
   };
-  cookies: __Cookies
+  cookies: __Cookies;
+  htmlAttrs: Record<string, string | boolean | null>
 };
 
 /** Data returned by `check`'s <script server> block. */
@@ -199,7 +202,8 @@ export type NotesContext = {
     status: number;
     headers: Headers
   };
-  cookies: __Cookies
+  cookies: __Cookies;
+  htmlAttrs: Record<string, string | boolean | null>
 };
 
 /** Data returned by `notes`'s <script server> block. */
@@ -237,7 +241,8 @@ export type IndexContext = {
     status: number;
     headers: Headers
   };
-  cookies: __Cookies
+  cookies: __Cookies;
+  htmlAttrs: Record<string, string | boolean | null>
 };
 
 /** Data returned by `index`'s <script server> block. */
@@ -303,7 +308,8 @@ export type PeopleNameContext = {
     status: number;
     headers: Headers
   };
-  cookies: __Cookies
+  cookies: __Cookies;
+  htmlAttrs: Record<string, string | boolean | null>
 };
 
 /** Data returned by `people-_name`'s <script server> block. */
@@ -358,7 +364,8 @@ export type DocsPathRestContext = {
     status: number;
     headers: Headers
   };
-  cookies: __Cookies
+  cookies: __Cookies;
+  htmlAttrs: Record<string, string | boolean | null>
 };
 
 /** Data returned by `docs-_path_rest`'s <script server> block. */
@@ -390,7 +397,8 @@ export type _404Context = {
     status: number;
     headers: Headers
   };
-  cookies: __Cookies
+  cookies: __Cookies;
+  htmlAttrs: Record<string, string | boolean | null>
 };
 
 /** Data returned by `404`'s <script server> block. */

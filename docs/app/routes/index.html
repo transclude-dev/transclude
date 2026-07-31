@@ -1,5 +1,5 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all } from "../lib/code.js";
 
   export default async () => ({
     s: await all({
@@ -117,16 +117,17 @@ ${html(s.page)}
 
   <p>
     Your folder structure is your routing. A page handles GET, and its loader is
-    given the URL, the path parameters and the cookies. Export <code>POST</code>
-    from the same file to handle a form. Put a <code>.js</code> file beside it
-    and it becomes an API endpoint. Hono runs the server.
+    given the URL, the path parameters and the cookies. Export
+    <code>POST</code> from the same file to handle a form. Put a
+    <code>.js</code> file beside it and it becomes an API endpoint. Hono runs
+    the server.
   </p>
 
   <p>
     It is HTML-first and hypermedia-driven. The markup the server sends is the
     state of your app, and links and forms are what change it. If that idea is
-    new to you, <a href="https://hypermedia.systems/">Hypermedia Systems</a> is a
-    good place to start.
+    new to you, <a href="https://hypermedia.systems/">Hypermedia Systems</a> is
+    a good place to start.
   </p>
 
   <p>
@@ -139,8 +140,8 @@ ${html(s.page)}
   <div class="cell">
     <h2>Everything in one file</h2>
     <p>
-      Data loading, markup, styles and behavior live together in the file the URL
-      points at.
+      Data loading, markup, styles and behavior live together in the file the
+      URL points at.
     </p>
   </div>
   <div class="cell">
@@ -167,12 +168,12 @@ ${html(s.page)}
 
 <div class="body">
   <p>
-    Ted Nelson coined the word <em>hypertext</em> in the 1960s, and the web was
-    built on it: a link, a click, a new document. Transclusion is the other half
-    of the same design, and the web left it behind. It means putting part of one
-    document inside another by pointing at it rather than copying it, so a piece
-    of writing can sit in two places and still be one piece of writing. Nelson
-    set it out in
+    <a href="https://en.wikipedia.org/wiki/Ted_Nelson">Ted Nelson</a> coined the
+    word <em>hypertext</em> in the 1960s, and the web was built on it: a link, a
+    click, a new document. Transclusion is the other half of the same design,
+    and the web left it behind. It means putting part of one document inside
+    another by pointing at it rather than copying it, so a piece of writing can
+    sit in two places and still be one piece of writing. Nelson set it out in
     <a href="https://archive.org/details/literarymachines00nels"
       ><em>Literary Machines</em></a
     >, the book describing his Project Xanadu.
@@ -180,8 +181,8 @@ ${html(s.page)}
 
   <p>
     HTML has always pulled in a whole resource by pointing at it: an image, a
-    stylesheet, a script, another page in an <code>&lt;iframe&gt;</code>. What it
-    has never had is a way to take one part of a document and make it part of
+    stylesheet, a script, another page in an <code>&lt;iframe&gt;</code>. What
+    it has never had is a way to take one part of a document and make it part of
     another. An iframe is a separate document in a box, with its own styles and
     its own layout. It never becomes your text.
   </p>
@@ -195,9 +196,9 @@ ${html(s.page)}
 
   <p>
     transclude does that two ways. An <strong>element</strong> is markup pulled
-    into the page that calls it. A <strong>fragment</strong> is a piece of a page
-    that keeps a URL of its own, so you can render it in place or fetch it by
-    itself. Either way there is one copy of the markup.
+    into the page that calls it. A <strong>fragment</strong> is a piece of a
+    page that keeps a URL of its own, so you can render it in place or fetch it
+    by itself. Either way there is one copy of the markup.
   </p>
 </div>
 

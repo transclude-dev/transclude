@@ -336,6 +336,17 @@ against.
   the hook exists is rendering a stored preference, and a preference comes from a
   cookie. Names are checked against a pattern rather than escaped, because a name
   that needs escaping is a mistake and should say so.
+- **An endpoint's `Response` goes through the envelope too.** Every other path
+  wrapped one and this did not, so an endpoint that set a cookie and answered a
+  redirect lost the cookie. The redirect worked, which is what made it hard to
+  see. Found by writing an endpoint that stores a preference and sends you back,
+  which is the shape that hits it.
+- **`prerender` is read off the page, never off its layouts.** `build.js` checks
+  `pages[route.id]?.prerender`, so a layout that reads the request makes every
+  page under it request-dependent and nothing says so. The prerendered ones are
+  written with no request and quietly render whatever the default is. A theme
+  read from a cookie in the root layout is the case that shows it: half the site
+  honours the cookie and half serves a file, and both look fine on their own.
 - **A literal `${` cannot be written in a template.** There is no escape for it.
   The compiler reads every one as an interpolation, so `${}` in prose fails with
   `bad expression "": empty expression` and a line number in the compiled file

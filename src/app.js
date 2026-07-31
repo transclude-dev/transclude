@@ -10,6 +10,7 @@
 // Everything below is the same either way.
 
 import { cacheKey, createCache, windowOf } from './cache.js';
+import { feed, feedPath, feedType } from './feed.js';
 import { sitemap } from './sitemap.js';
 import { absoluteFrom } from './document.js';
 import {
@@ -141,6 +142,13 @@ export function createApp({
       const page = c.req.query('p');
       const xml = await sitemap(manifest, pages, config.sitemap, page ?? null);
       return c.body(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
+    });
+  }
+
+  if (config.feed) {
+    app.get(feedPath(config.feed), async (c) => {
+      const xml = await feed(config.feed);
+      return c.body(xml, 200, { 'Content-Type': feedType(config.feed) });
     });
   }
 

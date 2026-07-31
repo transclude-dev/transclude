@@ -139,13 +139,17 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
 
   <h2>The parameter is strict, the header is not</h2>
 
-  <ul>
-    <li><code>?fragment=nope</code> is a 404.</li>
-    <li>
-      <code>HX-Target: nope</code> is ignored. htmx sends that header on every
-      request, including ones that want the whole document.
-    </li>
-  </ul>
+  <p>
+    <code>?fragment=nope</code> is a 404. Someone wrote that name into a URL, so
+    getting it wrong should say so.
+  </p>
+
+  <p>
+    A header naming a region is a hint, and an unknown name is ignored. Client
+    libraries set these headers on every request they make, including the ones
+    that want a whole document, so refusing an unrecognized name would break more
+    than it fixed. <code>HX-Target</code> from htmx works this way.
+  </p>
 
   <p>
     Naming a header in <code>fragmentHeader</code> adds it to <code>Vary</code>.

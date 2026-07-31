@@ -212,7 +212,7 @@ export function createChecker({
     `request: Request; fragment: string | null; ` +
     `response: { status: number; headers: Headers }; cookies: __Cookies; ` +
     `htmlAttrs: Record<string, string | boolean | null>; ` +
-    `absolute: (path: string) => string }`;
+    `absolute: (path: string) => string; revalidateTag: (tag: string) => void }`;
 
   const contextLiteral = (params, layoutType) =>
     `{ url: string; params: { ${params.map((name) => `${name}: string`).join('; ')} }; ` +
@@ -220,7 +220,7 @@ export function createChecker({
     `layout: ${layoutType}; request: Request | null; fragment: string | null; ` +
     `action: unknown; response: { status: number; headers: Headers }; ` +
     `cookies: __Cookies; htmlAttrs: Record<string, string | boolean | null>; ` +
-    `absolute: (path: string) => string }`;
+    `absolute: (path: string) => string; revalidateTag: (tag: string) => void }`;
 
   /**
    * Builds every shim in dependency order: components depend on nothing, a

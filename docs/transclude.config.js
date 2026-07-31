@@ -22,6 +22,10 @@ export default {
   // no server.
   csp: true,
 
+  // GET /sitemap.xml, from the route table. Every page here is a concrete route,
+  // so nothing has to be listed by hand.
+  sitemap: { hostname: 'https://transclude.dev' },
+
   // Fonts and favicon. Copied, not compiled.
   publicDir: 'public',
 

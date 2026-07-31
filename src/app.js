@@ -9,12 +9,14 @@
 // zlib; a runtime with an asset binding reads that and lets the platform compress.
 // Everything below is the same either way.
 
+import { cacheKey, createCache, windowOf } from './cache.js';
+import { sitemap } from './sitemap.js';
+import { absoluteFrom } from './document.js';
 import {
   ACTION_METHODS,
   hasRegion,
   methodsOf,
   renderFragment,
-  htmlAttrsOf,
   renderRoute,
   responseOf,
   runAction,
@@ -55,8 +57,11 @@ export function createApp({
   hash,
   compress = null,
 }) {
+  const cache = createCache(config.cache);
+
   const app = baseApp({
     csrf: config.csrf,
+    csp: config.csp,
     trailingSlash: config.trailingSlash,
     publicFiles,
     middleware,
@@ -87,7 +92,8 @@ export function createApp({
       action: null,
       response,
       cookies: cookiesOf(c.req.raw, response, config.cookieSecret),
-      htmlAttrs: htmlAttrsOf(),
+      absolute: absoluteFrom(config.metadataBase, c.req.url),
+      revalidateTag: cache.revalidateTag,
       ...extra,
     };
   };
@@ -128,6 +134,16 @@ export function createApp({
    * asking for and mutations worth accepting, and the prerendered handler below
    * matches on path alone, so it would answer either one with a static document.
    */
+  // Before the route table, like the public files, so a `[...path]` catch-all
+  // cannot answer for it.
+  if (config.sitemap) {
+    app.get('/sitemap.xml', async (c) => {
+      const page = c.req.query('p');
+      const xml = await sitemap(manifest, pages, config.sitemap, page ?? null);
+      return c.body(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
+    });
+  }
+
   for (const route of manifest.routes ?? []) {
     app.get(route.pattern, async (c, next) => {
       const region = regionOf(route, c);
@@ -225,17 +241,50 @@ export function createApp({
    * page, and the page's loader is what decides the status.
    */
   for (const route of manifest.routes ?? []) {
+    const window = windowOf(pages[route.id]);
+
     app.get(route.pattern, async (c) => {
       try {
-        const ctx = contextFor(route, c);
-        const html = await renderRoute(pages[route.id], ctx, {
-          clientEntry: route.client,
-          stylesheet: manifest.stylesheet,
-          csp: config.csp,
-        });
+        // One render, called by the cache when it needs one and directly when
+        // the route has no window. `cacheable` is the same rule the build uses
+        // to decide a route can be a file: a 2xx with no header a file could not
+        // carry. A `Set-Cookie` in a shared cache is one visitor's session
+        // handed to the next.
+        let rendered = null;
+        const render = async () => {
+          const ctx = contextFor(route, c);
+          const html = await renderRoute(pages[route.id], ctx, {
+            clientEntry: route.client,
+            stylesheet: manifest.stylesheet,
+            csp: config.csp,
+          });
 
-        if (html instanceof Response) return withEnvelope(html, ctx);
-        return sendRendered(c, html, ctx);
+          rendered = { ctx, html };
+          const ok = !(html instanceof Response) && ctx.response.status < 300;
+          // Three ways a page is not a shared answer: it answered with a
+          // Response, it is not 2xx, or it is personal. Personal means a header
+          // was written *or* a cookie was read. The second half matters: a page
+          // that only reads a cookie and renders a count from it sets no header
+          // at all, and holding it would hand one visitor's count to the next.
+          const shared = [...ctx.response.headers.keys()].length === 0 && !ctx.cookies.personal;
+          return { html, cacheable: ok && shared };
+        };
+
+        if (window) {
+          const html = await cache.read(cacheKey(c.req.url), window, render);
+
+          // A miss renders through the cache, and that render can answer with a
+          // `Response`. It was not stored, but it is still the answer.
+          if (html instanceof Response) return withEnvelope(html, rendered.ctx);
+
+          // A hit ran no loader, so there is no envelope to carry. A cached page
+          // has none by definition: one with a header was never stored.
+          return sendRendered(c, html, rendered?.ctx ?? contextFor(route, c));
+        }
+
+        await render();
+        if (rendered.html instanceof Response) return withEnvelope(rendered.html, rendered.ctx);
+        return sendRendered(c, rendered.html, rendered.ctx);
       } catch (err) {
         return internalError(c, err);
       }

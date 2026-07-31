@@ -98,7 +98,9 @@ export type RootLayoutContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>
+  htmlAttrs: Record<string, string | boolean | null>;
+  absolute: (path: string) => string;
+  revalidateTag: (tag: string) => void
 };
 
 /** Data returned by `root/_layout.html`. */
@@ -134,7 +136,9 @@ export type PeopleLayoutContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>
+  htmlAttrs: Record<string, string | boolean | null>;
+  absolute: (path: string) => string;
+  revalidateTag: (tag: string) => void
 };
 
 /** Data returned by `people/_layout.html`. */
@@ -166,7 +170,9 @@ export type CheckContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>
+  htmlAttrs: Record<string, string | boolean | null>;
+  absolute: (path: string) => string;
+  revalidateTag: (tag: string) => void
 };
 
 /** Data returned by `check`'s <script server> block. */
@@ -203,7 +209,9 @@ export type NotesContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>
+  htmlAttrs: Record<string, string | boolean | null>;
+  absolute: (path: string) => string;
+  revalidateTag: (tag: string) => void
 };
 
 /** Data returned by `notes`'s <script server> block. */
@@ -242,7 +250,9 @@ export type IndexContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>
+  htmlAttrs: Record<string, string | boolean | null>;
+  absolute: (path: string) => string;
+  revalidateTag: (tag: string) => void
 };
 
 /** Data returned by `index`'s <script server> block. */
@@ -309,7 +319,9 @@ export type PeopleNameContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>
+  htmlAttrs: Record<string, string | boolean | null>;
+  absolute: (path: string) => string;
+  revalidateTag: (tag: string) => void
 };
 
 /** Data returned by `people-_name`'s <script server> block. */
@@ -365,7 +377,9 @@ export type DocsPathRestContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>
+  htmlAttrs: Record<string, string | boolean | null>;
+  absolute: (path: string) => string;
+  revalidateTag: (tag: string) => void
 };
 
 /** Data returned by `docs-_path_rest`'s <script server> block. */
@@ -398,7 +412,9 @@ export type _404Context = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>
+  htmlAttrs: Record<string, string | boolean | null>;
+  absolute: (path: string) => string;
+  revalidateTag: (tag: string) => void
 };
 
 /** Data returned by `404`'s <script server> block. */

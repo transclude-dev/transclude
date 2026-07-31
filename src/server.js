@@ -7,6 +7,7 @@
 
 import { Hono } from 'hono';
 import { csrf } from 'hono/csrf';
+import { headerPolicy } from './csp.js';
 import { trimTrailingSlash } from 'hono/trailing-slash';
 
 /**
@@ -22,11 +23,12 @@ import { trimTrailingSlash } from 'hono/trailing-slash';
  * `middleware` is the app's own `server.js`, and it runs after, so it can add
  * anything and cannot register itself ahead of the guard by mistake.
  */
-const OPTIONS = new Set(['csrf', 'trailingSlash', 'publicFiles', 'middleware']);
+const OPTIONS = new Set(['csrf', 'csp', 'trailingSlash', 'publicFiles', 'middleware']);
 
 export function baseApp(options = {}) {
   const {
     csrf: csrfOption = true,
+    csp: cspOption = false,
     trailingSlash = 'never',
     publicFiles = null,
     middleware = null,
@@ -73,6 +75,17 @@ export function baseApp(options = {}) {
   if (trailingSlash === 'never') app.use('*', trimTrailingSlash({ alwaysRedirect: true }));
 
   if (csrfOption) app.use('*', csrf(csrfOption === true ? undefined : csrfOption));
+
+  // The half of the policy a `<meta>` cannot carry. It names no hash, so it is
+  // the same string for every page and costs a prerendered one nothing. Before
+  // anything that answers, so a static file gets it too.
+  const header = headerPolicy(cspOption);
+  if (header) {
+    app.use('*', async (c, next) => {
+      await next();
+      c.header(header.name, header.value);
+    });
+  }
   if (typeof middleware === 'function') middleware(app);
 
   // After the app's middleware, so a guard can cover these too, and before the

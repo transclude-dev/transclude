@@ -225,9 +225,13 @@ test('readFlags sees what the compile sees', () => {
   assert.match(componentOf(source, { shadow: false }), /export const formAssociated = true;/);
 });
 
-test('state still needs a shadow root, and the message says how to get one', () => {
-  assert.throws(
-    () => componentOf('<script state>\nexport default { n: 0 };\n</script>\n<p>x</p>', { shadow: false }),
-    /export const shadow = true/,
-  );
+test('state compiles in a light element, and registers it', () => {
+  // State is behavior: its accessors are the only way to change it, so an
+  // element that has some is defined even with no <script> block at all.
+  const code = componentOf('<script state>\nexport default { n: 0 };\n</script>\n<p>${n}</p>', {
+    shadow: false,
+  });
+
+  assert.match(code, /export const light = true;/);
+  assert.match(code, /defineLight\(def,/);
 });

@@ -632,7 +632,18 @@ export function setAttrProp(def, element, name, value) {
 export function shadow(def, props, fragment = false) {
   if (fragment) return '';
   const styles = def.css ? `<style>${def.css}</style>` : '';
-  return `<template shadowrootmode="open">${styles}${def.render(def.coerce(props))}</template>`;
+  return `<template shadowrootmode="open">${styles}${def.render(data(def, props))}</template>`;
+}
+
+/**
+ * What a template sees, on the server: state defaults under the props.
+ *
+ * The same order the element uses once it is live, so the first paint and every
+ * later one read the same shape. Rendering props alone wrote `undefined` wherever
+ * a template named state.
+ */
+export function data(def, props) {
+  return { ...def.stateDefs, ...def.coerce(props) };
 }
 
 /**
@@ -645,7 +656,7 @@ export function shadow(def, props, fragment = false) {
  * the tag and `adoptStyles` adds them once.
  */
 export function fragment(def, props = {}, slots = {}) {
-  return def.render(def.coerce(props), slots, true);
+  return def.render(data(def, props), slots, true);
 }
 
 /**
@@ -742,7 +753,7 @@ export function defineLight(def, init) {
   //
   // Being a form control counts as behaviour: a shadow root is not required to be
   // one, and an element that submits a value has to exist to do it.
-  if (!init && !hasMembers(def) && !def.formAssociated) return;
+  if (!init && !hasMembers(def) && !def.formAssociated && !hasState(def)) return;
 
   class Light extends HTMLElement {
     // Every declared prop, so a change reaches the template. A light element
@@ -856,6 +867,7 @@ export function defineLight(def, init) {
   }
 
   defineProps(Light, def.propDefs, def.propAttrs);
+  defineState(Light, def.stateDefs, (element) => element.schedule());
   if (def.formAssociated) defineFormMembers(Light, def);
   defineMembers(Light, def.members, def.tag);
   customElements.define(def.tag, Light);
@@ -863,6 +875,11 @@ export function defineLight(def, init) {
 
 function hasMembers(def) {
   return Object.keys(def.members ?? {}).length > 0;
+}
+
+/** State counts as behavior: its accessors are the only way to change it. */
+function hasState(def) {
+  return Object.keys(def.stateDefs ?? {}).length > 0;
 }
 
 /**

@@ -118,14 +118,14 @@ function templateOf(source, registry = new Map(), opts = {}) {
   });
 
   const fn = new Function(
-    '__e', '__a', '__ap', '__str', '__sh', 'html', '__d', '__slots', '__fragment',
+    '__e', '__a', '__ap', '__str', '__sh', '__data', 'html', '__d', '__slots', '__fragment',
     ...used.map(({ ref }) => ref),
     `let __o = '';\n${body}\nreturn __o;`,
   );
 
   return (data = {}, slots = {}, fragment = false) =>
     fn(
-      rt.escape, rt.attr, rt.attrProp, rt.str, rt.shadow, rt.html,
+      rt.escape, rt.attr, rt.attrProp, rt.str, rt.shadow, rt.data, rt.html,
       data, slots, fragment,
       ...used.map(({ tag }) => registry.get(tag)),
     );

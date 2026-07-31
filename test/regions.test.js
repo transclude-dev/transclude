@@ -17,10 +17,11 @@ const compile = (source, opts = {}) =>
 
 const run = (body, data = {}) =>
   new Function(
-    '__e', '__a', '__str', '__sh', 'html', '__d', '__slots', '__fragment',
+    '__e', '__a', '__str', '__sh', '__data', 'html', '__d', '__slots', '__fragment',
     `let __o = '';\n${body}\nreturn __o;`,
   )(
-    (v) => String(v ?? ''), () => '', (v) => String(v ?? ''), () => '', (v) => v,
+    (v) => String(v ?? ''), () => '', (v) => String(v ?? ''), () => '',
+    (def, props) => props, (v) => v,
     data, {}, true,
   );
 

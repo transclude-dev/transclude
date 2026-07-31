@@ -143,7 +143,22 @@ against.
   guard reads `bindings.volatile`, which is what the compiler could *not* bind:
   with a boundary the same `each` compiles to a block with anchors and is written
   rather than rebuilt, so a shadow element's list is not volatile at all. Removing
-  the guard failed no test until one was written for it.
+  the guard failed no test until one was written for it. State is held to the same
+  rule, because a volatile name is whatever the template read and not where the
+  value came from.
+- **State is behavior, so it defines the element.** Nothing observes state: its
+  accessor is what schedules the write, the way an attribute change does for a
+  prop. So a light element with a `<script state>` block and no `<script>` at all
+  still has to be registered, or `el.n = 1` sets a value no node will ever hear
+  about. `defined` in the compiler and the early return in `defineLight` are two
+  spellings of one rule and have to agree.
+- **`data()` is what a template sees, and the server has to build it too.**
+  State defaults sit under the props. `shadow()` and `fragment()` rendered
+  `def.coerce(props)` alone, so any template naming state wrote `undefined` into
+  the page and the value only appeared once the element connected. This was wrong
+  for shadow elements the whole time and nothing failed, because no test rendered
+  one with state through the server. Props go on top of state in both places: put
+  them the other way and the first paint disagrees with every paint after it.
 - **Reacting costs a definition, and only a definition.** `defineLight` returns
   before registering unless there is behavior, members or form association, so
   `observedAttributes` costs a page nothing it was not already paying. The docs

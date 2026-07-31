@@ -24,6 +24,32 @@ export function responseOf() {
 }
 
 /**
+ * `ctx.absolute('/og.png')` -> `https://site.com/og.png`.
+ *
+ * A canonical URL, an `og:image` and a feed all have to be absolute, and the
+ * request's own origin is the wrong answer twice: behind a proxy it is the
+ * internal one, and while prerendering there is no request at all. So the origin
+ * comes from `metadataBase` when it is set, and falls back to the request.
+ *
+ * A path that is already absolute is returned untouched, so a value that came
+ * from somewhere else can be passed through without checking it first.
+ */
+export function absoluteFrom(base, requestUrl) {
+  return (path) => {
+    if (/^[a-z][a-z0-9+.-]*:/i.test(path)) return path;
+
+    const origin = base ?? requestUrl;
+    if (!origin) {
+      throw new Error(
+        `[transclude] absolute(${JSON.stringify(path)}) has no origin to resolve against. ` +
+          `Set \`metadataBase\` in the config, which is what a prerendered page uses.`,
+      );
+    }
+    return new URL(path, origin).href;
+  };
+}
+
+/**
  * Attributes for the `<html>` element, shared by reference the way the response
  * is. Every loader in the chain holds the same object, so a layout can set the
  * theme and a page can add to it.

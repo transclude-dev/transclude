@@ -18,10 +18,10 @@ const compile = (source, opts = {}) =>
 function render(source, data = {}, slots = {}) {
   const { body } = compileFragment(splitBlocks(source).nodes, { page: true, layout: true });
   const fn = new Function(
-    '__e', '__a', '__str', '__sh', 'html', '__d', '__slots', '__fragment',
+    '__e', '__a', '__str', '__sh', '__data', 'html', '__d', '__slots', '__fragment',
     `let __o = '';\n${body}\nreturn __o;`,
   );
-  return fn(rt.escape, rt.attr, rt.str, rt.shadow, rt.html, data, slots, false);
+  return fn(rt.escape, rt.attr, rt.str, rt.shadow, rt.data, rt.html, data, slots, false);
 }
 
 /** The named regions a page or layout declares for the level above it. */
@@ -31,9 +31,9 @@ function slotsOf(source) {
     Object.entries(slots).map(([name, body]) => [
       name,
       new Function(
-        '__e', '__a', '__str', '__sh', 'html', '__d', '__fragment',
+        '__e', '__a', '__str', '__sh', '__data', 'html', '__d', '__fragment',
         `let __o = '';\n${body}\nreturn __o;`,
-      )(rt.escape, rt.attr, rt.str, rt.shadow, rt.html, {}, false),
+      )(rt.escape, rt.attr, rt.str, rt.shadow, rt.data, rt.html, {}, false),
     ]),
   );
 }
@@ -275,7 +275,7 @@ test('how a usage renders follows the child\'s own declaration', () => {
     splitBlocks('<site-note>hi</site-note><user-card></user-card>').nodes,
     { components, shadowTags: new Set(['user-card']) },
   );
-  assert.match(body, /__C0\.render\(__C0\.coerce\(/, 'the light one renders inline');
+  assert.match(body, /__C0\.render\(__data\(__C0,/, 'the light one renders inline');
   assert.match(body, /__sh\(__C1/, 'the shadow one gets a declarative shadow root');
 });
 

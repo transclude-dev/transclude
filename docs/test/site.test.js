@@ -55,3 +55,41 @@ test('the fonts the stylesheet names are the fonts that exist', () => {
 
   assert.deepEqual(missing, [], `named but not present: ${missing.join(', ')}`);
 });
+
+/** A prerendered page, as it was written to dist. */
+function built(route) {
+  const dist = path.join(root, '..', 'dist', 'static');
+  const file = route === '/' ? 'index.html' : path.join(route.slice(1), 'index.html');
+  return fs.readFileSync(path.join(dist, file), 'utf8');
+}
+
+test('every page has a pager, and the ends have one link', () => {
+  // Reading order comes from the nav, so a page added to one is in the other.
+  // Getting that wrong is silent: the page renders, with nothing to read next.
+  const links = navLinks();
+  const [first, last] = [links[0], links[links.length - 1]];
+
+  const start = built(first);
+  assert.match(start, /class="pager"/);
+  assert.doesNotMatch(start, /rel="prev"/, 'the first page offered a previous');
+  assert.match(start, /rel="next"/);
+
+  const end = built(last);
+  assert.match(end, /rel="prev"/);
+  assert.doesNotMatch(end, /rel="next"/, 'the last page offered a next');
+
+  for (const route of links.slice(1, -1)) {
+    const html = built(route);
+    assert.match(html, /rel="prev"/, `${route} has no previous`);
+    assert.match(html, /rel="next"/, `${route} has no next`);
+  }
+});
+
+test('the pager points at the page the nav puts next', () => {
+  const links = navLinks();
+  const html = built(links[2]);
+  const next = html.match(/rel="next"[\s\S]*?href="([^"]+)"|href="([^"]+)"[^>]*rel="next"/);
+
+  assert.ok(next, 'no next link');
+  assert.equal(next[1] ?? next[2], links[3]);
+});

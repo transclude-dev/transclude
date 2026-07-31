@@ -210,14 +210,15 @@ export function createChecker({
     `{ url: string; params: { ${params.map((name) => `${name}: string`).join('; ')} }; ` +
     `route: { id: string; pattern: string; path: string }; ` +
     `request: Request; fragment: string | null; ` +
-    `response: { status: number; headers: Headers }; cookies: __Cookies }`;
+    `response: { status: number; headers: Headers }; cookies: __Cookies; ` +
+    `htmlAttrs: Record<string, string | boolean | null> }`;
 
   const contextLiteral = (params, layoutType) =>
     `{ url: string; params: { ${params.map((name) => `${name}: string`).join('; ')} }; ` +
     `route: { id: string; pattern: string; path: string }; ` +
     `layout: ${layoutType}; request: Request | null; fragment: string | null; ` +
     `action: unknown; response: { status: number; headers: Headers }; ` +
-    `cookies: __Cookies }`;
+    `cookies: __Cookies; htmlAttrs: Record<string, string | boolean | null> }`;
 
   /**
    * Builds every shim in dependency order: components depend on nothing, a

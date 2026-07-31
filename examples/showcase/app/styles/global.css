@@ -45,14 +45,50 @@ footer {
   view-transition-name: site-footer;
 }
 
+/* Three states, and only two of them are an attribute. `auto` is the absence of
+   a choice, so nothing is written on <html> and the media query decides. The
+   attribute is set by the layout's loader from a cookie, which is why the theme
+   survives a navigation with no JavaScript involved. */
 :root {
   --line: #dcdce4;
   --muted: #6b6b78;
   --ink: #1a1a22;
   --accent: #3b3bb0;
   --paper: #f4f4f8;
+  --surface: #e8e8f0;
   --radius: 12px;
   --step: 1rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --line: #2b2b36;
+    --muted: #9a9aae;
+    --ink: #e9e9f1;
+    --accent: #b8cfff;
+    --paper: #0f0f14;
+    --surface: #1b1b24;
+  }
+}
+
+/* An explicit choice outranks the media query in both directions, which is why
+   both are written out rather than only the dark one. */
+:root[data-theme="dark"] {
+  --line: #2b2b36;
+  --muted: #9a9aae;
+  --ink: #e9e9f1;
+  --accent: #b8cfff;
+  --paper: #0f0f14;
+  --surface: #1b1b24;
+}
+
+:root[data-theme="light"] {
+  --line: #dcdce4;
+  --muted: #6b6b78;
+  --ink: #1a1a22;
+  --accent: #3b3bb0;
+  --paper: #f4f4f8;
+  --surface: #e8e8f0;
 }
 
 *,
@@ -85,12 +121,12 @@ h2 {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #8a8a96;
+  color: var(--muted);
   margin: 2.5rem 0 0.75rem;
 }
 
 code {
-  background: #e8e8f0;
+  background: var(--surface);
   border-radius: 4px;
   padding: 0.1rem 0.3rem;
   font-size: 0.85em;
@@ -99,8 +135,8 @@ code {
 /* A utility class, to make the boundary visible: it lands on a partial and is
    ignored inside a component's shadow root. */
 .tinted {
-  background: #fffbe6;
-  border: 1px dashed #d8c56a;
+  background: color-mix(in srgb, var(--accent) 12%, var(--paper));
+  border: 1px dashed var(--accent);
   border-radius: var(--radius);
   padding: calc(var(--step) / 2);
 }

@@ -336,6 +336,14 @@ against.
   the hook exists is rendering a stored preference, and a preference comes from a
   cookie. Names are checked against a pattern rather than escaped, because a name
   that needs escaping is a mistake and should say so.
+- **An endpoint's `Response` goes through the envelope too.** Every other path
+  wrapped one and this did not, so an endpoint that set a cookie and answered a
+  redirect lost the cookie. The redirect worked, which is what made it hard to
+  see. Found by writing the showcase theme toggle, which is exactly that shape.
+- **`prerender` is read off the page, never off its layouts.** A layout that
+  reads a cookie makes every page under it depend on the request, and nothing
+  says so. The prerendered ones are written with no request and quietly render
+  the default. The showcase has both kinds on purpose, and its notes say which.
 - **A literal `${` cannot be written in a template.** There is no escape for it.
   The compiler reads every one as an interpolation, so `${}` in prose fails with
   `bad expression "": empty expression` and a line number in the compiled file

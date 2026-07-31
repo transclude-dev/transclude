@@ -120,8 +120,8 @@
     <a
       href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM"
       >shadow root</a
-    >, a working <code>&lt;slot&gt;</code>, and a re-render when its attributes
-    change.
+    >, a working <code>&lt;slot&gt;</code>, and the ability to rebuild its own
+    structure.
   </p>
 
   ${html(s.shadow)}
@@ -153,8 +153,8 @@
         </tr>
         <tr>
           <td>Re-renders on attribute change</td>
-          <td>No</td>
-          <td>Yes</td>
+          <td>Text and attributes, written in place</td>
+          <td>Anything, including structure</td>
         </tr>
         <tr>
           <td>Server-rendered</td>
@@ -192,6 +192,29 @@
     styles and DOM sealed off from the page, or when it has to re-render on its
     own.
   </p>
+
+  <h3>What each can re-render</h3>
+
+  <p>
+    Both react to a prop change. A light element writes the text and attributes
+    that are already there, so the node keeps its identity and anything holding a
+    reference to it still does. It never replaces its children, because it does
+    not own them: the page's CSS reaches them, the page's script can hold them,
+    and the caller's slotted markup sits among them.
+  </p>
+
+  <p>
+    Rebuilding structure is what needs the boundary. An <code>if</code> or an
+    <code>each</code> over a value that changes is refused in a light element,
+    with an error naming <code>shadow</code>. A shadow root makes the subtree the
+    element's to replace.
+  </p>
+
+  <doc-note label="Reacting costs a definition">
+    An element observes its props only once it is defined, and it is defined only
+    with behavior, members, or form association. A light element of plain markup
+    still ships nothing at all.
+  </doc-note>
 
   <h3>What <code>&lt;slot&gt;</code> means in each</h3>
 

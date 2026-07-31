@@ -733,3 +733,57 @@ test('the message names the block the member is actually written in', async () =
     );
   });
 });
+
+// ---- a light element re-renders ------------------------------------------
+
+test('a light element observes every declared prop', async () => {
+  // It observed nothing unless it was form-associated, so an attribute change
+  // reached the DOM and nothing else.
+  await withDom(async ({ defineLight }, registry) => {
+    const def = defOf({ light: true, propDefs: { count: 0, label: '' } });
+    defineLight(def, () => {});
+
+    assert.deepEqual(registry.get(def.tag).observedAttributes.sort(), ['count', 'label']);
+  });
+});
+
+test('a change writes through the bindings, and binds only once', async () => {
+  // The property worth having. A light element does not own its children, so an
+  // update writes to the nodes it already found and never rebuilds them.
+  await withDom(async ({ defineLight }, registry) => {
+    const node = { data: '0' };
+    let binds = 0;
+    const written = [];
+
+    const def = defOf({
+      light: true,
+      propDefs: { count: 0 },
+      bind: (root) => (binds++, [node]),
+      update: (b, d) => (written.push(d.count), (b[0].data = String(d.count)), true),
+    });
+    defineLight(def, () => {});
+
+    const el = new (registry.get(def.tag))();
+    el.isConnected = true;
+    el.connectedCallback();
+
+    el.setAttribute('count', '7');
+    await el.updateComplete;
+
+    assert.equal(node.data, '7', 'the node it bound was not written');
+    // The fake def's coerce passes strings through; the compiled one types them.
+    assert.deepEqual(written, ['7'], 'update ran once');
+    assert.equal(binds, 1, 'it re-bound instead of writing through');
+  });
+});
+
+test('a light element still ships nothing when it has no behavior', async () => {
+  // The zero-JS default. Reactivity is what a defined element gets, and an
+  // element with nothing to define is still not defined.
+  await withDom(async ({ defineLight }, registry) => {
+    const def = defOf({ light: true, propDefs: { count: 0 }, members: {} });
+    defineLight(def, null);
+
+    assert.equal(registry.get(def.tag), undefined);
+  });
+});

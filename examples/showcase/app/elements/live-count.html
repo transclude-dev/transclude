@@ -1,0 +1,43 @@
+<script properties>
+  /**
+   * A light element that re-renders. No shadow root, so page CSS reaches it and
+   * `<label for>` would work; the count below is written in place when the
+   * attribute changes.
+   *
+   * @typedef {{ count: number; label: string }} Props
+   */
+
+  /** @type {Props} */
+  export default {
+    count: 0,
+    label: "clicks",
+  };
+</script>
+
+<style>
+  :scope {
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: baseline;
+  }
+  strong {
+    font-size: 1.4rem;
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+
+<strong>${count}</strong>
+<span>${label}</span>
+
+<script>
+  // Setting the prop writes the attribute, which schedules the update. The text
+  // node is written in place: nothing is replaced, so anything else on the page
+  // holding a reference to it still holds it.
+  export const prototype = {
+    add(n = 1) {
+      this.count = Number(this.count) + n;
+    },
+  };
+
+  host.addEventListener("click", () => host.add(), { signal });
+</script>

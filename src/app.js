@@ -174,6 +174,7 @@ export function createApp({
             ? await renderRoute(page, ctx, {
                 clientEntry: route.client,
                 stylesheet: manifest.stylesheet,
+                csp: config.csp,
               })
             : await renderFragment(page, ctx, { region: region || null });
 
@@ -230,6 +231,7 @@ export function createApp({
         const html = await renderRoute(pages[route.id], ctx, {
           clientEntry: route.client,
           stylesheet: manifest.stylesheet,
+          csp: config.csp,
         });
 
         if (html instanceof Response) return withEnvelope(html, ctx);

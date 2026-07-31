@@ -1,3 +1,5 @@
+import { withPolicy } from './csp.js';
+
 // Assembles the document around a layout chain.
 //
 // The chain is outermost layout first, page last. Body markup folds inward-out:
@@ -93,7 +95,11 @@ export async function renderRoute(page, ctx, options = {}) {
   }
 
   // The loaders have run, so whatever they put on `ctx.htmlAttrs` is final.
-  return renderDocument(chain, datas, { ...options, htmlAttrs: ctx.htmlAttrs });
+  const html = renderDocument(chain, datas, { ...options, htmlAttrs: ctx.htmlAttrs });
+
+  // After the document exists, because the policy is built from what it inlined.
+  // A prerendered page runs this once at build time and carries the result.
+  return withPolicy(html, options.csp);
 }
 
 /**

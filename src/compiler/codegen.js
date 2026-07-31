@@ -36,6 +36,14 @@ export class CompileError extends Error {
 export function compileFragment(nodes, opts = {}) {
   const gen = new Codegen(opts);
   gen.emitChildren(nodes, gen.body, gen.rootScope, true);
+
+  // `<html>` is read separately, because the fragment parser drops it: a nested
+  // html start tag is not something that can appear in a body, so parse5 throws
+  // it away attributes and all. `splitBlocks` reads it in document mode, where
+  // it is the element it names.
+  const htmlNode = opts.html ?? null;
+  const htmlAttrs = htmlNode?.attrs?.length ? gen.htmlAttrsJs(htmlNode, gen.rootScope) : null;
+
   return {
     body: joinOut(gen.body),
     blockDefs: gen.blockDefs.join('\n'),
@@ -46,6 +54,7 @@ export function compileFragment(nodes, opts = {}) {
     head: joinOut(gen.head),
     title: joinOut(gen.title),
     hasTitle: gen.title.length > 0,
+    htmlAttrs,
     warnings: gen.warnings,
     reads: gen.reads,
     components: [...gen.used.entries()].map(([tag, ref]) => ({ tag, ref })),
@@ -609,6 +618,26 @@ class Codegen {
           : `__o += __a(${JSON.stringify(attr.name)}, ${this.attrValueJs(attr, scope, el)});`,
       );
     }
+  }
+
+  /**
+   * `<html lang="en" data-theme="${theme}">` as `{ "lang": "en", "data-theme": theme }`.
+   *
+   * An object rather than serialized markup, because the chain merges these by
+   * name: a root layout setting the theme and a page setting `dir` must both
+   * survive, and two `data-theme` attributes in one tag would leave the parser
+   * taking the first, which is the outermost. `renderDocument` serializes.
+   */
+  htmlAttrsJs(el, scope) {
+    const pairs = el.attrs
+      .filter((attr) => !DIRECTIVES.has(attr.name))
+      .map((attr) => {
+        const name = JSON.stringify(attr.name);
+        if (attr.value === '') return `${name}: true`;
+        return `${name}: ${this.attrValueJs(attr, scope, el)}`;
+      });
+
+    return `{ ${pairs.join(', ')} }`;
   }
 
   // A lone `${expr}` keeps the value's type (arrays/objects/booleans survive to

@@ -327,15 +327,20 @@ against.
   in `app/elements/`, find nothing, and every tag would render as an unmatched
   custom element with no styles and no error. Same guard as the old `pages`
   directory name.
-- **`ctx.htmlAttrs` is shared by reference, like `ctx.response`, and for the same
-  reason.** Loaders are called with `{ ...ctx, layout }`, so anything assigned
-  onto `ctx` itself lands on a copy nobody reads. `renderRoute` passes
-  `ctx.htmlAttrs` to `renderDocument` after the chain has run, which is why a
-  layout can set the theme and the page below it can still add to it. Values are
-  escaped with the same four characters `attr` escapes in the runtime: the reason
-  the hook exists is rendering a stored preference, and a preference comes from a
-  cookie. Names are checked against a pattern rather than escaped, because a name
-  that needs escaping is a mistake and should say so.
+- **`<html>` is read with a second parse, because the fragment parser drops it.**
+  A nested html start tag cannot appear in a body, so `parseFragment` throws it
+  away attributes and all, and it never reaches `emitElement`. `splitBlocks`
+  parses the source again in document mode purely to read that element. Using the
+  real parser rather than searching the text is what makes `<html>` inside a
+  script block or a comment stay a string.
+- **`renderHtmlAttrs` returns an object, not markup.** The chain merges by name,
+  innermost winning per attribute, so a root layout setting the theme and a page
+  setting `dir` both survive. Concatenating serialized attributes instead would
+  put two `data-theme` in one tag, and the parser takes the *first*, which is the
+  outermost, which is backwards. `renderDocument` serializes once. Values are
+  escaped with the same four characters `attr` escapes in the runtime, because a
+  theme comes from a cookie. Names are checked against a pattern rather than
+  escaped: a name needing an escape is a mistake and should say so.
 - **An endpoint's `Response` goes through the envelope too.** Every other path
   wrapped one and this did not, so an endpoint that set a cookie and answered a
   redirect lost the cookie. The redirect worked, which is what made it hard to
@@ -371,6 +376,13 @@ against.
   with means the script is refused, so this needs a real digest. `crypto.subtle`
   and `btoa` are globals on all four runtimes, so the core keeps its no-`node:`
   property.
+- **Reading a cookie is what makes a page personal, not writing one.** The cache
+  first refused to hold a page whose loader set a header, which is the rule the
+  build uses to decide a route can be a file. It is not enough. `/notes` renders
+  "you have added N of these" from a cookie it only *reads*, sets nothing, and
+  was cached: the next visitor got the first one's count. `cookiesOf` records the
+  read and `cacheable` checks it. The unit test for the flag passed the whole
+  time; only a request through `createApp` catches this.
 - **A literal `${` cannot be written in a template.** There is no escape for it.
   The compiler reads every one as an interpolation, so `${}` in prose fails with
   `bad expression "": empty expression` and a line number in the compiled file

@@ -11,7 +11,7 @@ import { createServer as createViteServer } from 'vite';
 import {
   ACTION_METHODS,
   hasRegion,
-  htmlAttrsOf,
+  absoluteFrom,
   methodsOf,
   renderFragment,
   renderRoute,
@@ -95,7 +95,7 @@ function withResponse(c, extra) {
   return {
     response,
     cookies: cookiesOf(c.req.raw, response, cookieSecret),
-    htmlAttrs: htmlAttrsOf(),
+    absolute: absoluteFrom(config.metadataBase, c.req.url),
     ...extra,
   };
 }

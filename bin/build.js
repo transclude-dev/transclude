@@ -16,7 +16,8 @@ import { pathToFileURL } from 'node:url';
 import { build } from 'vite';
 import transclude from '../src/plugin.js';
 import { loadProject } from '../src/project.js';
-import { htmlAttrsOf, renderRoute, responseOf } from '../src/document.js';
+import { absoluteFrom, renderRoute, responseOf } from '../src/document.js';
+import { sitemap } from '../src/sitemap.js';
 import { loadAssets, loadStatic } from '../src/static-cache.js';
 import { cookiesOf } from '../src/cookies.js';
 import { pool } from '../src/pool.js';
@@ -141,7 +142,7 @@ async function render(route, { url, params }) {
     action: null,
     response,
     cookies: cookiesOf(null, response, config.cookieSecret),
-    htmlAttrs: htmlAttrsOf(),
+    absolute: absoluteFrom(config.metadataBase, null),
   };
 
   const html = await renderRoute(pages[route.id], ctx, {
@@ -220,6 +221,15 @@ const outcomes = await pool(targets, CONCURRENCY, async ({ route, target, file, 
 
 const failures = outcomes.filter((outcome) => !outcome.ok);
 const prerendered = outcomes.filter((outcome) => outcome.ok).map((outcome) => outcome.url);
+
+// A file, like every other page. The served route answers the same document, but
+// `dist/static` is meant to be servable by a host that runs none of this, and a
+// site with no sitemap there would be missing one only on the host that needs it
+// written down most.
+if (config.sitemap) {
+  write('sitemap.xml', await sitemap({ routes: manifest.routes }, pages, config.sitemap));
+  prerendered.push('/sitemap.xml');
+}
 
 if (failures.length) {
   console.error(`\n${failures.length} page${failures.length === 1 ? '' : 's'} failed to render:`);

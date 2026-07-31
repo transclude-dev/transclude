@@ -95,6 +95,14 @@
           </td>
         </tr>
         <tr>
+          <td><code>metadataBase</code></td>
+          <td>—</td>
+          <td>
+            The origin <code>ctx.absolute()</code> resolves against, for a
+            canonical URL or an <code>og:image</code>.
+          </td>
+        </tr>
+        <tr>
           <td><code>outDir</code></td>
           <td><code>'dist'</code></td>
           <td>Where the build writes.</td>
@@ -111,6 +119,15 @@
           <td><code>routesDir</code></td>
           <td><code>'routes'</code></td>
           <td>Pages and endpoints. Relative to <code>appDir</code>.</td>
+        </tr>
+        <tr>
+          <td><code>sitemap</code></td>
+          <td><code>false</code></td>
+          <td>
+            <code>{ hostname }</code> mounts <code>/sitemap.xml</code> and writes
+            it into the build. Takes <code>entries</code>,
+            <code>exclude</code> and <code>limit</code> too.
+          </td>
         </tr>
         <tr>
           <td><code>strict</code></td>

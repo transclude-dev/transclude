@@ -27,6 +27,15 @@
     <p>Pages can fill this by declaring a named slot.</p>
   </slot>
 </aside>`,
+      htmlAttrs: `<script server>
+  export default async ({ cookies }) => ({
+    theme: cookies.get('theme') ?? 'auto',
+  });
+<\/script>
+
+<html data-theme="\${theme}" dir="rtl">
+
+<slot></slot>`,
       guard: [
         `export default async ({ cookies, url }) => {
   const session = await cookies.signed.get('session');
@@ -82,6 +91,25 @@
     <code>export const prerender = false</code>. Otherwise the build writes a
     logged-out copy to a file.
   </doc-note>
+
+  <h2>Attributes on &lt;html&gt;</h2>
+
+  <p>
+    The root layout owns the document, so it is where a theme or a text
+    direction belongs. Write <code>&lt;html&gt;</code> and its attributes become
+    the document's, the same way a <code>&lt;title&gt;</code> anywhere in the
+    chain becomes the document's title.
+  </p>
+
+  ${html(s.htmlAttrs)}
+
+  <p>
+    They merge by name along the chain, innermost winning, so a root layout can
+    set the theme and a page can set <code>dir</code> and both survive. Values
+    are escaped, a bare attribute is <code>true</code>, and
+    <code>false</code> or <code>null</code> drops it. <code>lang</code> is there
+    already and can be overwritten.
+  </p>
 
   <h2>Sharing the response</h2>
 

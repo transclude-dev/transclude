@@ -1,8 +1,9 @@
 <script server>
   // The nav lives here rather than in each page, so a new page is one file and
   // one line. `route.path` marks the current link.
-  export default async ({ route }) => ({
+  export default async ({ route, absolute }) => ({
     path: route.path,
+    canonical: absolute(route.path),
     sections: [
       {
         title: 'Start',
@@ -51,6 +52,7 @@
 </script>
 
 <title>transclude</title>
+<link rel="canonical" href="${canonical}" />
 
 <style>
   .topbar {

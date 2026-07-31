@@ -10,6 +10,7 @@
 // Everything below is the same either way.
 
 import { sitemap } from './sitemap.js';
+import { absoluteFrom } from './document.js';
 import {
   ACTION_METHODS,
   hasRegion,
@@ -89,6 +90,7 @@ export function createApp({
       response,
       cookies: cookiesOf(c.req.raw, response, config.cookieSecret),
       htmlAttrs: htmlAttrsOf(),
+      absolute: absoluteFrom(config.metadataBase, c.req.url),
       ...extra,
     };
   };

@@ -178,12 +178,20 @@
     display: flex;
     gap: 1rem;
     justify-content: space-between;
+    /* The prose type, so `--measure` resolves to the same width here as it
+       does over the text and the next link lands under the end of a line. The
+       links set their own type back. */
+    font-family: var(--prose-family);
+    font-size: var(--prose-size);
+    max-width: var(--measure);
     margin-top: 4rem;
     padding-top: 1.2rem;
     border-top: 1px solid var(--rule);
   }
 
   .pager a {
+    font-family: var(--sans);
+    font-size: 0.9375rem;
     display: flex;
     flex-direction: column;
     gap: 0.15rem;

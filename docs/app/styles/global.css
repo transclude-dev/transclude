@@ -58,6 +58,10 @@
   --warn-rule: #e8cfa0;
   --warn-ink: #704700;
 
+  /* The prose type. `--measure` is in `ch`, so anything that wants to line up
+     with a line of text has to be set in the same font at the same size. */
+  --prose-family: var(--serif);
+  --prose-size: 1.0625rem;
   --measure: 68ch;
   --radius: 6px;
 }

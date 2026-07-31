@@ -115,6 +115,7 @@ const renderPage = async (route, c, status = null, extra = {}) => {
     // No query param: Vite content-negotiates, and a <link> sends
     // `Accept: text/css`, so the plain path returns the stylesheet.
     stylesheet: config.stylesheet ? `/${config.stylesheet}` : null,
+    csp: config.csp,
   });
   // A loader answered for itself: a redirect, or something that is not a page.
   if (html instanceof Response) return withEnvelope(html, ctx);

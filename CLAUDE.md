@@ -347,6 +347,21 @@ against.
   written with no request and quietly render whatever the default is. A theme
   read from a cookie in the root layout is the case that shows it: half the site
   honours the cookie and half serves a file, and both look fine on their own.
+- **The CSP is hashes, not a nonce, because a prerendered page is a file.** A
+  nonce has to be fresh per request, so a page carrying one cannot be written
+  once and compressed once, and every prerendered page here is exactly that.
+  Swapping a nonce into the body on the way out would mean decompressing and
+  recompressing every response, which is the whole point of `dist` gone. A hash
+  is fixed when the page renders, survives being written to disk, and is
+  correct on a host that has never heard of this framework. `withPolicy` runs in
+  `renderRoute`, after the document exists, because the policy is built from what
+  the document inlined.
+- **`csp.js` uses `crypto.subtle`, not the injected `hash`.** That one is an
+  ETag, documented as a cache key and not a signature, and `portable.test.js`
+  hands it a fake that returns a length. A CSP hash the browser does not agree
+  with means the script is refused, so this needs a real digest. `crypto.subtle`
+  and `btoa` are globals on all four runtimes, so the core keeps its no-`node:`
+  property.
 - **A literal `${` cannot be written in a template.** There is no escape for it.
   The compiler reads every one as an interpolation, so `${}` in prose fails with
   `bad expression "": empty expression` and a line number in the compiled file

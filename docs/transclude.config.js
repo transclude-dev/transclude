@@ -17,6 +17,11 @@ export default {
 
   csrf: true,
 
+  // A Content-Security-Policy in the document, built from the hashes of what it
+  // inlines. Every page here is a file, so the policy is written once and needs
+  // no server.
+  csp: true,
+
   // Fonts and favicon. Copied, not compiled.
   publicDir: 'public',
 

@@ -9,6 +9,7 @@
 // zlib; a runtime with an asset binding reads that and lets the platform compress.
 // Everything below is the same either way.
 
+import { sitemap } from './sitemap.js';
 import {
   ACTION_METHODS,
   hasRegion,
@@ -128,6 +129,16 @@ export function createApp({
    * asking for and mutations worth accepting, and the prerendered handler below
    * matches on path alone, so it would answer either one with a static document.
    */
+  // Before the route table, like the public files, so a `[...path]` catch-all
+  // cannot answer for it.
+  if (config.sitemap) {
+    app.get('/sitemap.xml', async (c) => {
+      const page = c.req.query('p');
+      const xml = await sitemap(manifest, pages, config.sitemap, page ?? null);
+      return c.body(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
+    });
+  }
+
   for (const route of manifest.routes ?? []) {
     app.get(route.pattern, async (c, next) => {
       const region = regionOf(route, c);

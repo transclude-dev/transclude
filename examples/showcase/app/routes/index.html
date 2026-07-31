@@ -97,6 +97,15 @@
   <em>The host got the class; nothing inside its shadow root did.</em>
 </user-card>
 
+<h2>A light element that re-renders</h2>
+
+<p>
+  No shadow root. Click it: the prop write changes the attribute, and the text is
+  written in place rather than the element being repainted.
+</p>
+
+<live-count count="0" label="clicks"></live-count>
+
 <h2>Escaping</h2>
 <p>Untrusted: ${note}</p>
 <p>Opted out with <code>html()</code>: ${html(trusted)}</p>

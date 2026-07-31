@@ -12,11 +12,25 @@
 // and correct forever after with no server involved. A static host serves it
 // unchanged.
 
-/** What a page gets when the config says `true`. */
+/**
+ * What a page gets when the config says `true`.
+ *
+ * `script-src` is hashed and `style-src` is not, which looks inconsistent and is
+ * the only combination that works. A hash never covers an attribute: `style="…"`
+ * on an element is checked against `style-src`, and the spec says a hash there
+ * applies to `<style>` blocks only. Worse, `'unsafe-inline'` is *ignored* in a
+ * directive that carries any hash, so listing both allows nothing extra.
+ *
+ * So hashing styles means no element may carry a `style` attribute, and
+ * `style="view-transition-name: …"` is an ordinary thing to write here. Script
+ * is where the protection matters: CSS cannot run code, and `script-src` stays
+ * strict. Put `'hashes'` in `style-src` yourself if your pages have no inline
+ * style attributes at all.
+ */
 export const CSP_DEFAULTS = {
   'default-src': ["'self'"],
   'script-src': ["'self'", "'hashes'"],
-  'style-src': ["'self'", "'hashes'"],
+  'style-src': ["'self'", "'unsafe-inline'"],
   'img-src': ["'self'", 'data:'],
   'object-src': ["'none'"],
   'base-uri': ["'self'"],

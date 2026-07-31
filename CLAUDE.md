@@ -356,6 +356,15 @@ against.
   correct on a host that has never heard of this framework. `withPolicy` runs in
   `renderRoute`, after the document exists, because the policy is built from what
   the document inlined.
+- **A hash never covers a `style` attribute, so `style-src` is not hashed.**
+  Hashing `<style>` blocks worked, the policy named every one of them, and the
+  docs site lost all its syntax colors: shiki puts `style="--shiki-light:…"` on
+  every token, and a hash in `style-src` applies to blocks only. `'unsafe-inline'`
+  does not rescue it either, because a directive carrying any hash *ignores*
+  `'unsafe-inline'` outright. The two exclude each other, so the default hashes
+  scripts and leaves styles inline. CSS cannot run code; script is where the
+  protection is. Checking that the policy covered every inline block was the
+  wrong check, and it passed.
 - **`csp.js` uses `crypto.subtle`, not the injected `hash`.** That one is an
   ETag, documented as a cache key and not a signature, and `portable.test.js`
   hands it a fake that returns a length. A CSP hash the browser does not agree

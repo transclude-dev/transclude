@@ -69,6 +69,17 @@ export type DataTableProps = {
   emptyLabel: string;
 };
 
+/** Properties of `<live-count>`, from its <script properties> block. */
+export type LiveCountProps = {
+  count: number;
+  label: string;
+};
+
+/** Members of `<live-count>`, from its `export const prototype`. */
+export type LiveCountMembers = {
+  add(n?: number): void;
+};
+
 /** Properties of `<site-note>`, from its <script properties> block. */
 export type SiteNoteProps = {
   tone: string;
@@ -427,6 +438,7 @@ declare global {
     "tag-picker": HTMLElement & TagPickerProps & TagPickerState & TagPickerMembers;
     "user-card": HTMLElement & UserCardProps & UserCardState & UserCardMembers;
     "data-table": HTMLElement;
+    "live-count": HTMLElement & LiveCountProps & LiveCountMembers;
     "site-note": HTMLElement & SiteNoteProps & SiteNoteMembers;
   }
 }

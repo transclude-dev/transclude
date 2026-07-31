@@ -190,22 +190,34 @@ export function compileComponent(
 
   if (blocks.state && !isShadow) {
     throw new CompileError(
-      `<${tag}> is a light element: it keeps the markup it was served and is ` +
-        `never re-rendered, so state would have nothing to update. Add ` +
-        `\`export const shadow = true\` if it needs to re-render.`,
+      `<${tag}> is a light element: it re-renders from its attributes, and ` +
+        `state is not an attribute, so nothing would schedule the update. Add ` +
+        `\`export const shadow = true\`, or hold the value in a prop.`,
       blocks.state.node,
     );
   }
   assertDistinct(props.defaultNode, state.defaultNode, tag);
+
+  // Whether this element is registered at all. A light element with no behavior
+  // is markup that was already rendered and ships nothing, so it can never see
+  // an attribute change and has nothing to update. Anchors would be bytes on
+  // every page that pay for a repaint that cannot happen.
+  const defined =
+    isShadow ||
+    Boolean(client.body.trim()) ||
+    client.lifted !== null ||
+    formAssociated === true;
+
   const template = compileFragment(blocks.nodes, {
     components,
     shadowTags,
     page: false,
-    // A partial's `<slot>` is a compile-time hole, like a layout's. In a shadow
-    // root it is a real slot and must reach the browser untouched.
+    // A light element's `<slot>` is a compile-time hole, like a layout's. In a
+    // shadow root it is a real slot and must reach the browser untouched.
     layout: !isShadow,
-    // Only a component is ever updated, so only a component pays for anchors.
-    blocks: isShadow,
+    // Anchors are what an update writes through, so every element that can be
+    // updated needs them and no other element should carry them.
+    blocks: defined,
     // A fragment emits a component bare and lets it paint itself, so a
     // component's own render is never the thing being asked for a fragment.
     // A partial's is.
@@ -214,19 +226,34 @@ export function compileComponent(
 
   const styles = blocks.styles.join('\n').trim();
 
-  // Only a component is ever repainted. A partial keeps the markup it was
-  // served, so there is nothing for a binding to update.
-  const bindings = isShadow
+  const bindings = defined
     ? compileBindings(blocks.nodes, {
         components,
         shadowTags,
         blockOf: template.blockOf,
         refs: new Map(template.components.map(({ tag: name, ref }) => [name, ref])),
-        // The runtime prepends <style> to the shadow root, so the template's
-        // own first node is not at index 0.
-        rootOffset: styles ? 1 : 0,
+        // The runtime prepends <style> to the shadow root, so a component's own
+        // first node is not at index 0. A light element's styles are hoisted
+        // into <head>, so its root starts where the template does.
+        rootOffset: isShadow && styles ? 1 : 0,
       })
     : null;
+
+  // A light element updates the nodes it already has: text and attributes are
+  // written in place, which never touches what the caller slotted in. Structure
+  // is different. Rebuilding an `if` or an `each` means replacing children, and a
+  // light element does not own its children: the page's CSS reaches them, the
+  // page's script can hold them, and the caller's slotted markup sits among them.
+  // A shadow root is what makes that subtree the element's to replace.
+  const volatileProps = bindings?.volatile ?? [];
+  if (!isShadow && volatileProps.length) {
+    throw new CompileError(
+      `<${tag}> re-renders \`${volatileProps.join('`, `')}\` by rebuilding structure, ` +
+        `which a light element cannot do: it does not own its own children. ` +
+        `Add \`export const shadow = true\`, or move the \`if\` or \`each\` to the page.`,
+      blocks.nodes[0] ?? null,
+    );
+  }
 
   const stray = blocks.nodes.find(
     (node) => node.tagName === 'template' && node.attrs?.some((a) => a.name === 'shadowrootmode'),

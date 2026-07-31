@@ -135,6 +135,20 @@ against.
   analysis lives. The shim copies the same slices, so a change there needs the
   matching change in `emitMembers`, or tsc reports names the browser resolves.
 
+- **A light element writes; only a shadow one rebuilds.** Both react to a prop
+  change. The light one updates the text and attributes already in the document
+  and never replaces a child, because it does not own its children: the caller's
+  slotted markup sits among them and the page's script may hold them. So an `if`
+  or an `each` over a value that changes is a compile error naming `shadow`. The
+  guard reads `bindings.volatile`, which is what the compiler could *not* bind:
+  with a boundary the same `each` compiles to a block with anchors and is written
+  rather than rebuilt, so a shadow element's list is not volatile at all. Removing
+  the guard failed no test until one was written for it.
+- **Reacting costs a definition, and only a definition.** `defineLight` returns
+  before registering unless there is behavior, members or form association, so
+  `observedAttributes` costs a page nothing it was not already paying. The docs
+  site still ships 0 client entries.
+
 - **`baseApp` refuses an option it does not know.** `dev.js` passed `publicRoot`
   to a function that takes `publicFiles`, so dev served no public files at all
   while production served them. The only sign was a Vite warning about one of the

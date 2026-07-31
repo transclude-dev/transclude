@@ -745,14 +745,22 @@ export function defineLight(def, init) {
   if (!init && !hasMembers(def) && !def.formAssociated) return;
 
   class Light extends HTMLElement {
-    static observedAttributes = def.formAssociated
-      ? Object.keys(def.propDefs ?? {}).map(attrName)
-      : [];
+    // Every declared prop, so a change reaches the template. A light element
+    // that ships no JavaScript is never registered at all, so nothing here costs
+    // a page that does not already have a script on it.
+    static observedAttributes = Object.keys(def.propDefs ?? {}).map(attrName);
     static formAssociated = def.formAssociated === true;
 
     #internals = null;
     #cleanup = null;
     #abort = null;
+    #bindings = null;
+    #bound = false;
+    #ready = false;
+    #raw = null;
+    #was = null;
+    #pending = null;
+    #settle = null;
 
     constructor() {
       super();
@@ -769,17 +777,74 @@ export function defineLight(def, init) {
       if (value !== undefined) this.#internals.setFormValue(value);
     }
 
+    /** Resolves once the changes made so far have been written. */
+    get updateComplete() {
+      return this.#pending ?? Promise.resolve();
+    }
+
+    /** One render per microtask, so `a = 1; b = 2` writes once. */
+    schedule() {
+      if (this.#pending) return;
+      this.#pending = new Promise((resolve) => {
+        this.#settle = resolve;
+      });
+      queueMicrotask(() => {
+        const settle = this.#settle;
+        this.#pending = null;
+        this.#settle = null;
+        if (this.#ready) this.#apply();
+        settle();
+      });
+    }
+
     attributeChangedCallback() {
+      // Before the render, the same as a component: a form can be submitted
+      // between the change and the microtask that writes it.
       this.reportFormValue();
+      if (this.#ready) this.schedule();
     }
 
     connectedCallback() {
+      // The markup is already right, so this only finds the nodes each
+      // expression owns. Once: moving an element reconnects it, and binding a
+      // second time would split an already split text node.
+      if (!this.#bound) {
+        this.#raw = this.#snapshot();
+        this.#bindings = def.bind ? def.bind(this, this.#data(this.#raw)) : null;
+        this.#bound = true;
+      }
+
+      this.#ready = true;
       this.#abort = new AbortController();
       this.#cleanup = init?.(this, null, this.#abort.signal, this.#internals);
       this.reportFormValue();
-      // A light element is never repainted, so this fires once per connect
-      // rather than once per render. Same meaning either way: the DOM is there.
       this.updated?.();
+    }
+
+    /**
+     * Writes to the nodes that are already there, and only those.
+     *
+     * There is no repaint here. Replacing the children would throw away what the
+     * caller slotted in and anything the page did to them, and a light element
+     * does not own its children. The compiler refuses a template that would need
+     * one, so reaching that case means a binding the compiler could not make.
+     */
+    #apply() {
+      const raw = this.#snapshot();
+      if (this.#bindings) def.update(this.#bindings, this.#data(raw));
+      this.updated?.();
+    }
+
+    #data(raw) {
+      this.#was = { ...stateOf(this, def.stateDefs) };
+      return { ...this.#was, ...def.coerce(raw) };
+    }
+
+    #snapshot() {
+      const raw = {};
+      for (const { name, value } of this.attributes) raw[name] = value;
+      this.#raw = raw;
+      return raw;
     }
 
     disconnectedCallback() {

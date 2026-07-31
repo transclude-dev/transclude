@@ -355,3 +355,48 @@ test('src with a body is refused, since the browser would ignore one of them', (
 test('an interpolated attribute is refused, since this is emitted before any data', () => {
   assert.throws(() => headOf('<script head src="/${x}.js"></script>'), /cannot interpolate/);
 });
+
+// ---- what a light element can re-render -----------------------------------
+
+const elementOf = (source, over = {}) =>
+  compileComponent(source, { tag: 'a-a', runtime: '/rt.js', filename: 'a-a', ...over });
+
+const withScript = (markup, props = 'tags: []') =>
+  `<script properties>export default { ${props} };</script>${markup}<script>host.id;</script>`;
+
+test('a light element writes text and attributes in place', () => {
+  const { code } = elementOf(withScript('<p>${tags}</p>'));
+  assert.match(code, /__setText/, 'no binding was compiled');
+});
+
+test('a light element cannot rebuild structure, and the error says why', () => {
+  // Replacing children would throw away what the caller slotted in and anything
+  // the page did to them. A light element does not own its children.
+  assert.throws(
+    () => elementOf(withScript('<ul><li each="t of tags">${t}</li></ul>')),
+    /does not own its own children/,
+  );
+  assert.throws(
+    () => elementOf(withScript('<ul><li each="t of tags">${t}</li></ul>')),
+    /export const shadow = true/,
+  );
+});
+
+test('a shadow element binds the structure instead of calling it volatile', () => {
+  // With a boundary the `each` compiles to a block with anchors, so a change is
+  // written rather than rebuilt. `volatile` is what the compiler could *not*
+  // bind, which is why a light element's list ends up there and this does not.
+  const source =
+    '<script properties>export default { tags: [] };export const shadow = true;</script>' +
+    '<ul><li each="t of tags">${t}</li></ul>';
+  const { code } = elementOf(source);
+
+  assert.match(code, /__updateBlock|__blockAt/, 'the list was not bound');
+  assert.match(code, /export const volatile = \[\]/);
+});
+
+test('an element with no behavior is not held to it, since it never re-renders', () => {
+  // It ships nothing, so there is no repaint to refuse.
+  const source = '<script properties>export default { tags: [] };</script><ul><li each="t of tags">${t}</li></ul>';
+  assert.ok(elementOf(source).code, 'a markup-only element should still compile');
+});

@@ -117,9 +117,11 @@
   </p>
 
   <p>
-    An app that is genuinely a client application, where the interesting state
-    lives in the browser and outlives any single page, is not what this is for. A
-    document that reads from a database and changes through links and forms is.
+    There is no client router, no state store and no data layer for the browser.
+    Those choices are yours. The platform has custom elements,
+    <code>fetch</code>, the History API and view transitions, and every page and
+    fragment here is HTML on a URL, so a client of any size can be built on top.
+    The framework ships none of that and replaces none of it.
   </p>
 
   <doc-note label="Where to start">

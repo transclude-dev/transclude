@@ -45,18 +45,14 @@ export default {
   <h2>Hashes, not a nonce</h2>
 
   <p>
-    Most frameworks nonce their inline blocks: a fresh random value per request,
-    named in the policy and stamped on every
-    <code>&lt;script&gt;</code>. That cannot work here. A nonce has to be
-    different every time, so a page carrying one cannot be a file, and most
-    pages here are files: rendered once at build time, compressed once, and sent
-    as bytes. Swapping a fresh nonce into the body would mean decompressing and
-    recompressing every response.
+    A nonce is a fresh random value per request, named in the policy and stamped
+    on every inline block. It cannot work here: a page carrying one is different
+    on every request, and most pages here are files, rendered and compressed once
+    at build time.
   </p>
 
   <p>
-    A hash needs none of that. The inline content is fixed when the page renders,
-    so the policy is fixed with it. It is written into the file and stays
+    A hash is fixed when the page renders. It is written into the file, stays
     correct, and a host that has never heard of this framework serves it
     unchanged.
   </p>
@@ -92,14 +88,14 @@ export default {
     no style attributes at all.
   </p>
 
-  <h2>What rides in a header</h2>
+  <h2>Directives sent as a header</h2>
 
   <p>
     <code>frame-ancestors</code>, <code>report-uri</code>,
     <code>report-to</code> and <code>sandbox</code> are ignored in a
-    <code>&lt;meta&gt;</code> tag, so they are sent as a response header instead.
-    None of them names a hash, so that header is the same for every page and
-    costs a prerendered one nothing.
+    <code>&lt;meta&gt;</code> tag, so they are sent as a response header
+    instead. None of them names a hash, so that header is the same for every
+    page and costs a prerendered one nothing.
   </p>
 
   <p>

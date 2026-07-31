@@ -787,3 +787,86 @@ test('a light element still ships nothing when it has no behavior', async () => 
     assert.equal(registry.get(def.tag), undefined);
   });
 });
+
+test('state schedules an update in a light element', async () => {
+  // State is not an attribute, so nothing observes it. Its setter is what
+  // schedules the write, the same as it is behind a boundary.
+  await withDom(async ({ defineLight }, registry) => {
+    const node = { data: '0' };
+    let binds = 0;
+
+    const def = defOf({
+      light: true,
+      stateDefs: { n: 0 },
+      bind: () => (binds++, [node]),
+      update: (b, d) => ((b[0].data = String(d.n)), true),
+    });
+    defineLight(def, () => {});
+
+    const el = new (registry.get(def.tag))();
+    el.isConnected = true;
+    el.connectedCallback();
+
+    el.n = 3;
+    await el.updateComplete;
+
+    assert.equal(el.n, 3, 'the accessor did not hold the value');
+    assert.equal(node.data, '3', 'the node it bound was not written');
+    assert.equal(binds, 1, 'it re-bound instead of writing through');
+  });
+});
+
+test('setting state to the value it already has writes nothing', async () => {
+  await withDom(async ({ defineLight }, registry) => {
+    let updates = 0;
+    const def = defOf({
+      light: true,
+      stateDefs: { n: 0 },
+      bind: () => [{}],
+      update: () => (updates++, true),
+    });
+    defineLight(def, () => {});
+
+    const el = new (registry.get(def.tag))();
+    el.isConnected = true;
+    el.connectedCallback();
+
+    el.n = 0;
+    await el.updateComplete;
+
+    assert.equal(updates, 0);
+  });
+});
+
+test('state alone is enough to define a light element', async () => {
+  // Without this the accessors never exist, so `el.n = 1` is a silent no-op.
+  await withDom(async ({ defineLight }, registry) => {
+    const def = defOf({ light: true, stateDefs: { n: 0 }, members: {} });
+    defineLight(def, null);
+
+    assert.ok(registry.get(def.tag), 'an element with state was not registered');
+  });
+});
+
+// ---- state on the server --------------------------------------------------
+
+test('a state default renders on the server, in every shape', async () => {
+  // It did not. `render` was called with the coerced props alone, so a template
+  // naming state wrote `undefined` into the page and the browser only put the
+  // real value there once the element connected.
+  const { shadow, fragment, data } = await import('../src/runtime/index.js');
+  const def = { css: '', stateDefs: { n: 7 }, coerce: (p) => ({ ...p }), render: (d) => `<p>${d.n}</p>` };
+
+  assert.match(shadow(def, {}), /<p>7<\/p>/);
+  assert.match(fragment(def, {}), /<p>7<\/p>/);
+  assert.deepEqual(data(def, {}), { n: 7 });
+});
+
+test('a prop wins over a state default of the same name', async () => {
+  // The order the live element uses. Reversing it here would make the first
+  // paint disagree with every one after it.
+  const { data } = await import('../src/runtime/index.js');
+  const def = { stateDefs: { n: 7 }, coerce: (p) => ({ ...p }) };
+
+  assert.deepEqual(data(def, { n: 1 }), { n: 1 });
+});

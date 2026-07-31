@@ -91,6 +91,21 @@ export type SiteNoteMembers = {
   readonly dismissed: boolean;
 };
 
+/** Properties of `<tally-box>`, from its <script properties> block. */
+export type TallyBoxProps = {
+  label: string;
+};
+
+/** Internal state of `<tally-box>`, from its <script state> block. */
+export type TallyBoxState = {
+  n: number;
+};
+
+/** Members of `<tally-box>`, from its `export const prototype`. */
+export type TallyBoxMembers = {
+  bump(by?: number): void;
+};
+
 /** The `ctx` argument of `root/_layout.html`'s loader. */
 export type RootLayoutContext = {
   url: string;
@@ -440,5 +455,6 @@ declare global {
     "data-table": HTMLElement;
     "live-count": HTMLElement & LiveCountProps & LiveCountMembers;
     "site-note": HTMLElement & SiteNoteProps & SiteNoteMembers;
+    "tally-box": HTMLElement & TallyBoxProps & TallyBoxState & TallyBoxMembers;
   }
 }

@@ -13,10 +13,10 @@ function compile(source, components = new Map()) {
 function render(source, data = {}, components = new Map(), fragment = false) {
   const { body } = compile(source, components);
   const fn = new Function(
-    '__e', '__a', '__str', '__sh', 'html', '__d', '__fragment',
+    '__e', '__a', '__str', '__sh', '__data', 'html', '__d', '__fragment',
     `let __o = '';\n${body}\nreturn __o;`,
   );
-  return fn(rt.escape, rt.attr, rt.str, rt.shadow, rt.html, data, fragment);
+  return fn(rt.escape, rt.attr, rt.str, rt.shadow, rt.data, rt.html, data, fragment);
 }
 
 // ---- escaping -------------------------------------------------------------
@@ -176,12 +176,12 @@ test('a component renders host attrs, a shadow root, and slotted children', () =
     coerce: (p) => rt.coerceProps({ name: '' }, p),
   };
   const fn = new Function(
-    '__e', '__a', '__ap', '__str', '__sh', 'html', '__C0', '__d', '__fragment',
+    '__e', '__a', '__ap', '__str', '__sh', '__data', 'html', '__C0', '__d', '__fragment',
     `let __o = '';\n${body}\nreturn __o;`,
   );
 
   assert.equal(
-    fn(rt.escape, rt.attr, rt.attrProp, rt.str, rt.shadow, rt.html, def, { who: 'Ada' }, false),
+    fn(rt.escape, rt.attr, rt.attrProp, rt.str, rt.shadow, rt.data, rt.html, def, { who: 'Ada' }, false),
     '<user-card name="Ada">' +
       '<template shadowrootmode="open"><style>h3{color:red}</style><h3>Ada</h3><slot></slot></template>' +
       '<em>hi</em>' +
@@ -399,4 +399,24 @@ test('an element with no behavior is not held to it, since it never re-renders',
   // It ships nothing, so there is no repaint to refuse.
   const source = '<script properties>export default { tags: [] };</script><ul><li each="t of tags">${t}</li></ul>';
   assert.ok(elementOf(source).code, 'a markup-only element should still compile');
+});
+
+test('state is held to the same structural rule as a prop', () => {
+  // The guard reads what the template could not bind, whatever its name came
+  // from. State getting a pass here would be a light element rebuilding.
+  const source =
+    '<script state>export default { tags: [] };</script>' +
+    '<ul><li each="t of tags">${t}</li></ul>';
+
+  assert.throws(() => elementOf(source), /export const shadow = true/);
+});
+
+test('state a light element only writes is allowed, and is bound', () => {
+  // Bound, not just compiled. Without the binding the accessor would set the
+  // value and no node would ever hear about it.
+  const source = '<script state>export default { n: 0 };</script>\n<p>${n}</p>';
+  const { code } = elementOf(source);
+
+  assert.match(code, /export const light = true;/);
+  assert.match(code, /__b\[0\] = __textAt\(/, 'the text was not bound');
 });

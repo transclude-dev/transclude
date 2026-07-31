@@ -1,7 +1,8 @@
 <script server>
   // The nav lives here rather than in each page, so a new page is one file and
   // one line. `route.path` marks the current link.
-  export default async ({ route, absolute }) => ({
+  export default async ({ route, absolute }) => {
+    const data = {
     path: route.path,
     canonical: absolute(route.path),
     sections: [
@@ -50,7 +51,19 @@
         ],
       },
     ],
-  });
+    };
+
+    // Reading order is the nav's order, so a page added to the nav is in the
+    // pager too and there is one list rather than two to keep in step.
+    const flat = data.sections.flatMap((section) => section.links);
+    const at = flat.findIndex((link) => link.href === data.path);
+
+    return {
+      ...data,
+      prev: at > 0 ? flat[at - 1] : null,
+      next: at !== -1 && at < flat.length - 1 ? flat[at + 1] : null,
+    };
+  };
 </script>
 
 <title>transclude</title>
@@ -161,6 +174,43 @@
     min-width: 0;
   }
 
+  .pager {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-top: 4rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .pager a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    max-width: 48%;
+    text-decoration: none;
+  }
+
+  .pager .to-next {
+    margin-inline-start: auto;
+    text-align: end;
+  }
+
+  .pager small {
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .pager span {
+    text-decoration: underline;
+  }
+
+  .pager + footer {
+    margin-top: 2rem;
+    padding-top: 0;
+    border-top: 0;
+  }
+
   footer {
     margin-top: 4rem;
     padding-top: 1.2rem;
@@ -202,6 +252,18 @@
 
   <main>
     <slot></slot>
+
+    <nav class="pager" aria-label="Page" if="prev || next">
+      <a class="to-prev" href="${prev.href}" if="prev" rel="prev">
+        <small>Previous</small>
+        <span>${prev.label}</span>
+      </a>
+      <a class="to-next" href="${next.href}" if="next" rel="next">
+        <small>Next</small>
+        <span>${next.label}</span>
+      </a>
+    </nav>
+
     <footer>HTML is the product.</footer>
   </main>
 </div>

@@ -7,8 +7,8 @@ live in the framework's repository. Editing the framework shows up in the next
 
 ```
 npm install
-npm run dev       # http://localhost:5173
-npm run preview   # build, then serve on http://localhost:3000
+npm run dev       # http://localhost:1961
+npm run preview   # build, then serve on http://localhost:1961
 npm run check     # tsc over every .html and .js route
 npm test          # 29 tests, about this app's own files
 ```

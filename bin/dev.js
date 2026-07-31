@@ -24,11 +24,11 @@ import { resolveRoutesDir, scanRoutes } from '../src/routes.js';
 import { baseApp, endpointMethods, runEndpoint, SERVER_FILE } from '../src/server.js';
 import { randomBytes } from 'node:crypto';
 import { cookiesOf } from '../src/cookies.js';
-import { loadProject } from '../src/project.js';
+import { loadProject, portOf } from '../src/project.js';
 
 const { root, config } = await loadProject();
 const routesDir = resolveRoutesDir(path.join(root, config.appDir), config.routesDir);
-const PORT = Number(process.env.PORT ?? 5173);
+const PORT = portOf(config, process.env.PORT);
 
 /**
  * A signing secret for this process only, when the config has none.

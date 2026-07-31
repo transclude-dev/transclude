@@ -269,6 +269,14 @@ against.
   files come before the route table, so a real file beats a `[...path]` catch-all.
   Both servers call the same builder, so there is no second copy of that order to
   get wrong.
+- **Vite needs the http server, so the server is built first.** In middleware
+  mode with no `hmr` option Vite starts its own WebSocket on port 24678, the
+  browser refuses that socket as cross-origin, and nothing is ever delivered. The
+  watcher still works and the terminal still prints `hmr update`, so the only
+  place the failure shows is the browser, where `[vite] connecting...` is never
+  followed by `connected.` and every edit needs a manual reload. `hmr: { server }`
+  puts the socket on the page's own origin. With it, a CSS edit hot-updates and a
+  page, element or layout edit reloads the tab, all from Vite.
 - **Invalidate before `ssrLoadModule` in dev.** The file watcher and Vite's own
   invalidation are separate handlers on the same event, so loading first hands back
   the module as it was. Measured: the first edit to `app/server.js` was ignored and

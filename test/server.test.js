@@ -408,6 +408,22 @@ test('both servers mount the public directory', () => {
   }
 });
 
+test('the dev server hands its own http server to Vite for HMR', () => {
+  // Without this Vite runs its WebSocket on a second port, the browser refuses
+  // that socket as cross-origin, and every edit needs a manual reload. The file
+  // watcher and the module graph are unaffected, so the server logs an update
+  // it delivered to nobody. Nothing but the browser can see the difference,
+  // which is why this reads the source.
+  const source = codeOf(new URL('../bin/dev.js', import.meta.url));
+
+  assert.match(source, /hmr:\s*{\s*server\s*}/, 'Vite gets no hmr.server');
+  // The server has to exist before Vite does, or there is nothing to pass.
+  assert.ok(
+    source.indexOf('http.createServer()') < source.indexOf('createViteServer('),
+    'the http server is built after Vite, so it cannot be handed over',
+  );
+});
+
 test('no handler, and nothing is mounted', async () => {
   // Whether there is anything to serve is the adapter's question, not this one's:
   // Node checks the directory exists, a runtime with a binding checks the binding.

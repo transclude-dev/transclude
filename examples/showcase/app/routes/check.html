@@ -43,10 +43,10 @@
 
   <card-list id="nested" heading="Nested" people="${people}"></card-list>
 
-  <!-- Present in the markup so the partial is actually shipped: the build sends
+  <!-- Present in the markup so the element is actually shipped: the build sends
        only the elements a page uses, and createElement in a script is invisible
        to that. -->
-  <site-note id="note">a partial, for the lifecycle checks below</site-note>
+  <site-note id="note">an element, for the lifecycle checks below</site-note>
 
   <state-probe
     id="probe"
@@ -124,7 +124,7 @@
   const solo = document.getElementById('solo');
   const nested = document.getElementById('nested');
 
-  await check('the observation script ran before any component was defined', () => {
+  await check('the observation script ran before any element was defined', () => {
     is(pre.anyDefined, false, 'user-card was already defined');
     return 'so everything below about "before upgrade" is real';
   });
@@ -133,7 +133,7 @@
     is(pre.soloHasShadow, true, 'no shadowRoot before upgrade');
     is(pre.soloMode, 'open', 'mode');
     is(pre.soloText, 'Ada Lovelace', 'server-rendered heading');
-    return 'correct before a single line of component JS ran';
+    return 'correct before a single line of element JS ran';
   });
 
   await check('no inert <template shadowrootmode> was left in the document', () => {
@@ -157,7 +157,7 @@
     is(pre.nestedHasShadow, true, 'card-list had no shadow root');
     is(pre.innerHasShadow, true, 'the nested user-card had no shadow root');
     is(pre.innerText, 'Ada Lovelace', 'nested heading');
-    return 'a component inside a component, server-rendered all the way down';
+    return 'a shadow element inside a shadow element, server-rendered all the way down';
   });
 
   await check('an attribute change reaches the template, whichever way it was set', async () => {
@@ -188,7 +188,7 @@
     return 'the assertion innerHTML would fail';
   });
 
-  await check('the component client block ran and is wired to the host', async () => {
+  await check('the element client block ran and is wired to the host', async () => {
     // The attribute is written synchronously; only the render is deferred.
     ok(!solo.hasAttribute('compact'), 'compact was already set');
     solo.click();
@@ -200,9 +200,9 @@
     return 'host.addEventListener from <script> in user-card.html';
   });
 
-  await check('a partial upgrades for behaviour, with no shadow root', () => {
+  await check('a light element upgrades for behaviour, with no shadow root', () => {
     ok(customElements.get('site-note'), 'site-note was never defined');
-    ok(document.getElementById('note').shadowRoot === null, 'a partial grew a shadow root');
+    ok(document.getElementById('note').shadowRoot === null, 'a light element grew a shadow root');
     return 'defineLight: <script> with an exported prototype, no rendering';
   });
 
@@ -464,7 +464,7 @@
 
   await check('a converter revives what JSON cannot carry', async () => {
     // Dates inside an array prop are JSON strings by the time they cross. The
-    // component's own `from` is what turns them back into Dates.
+    // element's own `from` is what turns them back into Dates.
     nested.people = [
       { name: 'Grace Hopper', role: 'Rear Admiral', tags: [], joined: new Date(Date.UTC(1952, 4, 6)) },
     ];
@@ -740,13 +740,13 @@
     return 'one <style data-transclude> per light element the document actually used';
   });
 
-  await check('a region is served alone, without its document', async () => {
+  await check('a fragment is served alone, without its document', async () => {
     const response = await fetch('/?fragment=matches');
     is(response.status, 200, 'status');
     const html = await response.text();
 
     ok(!/<!doctype/i.test(html), 'the whole document came back');
-    ok(html.includes('<data-table'), 'the region did not contain a <data-table>');
+    ok(html.includes('<data-table'), 'the fragment did not contain a <data-table>');
     swap.dataset.html = html;
     return `${html.length} bytes, no <head>, no layout`;
   });
@@ -793,7 +793,7 @@
   const controlForm = document.getElementById('control-form');
   const sent = () => new FormData(controlForm);
 
-  await check('a component can be a real form control', () => {
+  await check('an element can be a real form control', () => {
     is(picker.constructor.formAssociated, true, 'static formAssociated');
     ok(picker.internals, 'no ElementInternals, so attachInternals never ran');
     is(picker.internals.form, controlForm, 'it does not know which form it is in');
@@ -917,8 +917,8 @@
     return 'state drives the markup; the value is a prop and outlives it';
   });
 
-  await check('an ordinary component is not a form control', () => {
-    // Opting in is per component. Nothing else in the page became a field.
+  await check('an ordinary element is not a form control', () => {
+    // Opting in is per element. Nothing else in the page became a field.
     // `false`, not undefined: both kinds declare the static field either way, so
     // the answer is explicit rather than absent.
     is(document.getElementById('solo').constructor.formAssociated, false, 'user-card, shadow');

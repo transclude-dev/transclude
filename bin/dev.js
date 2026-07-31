@@ -12,7 +12,6 @@ import {
   ACTION_METHODS,
   hasRegion,
   absoluteFrom,
-  htmlAttrsOf,
   methodsOf,
   renderFragment,
   renderRoute,
@@ -96,7 +95,6 @@ function withResponse(c, extra) {
   return {
     response,
     cookies: cookiesOf(c.req.raw, response, cookieSecret),
-    htmlAttrs: htmlAttrsOf(),
     absolute: absoluteFrom(config.metadataBase, c.req.url),
     ...extra,
   };

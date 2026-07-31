@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 
 import { CSP_DEFAULTS, inlineSources, policyFor, withPolicy } from '../src/csp.js';
-import { htmlAttrsOf, renderRoute, responseOf } from '../src/document.js';
+import { renderRoute, responseOf } from '../src/document.js';
 
 /** What the browser will compute, from a library that is not the one under test. */
 const expected = (source) => `'sha256-${createHash('sha256').update(source).digest('base64')}'`;
@@ -181,7 +181,6 @@ const ctxOf = () => ({
   fragment: null,
   action: null,
   response: responseOf(),
-  htmlAttrs: htmlAttrsOf(),
 });
 
 test('a rendered page covers its own head script and its own styles', async () => {

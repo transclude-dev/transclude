@@ -211,7 +211,6 @@ export function createChecker({
     `route: { id: string; pattern: string; path: string }; ` +
     `request: Request; fragment: string | null; ` +
     `response: { status: number; headers: Headers }; cookies: __Cookies; ` +
-    `htmlAttrs: Record<string, string | boolean | null>; ` +
     `absolute: (path: string) => string; revalidateTag: (tag: string) => void }`;
 
   const contextLiteral = (params, layoutType) =>

@@ -49,18 +49,6 @@ export function absoluteFrom(base, requestUrl) {
   };
 }
 
-/**
- * Attributes for the `<html>` element, shared by reference the way the response
- * is. Every loader in the chain holds the same object, so a layout can set the
- * theme and a page can add to it.
- *
- * A null prototype because these are names, and a loader writing `constructor`
- * should not reach anything.
- */
-export function htmlAttrsOf() {
-  return { __proto__: null };
-}
-
 /** A name that cannot break out of the tag it is written into. */
 const ATTR_NAME = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 
@@ -78,6 +66,22 @@ const escapeAttr = (value) => String(value).replace(/[&<>"]/g, (c) => ESCAPES[c]
  * the element, and a preference usually comes from a cookie. `true` writes the
  * name bare and `false` drops it, the same rule the template compiler uses.
  */
+/**
+ * Every `<html>` in the chain, merged by name.
+ *
+ * Outermost first so the innermost wins, per attribute rather than outright: a
+ * root layout setting the theme and a page setting `dir` both survive. Written
+ * as one tag, because two `data-theme` attributes would leave the parser taking
+ * the first, which is the outermost, which is backwards.
+ */
+function htmlAttrsOf(chain, datas) {
+  const merged = { __proto__: null };
+  for (let i = 0; i < chain.length; i++) {
+    Object.assign(merged, chain[i].renderHtmlAttrs?.(datas[i]));
+  }
+  return merged;
+}
+
 function htmlOpenTag(lang, attrs) {
   const parts = [];
 
@@ -120,8 +124,7 @@ export async function renderRoute(page, ctx, options = {}) {
     if (mod !== page) inherited = { ...inherited, ...data };
   }
 
-  // The loaders have run, so whatever they put on `ctx.htmlAttrs` is final.
-  const html = renderDocument(chain, datas, { ...options, htmlAttrs: ctx.htmlAttrs });
+  const html = renderDocument(chain, datas, options);
 
   // After the document exists, because the policy is built from what it inlined.
   // A prerendered page runs this once at build time and carries the result.
@@ -232,7 +235,7 @@ export function methodsOf(page) {
 export function renderDocument(
   chain,
   datas,
-  { clientEntry, stylesheet, lang = 'en', htmlAttrs = null } = {},
+  { clientEntry, stylesheet, lang = 'en' } = {},
 ) {
   // Each level renders to a slot map and hands it to the level above, so a page
   // can fill more than one hole in its layout.
@@ -288,7 +291,7 @@ export function renderDocument(
   ];
 
   return `<!doctype html>
-${htmlOpenTag(lang, htmlAttrs ?? {})}
+${htmlOpenTag(lang, htmlAttrsOf(chain, datas))}
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

@@ -345,5 +345,7 @@ describe('the home page carries the transcluded section, not the fallback', () =
   // something the browser fetches later.
   assert.match(home, /<section class="borrowed">/);
   assert.doesNotMatch(home, /could not be read/, 'the fallback rendered instead');
-  assert.doesNotMatch(home, /transclude-fragment/, 'the element was left in the output');
+  // The tag, not the word: "transclude" is the site's own name and appears all
+  // over this page in prose.
+  assert.doesNotMatch(home, /<transclude[\s>]/, 'the element was left in the output');
 });

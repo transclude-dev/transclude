@@ -1,4 +1,4 @@
-// What a `<transclude-fragment>` is resolved against, built once.
+// What a `<transclude>` is resolved against, built once.
 //
 // Three servers render pages: the production app, the dev server and the build.
 // Each used to be handed a piece of this and the dev server was handed less than

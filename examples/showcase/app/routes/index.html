@@ -170,11 +170,11 @@
      Resolved before this page renders, so the markup is in the HTML that
      arrives. The children show if the source cannot be read. -->
 <section class="borrowed">
-  <transclude-fragment
+  <transclude
     src="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dl#accessibility"
   >
     <p>MDN could not be read just now.</p>
-  </transclude-fragment>
+  </transclude>
 </section>
 
 <!-- A region of another route of this app. Rendered here rather than fetched:
@@ -186,9 +186,9 @@
      visitor would be handed the first one's notes. -->
 <section class="borrowed">
   <h2>Your notes, from /notes</h2>
-  <transclude-fragment src="/notes#notes">
+  <transclude src="/notes#notes">
     <p>The notes could not be read.</p>
-  </transclude-fragment>
+  </transclude>
 </section>
 
 <div id="matches" fragment>

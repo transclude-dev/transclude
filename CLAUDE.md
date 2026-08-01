@@ -441,7 +441,7 @@ against.
 - **Three servers render pages, so the include context is built in one place.**
   `src/app.js`, `bin/dev.js` and `bin/build.js` each render, and each was handed
   its own resolver. Dev got the external half and not the route half, so
-  `<transclude-fragment src="/x#y">` worked in production and threw in dev with
+  `<transclude src="/x#y">` worked in production and threw in dev with
   nothing to suggest why, and the build had the same gap waiting behind a
   server-rendered page. `includeContext` in `src/include.js` answers it for all
   three, and a test reads all three files for the call. This is the same shape as
@@ -479,7 +479,7 @@ against.
   before the render that would produce it, so `src="/docs/${slug}#a"` is a
   compile error rather than a value nobody could resolve in time.
 - **An included region drops its id, and the region keeps it.** A region is
-  always rendered where it is declared, so `<transclude-fragment src="#id">` is
+  always rendered where it is declared, so `<transclude src="#id">` is
   always a second copy in the same document. Both carrying the id would be
   invalid HTML, and worse: a swap aimed at `#id` finds whichever came first and
   leaves the other stale. The region's root id is emitted as
@@ -487,8 +487,18 @@ against.
   the include calls the region function with `false`. The fragment served over
   HTTP keeps the name, because that is what a swap is matched against. This was
   shipped as a warning first, which was wrong: the warning fired on every use.
-- **`transclude-fragment` is read before the component table.** An app defining
-  `elements/transclude-fragment.html` would otherwise shadow the include, and a
+- **`<transclude>` has no dash, and that is only safe because it never reaches
+  the browser.** The compiler consumes it: every form is resolved server-side and
+  the tag leaves no trace, so it does not need to be a valid custom element name.
+  Two things follow. An app cannot define one, because `elements/` drops any file
+  whose tag has no dash. And an undashed tag reads like it might be void, so
+  `<transclude src="#a" />` is the mistake people will make: HTML has no
+  self-closing tag here, `/>` is read as `>`, and since the children are the
+  fallback the rest of the page becomes them. Silent, and the include still
+  works. `sourceCodeLocation.endTag` is absent exactly in that case, which is
+  what the guard reads.
+- **`transclude` is read before the component table.** An app defining
+  `elements/transclude.html` would otherwise shadow the include, and a
   page using it would compile to something else entirely with nothing said.
 - **The proxy follows redirects itself, and that is the point.** `redirect:
   'follow'` hands the whole decision to the first response: the check that passed

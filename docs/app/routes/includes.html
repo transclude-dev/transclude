@@ -136,9 +136,8 @@
   <h2>A region of this page</h2>
 
   <p>
-    The region is already compiled to a function of the page's data, so including
-    it is calling that function. Nothing is fetched, nothing is parsed, and there
-    is one copy of the markup rather than two that could drift.
+    The region is already a function of the page's data, so including it is a
+    call. One copy of the markup, in two places.
   </p>
 
   ${html(s.same)}
@@ -146,10 +145,8 @@
   ${html(s.sameOut)}
 
   <p>
-    The copy leaves the id behind. A region is always rendered where it is
-    declared, so an include is always a second copy in the same document, and two
-    elements cannot share an id. The one that keeps the name is the one a swap
-    aimed at <code>#pricing</code> should find.
+    The copy leaves the id behind. Two elements cannot share one, and
+    <code>#pricing</code> should name the region a swap replaces.
   </p>
 
   <h2>A region of another route</h2>
@@ -157,19 +154,14 @@
   ${html(s.route)}
 
   <p>
-    Rendered rather than fetched. It is the same process, so a request to
-    ourselves would run the whole middleware stack to answer something we can
-    answer directly. That route's loaders run and its layouts' markup does not,
-    the same as when a region is asked for over HTTP. One route included twice
-    runs its loaders once.
+    That route's loaders run and its layouts' markup does not, the same as when a
+    region is asked for over HTTP. It is rendered in this process, not fetched.
+    One route included twice runs its loaders once.
   </p>
 
   <doc-note label="Reading spreads" tone="warn">
-    The included route reads cookies through the including page's own, so a page
-    that includes a route reading a cookie is personal too and the cache will not
-    hold it. Without that the second visitor is handed the first one's page. For
-    the same reason the build refuses to write a prerendered page that read a
-    cookie, whether the page read it or something it includes did.
+    A page that includes a route reading a cookie is personal too. The cache will
+    not hold it, and the build will not write it to a file.
   </doc-note>
 
   <h2>A document somebody else wrote</h2>
@@ -179,36 +171,31 @@
   <p>
     The only form that leaves the server, and the only one that needs
     configuring. A page you did not write marks no regions, so which piece to
-    take is worked out from what HTML already encodes. That is the second half of
-    this page.
+    take is worked out from its HTML. That is the second half of this page.
   </p>
 
   <h2>Children are the fallback</h2>
 
   <p>
     On success they are dropped. If the source cannot be read they render in its
-    place. An element with no children whose source fails stops the render,
-    because a hole nobody wrote looks like content.
+    place. With no children, a source that fails stops the render.
   </p>
 
   <p>
-    A source that is unreachable falls back. A source that was never configured,
-    or an include that goes round in a circle, is thrown instead: those are
-    mistakes rather than conditions, and the fallback would hide them.
+    That covers a source being down. A source nobody allowed, or an include that
+    goes round in a circle, throws instead: those are mistakes to fix.
   </p>
 
   <h2>Resolved before the page renders</h2>
 
   <p>
-    Not during it. Rendering is synchronous the whole way down, and reading
-    another document is not, so what a page declares is collected when it is
-    compiled and the server has the answers ready before it renders.
+    The compiler collects what a page includes, and the server has the answers
+    ready before it renders.
   </p>
 
   <p>
-    That is what keeps a page a file. A prerendered page reads its sources once,
-    at build time, and carries the result. A page that fetched while rendering
-    could never be written down.
+    That is what keeps a page a file: a prerendered page reads its sources once,
+    at build time, and carries the result.
   </p>
 
   <h2>What is refused</h2>
@@ -217,24 +204,15 @@
 
   <p>
     All three are compile errors. A page that includes itself round two others is
-    caught when it renders, with the way round named, and so is a chain more than
-    ten deep.
+    caught when it renders, and the error names the way round. So is a chain more
+    than ten deep.
   </p>
-
-  <doc-note label="Nothing swaps this in later">
-    An include is resolved once, before the markup leaves the server. There is no
-    element here that fetches one in the browser: a region has a plain URL, and
-    <a href="https://htmx.org">htmx</a>,
-    <a href="https://turbo.hotwired.dev">Turbo</a> or a short
-    <code>fetch</code> is what asks for it. See <a href="/fragments">fragments</a>.
-  </doc-note>
 
   <h2>Reading a document that marks nothing</h2>
 
   <p>
-    Everything above works because your own pages say what a region is. A page
-    somebody else wrote says nothing of the kind, so the rest of this is how a
-    piece of one is found, and how it is made safe to show.
+    Your own pages say what a region is. A page somebody else wrote does not, so
+    the rest of this is how a piece of one is found and made safe to show.
   </p>
 
   <h3>Turning it on</h3>
@@ -262,17 +240,14 @@
   </ul>
 
   <p>
-    An empty inline element is read as a bookmark for what follows it, which is
-    how anchors were written before ids went on headings. This resolves the
-    heading and its section, not the empty anchor.
+    An empty inline element is a bookmark for what follows it, which is how
+    anchors are written in older documents. This resolves the heading and its
+    section.
   </p>
 
   ${html(s.bookmark)}
 
-  <p>
-    One hop only, and an element holding text or an image is content rather than
-    a bookmark.
-  </p>
+  <p>One hop only. An element holding text or an image is content.</p>
 
   <h3>Documents with no ids</h3>
 
@@ -283,16 +258,14 @@
   </p>
 
   <p>
-    Explicit ids always win, and the whole table is worked out before anything is
-    resolved. A generated name cannot depend on which fragment was asked for, so
-    an id further down the page still beats a heading further up, and the heading
-    takes the next name instead.
+    Explicit ids win, and the whole table is worked out before anything is
+    resolved, so a name means the same thing on every request. An id further down
+    the page beats a heading further up, and the heading takes the next name.
   </p>
 
   <doc-note label="A fragment is a node list">
-    A heading run is several siblings, not one element. It is returned as it
-    appears in the source, with no wrapper added, because a wrapper would mean
-    the fetched markup no longer matched the page it came from.
+    A heading run is several siblings, not one element. It arrives as it appears
+    in the source, so it matches the page it came from.
   </doc-note>
 
   <h3>What arrives</h3>
@@ -301,23 +274,21 @@
     Scripts, frames, plugins and event handlers are removed.
     <code>javascript:</code> URLs go everywhere; <code>data:</code> survives only
     on an image source. <code>&lt;base&gt;</code> and <code>&lt;link&gt;</code>
-    are removed for your page's sake rather than the fragment's: the first would
-    retarget every relative URL in the document the fragment lands in, and the
-    second can pull a stylesheet from anywhere.
+    go too: a <code>&lt;base&gt;</code> retargets every relative URL in the page
+    the fragment lands in, and a <code>&lt;link&gt;</code> pulls a stylesheet
+    from anywhere.
   </p>
 
   <p>
     Every relative URL is made absolute against the source, including a hash-only
-    <code>href</code>, which would otherwise address an id in your page.
-    <code>srcset</code> is parsed rather than split on commas, since a URL may
-    contain one, and <code>url()</code> is rewritten in style attributes and
-    style blocks.
+    <code>href</code>, which otherwise addresses an id in your page.
+    <code>srcset</code> is parsed, since a candidate URL may contain a comma, and
+    <code>url()</code> is rewritten in style attributes and style blocks.
   </p>
 
   <p>
-    A custom element from the source arrives as markup with no definition behind
-    it. It is inert rather than broken, but a section built out of them will look
-    empty.
+    A custom element from the source arrives with no definition behind it. It is
+    inert, so a section built out of them will look empty.
   </p>
 
   <h3>Limits</h3>
@@ -325,15 +296,15 @@
   ${html(s.tuning)}
 
   <p>
-    Redirects are followed one at a time and every hop is checked again, because
-    the check that passed on the URL you configured says nothing about where the
+    Redirects are followed one at a time and every hop is checked again: the
+    check that passed on the URL you configured says nothing about where the
     third redirect landed. Addresses on the private ranges are refused, including
     the cloud metadata endpoint and IPv4 addresses written in IPv6 form.
   </p>
 
   <p>
     <code>maxAge</code> is how long a document already read is used without
-    asking the source anything, so several fragments of one page cost one read.
+    asking the source again, so several fragments of one page cost one read.
     After that it is revalidated with <code>ETag</code> and
     <code>Last-Modified</code>.
   </p>
@@ -348,8 +319,8 @@
   <h3>The endpoint</h3>
 
   <p>
-    Naming a host also mounts <code>/_transclude/proxy</code>, which is what a
-    client library would ask if you drive an include yourself.
+    Naming a host also mounts <code>/_transclude/proxy</code>. Ask it for a
+    fragment of an allowed document from anywhere.
   </p>
 
   ${html(s.request)}
@@ -359,10 +330,8 @@
   ${html(s.outline)}
 
   <p>
-    The fragment is resolved on this side rather than in the browser. The page
-    receives the piece it asked for instead of a whole foreign document,
-    sanitizing happens somewhere it cannot be switched off, and the request is
-    same-origin, which the default <a href="/security">policy</a> requires: it
-    names <code>'self'</code> and a cross-origin fetch is refused.
+    It answers with the fragment, sanitized and rewritten, and it is same-origin,
+    which the default <a href="/security">policy</a> requires: that policy names
+    <code>'self'</code> and refuses a cross-origin fetch.
   </p>
 </doc-page>

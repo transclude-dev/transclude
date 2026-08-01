@@ -124,10 +124,9 @@ export default {
   ${html(s.atom)}
 
   <doc-note label="Dates come from the items">
-    Nothing here reads the clock. The feed is stamped from the newest item it
-    holds, so a build that changes nothing writes the same bytes, and a
-    prerendered feed can be compressed once and cached like any other file. A
-    feed whose items have no dates can set <code>updated</code> itself.
+    Nothing here reads the clock. The feed is stamped from its newest item, so a
+    build that changes nothing writes the same bytes. A feed whose items have no
+    dates can set <code>updated</code> itself.
   </doc-note>
 
   <h2>Where they end up</h2>

@@ -230,17 +230,15 @@
 
   <p>
     Both react to a prop change. A light element writes the text and attributes
-    that are already there, so the node keeps its identity and anything holding a
-    reference to it still does. It never replaces its children, because it does
-    not own them: the page's CSS reaches them, the page's script can hold them,
-    and the caller's slotted markup sits among them.
+    already in the page, so a node keeps its identity and anything holding a
+    reference to it still does. It never replaces its children: the caller's
+    slotted markup is among them, and the page's script may hold them.
   </p>
 
   <p>
-    Rebuilding structure is what needs the boundary. An <code>if</code> or an
+    Rebuilding structure needs the boundary. An <code>if</code> or an
     <code>each</code> over a value that changes is refused in a light element,
-    with an error naming <code>shadow</code>. A shadow root makes the subtree the
-    element's to replace.
+    and the error names <code>shadow</code>.
   </p>
 
   <doc-note label="Reacting costs a definition">
@@ -253,9 +251,8 @@
 
   <p>
     In a light element the server fills the slot and sends the result. No
-    <code>&lt;slot&gt;</code> reaches the browser, so afterwards there is no
-    link between the element and what went in it. It is markup that ended up
-    nested. Fallback content still works, and so do named slots.
+    <code>&lt;slot&gt;</code> reaches the browser: the markup was placed once.
+    Fallback content works, and so do named slots.
   </p>
 
   <p>
@@ -266,9 +263,9 @@
   </p>
 
   <doc-note label="A shadow root in a fragment paints on connect" tone="warn">
-    Nothing that swaps HTML into a live page builds a declarative shadow root, so
-    an element with one is sent bare in a fragment response and renders itself
-    when it connects. A light element has no such split.
+    A declarative shadow root is built when a browser parses a document, so a
+    shadow element arrives bare in a fragment and paints itself on connect. A
+    light element arrives whole.
   </doc-note>
 
   <h2>Giving it behavior</h2>
@@ -325,16 +322,14 @@
   </p>
 
   <p>
-    State renders on the server too. The value in the markup a visitor receives
-    is the default the block declares, so the first paint is not empty and does
-    not change when the element connects.
+    State renders on the server too, so the first paint carries the default the
+    block declares.
   </p>
 
   <doc-note label="State is not an attribute">
-    Nothing outside the element can set it: not the page's markup, not a parent
-    element, not a URL. Anything a caller has to be able to say belongs in
-    <code>&lt;script properties&gt;</code>. Setting <code>n</code> from the page
-    works only because that is the element's own property, reached from script.
+    Nothing outside can set it: not the page's markup, not a parent, not a URL.
+    Anything a caller needs to say belongs in
+    <code>&lt;script properties&gt;</code>.
   </doc-note>
 
   <h2>Objects and arrays</h2>
@@ -344,9 +339,8 @@
   ${html(s.json)}
 
   <doc-note label="Keep it small" tone="warn">
-    The JSON sits in the HTML, so it is sent with the document and read back on
-    every attribute change. Pass an id and load the rest in the page's loader
-    rather than putting a large array in an attribute.
+    The JSON sits in the HTML and is read back on every attribute change. For
+    anything large, pass an id and load the rest in the page's loader.
   </doc-note>
 
   <h2>An element a form can submit</h2>
@@ -373,8 +367,7 @@
   <doc-note label="Declare a flag in one block" tone="warn">
     <code>shadow</code> and <code>formAssociated</code> can go in
     <code>&lt;script properties&gt;</code> or in <code>&lt;script&gt;</code>,
-    whichever the element already has. Declaring one in both blocks is a compile
-    error. Write <code>true</code> directly rather than a variable: each becomes
-    a static field on the class, the same for every element of that tag.
+    whichever the element already has. Declaring one in both is a compile error.
+    Write <code>true</code> directly: each becomes a static field on the class.
   </doc-note>
 </doc-page>

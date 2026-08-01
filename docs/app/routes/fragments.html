@@ -33,9 +33,9 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
   lede="Mark an element and you can fetch just that piece from its own URL. It comes from the same compiled markup as the full page."
 >
   <p>
-    Add an id and a <code>fragment</code> attribute. The element renders inside
-    the page as usual, and you can also request it on its own at the same path
-    with <code>?fragment=</code> and that id.
+    Add an id and a <code>fragment</code> attribute. The element renders in the
+    page as usual, and the same path with <code>?fragment=</code> and that id
+    returns just that element.
   </p>
 
   ${html(s.markup)}
@@ -74,34 +74,25 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
 
   <p>
     Anything on a page that changes on its own: search results as you type, a
-    list after something is added to it, the next page of a table, a panel that
-    refreshes on a timer. Ask for that one piece and put it back in place.
+    list after something is added to it, the next page of a table. Ask for that
+    piece and put it back in place.
   </p>
 
   <p>
-    The markup is compiled once, so what comes back matches what a full page load
-    would have rendered. There is no second template to keep in step. This is
-    transclusion, which is where the framework gets its name.
+    The page and the fragment come from one compiled template, so the two always
+    agree.
   </p>
 
   <h2>Asking for one</h2>
 
-  <p>
-    A fragment is an ordinary URL, so anything that can fetch HTML and put it in
-    the page will do.
-  </p>
+  <p>A fragment is an ordinary URL. Anything that fetches HTML can use it.</p>
 
   ${html(s.fetch)}
 
   <p>
-    Libraries built for this do the same thing with attributes instead of script.
-  </p>
-
-  <p><a href="https://htmx.org">htmx</a> is the common one.</p>
-
-  <p>
-    To put a region in a second place on the server instead, without anything
-    swapping it in, see <a href="/includes">includes</a>.
+    <a href="https://htmx.org">htmx</a> does the same with attributes.
+    <a href="https://turbo.hotwired.dev">Turbo</a> and
+    <a href="https://leanrada.com/htmz/">htmz</a> are other options.
   </p>
 
   ${html(s.htmx)}
@@ -114,8 +105,8 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
   ${html(s.header)}
 
   <p>
-    <a href="https://turbo.hotwired.dev">Turbo</a> and
-    <a href="https://leanrada.com/htmz/">htmz</a> are other options.
+    <a href="/includes">Includes</a> put a region in a second place on the
+    server.
   </p>
 
   <doc-note label="setHTMLUnsafe, not innerHTML" tone="warn">
@@ -123,18 +114,16 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
       href="https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTMLUnsafe"
       >setHTMLUnsafe()</a
     >
-    builds shadow roots from the markup it is given.
-    <code>innerHTML</code> skips them, so a shadow element inside the fragment would
-    arrive without its contents and never start up.
+    builds shadow roots from the markup it is given. A shadow element in a
+    fragment needs it to start up.
   </doc-note>
 
   <h2>Swapped-in markup styles itself</h2>
 
   <p>
-    A fragment can land on a page that has never rendered the elements inside it.
-    While <code>fragmentParam</code> is set, every page includes a small script
-    that notices an unknown tag, loads its definition and adds its styles once.
-    There is nothing to wire up.
+    A fragment can land on a page that never rendered the elements inside it.
+    While <code>fragmentParam</code> is set, every page carries a small script
+    that notices a new tag, loads its definition and adds its styles once.
   </p>
 
   <p>
@@ -151,9 +140,8 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
 
   <p>
     A header naming a region is a hint, and an unknown name is ignored. Client
-    libraries set these headers on every request they make, including the ones
-    that want a whole document, so refusing an unrecognized name would break more
-    than it fixed. <code>HX-Target</code> from htmx works this way.
+    libraries send these headers on every request, including ones that want a
+    whole document. <code>HX-Target</code> from htmx works this way.
   </p>
 
   <p>

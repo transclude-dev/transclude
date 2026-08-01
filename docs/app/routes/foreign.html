@@ -11,6 +11,12 @@
 };`,
         'js',
       ],
+      use: [
+        `<transclude-fragment src="https://developer.mozilla.org/en-US/docs/Web/HTML#reference">
+  <p>The reference could not be read just now.</p>
+</transclude-fragment>`,
+        'html',
+      ],
       request: [
         `GET /_transclude/proxy?url=https://developer.mozilla.org/en-US/docs/Web/HTML&id=reference
 
@@ -26,26 +32,10 @@
 ] }`,
         'text',
       ],
-      include: [
-        `<transclude-fragment src="https://developer.mozilla.org/en-US/docs/Web/HTML#reference">
-  <p>The reference could not be read just now.</p>
-</transclude-fragment>`,
-        'html',
-      ],
-      same: [
-        `<div id="pricing" fragment>
-  <p>Two pounds.</p>
-</div>
-
-<aside>
-  <transclude-fragment src="#pricing"></transclude-fragment>
-</aside>`,
-        'html',
-      ],
-      route: [
-        `<transclude-fragment src="/notes#notes">
-  <p>The notes could not be read.</p>
-</transclude-fragment>`,
+      bookmark: [
+        `<a id="install"></a>
+<h2>Installing</h2>
+<p>Run the thing.</p>`,
         'html',
       ],
       tuning: [
@@ -66,18 +56,16 @@
 <title>Foreign documents · transclude</title>
 <meta
   name="description"
-  content="Fetching a fragment of a document you did not write, from a host you named."
+  content="Finding a piece of a document that was not written for you, and making it safe to show."
 />
 
 <doc-page
   heading="Foreign documents"
-  lede="One element includes a region of this page, a region of another route, or a piece of a document you did not write."
+  lede="Your pages mark a region and the compiler emits a function for it. A page you did not write marks nothing, so its extent is worked out from what HTML already encodes."
 >
   <p>
-    Your own pages mark a fragment with an attribute, and the compiler emits a
-    render function for it. See <a href="/fragments">fragments</a>. None of that
-    is available in a document somebody else wrote, so this is a separate thing
-    with separate rules.
+    This is the third <a href="/includes">include</a> form, and the only one that
+    leaves the server. Nothing here runs against your own pages.
   </p>
 
   <h2>Turning it on</h2>
@@ -89,75 +77,11 @@
 
   ${html(s.config)}
 
-  ${html(s.request)}
-
-  <p>With no <code>id</code>, the answer is the document's outline.</p>
-
-  ${html(s.outline)}
-
-  <h2>Including one in a page</h2>
-
-  ${html(s.include)}
-
-  <p>
-    The children are the fallback. On success they are dropped; if the source
-    cannot be read, they render in place of it. An element with no children whose
-    source fails stops the render, because a hole nobody wrote looks like
-    content.
-  </p>
-
-  <p>
-    Includes are resolved before the page renders, not during it. That is what
-    lets a prerendered page carry the result: it reads the source once, at build
-    time, and is written to a file like any other page. Several includes are
-    resolved together, and several from one document cost one read.
-  </p>
-
-  <doc-note label="The same element works on your own pages">
-    <code>src="#pricing"</code> includes a region of the page it sits in. That
-    one is free: the region is already compiled to a function, so nothing is
-    fetched and nothing is parsed.
-    ${html(s.same)}
-    The copy leaves the id behind. A region keeps its name where it is declared,
-    which is what a swap replaces.
-  </doc-note>
-
-  <h2>Another route of this app</h2>
-
-  ${html(s.route)}
-
-  <p>
-    Rendered rather than fetched. It is the same process, so a request to
-    ourselves would run the whole middleware stack to answer something we can
-    answer directly. The other route's loaders run, its layouts' markup does not,
-    and the region named is what comes back. It needs no
-    <code>proxy</code> config, because nothing leaves the server.
-  </p>
-
-  <p>
-    One route included twice runs its loaders once. That memo lasts for the
-    request and no longer.
-  </p>
-
-  <doc-note label="Reading spreads" tone="warn">
-    The included route reads cookies through the including page's own, so a page
-    that includes a route reading a cookie is personal too and the cache will not
-    hold it. Without that the second visitor is handed the first one's page. For
-    the same reason the build refuses to write a prerendered page that read a
-    cookie, whether the page read it or something it includes did.
-  </doc-note>
-
-  <p>
-    A page that includes itself, directly or round three others, is refused with
-    the way round named. So is a chain more than ten deep.
-  </p>
+  ${html(s.use)}
 
   <h2>How extent is worked out</h2>
 
-  <p>
-    An id says what a thing is, not where it ends. Only what HTML already
-    encodes is used:
-  </p>
+  <p>An id says what a thing is, not where it ends. Only what HTML already encodes is used:</p>
 
   <ul>
     <li>
@@ -166,24 +90,36 @@
       <code>h3</code> stops at the next <code>h3</code> or any <code>h2</code>. A
       run never crosses out of its parent.
     </li>
-    <li>
-      A <code>&lt;dt&gt;</code> takes its definitions up to the next term.
-    </li>
+    <li>A <code>&lt;dt&gt;</code> takes its definitions up to the next term.</li>
     <li>Everything else is returned as itself, with no inference at all.</li>
   </ul>
 
   <p>
     An empty inline element is read as a bookmark for what follows it, which is
-    how anchors were written before ids went on headings.
-    <code>&lt;a id="install"&gt;&lt;/a&gt;&lt;h2&gt;Installing&lt;/h2&gt;</code>
-    resolves the heading. One hop only, and an element holding text or an image
-    is content rather than a bookmark.
+    how anchors were written before ids went on headings. This resolves the
+    heading and its section, not the empty anchor.
+  </p>
+
+  ${html(s.bookmark)}
+
+  <p>
+    One hop only, and an element holding text or an image is content rather than
+    a bookmark.
+  </p>
+
+  <h2>Documents with no ids</h2>
+
+  <p>
+    A heading with no id gets one from its text, lowercased, punctuation removed,
+    spaces hyphenated. Letters keep their own script rather than folding to
+    ASCII.
   </p>
 
   <p>
-    A document with no ids is still addressable: a heading with no id gets one
-    from its text. Explicit ids always win, and the whole table is worked out
-    before anything is resolved, so a name means the same thing on every request.
+    Explicit ids always win, and the whole table is worked out before anything is
+    resolved. A generated name cannot depend on which fragment was asked for, so
+    an id further down the page still beats a heading further up, and the heading
+    takes the next name instead.
   </p>
 
   <doc-note label="A fragment is a node list">
@@ -198,16 +134,23 @@
     Scripts, frames, plugins and event handlers are removed.
     <code>javascript:</code> URLs go everywhere; <code>data:</code> survives only
     on an image source. <code>&lt;base&gt;</code> and <code>&lt;link&gt;</code>
-    are removed too: the first would retarget every relative URL in
-    <em>your</em> page, and the second can pull a stylesheet from anywhere.
+    are removed for your page's sake rather than the fragment's: the first would
+    retarget every relative URL in the document the fragment lands in, and the
+    second can pull a stylesheet from anywhere.
   </p>
 
   <p>
-    Every relative URL is made absolute against the source, including a
-    hash-only <code>href</code>, which would otherwise address an id in your
-    page. <code>srcset</code> is parsed rather than split on commas, since a URL
-    may contain one, and <code>url()</code> is rewritten in style attributes and
+    Every relative URL is made absolute against the source, including a hash-only
+    <code>href</code>, which would otherwise address an id in your page.
+    <code>srcset</code> is parsed rather than split on commas, since a URL may
+    contain one, and <code>url()</code> is rewritten in style attributes and
     style blocks.
+  </p>
+
+  <p>
+    A custom element from the source arrives as markup with no definition behind
+    it. It is inert rather than broken, but a section built out of them will look
+    empty.
   </p>
 
   <h2>Limits</h2>
@@ -221,20 +164,38 @@
     the cloud metadata endpoint and IPv4 addresses written in IPv6 form.
   </p>
 
+  <p>
+    <code>maxAge</code> is how long a document already read is used without
+    asking the source anything, so several fragments of one page cost one read.
+    After that it is revalidated with <code>ETag</code> and
+    <code>Last-Modified</code>.
+  </p>
+
   <doc-note label="What the allowlist is holding up" tone="warn">
     On Node and Deno a hostname is resolved and every address it answers with is
-    checked. Cloudflare Workers has no resolver, so there that check does not
-    run and the allowlist is the whole defense. Name hosts you trust, and treat
-    a wildcard as trust in everything under it.
+    checked. Cloudflare Workers has no resolver, so there that check does not run
+    and the allowlist is the whole defense. Name hosts you trust, and treat a
+    wildcard as trust in everything under it.
   </doc-note>
 
-  <h2>Why it goes through your server</h2>
+  <h2>The endpoint</h2>
 
   <p>
-    The fragment is resolved here rather than in the browser. The page receives
-    the piece it asked for instead of a whole foreign document, sanitizing
-    happens somewhere it cannot be switched off, and the request is same-origin,
-    which the default <a href="/security">policy</a> requires: it names
-    <code>'self'</code> and a cross-origin fetch is refused.
+    Naming a host also mounts <code>/_transclude/proxy</code>, which is what a
+    client library would ask if you drive an include yourself.
+  </p>
+
+  ${html(s.request)}
+
+  <p>With no <code>id</code>, the answer is the document's outline.</p>
+
+  ${html(s.outline)}
+
+  <p>
+    The fragment is resolved on this side rather than in the browser. The page
+    receives the piece it asked for instead of a whole foreign document,
+    sanitizing happens somewhere it cannot be switched off, and the request is
+    same-origin, which the default <a href="/security">policy</a> requires: it
+    names <code>'self'</code> and a cross-origin fetch is refused.
   </p>
 </doc-page>

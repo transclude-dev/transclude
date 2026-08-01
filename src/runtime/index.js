@@ -1,3 +1,4 @@
+export { defineInclude, INCLUDE_TAG as INCLUDE_ELEMENT, parseNodes, requestUrl } from './include.js';
 // Runtime shared by the server render and the browser custom element.
 // Nothing here touches `document` at module scope, so it imports cleanly in Node.
 

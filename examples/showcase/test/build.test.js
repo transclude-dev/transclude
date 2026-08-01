@@ -340,10 +340,18 @@ describe('the build writes the feed, and it is well-formed', () => {
   assert.match(xml, /<!\[CDATA\[Designed the spanning-tree protocol/);
 });
 
-describe('the home page carries the transcluded section, not the fallback', () => {
-  // Resolved before the render, so it is in the HTML that arrives rather than
+describe('a server-time include is in the HTML and leaves no element behind', () => {
+  // Resolved before the render, so it is in the markup that arrives rather than
   // something the browser fetches later.
   assert.match(home, /<section class="borrowed">/);
   assert.doesNotMatch(home, /could not be read/, 'the fallback rendered instead');
-  assert.doesNotMatch(home, /transclude-fragment/, 'the element was left in the output');
+});
+
+describe('a client-time include stays, with its placeholder', () => {
+  // The difference `loading` makes, and the only kind that survives the render.
+  const left = [...home.matchAll(/<transclude-fragment[^>]*>/g)].map((m) => m[0]);
+
+  assert.equal(left.length, 1, 'a server-time include was left in the output');
+  assert.match(left[0], /loading="eager"/);
+  assert.match(home, /Not loaded yet/, 'the placeholder was dropped');
 });

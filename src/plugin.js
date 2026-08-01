@@ -130,6 +130,7 @@ export default function transclude({
     const files = [...chainFor(route).map((l) => l.file), route.file];
     const seeds = new Set();
     let hasScript = false;
+    let hasInclude = false;
 
     const queue = [...files];
     const visited = new Set();
@@ -148,6 +149,7 @@ export default function transclude({
       // The block splitter already separates client <script> from server/props.
       const blocks = safely(() => splitBlocks(source));
       if (blocks?.client?.some((block) => block.code.trim())) hasScript = true;
+      if (blocks?.nodes && hasLazyInclude(blocks.nodes)) hasInclude = true;
     }
     const tags = componentClosure(seeds);
     return {
@@ -159,8 +161,22 @@ export default function transclude({
       // Elements to define or script to run, and otherwise nothing at all. The
       // exception is fragments, where any page can be swapped into and needs the
       // loader that defines whatever arrives.
-      needed: watchElements || tags.length > 0 || hasScript,
+      include: hasInclude,
+      needed: watchElements || tags.length > 0 || hasScript || hasInclude,
     };
+  };
+
+  /** A `<transclude-fragment loading=…>` anywhere in this markup. */
+  const hasLazyInclude = (nodes) => {
+    const walk = (list) =>
+      list.some((node) => {
+        if (node.tagName === 'transclude-fragment' && node.attrs?.some((a) => a.name === 'loading')) {
+          return true;
+        }
+        const kids = node.tagName === 'template' ? (node.content?.childNodes ?? []) : (node.childNodes ?? []);
+        return walk(kids);
+      });
+    return walk(nodes);
   };
 
   const report = (label, warnings) => {

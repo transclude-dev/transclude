@@ -157,11 +157,15 @@
 
      The id is the name: the URL asks for `matches` and a swap targets
      `#matches`. Nothing to keep in sync, because there is only one word. -->
-<!-- A piece of somebody else's document. Resolved before this page renders, so
-     the markup is in the HTML that arrives and this page is still a file the
-     build can write. The children show if the source cannot be read. -->
+<!-- A piece of somebody else's document: the accessibility notes from MDN's
+     page on <dl>. The heading has an id, and the run takes everything under it
+     up to the next heading of the same rank, so what arrives is the whole
+     section rather than the heading alone.
+
+     Resolved before this page renders, so the markup is in the HTML that
+     arrives. The children show if the source cannot be read. -->
 <section class="borrowed">
-  <transclude-fragment src="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dl#try_it">
+  <transclude-fragment src="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dl#accessibility">
     <p>MDN could not be read just now.</p>
   </transclude-fragment>
 </section>

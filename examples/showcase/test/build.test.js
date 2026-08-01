@@ -52,10 +52,14 @@ const serverRender = (id, url) => {
     {
       clientEntry: route.client,
       stylesheet,
-      // The home page transcludes a section of MDN. These tests are about this
-      // app's markup, so the source is stubbed rather than fetched: a suite
-      // that needed the network would fail on a train.
-      include: { resolve: async () => '<h2 id="try_it">Try it</h2>' },
+      // The home page transcludes a section of MDN and a region of /notes.
+      // These tests are about this app's own markup, so both are stubbed: the
+      // first would need the network, and the second would need the route table
+      // that only the running server has.
+      include: {
+        resolve: async () => '<h2 id="accessibility">Accessibility</h2>',
+        route: async (path, id) => `<div id="${id}">from ${path}</div>`,
+      },
     },
   );
 };

@@ -354,7 +354,7 @@ export function compilePage(
   assertNoActionsObject(server.exports, where);
 
   const template = compileFragment(blocks.nodes, { components, shadowTags, page: true, html: blocks.html });
-  assertIncludesResolve(template.includes, template.regions);
+  assertIncludesResolve(template.regionIncludes, template.regions);
 
   const code = `
 ${runtimeImport(runtime)}
@@ -369,7 +369,7 @@ export const hasTitle = ${template.hasTitle};
 export const layouts = [${layouts.map((_, i) => `__L${i}`).join(', ')}];
 export const client = ${JSON.stringify(client)};
 ${regionsExport(template.regions)}
-export const externals = ${JSON.stringify(template.externals ?? [])};
+export const includes = ${JSON.stringify(template.includes ?? [])};
 
 export async function load(ctx) {
   if (typeof __load === 'function') return (await __load(ctx)) ?? {};

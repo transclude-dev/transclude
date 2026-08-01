@@ -113,6 +113,10 @@ function htmlOpenTag(lang, attrs) {
  * `HX-Trigger` header, a `Set-Cookie`.
  */
 export async function renderRoute(page, ctx, options = {}) {
+  // Held for this request only. A page including one route twice should run its
+  // loaders once; a store that outlived the request would be a second page cache
+  // nobody audited.
+  const request = { ...options, includeMemo: options.includeMemo ?? new Map() };
   const chain = [...page.layouts, page];
   const datas = [];
   let inherited = {};
@@ -125,8 +129,8 @@ export async function renderRoute(page, ctx, options = {}) {
     // reading another document is not. A layout and a page each resolve their
     // own, so neither can see the other's by accident.
     datas.push(
-      mod.externals?.length
-        ? { ...data, __included: await resolveExternals(mod.externals, options.include) }
+      mod.includes?.length
+        ? { ...data, __included: await resolveIncludes(mod.includes, ctx, request) }
         : data,
     );
     if (mod !== page) inherited = { ...inherited, ...data };
@@ -147,20 +151,76 @@ export async function renderRoute(page, ctx, options = {}) {
  * read. A source that cannot be read is null here and the element falls back to
  * its own children, or throws if it has none.
  */
-async function resolveExternals(externals, include) {
-  if (!include?.resolve) {
-    const [first] = externals;
-    throw new Error(
-      `[transclude] <transclude-fragment src="${first.key}"> reads another site, ` +
-        `and no host is allowed to be read. Name one in \`proxy.allow\`.`,
-    );
-  }
+export const INCLUDE_DEPTH = 10;
+
+/**
+ * The parameters a route's pattern takes from a path, or null if it does not
+ * match.
+ *
+ * Only what a route pattern can hold: `:name` and a trailing `:name{.+}`. An
+ * include names a path an author wrote, so this answers the same question the
+ * router does without needing the router.
+ */
+export function paramsFor(route, pathname) {
+  const names = [];
+  const source = route.pattern
+    .replace(/\/:([A-Za-z0-9_]+)\{\.\+\}/g, (_, name) => (names.push(name), '/(.+)'))
+    .replace(/:([A-Za-z0-9_]+)/g, (_, name) => (names.push(name), '([^/]+)'));
+
+  const found = new RegExp(`^${source}$`).exec(pathname);
+  if (!found) return null;
+
+  return Object.fromEntries(names.map((name, at) => [name, decodeURIComponent(found[at + 1])]));
+}
+
+export async function resolveIncludes(includes, ctx, options = {}) {
+  const include = options.include ?? null;
+  const chain = options.includeChain ?? [];
 
   const pairs = await Promise.all(
-    externals.map(async ({ key, url, id }) => {
+    includes.map(async ({ key, kind, where, id }) => {
+      // A page that includes itself, directly or through three others, would
+      // otherwise render until the stack ran out. The chain is carried so the
+      // error can name the way round.
+      if (chain.includes(key)) {
+        throw new Error(
+          `[transclude] <transclude-fragment> includes itself: ` +
+            `${[...chain, key].join(' includes ')}.`,
+        );
+      }
+      if (chain.length >= INCLUDE_DEPTH) {
+        throw new Error(
+          `[transclude] <transclude-fragment src="${key}"> is ${chain.length} includes deep, ` +
+            `past the limit of ${INCLUDE_DEPTH}.`,
+        );
+      }
+
+      const next = { ...options, includeChain: [...chain, key] };
+
       try {
-        return [key, await include.resolve(url, id)];
-      } catch {
+        if (kind === 'route') {
+          if (!include?.route) {
+            throw new Error(
+              `[transclude] <transclude-fragment src="${key}"> reads another route, ` +
+                `and this renderer was given no way to reach one.`,
+            );
+          }
+          return [key, await include.route(where, id, ctx, next)];
+        }
+
+        if (!include?.resolve) {
+          throw new Error(
+            `[transclude] <transclude-fragment src="${key}"> reads another site, ` +
+              `and no host is allowed to be read. Name one in \`proxy.allow\`.`,
+          );
+        }
+        return [key, await include.resolve(where, id)];
+      } catch (error) {
+        // A source that is unreachable is what the fallback is for. A source
+        // that is misconfigured, or a loop, is a mistake and should be heard.
+        if (/includes itself|past the limit|no host is allowed|no way to reach/.test(error.message)) {
+          throw error;
+        }
         return [key, null];
       }
     }),
@@ -179,7 +239,7 @@ async function resolveExternals(externals, include) {
  * Returns null when the page has no region by that name, which is a 404 rather
  * than an empty swap: asking for something that does not exist should say so.
  */
-export async function renderFragment(page, ctx, { region = null } = {}) {
+export async function renderFragment(page, ctx, { region = null, ...options } = {}) {
   const target = region ? page.regions?.[region] : null;
   if (region && !target) return null;
 
@@ -192,6 +252,11 @@ export async function renderFragment(page, ctx, { region = null } = {}) {
     // A loader answering with a Response outranks the region that was asked for.
     if (data instanceof Response) return data;
     if (mod !== page) inherited = { ...inherited, ...data };
+  }
+
+  const last = chain[chain.length - 1];
+  if (last.includes?.length) {
+    data = { ...data, __included: await resolveIncludes(last.includes, ctx, options) };
   }
 
   // No region named: the page's whole body, still without its layouts.

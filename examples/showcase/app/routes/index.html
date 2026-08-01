@@ -15,22 +15,22 @@
       : people;
 
     return {
-    heading: "Single-file elements",
-    // A hostile string on purpose. It must arrive escaped.
-    note: '<script>alert(1)<\/script> & "quotes"',
-    trusted: "<strong>trusted markup<\/strong>",
-    people,
-    table: {
-      columns: ["Name", "Joined", "Tags"],
-      rows: people.map((p) => [
-        p.name,
-        String(p.since),
-        p.tags.join(", ") || "none",
-      ]),
-    },
-    query,
-    matches,
-    matchRows: matches.map((p) => [p.name, p.role || "none"]),
+      heading: "Single-file elements",
+      // A hostile string on purpose. It must arrive escaped.
+      note: '<script>alert(1)<\/script> & "quotes"',
+      trusted: "<strong>trusted markup<\/strong>",
+      people,
+      table: {
+        columns: ["Name", "Joined", "Tags"],
+        rows: people.map((p) => [
+          p.name,
+          String(p.since),
+          p.tags.join(", ") || "none",
+        ]),
+      },
+      query,
+      matches,
+      matchRows: matches.map((p) => [p.name, p.role || "none"]),
     };
   };
 </script>
@@ -69,8 +69,8 @@
 <h1>${heading}</h1>
 <p class="lede">
   Every card below was rendered on the server with its shadow root inline, then
-  upgraded to a custom element. Click one and the attribute change re-renders the
-  same compiled template in the browser.
+  upgraded to a custom element. Click one and the attribute change re-renders
+  the same compiled template in the browser.
 </p>
 
 <site-note tone="warn">
@@ -89,23 +89,28 @@
 </div>
 
 <site-note class="tinted">
-  An element, also wearing <code>.tinted</code>. Light DOM, so a global class lands
-  on it.
+  An element, also wearing <code>.tinted</code>. Light DOM, so a global class
+  lands on it.
 </site-note>
 
-<user-card class="tinted" name="Boundary" role="the class stops here" tags='["shadow"]'>
+<user-card
+  class="tinted"
+  name="Boundary"
+  role="the class stops here"
+  tags='["shadow"]'
+>
   <em>The host got the class; nothing inside its shadow root did.</em>
 </user-card>
 
 <h2>A light element that re-renders</h2>
 
 <p>
-  No shadow root. Click it: the prop write changes the attribute, and the text is
-  written in place rather than the element being repainted.
+  No shadow root. Click it: the prop write changes the attribute, and the text
+  is written in place rather than the element being repainted.
 </p>
 
 <live-count count="0" label="clicks"></live-count>
-      <tally-box label="tally"></tally-box>
+<tally-box label="tally"></tally-box>
 
 <h2>Escaping</h2>
 <p>Untrusted: ${note}</p>
@@ -165,8 +170,24 @@
      Resolved before this page renders, so the markup is in the HTML that
      arrives. The children show if the source cannot be read. -->
 <section class="borrowed">
-  <transclude-fragment src="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dl#accessibility">
+  <transclude-fragment
+    src="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dl#accessibility"
+  >
     <p>MDN could not be read just now.</p>
+  </transclude-fragment>
+</section>
+
+<!-- A region of another route of this app. Rendered here rather than fetched:
+     it is the same process, so a request to ourselves would run the whole
+     middleware stack to answer something we can answer directly.
+
+     /notes reads a cookie, and its reads count as this page's, so this page is
+     personal too and the cache will not hold it. Without that the second
+     visitor would be handed the first one's notes. -->
+<section class="borrowed">
+  <h2>Your notes, from /notes</h2>
+  <transclude-fragment src="/notes#notes">
+    <p>The notes could not be read.</p>
   </transclude-fragment>
 </section>
 

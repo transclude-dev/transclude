@@ -42,6 +42,12 @@
 </aside>`,
         'html',
       ],
+      route: [
+        `<transclude-fragment src="/notes#notes">
+  <p>The notes could not be read.</p>
+</transclude-fragment>`,
+        'html',
+      ],
       tuning: [
         `proxy: {
   allow: ['developer.mozilla.org'],
@@ -65,7 +71,7 @@
 
 <doc-page
   heading="Foreign documents"
-  lede="A page of yours declares its fragments. A page you did not write has none, so its extent is worked out from what HTML already encodes."
+  lede="One element includes a region of this page, a region of another route, or a piece of a document you did not write."
 >
   <p>
     Your own pages mark a fragment with an attribute, and the compiler emits a
@@ -115,6 +121,36 @@
     The copy leaves the id behind. A region keeps its name where it is declared,
     which is what a swap replaces.
   </doc-note>
+
+  <h2>Another route of this app</h2>
+
+  ${html(s.route)}
+
+  <p>
+    Rendered rather than fetched. It is the same process, so a request to
+    ourselves would run the whole middleware stack to answer something we can
+    answer directly. The other route's loaders run, its layouts' markup does not,
+    and the region named is what comes back. It needs no
+    <code>proxy</code> config, because nothing leaves the server.
+  </p>
+
+  <p>
+    One route included twice runs its loaders once. That memo lasts for the
+    request and no longer.
+  </p>
+
+  <doc-note label="Reading spreads" tone="warn">
+    The included route reads cookies through the including page's own, so a page
+    that includes a route reading a cookie is personal too and the cache will not
+    hold it. Without that the second visitor is handed the first one's page. For
+    the same reason the build refuses to write a prerendered page that read a
+    cookie, whether the page read it or something it includes did.
+  </doc-note>
+
+  <p>
+    A page that includes itself, directly or round three others, is refused with
+    the way round named. So is a chain more than ten deep.
+  </p>
 
   <h2>How extent is worked out</h2>
 

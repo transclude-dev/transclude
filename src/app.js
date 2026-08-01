@@ -11,14 +11,14 @@
 
 import { cacheKey, createCache, windowOf } from './cache.js';
 import { feed, feedPath, feedType } from './feed.js';
-import { documentStore, includeResolver, PROXY_PATH, proxyHandler } from './proxy.js';
+import { documentStore, PROXY_PATH, proxyHandler } from './proxy.js';
+import { includeContext } from './include.js';
 import { sitemap } from './sitemap.js';
 import { absoluteFrom } from './document.js';
 import {
   ACTION_METHODS,
   hasRegion,
   methodsOf,
-  paramsFor,
   renderFragment,
   renderRoute,
   responseOf,
@@ -69,72 +69,12 @@ export function createApp({
   // One resolver for the app, so several pages including the same document read
   // it once. Absent when no host is allowed, and then an external include throws
   // with the reason rather than rendering a hole.
-  const foreign = config.proxy
-    ? includeResolver(config.proxy, { lookup: config.proxy.lookup ?? lookup ?? null })
-    : null;
-
-  /**
-   * A region of another route of this app.
-   *
-   * Rendered rather than fetched: it is the same process, and a request to
-   * ourselves would run the whole middleware stack to answer something we can
-   * answer directly.
-   *
-   * The host's `cookies` go through unchanged, which is what makes
-   * personalization contagious. A page that includes a route whose loader reads
-   * a cookie is personal too, and the cache has to know: without this the second
-   * visitor is handed the first one's page.
-   */
-  const include = {
-    resolve: foreign?.resolve ?? null,
-    route: async (path, id, ctx, options) => {
-      const memo = options.includeMemo;
-      const key = `${path}#${id}`;
-      if (memo?.has(key)) return memo.get(key);
-
-      const answer = renderRouteInclude(path, id, ctx, options);
-      memo?.set(key, answer);
-      return answer;
-    },
-  };
-
-  const renderRouteInclude = async (path, id, ctx, options) => {
-    {
-      const url = new URL(path, ctx.url);
-      const match = matchRoute(url.pathname);
-      if (!match) throw new Error(`[transclude] no route answers ${path}`);
-
-      const page = pages[match.route.id];
-      if (!page) throw new Error(`[transclude] ${path} is not a page`);
-
-      const html = await renderFragment(
-        page,
-        {
-          ...ctx,
-          url: url.href,
-          params: match.params,
-          route: { id: match.route.id, pattern: match.route.pattern, path: url.pathname },
-          // The include is not the request. A loader that branches on the region
-          // asked for should see this render for what it is.
-          fragment: null,
-          action: null,
-        },
-        { region: id, ...options, include },
-      );
-
-      if (html instanceof Response) return null;
-      return html;
-    }
-  };
-
-  /** The route a path belongs to, with its parameters. */
-  const matchRoute = (pathname) => {
-    for (const route of manifest.routes ?? []) {
-      const params = paramsFor(route, pathname);
-      if (params) return { route, params };
-    }
-    return null;
-  };
+  const include = includeContext({
+    config,
+    routes: manifest.routes ?? [],
+    pageFor: (id) => pages[id],
+    lookup,
+  });
 
   const app = baseApp({
     csrf: config.csrf,

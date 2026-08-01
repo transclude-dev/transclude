@@ -25,18 +25,17 @@ import { baseApp, endpointMethods, runEndpoint, SERVER_FILE } from '../src/serve
 import { randomBytes } from 'node:crypto';
 import { cookiesOf } from '../src/cookies.js';
 import { loadProject, portOf } from '../src/project.js';
-import { includeResolver } from '../src/proxy.js';
+import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
 
 const { root, config } = await loadProject();
 const routesDir = resolveRoutesDir(path.join(root, config.appDir), config.routesDir);
 const PORT = portOf(config, process.env.PORT);
 
-// The same resolver the production server builds, so an include that works in
-// one works in the other.
-const include = config.proxy
-  ? includeResolver(config.proxy, { lookup: nodeLookup() })
-  : null;
+// Built the same way the production server and the build build theirs. Dev used
+// to get only half of it, so a route include worked in production and threw
+// here.
+let include = null;
 
 /**
  * A signing secret for this process only, when the config has none.
@@ -225,6 +224,13 @@ async function loadMiddleware() {
 
 async function buildApp() {
   const { routes, endpoints, notFound } = scanRoutes(routesDir);
+
+  include = includeContext({
+    config,
+    routes,
+    pageFor: (id) => vite.ssrLoadModule(pageModuleId(id)),
+    lookup: nodeLookup(),
+  });
   const app = baseApp({
     csrf: config.csrf,
     trailingSlash: config.trailingSlash,

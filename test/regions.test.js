@@ -17,12 +17,13 @@ const compile = (source, opts = {}) =>
 
 const run = (body, data = {}) =>
   new Function(
-    '__e', '__a', '__str', '__sh', '__data', 'html', '__d', '__slots', '__fragment',
+    '__e', '__a', '__str', '__sh', '__data', 'html', '__d', '__slots', '__fragment', '__named',
     `let __o = '';\n${body}\nreturn __o;`,
   )(
     (v) => String(v ?? ''), () => '', (v) => String(v ?? ''), () => '',
     (def, props) => props, (v) => v,
-    data, {}, true,
+    // A region keeps its id unless an include asked for a copy without one.
+    data, {}, true, true,
   );
 
 // ---- collection -----------------------------------------------------------

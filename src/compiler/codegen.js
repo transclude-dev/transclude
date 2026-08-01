@@ -606,22 +606,6 @@ class Codegen {
     if (src === null || src.trim() === '') {
       throw new CompileError(`<${INCLUDE_TAG}> has no src. It names what to include.`, el);
     }
-
-    // `loading` hands this one to the browser. The element stays in the markup
-    // and fills itself in, so nothing here resolves it and its children are the
-    // placeholder rather than a fallback.
-    if (el.attrs.some((a) => a.name === 'loading')) {
-      // Written out rather than passed to `emitElement`, which would come
-      // straight back here: this tag is intercepted before the generic path.
-      // An interpolated src is fine on this one, because nothing on the server
-      // has to know what it says.
-      this.s(out, `<${INCLUDE_TAG}`);
-      this.emitAttrs(el, out, scope);
-      this.s(out, `>`);
-      this.emitChildren(childrenOf(el), out, scope, false);
-      this.s(out, `</${INCLUDE_TAG}>`);
-      return;
-    }
     if (!this.page || this.layout) {
       throw new CompileError(
         `<${INCLUDE_TAG}> includes a region of a page, and only a page has regions. ` +

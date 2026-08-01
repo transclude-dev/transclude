@@ -19,6 +19,7 @@
   cookieSecret: globalThis.process?.env?.COOKIE_SECRET ?? null,
 
   port: 1960,
+  proxy: false,
   outDir: 'dist',
   typesFile: 'app/transclude-env.d.ts',
 };`,
@@ -124,6 +125,16 @@
             What <code>npm run dev</code> and <code>npm start</code> both listen
             on. <code>PORT</code> in the environment wins, so a host that assigns
             one needs no edit.
+          </td>
+        </tr>
+        <tr>
+          <td><code>proxy</code></td>
+          <td><code>false</code></td>
+          <td>
+            <code>{ allow: [...] }</code> mounts
+            <code>/_transclude/proxy</code>, which fetches a document from an
+            allowed host and answers with one fragment of it. Default deny: no
+            key, no route. See <a href="/foreign">foreign documents</a>.
           </td>
         </tr>
         <tr>

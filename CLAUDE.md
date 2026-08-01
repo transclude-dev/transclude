@@ -438,6 +438,27 @@ against.
   was cached: the next visitor got the first one's count. `cookiesOf` records the
   read and `cacheable` checks it. The unit test for the flag passed the whole
   time; only a request through `createApp` catches this.
+- **The proxy follows redirects itself, and that is the point.** `redirect:
+  'follow'` hands the whole decision to the first response: the check that passed
+  on the URL somebody configured says nothing about where hop three landed, and
+  a redirect to `169.254.169.254` is the standard way in. `fetchChecked` loops
+  with `redirect: 'manual'` and re-runs the allowlist and the address check on
+  every hop.
+- **Resolving a name is injected, because one runtime cannot do it.** `address.js`
+  decides what an address *means* and imports nothing; `lookup.js` turns a name
+  into addresses and imports `node:dns`. The core reaches the first and never the
+  second, which `portable.test.js` now asserts by name. On workerd there is no
+  resolver at all, so the allowlist is the whole defense and the docs say so
+  rather than implying the address checks are running everywhere.
+- **Sanitize, then rewrite, then index.** The base is read before `<base>` is
+  stripped, cleaning happens before rewriting so nothing rewrites a URL on an
+  element about to be removed, and the id table is built last. Indexing first
+  leaves the table naming elements the cleaning took out, so `listFragments`
+  advertises a fragment that then fails to resolve.
+- **`<base>` and `<link>` are stripped from foreign markup for the host page's
+  sake, not the fragment's.** Neither does anything to the fragment. A `<base>`
+  retargets every relative URL in the document the fragment is inserted into,
+  and a `<link>` can pull a stylesheet from anywhere.
 - **`src/extract.js` never runs on our own pages.** A region here is compiled:
   `<div id="x" fragment>` becomes its own render function and the same markup
   serves it inline and alone, so nothing in that path parses HTML. `extract.js`

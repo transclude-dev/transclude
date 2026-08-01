@@ -49,7 +49,14 @@ const serverRender = (id, url) => {
         return { response, cookies: cookiesOf(null, response, 'a-secret-for-tests') };
       })(),
     },
-    { clientEntry: route.client, stylesheet },
+    {
+      clientEntry: route.client,
+      stylesheet,
+      // The home page transcludes a section of MDN. These tests are about this
+      // app's markup, so the source is stubbed rather than fetched: a suite
+      // that needed the network would fail on a train.
+      include: { resolve: async () => '<h2 id="try_it">Try it</h2>' },
+    },
   );
 };
 
@@ -327,4 +334,12 @@ describe('the build writes the feed, and it is well-formed', () => {
   assert.match(xml, /<item>\s*<title>Radia Perlman<\/title>/);
   // A description carrying real punctuation survives as text, not as entities.
   assert.match(xml, /<!\[CDATA\[Designed the spanning-tree protocol/);
+});
+
+describe('the home page carries the transcluded section, not the fallback', () => {
+  // Resolved before the render, so it is in the HTML that arrives rather than
+  // something the browser fetches later.
+  assert.match(home, /<section class="borrowed">/);
+  assert.doesNotMatch(home, /could not be read/, 'the fallback rendered instead');
+  assert.doesNotMatch(home, /transclude-fragment/, 'the element was left in the output');
 });

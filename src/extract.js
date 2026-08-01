@@ -93,8 +93,16 @@ export function slugify(text) {
  * requests.
  */
 export function readDocument(html) {
-  const root = parse(html);
+  return indexDocument(parse(html));
+}
 
+/**
+ * The same table, over a tree that has already been parsed.
+ *
+ * The proxy sanitizes and rewrites a foreign document before indexing it, and
+ * indexing first would leave the table naming elements the cleaning removed.
+ */
+export function indexDocument(root) {
   const ids = new Map();
   const duplicates = new Set();
   const headings = [];

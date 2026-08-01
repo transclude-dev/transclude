@@ -1,0 +1,161 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      config: [
+        `export default {
+  proxy: {
+    allow: ['developer.mozilla.org', '*.docs.example'],
+  },
+};`,
+        'js',
+      ],
+      request: [
+        `GET /_transclude/proxy?url=https://developer.mozilla.org/en-US/docs/Web/HTML&id=reference
+
+<h2 id="reference">Reference</h2>
+<p>…the section, with its links rewritten to point back at MDN.</p>`,
+        'text',
+      ],
+      outline: [
+        `GET /_transclude/proxy?url=https://developer.mozilla.org/en-US/docs/Web/HTML
+
+{ "url": "…", "fragments": [
+  { "id": "reference", "implicit": false, "tag": "h2", "rank": 2, "kind": "heading-run", "text": "Reference" }
+] }`,
+        'text',
+      ],
+      tuning: [
+        `proxy: {
+  allow: ['developer.mozilla.org'],
+  maxBytes: 5 * 1024 * 1024,
+  timeout: 10_000,
+  redirects: 5,
+  maxAge: 60_000,
+  sanitize: true,
+}`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
+<title>Foreign documents · transclude</title>
+<meta
+  name="description"
+  content="Fetching a fragment of a document you did not write, from a host you named."
+/>
+
+<doc-page
+  heading="Foreign documents"
+  lede="A page of yours declares its fragments. A page you did not write has none, so its extent is worked out from what HTML already encodes."
+>
+  <p>
+    Your own pages mark a fragment with an attribute, and the compiler emits a
+    render function for it. See <a href="/fragments">fragments</a>. None of that
+    is available in a document somebody else wrote, so this is a separate thing
+    with separate rules.
+  </p>
+
+  <h2>Turning it on</h2>
+
+  <p>
+    There is no route until a host is named. Default deny, and the list is the
+    part that actually protects you.
+  </p>
+
+  ${html(s.config)}
+
+  ${html(s.request)}
+
+  <p>With no <code>id</code>, the answer is the document's outline.</p>
+
+  ${html(s.outline)}
+
+  <h2>How extent is worked out</h2>
+
+  <p>
+    An id says what a thing is, not where it ends. Only what HTML already
+    encodes is used:
+  </p>
+
+  <ul>
+    <li>
+      A heading takes everything after it up to the next heading of its own rank
+      or above. An <code>h2</code> absorbs its <code>h3</code>s; an
+      <code>h3</code> stops at the next <code>h3</code> or any <code>h2</code>. A
+      run never crosses out of its parent.
+    </li>
+    <li>
+      A <code>&lt;dt&gt;</code> takes its definitions up to the next term.
+    </li>
+    <li>Everything else is returned as itself, with no inference at all.</li>
+  </ul>
+
+  <p>
+    An empty inline element is read as a bookmark for what follows it, which is
+    how anchors were written before ids went on headings.
+    <code>&lt;a id="install"&gt;&lt;/a&gt;&lt;h2&gt;Installing&lt;/h2&gt;</code>
+    resolves the heading. One hop only, and an element holding text or an image
+    is content rather than a bookmark.
+  </p>
+
+  <p>
+    A document with no ids is still addressable: a heading with no id gets one
+    from its text. Explicit ids always win, and the whole table is worked out
+    before anything is resolved, so a name means the same thing on every request.
+  </p>
+
+  <doc-note label="A fragment is a node list">
+    A heading run is several siblings, not one element. It is returned as it
+    appears in the source, with no wrapper added, because a wrapper would mean
+    the fetched markup no longer matched the page it came from.
+  </doc-note>
+
+  <h2>What arrives</h2>
+
+  <p>
+    Scripts, frames, plugins and event handlers are removed.
+    <code>javascript:</code> URLs go everywhere; <code>data:</code> survives only
+    on an image source. <code>&lt;base&gt;</code> and <code>&lt;link&gt;</code>
+    are removed too: the first would retarget every relative URL in
+    <em>your</em> page, and the second can pull a stylesheet from anywhere.
+  </p>
+
+  <p>
+    Every relative URL is made absolute against the source, including a
+    hash-only <code>href</code>, which would otherwise address an id in your
+    page. <code>srcset</code> is parsed rather than split on commas, since a URL
+    may contain one, and <code>url()</code> is rewritten in style attributes and
+    style blocks.
+  </p>
+
+  <h2>Limits</h2>
+
+  ${html(s.tuning)}
+
+  <p>
+    Redirects are followed one at a time and every hop is checked again, because
+    the check that passed on the URL you configured says nothing about where the
+    third redirect landed. Addresses on the private ranges are refused, including
+    the cloud metadata endpoint and IPv4 addresses written in IPv6 form.
+  </p>
+
+  <doc-note label="What the allowlist is holding up" tone="warn">
+    On Node and Deno a hostname is resolved and every address it answers with is
+    checked. Cloudflare Workers has no resolver, so there that check does not
+    run and the allowlist is the whole defense. Name hosts you trust, and treat
+    a wildcard as trust in everything under it.
+  </doc-note>
+
+  <h2>Why it goes through your server</h2>
+
+  <p>
+    The fragment is resolved here rather than in the browser. The page receives
+    the piece it asked for instead of a whole foreign document, sanitizing
+    happens somewhere it cannot be switched off, and the request is same-origin,
+    which the default <a href="/security">policy</a> requires: it names
+    <code>'self'</code> and a cross-origin fetch is refused.
+  </p>
+</doc-page>

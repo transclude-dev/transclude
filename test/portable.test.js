@@ -41,7 +41,7 @@ test('the core imports nothing from node:', () => {
 
 test('the core reaches only the modules that are also portable', () => {
   const { files } = graphOf(path.join(src, 'app.js'));
-  assert.deepEqual(files.sort(), ['app.js', 'cache.js', 'cookies.js', 'csp.js', 'document.js', 'feed.js', 'negotiate.js', 'server.js', 'sitemap.js']);
+  assert.deepEqual(files.sort(), ['address.js', 'app.js', 'cache.js', 'cookies.js', 'csp.js', 'document.js', 'extract.js', 'feed.js', 'negotiate.js', 'proxy.js', 'rewrite.js', 'server.js', 'sitemap.js']);
 });
 
 test('the core touches no Node-only global either', () => {
@@ -369,4 +369,14 @@ test('ctx.fragment reflects a region named by the header', async () => {
 
   await app.request('http://x/');
   assert.equal(saw, null, 'a whole document is null, not undefined');
+});
+
+test('the resolver is not in the core, because one runtime has no resolver', () => {
+  // The whole reason `lookup` is injected. `src/lookup.js` imports node:dns; if
+  // the core reached it, the app would not load on workerd at all.
+  const { files } = graphOf(path.join(src, 'app.js'));
+  assert.ok(!files.includes('lookup.js'), 'the core reaches the DNS resolver');
+
+  const source = fs.readFileSync(path.join(src, 'lookup.js'), 'utf8');
+  assert.match(source, /node:dns/, 'lookup.js no longer resolves anything');
 });

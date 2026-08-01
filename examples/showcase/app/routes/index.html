@@ -177,6 +177,18 @@
   </transclude-fragment>
 </section>
 
+<!-- The same element, filled in by the browser instead. `loading` is what says
+     so, and it means what it means on an image: the element is in the page and
+     the content arrives when it is near. The child is the placeholder.
+
+     It asks `/notes?fragment=notes`, which is the URL anyone could type. -->
+<section class="borrowed">
+  <h2>The notes again, fetched by the browser</h2>
+  <transclude-fragment src="/notes#notes" loading="eager">
+    <p>Not loaded yet.</p>
+  </transclude-fragment>
+</section>
+
 <!-- A region of another route of this app. Rendered here rather than fetched:
      it is the same process, so a request to ourselves would run the whole
      middleware stack to answer something we can answer directly.

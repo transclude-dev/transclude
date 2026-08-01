@@ -512,7 +512,7 @@ export function usedComponents(source, registry) {
  * imported statically and defined before first paint, and any other tag in the
  * app is one dynamic import away, taken only if it ever shows up in the DOM.
  */
-export function compileClientEntry(sources, { tags = [], include = false } = {}, { runtime, elements = false } = {}) {
+export function compileClientEntry(sources, { tags = [] } = {}, { runtime, elements = false } = {}) {
   // Layouts first, page last: the same order they wrap in.
   const blocks = sources.map(({ source, filename }) =>
     assertModule(splitBlocks(source).client, `${filename} <script>`),
@@ -527,19 +527,12 @@ export function compileClientEntry(sources, { tags = [], include = false } = {},
 
   const start = elements ? '__watch(__elements);' : '';
 
-  // A page with a lazy include ships the element that fills it. A page without
-  // one ships nothing, the same as every other thing here.
-  const including = include
-    ? `import { defineInclude as __defineInclude } from ${JSON.stringify(runtime)};\n`
-    : '';
-
   return {
     code: `
-${including}${imports}
+${imports}
 ${tags.map((tag, i) => `import { define as __D${i} } from ${JSON.stringify(`virtual:transclude-component/${tag}`)};`).join('\n')}
 
 ${tags.map((_, i) => `__D${i}();`).join('\n')}
-${include ? '__defineInclude();' : ''}
 ${start}
 
 ${blocks.join('\n')}

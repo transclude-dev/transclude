@@ -438,6 +438,14 @@ against.
   was cached: the next visitor got the first one's count. `cookiesOf` records the
   read and `cacheable` checks it. The unit test for the flag passed the whole
   time; only a request through `createApp` catches this.
+- **Three servers render pages, so the include context is built in one place.**
+  `src/app.js`, `bin/dev.js` and `bin/build.js` each render, and each was handed
+  its own resolver. Dev got the external half and not the route half, so
+  `<transclude-fragment src="/x#y">` worked in production and threw in dev with
+  nothing to suggest why, and the build had the same gap waiting behind a
+  server-rendered page. `includeContext` in `src/include.js` answers it for all
+  three, and a test reads all three files for the call. This is the same shape as
+  `clientManifest` deciding who ships a client entry, and it broke the same way.
 - **An included route reads cookies through the host's, and that is the point.**
   The cache refuses to hold a page whose loader *reads* a cookie, and a route
   include is a second loader running inside the first page's render. Giving it

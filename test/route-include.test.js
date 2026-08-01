@@ -3,6 +3,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import nodeFs from 'node:fs';
+import * as nodeUrl from 'node:url';
+
 import { createApp } from '../src/app.js';
 
 const bytes = (t) => new TextEncoder().encode(t);
@@ -236,3 +239,46 @@ test('a misconfiguration is thrown, and an unreachable source is not', async () 
     /no way to reach one/,
   );
 });
+
+// ---- the three servers agree ------------------------------------------------
+
+test('every server that renders a page builds the same include context', () => {
+  // The bug this closes. The dev server was given a resolver that could reach
+  // another site but not another route, so `<transclude-fragment src="/x#y">`
+  // worked in production and threw in dev. Nothing but running dev showed it,
+  // and the build had the same gap waiting.
+  const files = ['../src/app.js', '../bin/dev.js', '../bin/build.js'];
+
+  for (const file of files) {
+    const source = codeOf(new URL(file, import.meta.url));
+    assert.match(source, /includeContext\(/, `${file} builds its own include context`);
+    assert.doesNotMatch(
+      source,
+      /includeResolver\(/,
+      `${file} still builds half of one, which is how they came apart`,
+    );
+  }
+});
+
+test('the context reaches both kinds, or says which it cannot', async () => {
+  const { includeContext } = await import('../src/include.js');
+
+  const withProxy = includeContext({
+    config: { proxy: { allow: ['x.example'] } },
+    routes: [],
+    pageFor: () => null,
+  });
+  assert.equal(typeof withProxy.resolve, 'function');
+  assert.equal(typeof withProxy.route, 'function');
+
+  // No allowed host is not the same as no route resolver: reading another route
+  // needs no configuration, because nothing leaves the server.
+  const without = includeContext({ config: {}, routes: [], pageFor: () => null });
+  assert.equal(without.resolve, null);
+  assert.equal(typeof without.route, 'function');
+});
+
+function codeOf(url) {
+  const source = nodeFs.readFileSync(nodeUrl.fileURLToPath(url), 'utf8');
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+}

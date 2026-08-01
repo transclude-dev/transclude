@@ -438,6 +438,24 @@ against.
   was cached: the next visitor got the first one's count. `cookiesOf` records the
   read and `cacheable` checks it. The unit test for the flag passed the whole
   time; only a request through `createApp` catches this.
+- **`src/extract.js` never runs on our own pages.** A region here is compiled:
+  `<div id="x" fragment>` becomes its own render function and the same markup
+  serves it inline and alone, so nothing in that path parses HTML. `extract.js`
+  is for a document somebody else wrote, where there is no attribute to read and
+  no compiler output to reuse. Pointing it at a page of ours would be a second
+  fragment system that disagrees with the first about what an id returns.
+- **The slug table is built for the whole document, once.** Working a heading's
+  slug out on demand would make the suffix depend on which fragment was asked
+  for, so `#notes-1` would name different headings on different requests.
+  Explicit ids are all reserved before the first slug is handed out, which is why
+  an id further down the document still beats a heading further up.
+- **Template content is not addressable, and `childNodes` is why it looks like it
+  is.** A `<template>`'s children live on `.content`, so a walk over
+  `childNodes` finds nothing and an id inside one silently resolves to null. That
+  is the behavior we want here, but for a reason worth stating: the content is
+  inert, so a URL returning it would return markup the source document never
+  showed. `kidsOf` returns `[]` for a template on purpose rather than by
+  accident.
 - **A literal `${` cannot be written in a template.** There is no escape for it.
   The compiler reads every one as an interpolation, so `${}` in prose fails with
   `bad expression "": empty expression` and a line number in the compiled file

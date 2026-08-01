@@ -18,7 +18,7 @@ import transclude from '../src/plugin.js';
 import { loadProject } from '../src/project.js';
 import { absoluteFrom, renderRoute, responseOf } from '../src/document.js';
 import { feed, feedPath } from '../src/feed.js';
-import { includeResolver } from '../src/proxy.js';
+import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
 import { sitemap } from '../src/sitemap.js';
 import { loadAssets, loadStatic } from '../src/static-cache.js';
@@ -48,9 +48,12 @@ const assets = new Map();
 // A prerendered page reads its sources once, here, and carries the result. That
 // is the whole reason includes are resolved before the render rather than during
 // it: a page written to a file cannot fetch anything later.
-const include = config.proxy
-  ? includeResolver(config.proxy, { lookup: nodeLookup() })
-  : null;
+const include = includeContext({
+  config,
+  routes: manifest.routes ?? [],
+  pageFor: (id) => pages[id],
+  lookup: nodeLookup(),
+});
 let stylesheet = null;
 
 const clientInput = Object.fromEntries(

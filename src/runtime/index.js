@@ -669,7 +669,7 @@ export function included(data, key, fallback) {
   if (fallback !== null) return fallback;
 
   throw new Error(
-    `[transclude] <transclude-fragment src="${key}"> could not be read, and the ` +
+    `[transclude] <transclude src="${key}"> could not be read, and the ` +
       `element has no children to fall back to.`,
   );
 }

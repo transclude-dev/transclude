@@ -174,6 +174,18 @@ async function render(route, { url, params }) {
   if (header) {
     throw new Error(`set a ${header} header, which no file can carry`);
   }
+  // Reading a cookie is what makes a page personal, and there is no request
+  // here to read one from. Whatever this file says about the reader is what a
+  // reader with no cookies would have seen, and every visitor gets that copy.
+  // A layout or an included route can do this without the page mentioning it,
+  // which is what makes it worth saying out loud.
+  if (ctx.cookies.personal) {
+    throw new Error(
+      `read a cookie, so it is different for each visitor and cannot be one file. ` +
+        `Give it \`export const prerender = false\`, or stop reading the cookie ` +
+        `here or in what it includes`,
+    );
+  }
   return html;
 }
 

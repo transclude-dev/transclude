@@ -198,8 +198,8 @@ test('an interpolated src is refused, because it is not knowable', () => {
 test('a src naming another document is recorded for the server to resolve', () => {
   const { code } = pageOf('<transclude-fragment src="https://example.com/x#a"></transclude-fragment>');
 
-  assert.match(code, /export const externals = \[\{"key":"https:\/\/example\.com\/x#a"/);
-  assert.match(code, /"url":"https:\/\/example\.com\/x","id":"a"/);
+  assert.match(code, /export const includes = \[\{"key":"https:\/\/example\.com\/x#a"/);
+  assert.match(code, /"kind":"external","where":"https:\/\/example\.com\/x","id":"a"/);
 });
 
 test('a URL with no fragment says what is missing', () => {
@@ -209,9 +209,14 @@ test('a URL with no fragment says what is missing', () => {
   );
 });
 
-test('a src that is neither an id nor a URL says both options', () => {
-  const message = fails('<transclude-fragment src="/docs/install#a"></transclude-fragment>');
-  assert.match(message, /neither "#id".*nor an absolute URL/s);
+test('a src naming another route of this app is recorded as one', () => {
+  const { code } = pageOf('<transclude-fragment src="/docs/install#setup"></transclude-fragment>');
+  assert.match(code, /"kind":"route","where":"\/docs\/install","id":"setup"/);
+});
+
+test('a src that is none of the three says all three', () => {
+  const message = fails('<transclude-fragment src="docs/install#a"></transclude-fragment>');
+  assert.match(message, /"#id".*"\/path#id".*absolute URL/s);
 });
 
 test('the tag is reserved, so an element file cannot shadow it', () => {
@@ -255,7 +260,7 @@ test('the region still keeps its name when asked for on its own', async () => {
 import { renderRoute, responseOf } from '../src/document.js';
 import { included } from '../src/runtime/index.js';
 
-const pageWith = (source, externals, body) => ({
+const pageWith = (source, includes, body) => ({
   layouts: [],
   css: '',
   headScript: '',
@@ -265,7 +270,7 @@ const pageWith = (source, externals, body) => ({
   renderHtmlAttrs: () => ({}),
   elements: [],
   regions: {},
-  externals,
+  includes,
   load: async () => ({}),
   render: (data) => ({ default: body(data) }),
 });
@@ -281,7 +286,7 @@ const ctxOf = () => ({
 });
 
 const KEY = 'https://source.example/guide#intro';
-const EXTERNALS = [{ key: KEY, url: 'https://source.example/guide', id: 'intro' }];
+const EXTERNALS = [{ key: KEY, kind: 'external', where: 'https://source.example/guide', id: 'intro' }];
 
 test('an external include is resolved before the render, and lands in the markup', async () => {
   const asked = [];
@@ -305,7 +310,8 @@ test('several includes are resolved together, not one after another', async () =
   let most = 0;
   const externals = ['a', 'b', 'c'].map((id) => ({
     key: `https://source.example/g#${id}`,
-    url: 'https://source.example/g',
+    kind: 'external',
+    where: 'https://source.example/g',
     id,
   }));
 

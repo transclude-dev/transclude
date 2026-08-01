@@ -438,6 +438,17 @@ against.
   was cached: the next visitor got the first one's count. `cookiesOf` records the
   read and `cacheable` checks it. The unit test for the flag passed the whole
   time; only a request through `createApp` catches this.
+- **An external include is resolved before the render, because render is
+  synchronous.** Every render function down to the last component is
+  `__o += …` string building, and a fetch is not that. So the compiler collects
+  what a page declares into `export const externals` and `renderRoute` has the
+  answers ready before it calls render, keyed by the src string. That is also
+  what lets a prerendered page carry one: it reads the source once at build time
+  and is still a file. Making render async instead would have taxed every
+  component call for a feature few pages use.
+- **A src that is interpolated cannot be an include.** The set has to be known
+  before the render that would produce it, so `src="/docs/${slug}#a"` is a
+  compile error rather than a value nobody could resolve in time.
 - **An included region drops its id, and the region keeps it.** A region is
   always rendered where it is declared, so `<transclude-fragment src="#id">` is
   always a second copy in the same document. Both carrying the id would be

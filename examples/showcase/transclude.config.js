@@ -7,6 +7,12 @@ import { people } from './app/data/people.js';
 export default {
   appDir: 'app',
 
+  // Documents this app may read. Default deny: without a host named here there
+  // is no proxy route and no external include can resolve.
+  proxy: {
+    allow: ['developer.mozilla.org'],
+  },
+
   // A feed of the people pages. The items are the app's to supply: a route
   // table holds URLs and a feed needs something to read.
   feed: {

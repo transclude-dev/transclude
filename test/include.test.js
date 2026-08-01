@@ -195,9 +195,23 @@ test('an interpolated src is refused, because it is not knowable', () => {
   assert.match(message, /interpolated src/);
 });
 
-test('a src naming another document says so rather than failing oddly', () => {
-  const message = fails('<transclude-fragment src="https://example.com/x#a"></transclude-fragment>');
-  assert.match(message, /not resolved yet/);
+test('a src naming another document is recorded for the server to resolve', () => {
+  const { code } = pageOf('<transclude-fragment src="https://example.com/x#a"></transclude-fragment>');
+
+  assert.match(code, /export const externals = \[\{"key":"https:\/\/example\.com\/x#a"/);
+  assert.match(code, /"url":"https:\/\/example\.com\/x","id":"a"/);
+});
+
+test('a URL with no fragment says what is missing', () => {
+  assert.match(
+    fails('<transclude-fragment src="https://example.com/x"></transclude-fragment>'),
+    /names a document but no piece of it/,
+  );
+});
+
+test('a src that is neither an id nor a URL says both options', () => {
+  const message = fails('<transclude-fragment src="/docs/install#a"></transclude-fragment>');
+  assert.match(message, /neither "#id".*nor an absolute URL/s);
 });
 
 test('the tag is reserved, so an element file cannot shadow it', () => {
@@ -235,3 +249,121 @@ test('the region still keeps its name when asked for on its own', async () => {
 
   assert.equal(regions.a({}), '<p id="a">x</p>');
 });
+
+// ---- a document somebody else wrote ----------------------------------------
+
+import { renderRoute, responseOf } from '../src/document.js';
+import { included } from '../src/runtime/index.js';
+
+const pageWith = (source, externals, body) => ({
+  layouts: [],
+  css: '',
+  headScript: '',
+  hasTitle: false,
+  renderTitle: () => '',
+  renderHead: () => '',
+  renderHtmlAttrs: () => ({}),
+  elements: [],
+  regions: {},
+  externals,
+  load: async () => ({}),
+  render: (data) => ({ default: body(data) }),
+});
+
+const ctxOf = () => ({
+  url: 'http://x/',
+  params: {},
+  route: { id: 'index', pattern: '/', path: '/' },
+  request: null,
+  fragment: null,
+  action: null,
+  response: responseOf(),
+});
+
+const KEY = 'https://source.example/guide#intro';
+const EXTERNALS = [{ key: KEY, url: 'https://source.example/guide', id: 'intro' }];
+
+test('an external include is resolved before the render, and lands in the markup', async () => {
+  const asked = [];
+  const html = await renderRoute(
+    pageWith(null, EXTERNALS, (d) => `<main>${d.__included[KEY]}</main>`),
+    ctxOf(),
+    {
+      include: {
+        resolve: async (url, id) => (asked.push([url, id]), '<h2>Intro</h2>'),
+      },
+    },
+  );
+
+  assert.deepEqual(asked, [['https://source.example/guide', 'intro']]);
+  assert.match(html, /<main><h2>Intro<\/h2><\/main>/);
+});
+
+test('several includes are resolved together, not one after another', async () => {
+  // Ten includes off one page should be one round of work.
+  let open = 0;
+  let most = 0;
+  const externals = ['a', 'b', 'c'].map((id) => ({
+    key: `https://source.example/g#${id}`,
+    url: 'https://source.example/g',
+    id,
+  }));
+
+  await renderRoute(pageWith(null, externals, () => 'x'), ctxOf(), {
+    include: {
+      resolve: async () => {
+        open += 1;
+        most = Math.max(most, open);
+        await Promise.resolve();
+        open -= 1;
+        return 'y';
+      },
+    },
+  });
+
+  assert.equal(most, 3, 'they were resolved in sequence');
+});
+
+test('a source that throws leaves null, so the element can fall back', async () => {
+  const html = await renderRoute(
+    pageWith(null, EXTERNALS, (d) => `<main>${d.__included[KEY] ?? 'fallback'}</main>`),
+    ctxOf(),
+    { include: { resolve: async () => { throw new Error('down'); } } },
+  );
+
+  assert.match(html, /fallback/);
+});
+
+test('an external include with no allowed host says so rather than rendering a hole', async () => {
+  await assert.rejects(
+    () => renderRoute(pageWith(null, EXTERNALS, () => 'x'), ctxOf(), {}),
+    /no host is allowed to be read.*proxy\.allow/s,
+  );
+});
+
+test('a page with no externals resolves nothing and needs no config', async () => {
+  const html = await renderRoute(pageWith(null, [], () => '<p>plain</p>'), ctxOf(), {});
+  assert.match(html, /<p>plain<\/p>/);
+});
+
+// ---- what the compiled page does with the answer ---------------------------
+
+test('the fragment is used when it came back, and the children are dropped', () => {
+
+  assert.equal(
+    included({ __included: { [KEY]: '<h2>Intro</h2>' } }, KEY, '<p>fallback</p>'),
+    '<h2>Intro</h2>',
+  );
+});
+
+test('the children are used when it did not', () => {
+  assert.equal(included({ __included: { [KEY]: null } }, KEY, '<p>fallback</p>'), '<p>fallback</p>');
+  assert.equal(included({}, KEY, '<p>fallback</p>'), '<p>fallback</p>');
+});
+
+test('no children and no answer is a throw naming the src', () => {
+  // A hole nobody wrote looks like content. Failing is the smaller surprise.
+  assert.throws(() => included({}, KEY, null), new RegExp(KEY.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+});
+
+

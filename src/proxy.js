@@ -211,6 +211,25 @@ export async function readForeign(url, options = {}, deps = {}) {
  * which is also what makes it work at all: a cross-origin fetch is refused by
  * the default policy, which names `'self'` and nothing else.
  */
+/**
+ * A resolver for `renderRoute`: the markup of one fragment of one URL.
+ *
+ * Shares a store with nothing else on purpose. Includes are resolved during a
+ * render, and holding the parsed document is what makes ten of them off one page
+ * cost one read.
+ */
+export function includeResolver(options = {}, deps = {}) {
+  const config = { ...DEFAULTS, ...options };
+  const store = deps.store ?? documentStore(config.cache);
+
+  return {
+    resolve: async (url, id) => {
+      const entry = await readForeign(url, config, { ...deps, store });
+      return resolveFragment(entry.doc, id)?.html ?? null;
+    },
+  };
+}
+
 export function proxyHandler(options = {}, deps = {}) {
   const config = { ...DEFAULTS, ...options };
   const store = deps.store ?? documentStore(config.cache);

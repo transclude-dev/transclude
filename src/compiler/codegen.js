@@ -27,7 +27,7 @@ const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each', 'key', 'fragment'])
  * The inclusion element. Reserved: an app cannot define one in `elements/`,
  * because this is read before the component table is consulted.
  */
-export const INCLUDE_TAG = 'transclude-fragment';
+export const INCLUDE_TAG = 'transclude';
 const BRANCH = ['if', 'else-if', 'else'];
 
 export class CompileError extends Error {
@@ -117,9 +117,9 @@ class Codegen {
     // on its own. It renders inline like anything else *and* compiles to its own
     // function, so the same markup serves the document and the swap.
     this.regions = new Map();
-    // Every `<transclude-fragment src="#id">`, with the region it sits inside so
+    // Every `<transclude src="#id">`, with the region it sits inside so
     // a cycle can be found before it is a stack overflow at render time.
-    // `<transclude-fragment>` naming a region of this page. Resolved at compile
+    // `<transclude>` naming a region of this page. Resolved at compile
     // time, which is why it is kept apart from the ones below.
     this.regionIncludes = [];
     // The ones a server has to resolve before the render: another route of this
@@ -592,7 +592,7 @@ class Codegen {
    * children become its default slot, rendered into their own buffer first.
    */
   /**
-   * `<transclude-fragment src="#pricing">` — the same page's own region, in a
+   * `<transclude src="#pricing">` — the same page's own region, in a
    * second place.
    *
    * This is the case that should cost nothing: the region is already compiled to
@@ -605,6 +605,20 @@ class Codegen {
 
     if (src === null || src.trim() === '') {
       throw new CompileError(`<${INCLUDE_TAG}> has no src. It names what to include.`, el);
+    }
+
+    // HTML has no self-closing tag outside SVG and MathML, so `/>` is read as
+    // `>` and everything after it becomes this element's children. The children
+    // are the fallback, so that is silent: the include works and the rest of the
+    // page disappears. An element that was never closed at all has the same
+    // shape and the same outcome.
+    if (el.sourceCodeLocation && !el.sourceCodeLocation.endTag) {
+      throw new CompileError(
+        `<${INCLUDE_TAG}> is never closed. HTML has no self-closing tag here, so ` +
+          `"/>" is read as ">" and the rest of the page is taken as this ` +
+          `element's fallback content. Write </${INCLUDE_TAG}>.`,
+        el,
+      );
     }
     if (!this.page || this.layout) {
       throw new CompileError(
@@ -639,7 +653,7 @@ class Codegen {
   }
 
   /**
-   * `<transclude-fragment src="https://…#intro">` — a piece of a document
+   * `<transclude src="https://…#intro">` — a piece of a document
    * somebody else wrote.
    *
    * Resolved before the render rather than during it. Render is synchronous all

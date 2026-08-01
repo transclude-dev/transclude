@@ -1,4 +1,4 @@
-// `<transclude-fragment src="#id">` — the same page's own region, twice.
+// `<transclude src="#id">` — the same page's own region, twice.
 //
 // The literal case the framework is named after. A region is already compiled to
 // a function of the page's data, so including it costs a call and there is still
@@ -51,7 +51,7 @@ const render = async (source, data = {}) => renderSync(source, data);
 test('an include compiles to a call to the region it names', () => {
   const source =
     '<div id="pricing" fragment><p>The price.</p></div>' +
-    '<transclude-fragment src="#pricing"></transclude-fragment>';
+    '<transclude src="#pricing"></transclude>';
 
   assert.match(pageOf(source).code, /__o \+= regions\["pricing"\]\(__d, \{\}, false, false\)/);
 });
@@ -59,7 +59,7 @@ test('an include compiles to a call to the region it names', () => {
 test('the same markup appears in both places, from one compiled region', () => {
   const source =
     '<main><div id="pricing" fragment><p>The price.</p></div></main>' +
-    '<aside><transclude-fragment src="#pricing"></transclude-fragment></aside>';
+    '<aside><transclude src="#pricing"></transclude></aside>';
 
   return render(source).then((html) => {
     assert.equal(html.match(/<p>The price\.<\/p>/g).length, 2);
@@ -73,17 +73,17 @@ test('the element itself leaves no trace', async () => {
   // A region is several nodes where it is declared. A wrapper here would mean
   // the two spellings rendered differently, which is the thing being avoided.
   const html = await render(
-    '<p id="a" fragment>one</p><transclude-fragment src="#a"></transclude-fragment>',
+    '<p id="a" fragment>one</p><transclude src="#a"></transclude>',
   );
 
-  assert.doesNotMatch(html, /transclude-fragment/);
+  assert.doesNotMatch(html, /transclude/);
 });
 
 test('an include reads the page data, since a region is a function of it', async () => {
   const source =
     '<script server>export default async () => ({ name: "Ada" });</script>' +
     '<p id="who" fragment>${name}</p>' +
-    '<transclude-fragment src="#who"></transclude-fragment>';
+    '<transclude src="#who"></transclude>';
 
   const html = await render(source, { name: 'Ada' });
   assert.equal(html.match(/Ada/g).length, 2);
@@ -93,7 +93,7 @@ test('a region can be included before it is declared', async () => {
   // Document order is not resolution order: the call is by name and the regions
   // object holds every one of them.
   const html = await render(
-    '<transclude-fragment src="#later"></transclude-fragment><p id="later" fragment>x</p>',
+    '<transclude src="#later"></transclude><p id="later" fragment>x</p>',
   );
 
   assert.match(html, /^<p>x<\/p><p id="later">x<\/p>$/);
@@ -102,8 +102,8 @@ test('a region can be included before it is declared', async () => {
 test('one region can be included in several places', async () => {
   const html = await render(
     '<p id="a" fragment>x</p>' +
-      '<transclude-fragment src="#a"></transclude-fragment>' +
-      '<transclude-fragment src="#a"></transclude-fragment>',
+      '<transclude src="#a"></transclude>' +
+      '<transclude src="#a"></transclude>',
   );
 
   assert.equal(html.match(/<p( id="a")?>x<\/p>/g).length, 3);
@@ -113,8 +113,8 @@ test('one region can be included in several places', async () => {
 test('a region may include another one', async () => {
   const html = await render(
     '<p id="inner" fragment>in</p>' +
-      '<div id="outer" fragment><transclude-fragment src="#inner"></transclude-fragment></div>' +
-      '<transclude-fragment src="#outer"></transclude-fragment>',
+      '<div id="outer" fragment><transclude src="#inner"></transclude></div>' +
+      '<transclude src="#outer"></transclude>',
   );
 
   // Once where it is declared, once inside the outer region, and once more
@@ -127,7 +127,7 @@ test('a region may include another one', async () => {
 // ---- what it refuses -------------------------------------------------------
 
 test('a src naming no region of this page is a compile error', () => {
-  const message = fails('<p id="a" fragment>x</p><transclude-fragment src="#nope"></transclude-fragment>');
+  const message = fails('<p id="a" fragment>x</p><transclude src="#nope"></transclude>');
 
   assert.match(message, /names no region of this page/);
   assert.match(message, /"fragment" attribute/, 'the message does not say how to make one');
@@ -137,13 +137,13 @@ test('an element with an id but no fragment attribute is not a region', () => {
   // The distinction the whole model rests on: an id is a handle, and a region is
   // something the author published.
   assert.match(
-    fails('<p id="a">x</p><transclude-fragment src="#a"></transclude-fragment>'),
+    fails('<p id="a">x</p><transclude src="#a"></transclude>'),
     /names no region/,
   );
 });
 
 test('a region including itself is refused, with the chain', () => {
-  const message = fails('<div id="a" fragment><transclude-fragment src="#a"></transclude-fragment></div>');
+  const message = fails('<div id="a" fragment><transclude src="#a"></transclude></div>');
 
   assert.match(message, /includes itself/);
   assert.match(message, /#a includes #a/);
@@ -151,9 +151,9 @@ test('a region including itself is refused, with the chain', () => {
 
 test('a longer cycle is refused too, naming every step', () => {
   const message = fails(
-    '<div id="a" fragment><transclude-fragment src="#b"></transclude-fragment></div>' +
-      '<div id="b" fragment><transclude-fragment src="#c"></transclude-fragment></div>' +
-      '<div id="c" fragment><transclude-fragment src="#a"></transclude-fragment></div>',
+    '<div id="a" fragment><transclude src="#b"></transclude></div>' +
+      '<div id="b" fragment><transclude src="#c"></transclude></div>' +
+      '<div id="c" fragment><transclude src="#a"></transclude></div>',
   );
 
   assert.match(message, /includes itself/);
@@ -164,8 +164,8 @@ test('including the same region twice is not a cycle', () => {
   const source =
     '<p id="a" fragment>x</p>' +
     '<div id="b" fragment>' +
-    '<transclude-fragment src="#a"></transclude-fragment>' +
-    '<transclude-fragment src="#a"></transclude-fragment>' +
+    '<transclude src="#a"></transclude>' +
+    '<transclude src="#a"></transclude>' +
     '</div>';
 
   assert.equal(fails(source), null);
@@ -176,27 +176,27 @@ test('a diamond is not a cycle', () => {
   // cycle check that only counted visits would call this one.
   const source =
     '<p id="shared" fragment>x</p>' +
-    '<div id="a" fragment><transclude-fragment src="#shared"></transclude-fragment></div>' +
-    '<div id="b" fragment><transclude-fragment src="#shared"></transclude-fragment></div>';
+    '<div id="a" fragment><transclude src="#shared"></transclude></div>' +
+    '<div id="b" fragment><transclude src="#shared"></transclude></div>';
 
   assert.equal(fails(source), null);
 });
 
 test('an empty or missing src is a compile error', () => {
-  assert.match(fails('<transclude-fragment></transclude-fragment>'), /has no src/);
-  assert.match(fails('<transclude-fragment src=""></transclude-fragment>'), /has no src/);
+  assert.match(fails('<transclude></transclude>'), /has no src/);
+  assert.match(fails('<transclude src=""></transclude>'), /has no src/);
 });
 
 test('an interpolated src is refused, because it is not knowable', () => {
   const message = fails(
-    '<p id="a" fragment>x</p><transclude-fragment src="#${name}"></transclude-fragment>',
+    '<p id="a" fragment>x</p><transclude src="#${name}"></transclude>',
   );
 
   assert.match(message, /interpolated src/);
 });
 
 test('a src naming another document is recorded for the server to resolve', () => {
-  const { code } = pageOf('<transclude-fragment src="https://example.com/x#a"></transclude-fragment>');
+  const { code } = pageOf('<transclude src="https://example.com/x#a"></transclude>');
 
   assert.match(code, /export const includes = \[\{"key":"https:\/\/example\.com\/x#a"/);
   assert.match(code, /"kind":"external","where":"https:\/\/example\.com\/x","id":"a"/);
@@ -204,27 +204,28 @@ test('a src naming another document is recorded for the server to resolve', () =
 
 test('a URL with no fragment says what is missing', () => {
   assert.match(
-    fails('<transclude-fragment src="https://example.com/x"></transclude-fragment>'),
+    fails('<transclude src="https://example.com/x"></transclude>'),
     /names a document but no piece of it/,
   );
 });
 
 test('a src naming another route of this app is recorded as one', () => {
-  const { code } = pageOf('<transclude-fragment src="/docs/install#setup"></transclude-fragment>');
+  const { code } = pageOf('<transclude src="/docs/install#setup"></transclude>');
   assert.match(code, /"kind":"route","where":"\/docs\/install","id":"setup"/);
 });
 
 test('a src that is none of the three says all three', () => {
-  const message = fails('<transclude-fragment src="docs/install#a"></transclude-fragment>');
+  const message = fails('<transclude src="docs/install#a"></transclude>');
   assert.match(message, /"#id".*"\/path#id".*absolute URL/s);
 });
 
-test('the tag is reserved, so an element file cannot shadow it', () => {
-  // It is read before the component table, so a page using it gets the include
-  // whatever an app put in elements/.
-  const source = '<p id="a" fragment>x</p><transclude-fragment src="#a"></transclude-fragment>';
+test('the tag is read before the component table, so nothing can shadow it', () => {
+  // Doubly covered now the name has no dash: `elements/transclude.html` is
+  // dropped by the rule that element names need one. This guards the order
+  // anyway, because that is what would break first.
+  const source = '<p id="a" fragment>x</p><transclude src="#a"></transclude>';
   const { code } = compilePage(source, 'index.html', {
-    components: new Map([['transclude-fragment', { specifier: './x.js', tag: 'transclude-fragment' }]]),
+    components: new Map([['transclude', { specifier: './x.js', tag: 'transclude' }]]),
     shadowTags: new Set(),
   });
 
@@ -236,7 +237,7 @@ test('an included copy does not answer to the region name', () => {
   // second copy in the same document. Both carrying the id would be invalid, and
   // a swap aimed at the region would find whichever came first.
   const html = await0(
-    '<p id="a" fragment>x</p><transclude-fragment src="#a"></transclude-fragment>',
+    '<p id="a" fragment>x</p><transclude src="#a"></transclude>',
   );
 
   assert.equal(html, '<p id="a">x</p><p>x</p>');
@@ -373,3 +374,18 @@ test('no children and no answer is a throw naming the src', () => {
 });
 
 
+
+test('an include that closes itself is refused, not silently fed the page', () => {
+  // `/>` is read as `>`, and since the children are the fallback the rest of the
+  // document becomes them: the include works and everything after it vanishes.
+  // The old name invited this less; `<transclude />` reads like it should work.
+  const message = fails('<p id="a" fragment>x</p><transclude src="#a" /><p>after</p>');
+
+  assert.match(message, /never closed/);
+  assert.match(message, /rest of the page/);
+});
+
+test('a properly closed include keeps what follows it', () => {
+  const html = await0('<p id="a" fragment>x</p><transclude src="#a"></transclude><p>after</p>');
+  assert.match(html, /<p>after<\/p>$/);
+});

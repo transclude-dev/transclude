@@ -9,7 +9,7 @@
 </div>
 
 <aside>
-  <transclude-fragment src="#pricing"></transclude-fragment>
+  <transclude src="#pricing"></transclude>
 </aside>`,
         'html',
       ],
@@ -26,27 +26,27 @@
         'html',
       ],
       route: [
-        `<transclude-fragment src="/notes#notes">
+        `<transclude src="/notes#notes">
   <p>The notes could not be read.</p>
-</transclude-fragment>`,
+</transclude>`,
         'html',
       ],
       site: [
-        `<transclude-fragment src="https://developer.mozilla.org/en-US/docs/Web/HTML#reference">
+        `<transclude src="https://developer.mozilla.org/en-US/docs/Web/HTML#reference">
   <p>The reference could not be read just now.</p>
-</transclude-fragment>`,
+</transclude>`,
         'html',
       ],
       refused: [
-        `<transclude-fragment src="#nope">
+        `<transclude src="#nope">
 <!-- names no region of this page -->
 
 <div id="a" fragment>
-  <transclude-fragment src="#a"></transclude-fragment>
+  <transclude src="#a"></transclude>
 </div>
 <!-- #a includes #a, which would not finish -->
 
-<transclude-fragment src="/docs/\${slug}#intro">
+<transclude src="/docs/\${slug}#intro">
 <!-- the set has to be known before the render that would produce it -->`,
         'html',
       ],

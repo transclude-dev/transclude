@@ -763,7 +763,7 @@ function elementsExport(used) {
  * the document got, so a swap cannot drift from the page it replaces part of.
  */
 /**
- * Every `<transclude-fragment src="#id">` names a region this page has, and no
+ * Every `<transclude src="#id">` names a region this page has, and no
  * region includes itself.
  *
  * Both are compile-time answers. A missing region would be a call to undefined
@@ -776,7 +776,7 @@ function assertIncludesResolve(includes, regions) {
   for (const { id, node } of includes ?? []) {
     if (names.has(id)) continue;
     throw new CompileError(
-      `<transclude-fragment src="#${id}"> names no region of this page. ` +
+      `<transclude src="#${id}"> names no region of this page. ` +
         `A region is an element with an id and a "fragment" attribute.`,
       node,
     );
@@ -796,7 +796,7 @@ function assertIncludesResolve(includes, regions) {
   const walk = (name, chain) => {
     if (chain.includes(name)) {
       throw new CompileError(
-        `<transclude-fragment> includes itself: ${[...chain, name].map((n) => `#${n}`).join(' includes ')}. ` +
+        `<transclude> includes itself: ${[...chain, name].map((n) => `#${n}`).join(' includes ')}. ` +
           `Rendering it would not finish.`,
         (includes ?? []).find(({ id }) => id === name)?.node ?? null,
       );

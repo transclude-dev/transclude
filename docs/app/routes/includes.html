@@ -32,8 +32,8 @@
         'html',
       ],
       site: [
-        `<transclude-fragment src="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dl#accessibility">
-  <p>MDN could not be read just now.</p>
+        `<transclude-fragment src="https://developer.mozilla.org/en-US/docs/Web/HTML#reference">
+  <p>The reference could not be read just now.</p>
 </transclude-fragment>`,
         'html',
       ],
@@ -50,6 +50,46 @@
 <!-- the set has to be known before the render that would produce it -->`,
         'html',
       ],
+      config: [
+        `export default {
+  proxy: {
+    allow: ['developer.mozilla.org', '*.docs.example'],
+  },
+};`,
+        'js',
+      ],
+      bookmark: [
+        `<a id="install"></a>
+<h2>Installing</h2>
+<p>Run the thing.</p>`,
+        'html',
+      ],
+      tuning: [
+        `proxy: {
+  allow: ['developer.mozilla.org'],
+  maxBytes: 5 * 1024 * 1024,
+  timeout: 10_000,
+  redirects: 5,
+  maxAge: 60_000,
+  sanitize: true,
+}`,
+        'js',
+      ],
+      request: [
+        `GET /_transclude/proxy?url=https://developer.mozilla.org/en-US/docs/Web/HTML&id=reference
+
+<h2 id="reference">Reference</h2>
+<p>…the section, with its links rewritten to point back at MDN.</p>`,
+        'text',
+      ],
+      outline: [
+        `GET /_transclude/proxy?url=https://developer.mozilla.org/en-US/docs/Web/HTML
+
+{ "url": "…", "fragments": [
+  { "id": "reference", "implicit": false, "tag": "h2", "rank": 2, "kind": "heading-run", "text": "Reference" }
+] }`,
+        'text',
+      ],
     }),
   });
 </script>
@@ -57,7 +97,7 @@
 <title>Includes · transclude</title>
 <meta
   name="description"
-  content="One element, three sources: this page, another route, or another site."
+  content="One element, three sources: this page, another route, or a document somebody else wrote."
 />
 
 <doc-page
@@ -85,9 +125,9 @@
           <td>That route's loaders</td>
         </tr>
         <tr>
-          <td><code>https://…#intro</code></td>
+          <td><code>https://…#reference</code></td>
           <td>A document somebody else wrote</td>
-          <td>One read, cached. See <a href="/foreign">foreign documents</a></td>
+          <td>One read, cached</td>
         </tr>
       </tbody>
     </table>
@@ -137,9 +177,10 @@
   ${html(s.site)}
 
   <p>
-    This one needs a host in <code>proxy.allow</code>, and how the piece is found
-    in a document with no <code>fragment</code> attributes is its own subject.
-    See <a href="/foreign">foreign documents</a>.
+    The only form that leaves the server, and the only one that needs
+    configuring. A page you did not write marks no regions, so which piece to
+    take is worked out from what HTML already encodes. That is the second half of
+    this page.
   </p>
 
   <h2>Children are the fallback</h2>
@@ -187,4 +228,141 @@
     <a href="https://turbo.hotwired.dev">Turbo</a> or a short
     <code>fetch</code> is what asks for it. See <a href="/fragments">fragments</a>.
   </doc-note>
+
+  <h2>Reading a document that marks nothing</h2>
+
+  <p>
+    Everything above works because your own pages say what a region is. A page
+    somebody else wrote says nothing of the kind, so the rest of this is how a
+    piece of one is found, and how it is made safe to show.
+  </p>
+
+  <h3>Turning it on</h3>
+
+  <p>
+    There is no route until a host is named. Default deny, and the list is the
+    part that actually protects you.
+  </p>
+
+  ${html(s.config)}
+
+  <h3>How extent is worked out</h3>
+
+  <p>An id says what a thing is, not where it ends. Only what HTML already encodes is used:</p>
+
+  <ul>
+    <li>
+      A heading takes everything after it up to the next heading of its own rank
+      or above. An <code>h2</code> absorbs its <code>h3</code>s; an
+      <code>h3</code> stops at the next <code>h3</code> or any <code>h2</code>. A
+      run never crosses out of its parent.
+    </li>
+    <li>A <code>&lt;dt&gt;</code> takes its definitions up to the next term.</li>
+    <li>Everything else is returned as itself, with no inference at all.</li>
+  </ul>
+
+  <p>
+    An empty inline element is read as a bookmark for what follows it, which is
+    how anchors were written before ids went on headings. This resolves the
+    heading and its section, not the empty anchor.
+  </p>
+
+  ${html(s.bookmark)}
+
+  <p>
+    One hop only, and an element holding text or an image is content rather than
+    a bookmark.
+  </p>
+
+  <h3>Documents with no ids</h3>
+
+  <p>
+    A heading with no id gets one from its text, lowercased, punctuation removed,
+    spaces hyphenated. Letters keep their own script rather than folding to
+    ASCII.
+  </p>
+
+  <p>
+    Explicit ids always win, and the whole table is worked out before anything is
+    resolved. A generated name cannot depend on which fragment was asked for, so
+    an id further down the page still beats a heading further up, and the heading
+    takes the next name instead.
+  </p>
+
+  <doc-note label="A fragment is a node list">
+    A heading run is several siblings, not one element. It is returned as it
+    appears in the source, with no wrapper added, because a wrapper would mean
+    the fetched markup no longer matched the page it came from.
+  </doc-note>
+
+  <h3>What arrives</h3>
+
+  <p>
+    Scripts, frames, plugins and event handlers are removed.
+    <code>javascript:</code> URLs go everywhere; <code>data:</code> survives only
+    on an image source. <code>&lt;base&gt;</code> and <code>&lt;link&gt;</code>
+    are removed for your page's sake rather than the fragment's: the first would
+    retarget every relative URL in the document the fragment lands in, and the
+    second can pull a stylesheet from anywhere.
+  </p>
+
+  <p>
+    Every relative URL is made absolute against the source, including a hash-only
+    <code>href</code>, which would otherwise address an id in your page.
+    <code>srcset</code> is parsed rather than split on commas, since a URL may
+    contain one, and <code>url()</code> is rewritten in style attributes and
+    style blocks.
+  </p>
+
+  <p>
+    A custom element from the source arrives as markup with no definition behind
+    it. It is inert rather than broken, but a section built out of them will look
+    empty.
+  </p>
+
+  <h3>Limits</h3>
+
+  ${html(s.tuning)}
+
+  <p>
+    Redirects are followed one at a time and every hop is checked again, because
+    the check that passed on the URL you configured says nothing about where the
+    third redirect landed. Addresses on the private ranges are refused, including
+    the cloud metadata endpoint and IPv4 addresses written in IPv6 form.
+  </p>
+
+  <p>
+    <code>maxAge</code> is how long a document already read is used without
+    asking the source anything, so several fragments of one page cost one read.
+    After that it is revalidated with <code>ETag</code> and
+    <code>Last-Modified</code>.
+  </p>
+
+  <doc-note label="What the allowlist is holding up" tone="warn">
+    On Node and Deno a hostname is resolved and every address it answers with is
+    checked. Cloudflare Workers has no resolver, so there that check does not run
+    and the allowlist is the whole defense. Name hosts you trust, and treat a
+    wildcard as trust in everything under it.
+  </doc-note>
+
+  <h3>The endpoint</h3>
+
+  <p>
+    Naming a host also mounts <code>/_transclude/proxy</code>, which is what a
+    client library would ask if you drive an include yourself.
+  </p>
+
+  ${html(s.request)}
+
+  <p>With no <code>id</code>, the answer is the document's outline.</p>
+
+  ${html(s.outline)}
+
+  <p>
+    The fragment is resolved on this side rather than in the browser. The page
+    receives the piece it asked for instead of a whole foreign document,
+    sanitizing happens somewhere it cannot be switched off, and the request is
+    same-origin, which the default <a href="/security">policy</a> requires: it
+    names <code>'self'</code> and a cross-origin fetch is refused.
+  </p>
 </doc-page>

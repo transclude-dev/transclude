@@ -2,23 +2,23 @@
 // the package needs is here, and nothing in the package names one of its own.
 // `transclude` is a dependency now, so this file is all that connects them.
 
-import { people } from './app/data/people.js';
+import { people } from "./app/data/people.js";
 
 export default {
-  appDir: 'app',
+  appDir: "app",
 
   // Documents this app may read. Default deny: without a host named here there
   // is no proxy route and no external include can resolve.
   proxy: {
-    allow: ['developer.mozilla.org'],
+    allow: ["developer.mozilla.org"],
   },
 
   // A feed of the people pages. The items are the app's to supply: a route
   // table holds URLs and a feed needs something to read.
   feed: {
-    hostname: 'https://showcase.example',
-    title: 'Showcase people',
-    description: 'Everyone with a page here.',
+    hostname: "https://showcase.example",
+    title: "Showcase people",
+    description: "Everyone with a page here.",
     items: () =>
       people.map((person) => ({
         title: person.name,
@@ -37,14 +37,14 @@ export default {
   // `routes`, not `pages`, because it holds both: a `.html` file there is a page,
   // a `.js` file is an endpoint, and the thing they have in common is being a
   // route. The extension decides which.
-  routesDir: 'routes',
+  routesDir: "routes",
   // One directory for every element. A shadow root is opt-in per file:
   // `export const shadow = true`, in either script block.
-  elementsDir: 'elements',
+  elementsDir: "elements",
 
   // The global stylesheet, relative to the project root. Served through Vite,
   // so nesting, @import and PostCSS all work. Set to null for none.
-  stylesheet: 'app/styles/global.css',
+  stylesheet: "app/styles/global.css",
 
   // Type annotations are optional: JSDoc is a comment, and `npm run check`
   // still catches a misspelled field, an unknown prop and a wrong-typed one
@@ -67,7 +67,7 @@ export default {
   //
   // Set to null and no page carries anything. A page then ships exactly what it
   // renders, which is the content-site case.
-  fragmentParam: 'fragment',
+  fragmentParam: "fragment",
 
   // Cross-site request forgery. On by default, and the only middleware the
   // framework registers for you: the whole form story here is
@@ -87,7 +87,7 @@ export default {
   // Not built and not compiled, only copied. Served by Hono's own static middleware
   // rather than the in-memory cache the build output uses, because these are
   // yours: they can be large, and they can be media, which needs byte ranges.
-  publicDir: 'public',
+  publicDir: "public",
 
   // `never` redirects /about/ to /about with a 301. Every URL this framework
   // generates is already slash-free, so `routes/about.html` is `/about`. This
@@ -96,7 +96,7 @@ export default {
   //
   // There is no `always` on purpose. The file-to-URL mapping cannot produce a
   // trailing slash, so adding one would disagree with every href it writes.
-  trailingSlash: 'never',
+  trailingSlash: "never",
 
   // A request header that may name a region, for clients that already send one.
   // htmx sends `HX-Target` with the id of the element it is about to swap, which is
@@ -122,6 +122,6 @@ export default {
   cookieSecret: globalThis.process?.env?.COOKIE_SECRET ?? null,
 
   // Relative to the project root.
-  outDir: 'dist',
-  typesFile: 'app/transclude-env.d.ts',
+  outDir: "dist",
+  typesFile: "app/transclude-env.d.ts",
 };

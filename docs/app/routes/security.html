@@ -93,10 +93,9 @@ export default {
   <h2>Hashes, not a nonce</h2>
 
   <p>
-    A nonce is a fresh random value per request, named in the policy and stamped
-    on every inline block. It cannot work here: a page carrying one is different
-    on every request, and most pages here are files, rendered and compressed once
-    at build time.
+    A nonce is fresh per request, so a page carrying one cannot be a file. A hash
+    is fixed when the page renders, survives being written to disk, and is
+    correct on a host that runs none of this.
   </p>
 
   <p>
@@ -141,9 +140,8 @@ export default {
   <p>
     <code>frame-ancestors</code>, <code>report-uri</code>,
     <code>report-to</code> and <code>sandbox</code> are ignored in a
-    <code>&lt;meta&gt;</code> tag, so they are sent as a response header
-    instead. None of them names a hash, so that header is the same for every
-    page and costs a prerendered one nothing.
+    <code>&lt;meta&gt;</code> tag, so they ride in a response header. None names
+    a hash, so that header is the same on every page.
   </p>
 
   <p>

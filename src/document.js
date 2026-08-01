@@ -144,7 +144,7 @@ export async function renderRoute(page, ctx, options = {}) {
 }
 
 /**
- * The markup for every `<transclude-fragment>` naming another document.
+ * The markup for every `<transclude>` naming another document.
  *
  * All of them at once: ten includes off one page should be one round of work,
  * and the resolver holds the parsed document so several from one source cost one
@@ -184,13 +184,13 @@ export async function resolveIncludes(includes, ctx, options = {}) {
       // error can name the way round.
       if (chain.includes(key)) {
         throw new Error(
-          `[transclude] <transclude-fragment> includes itself: ` +
+          `[transclude] <transclude> includes itself: ` +
             `${[...chain, key].join(' includes ')}.`,
         );
       }
       if (chain.length >= INCLUDE_DEPTH) {
         throw new Error(
-          `[transclude] <transclude-fragment src="${key}"> is ${chain.length} includes deep, ` +
+          `[transclude] <transclude src="${key}"> is ${chain.length} includes deep, ` +
             `past the limit of ${INCLUDE_DEPTH}.`,
         );
       }
@@ -201,7 +201,7 @@ export async function resolveIncludes(includes, ctx, options = {}) {
         if (kind === 'route') {
           if (!include?.route) {
             throw new Error(
-              `[transclude] <transclude-fragment src="${key}"> reads another route, ` +
+              `[transclude] <transclude src="${key}"> reads another route, ` +
                 `and this renderer was given no way to reach one.`,
             );
           }
@@ -210,7 +210,7 @@ export async function resolveIncludes(includes, ctx, options = {}) {
 
         if (!include?.resolve) {
           throw new Error(
-            `[transclude] <transclude-fragment src="${key}"> reads another site, ` +
+            `[transclude] <transclude src="${key}"> reads another site, ` +
               `and no host is allowed to be read. Name one in \`proxy.allow\`.`,
           );
         }

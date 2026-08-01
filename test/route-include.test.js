@@ -244,7 +244,7 @@ test('a misconfiguration is thrown, and an unreachable source is not', async () 
 
 test('every server that renders a page builds the same include context', () => {
   // The bug this closes. The dev server was given a resolver that could reach
-  // another site but not another route, so `<transclude-fragment src="/x#y">`
+  // another site but not another route, so `<transclude src="/x#y">`
   // worked in production and threw in dev. Nothing but running dev showed it,
   // and the build had the same gap waiting.
   const files = ['../src/app.js', '../bin/dev.js', '../bin/build.js'];

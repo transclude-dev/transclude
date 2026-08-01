@@ -438,6 +438,18 @@ against.
   was cached: the next visitor got the first one's count. `cookiesOf` records the
   read and `cacheable` checks it. The unit test for the flag passed the whole
   time; only a request through `createApp` catches this.
+- **An included region drops its id, and the region keeps it.** A region is
+  always rendered where it is declared, so `<transclude-fragment src="#id">` is
+  always a second copy in the same document. Both carrying the id would be
+  invalid HTML, and worse: a swap aimed at `#id` finds whichever came first and
+  leaves the other stale. The region's root id is emitted as
+  `__named ? ' id="x"' : ''`, the page's render declares `__named = true`, and
+  the include calls the region function with `false`. The fragment served over
+  HTTP keeps the name, because that is what a swap is matched against. This was
+  shipped as a warning first, which was wrong: the warning fired on every use.
+- **`transclude-fragment` is read before the component table.** An app defining
+  `elements/transclude-fragment.html` would otherwise shadow the include, and a
+  page using it would compile to something else entirely with nothing said.
 - **The proxy follows redirects itself, and that is the point.** `redirect:
   'follow'` hands the whole decision to the first response: the check that passed
   on the URL somebody configured says nothing about where hop three landed, and

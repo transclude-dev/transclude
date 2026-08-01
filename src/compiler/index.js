@@ -354,6 +354,7 @@ export function compilePage(
   assertNoActionsObject(server.exports, where);
 
   const template = compileFragment(blocks.nodes, { components, shadowTags, page: true, html: blocks.html });
+  assertIncludesResolve(template.includes, template.regions);
 
   const code = `
 ${runtimeImport(runtime)}
@@ -760,13 +761,60 @@ function elementsExport(used) {
  * Each `[fragment]` region as a function of the page's own data. The same markup
  * the document got, so a swap cannot drift from the page it replaces part of.
  */
+/**
+ * Every `<transclude-fragment src="#id">` names a region this page has, and no
+ * region includes itself.
+ *
+ * Both are compile-time answers. A missing region would be a call to undefined
+ * on a page that looked fine, and a cycle would be a stack overflow while
+ * answering a request.
+ */
+function assertIncludesResolve(includes, regions) {
+  const names = new Set(Object.keys(regions ?? {}));
+
+  for (const { id, node } of includes ?? []) {
+    if (names.has(id)) continue;
+    throw new CompileError(
+      `<transclude-fragment src="#${id}"> names no region of this page. ` +
+        `A region is an element with an id and a "fragment" attribute.`,
+      node,
+    );
+  }
+
+  // An edge from the region an include sits in to the region it pulls. An
+  // include outside every region cannot be part of a cycle: nothing includes
+  // the page body.
+  const edges = new Map();
+  for (const { id, within } of includes ?? []) {
+    if (!within) continue;
+    if (!edges.has(within)) edges.set(within, new Set());
+    edges.get(within).add(id);
+  }
+
+  const seen = new Set();
+  const walk = (name, chain) => {
+    if (chain.includes(name)) {
+      throw new CompileError(
+        `<transclude-fragment> includes itself: ${[...chain, name].map((n) => `#${n}`).join(' includes ')}. ` +
+          `Rendering it would not finish.`,
+        (includes ?? []).find(({ id }) => id === name)?.node ?? null,
+      );
+    }
+    if (seen.has(name)) return;
+    seen.add(name);
+    for (const next of edges.get(name) ?? []) walk(next, [...chain, name]);
+  };
+
+  for (const name of edges.keys()) walk(name, []);
+}
+
 function regionsExport(regions) {
   const entries = Object.entries(regions ?? {});
   if (!entries.length) return 'export const regions = {};';
 
   const bodies = entries.map(
     ([name, body]) =>
-      `  ${JSON.stringify(name)}: (__d, __slots = {}, __fragment = true) => {\n` +
+      `  ${JSON.stringify(name)}: (__d, __slots = {}, __fragment = true, __named = true) => {\n` +
       `    let __o = '';\n${indent(indent(body))}\n    return __o;\n  },`,
   );
   return `export const regions = {\n${bodies.join('\n')}\n};`;
@@ -792,6 +840,10 @@ function slotBodies(template) {
   // its nearest layout.
   const consumed = JSON.stringify([...(template.consumed ?? []), 'default']);
   const parts = [
+    // A region's markup is emitted once and used twice, in the page and in the
+    // region's own function, so the id it carries is written conditionally. The
+    // copy that renders inline is the one that keeps the name.
+    `  const __named = true;`,
     `  const __pass = new Set(${consumed});`,
     `  for (const __name in __slots) if (!__pass.has(__name)) __out[__name] = __slots[__name];`,
     `  {\n    let __o = '';\n${indent(indent(template.body))}\n    __out.default = __o;\n  }`,

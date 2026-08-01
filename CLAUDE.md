@@ -438,6 +438,27 @@ against.
   was cached: the next visitor got the first one's count. `cookiesOf` records the
   read and `cacheable` checks it. The unit test for the flag passed the whole
   time; only a request through `createApp` catches this.
+- **An included route reads cookies through the host's, and that is the point.**
+  The cache refuses to hold a page whose loader *reads* a cookie, and a route
+  include is a second loader running inside the first page's render. Giving it
+  its own `cookiesOf` would make the host look shareable, and the second visitor
+  would be handed the first one's page. Sharing the object makes the read
+  contagious for free. The build refuses to prerender a page whose
+  `ctx.cookies.personal` came out true, whether the page read one or something
+  it includes did.
+- **One route included twice renders once, and the memo dies with the request.**
+  `includeMemo` is created in `renderRoute` per call. A store that outlived the
+  request would be a second page cache with none of the rules the real one has,
+  and it would serve one visitor's render to the next.
+- **A route include is rendered, not fetched.** It is the same process. Asking
+  ourselves over HTTP would run the whole middleware stack, take a second trip
+  through CSRF and the trailing-slash redirect, and need a URL the server can
+  reach, which behind a proxy it may not know. `paramsFor` answers what the
+  router would have said, for the two pattern shapes a route can have.
+- **The loop guard is a chain, not a counter.** A page including itself is caught
+  by name, so the error can say the way round; ten pages each including the next
+  is not a loop and is caught by depth. Both are needed and neither finds the
+  other's case.
 - **An external include is resolved before the render, because render is
   synchronous.** Every render function down to the last component is
   `__o += …` string building, and a fetch is not that. So the compiler collects

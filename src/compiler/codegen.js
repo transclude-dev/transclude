@@ -56,8 +56,8 @@ export function compileFragment(nodes, opts = {}) {
     blockOf: gen.blockOf,
     slots: Object.fromEntries([...gen.slots].map(([name, out]) => [name, joinOut(out)])),
     regions: Object.fromEntries([...gen.regions].map(([name, out]) => [name, joinOut(out)])),
-    includes: gen.includes,
-    externals: gen.externals.map(({ key, url, id }) => ({ key, url, id })),
+    regionIncludes: gen.regionIncludes,
+    includes: gen.includes.map(({ key, kind, where, id }) => ({ key, kind, where, id })),
     consumed: [...gen.consumed],
     head: joinOut(gen.head),
     title: joinOut(gen.title),
@@ -119,8 +119,12 @@ class Codegen {
     this.regions = new Map();
     // Every `<transclude-fragment src="#id">`, with the region it sits inside so
     // a cycle can be found before it is a stack overflow at render time.
+    // `<transclude-fragment>` naming a region of this page. Resolved at compile
+    // time, which is why it is kept apart from the ones below.
+    this.regionIncludes = [];
+    // The ones a server has to resolve before the render: another route of this
+    // app, or a document elsewhere.
     this.includes = [];
-    this.externals = [];
     this.inRegion = [];
     this.regionRoot = null;
     this.warnings = [];
@@ -618,12 +622,12 @@ class Codegen {
       );
     }
     if (!src.startsWith('#')) {
-      this.emitExternal(el, out, scope, src);
+      this.emitElsewhere(el, out, scope, src);
       return;
     }
 
     const id = src.slice(1);
-    this.includes.push({ id, node: el, within: this.inRegion.at(-1) ?? null });
+    this.regionIncludes.push({ id, node: el, within: this.inRegion.at(-1) ?? null });
 
     // The element leaves no trace. A region is several nodes inline and one node
     // wrapping them here would mean the two spellings rendered differently.
@@ -643,18 +647,9 @@ class Codegen {
    * compile time and the server has the answers ready by the time render runs.
    * That also means a prerendered page reads the source once, at build time.
    */
-  emitExternal(el, out, scope, src) {
-    let url;
-    try {
-      url = new URL(src);
-    } catch {
-      throw new CompileError(
-        `<${INCLUDE_TAG} src="${src}"> is neither "#id" for a region of this page ` +
-          `nor an absolute URL for a document elsewhere.`,
-        el,
-      );
-    }
-    if (!url.hash || url.hash === '#') {
+  emitElsewhere(el, out, scope, src) {
+    const hash = src.indexOf('#');
+    if (hash === -1 || hash === src.length - 1) {
       throw new CompileError(
         `<${INCLUDE_TAG} src="${src}"> names a document but no piece of it. ` +
           `Add "#id" to say what to include.`,
@@ -662,22 +657,42 @@ class Codegen {
       );
     }
 
-    this.externals.push({ key: src, url: url.href.replace(url.hash, ''), id: decodeURIComponent(url.hash.slice(1)), node: el });
+    const id = decodeURIComponent(src.slice(hash + 1));
+    const where = src.slice(0, hash);
+
+    if (where.startsWith('/')) {
+      // Another route of this app. Rendered here rather than fetched: it is the
+      // same process, and going out over HTTP to reach ourselves would run the
+      // whole middleware stack to answer a question we can answer directly.
+      this.includes.push({ key: src, kind: 'route', where, id, node: el });
+    } else {
+      let url;
+      try {
+        url = new URL(where);
+      } catch {
+        throw new CompileError(
+          `<${INCLUDE_TAG} src="${src}"> is none of "#id" for a region of this page, ` +
+            `"/path#id" for another route, or an absolute URL for a document elsewhere.`,
+          el,
+        );
+      }
+      this.includes.push({ key: src, kind: 'external', where: url.href, id, node: el });
+    }
 
     // Children are the fallback. On success they are dropped; with none, a
     // source that cannot be read stops the render rather than leaving a hole
     // nobody notices.
     const children = childrenOf(el);
-    const id = ++this.uid;
+    const uid = ++this.uid;
     if (children.length) {
-      this.c(out, `const __fb${id} = (() => { let __o = '';`);
+      this.c(out, `const __fb${uid} = (() => { let __o = '';`);
       this.emitChildren(children, out, scope, false);
       this.c(out, `return __o; })();`);
     }
 
     this.c(
       out,
-      `__o += __incl(__d, ${JSON.stringify(src)}, ${children.length ? `__fb${id}` : 'null'});`,
+      `__o += __incl(__d, ${JSON.stringify(src)}, ${children.length ? `__fb${uid}` : 'null'});`,
     );
   }
 

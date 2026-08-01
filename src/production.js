@@ -16,6 +16,7 @@ import { createApp } from './app.js';
 import { etagOf, loadAssets, loadStatic } from './static-cache.js';
 import { compressResponse } from './compress.js';
 import { loadProject, portOf } from './project.js';
+import { nodeLookup } from './lookup.js';
 
 const { root, config, configFile } = await loadProject();
 const dist = path.join(root, config.outDir);
@@ -82,6 +83,7 @@ const publicRoot = path.join(dist, 'public');
 
 export const app = createApp({
   config,
+  lookup: config.proxy ? nodeLookup() : null,
   manifest,
   pages: bundle.pages,
   endpoints: bundle.endpoints ?? {},

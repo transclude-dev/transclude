@@ -11,6 +11,7 @@
 
 import { cacheKey, createCache, windowOf } from './cache.js';
 import { feed, feedPath, feedType } from './feed.js';
+import { documentStore, PROXY_PATH, proxyHandler } from './proxy.js';
 import { sitemap } from './sitemap.js';
 import { absoluteFrom } from './document.js';
 import {
@@ -57,6 +58,10 @@ export function createApp({
   errorPage = null,
   hash,
   compress = null,
+  // Resolving a hostname needs the runtime, and one of the four cannot do it at
+  // all, so the servers that can supply this and workerd leaves it out. Without
+  // it the proxy's allowlist is the whole defense.
+  lookup = null,
 }) {
   const cache = createCache(config.cache);
 
@@ -150,6 +155,16 @@ export function createApp({
       const xml = await feed(config.feed);
       return c.body(xml, 200, { 'Content-Type': feedType(config.feed) });
     });
+  }
+
+  // Default deny is the config's doing: no `proxy` key, no route at all, so a
+  // site that never asked for one cannot be pointed at anything.
+  if (config.proxy) {
+    const handler = proxyHandler(config.proxy, {
+      lookup: config.proxy.lookup ?? lookup ?? null,
+      store: documentStore(config.proxy.cache),
+    });
+    app.get(PROXY_PATH, (c) => handler(c.req.raw));
   }
 
   for (const route of manifest.routes ?? []) {

@@ -26,6 +26,22 @@
 ] }`,
         'text',
       ],
+      include: [
+        `<transclude-fragment src="https://developer.mozilla.org/en-US/docs/Web/HTML#reference">
+  <p>The reference could not be read just now.</p>
+</transclude-fragment>`,
+        'html',
+      ],
+      same: [
+        `<div id="pricing" fragment>
+  <p>Two pounds.</p>
+</div>
+
+<aside>
+  <transclude-fragment src="#pricing"></transclude-fragment>
+</aside>`,
+        'html',
+      ],
       tuning: [
         `proxy: {
   allow: ['developer.mozilla.org'],
@@ -72,6 +88,33 @@
   <p>With no <code>id</code>, the answer is the document's outline.</p>
 
   ${html(s.outline)}
+
+  <h2>Including one in a page</h2>
+
+  ${html(s.include)}
+
+  <p>
+    The children are the fallback. On success they are dropped; if the source
+    cannot be read, they render in place of it. An element with no children whose
+    source fails stops the render, because a hole nobody wrote looks like
+    content.
+  </p>
+
+  <p>
+    Includes are resolved before the page renders, not during it. That is what
+    lets a prerendered page carry the result: it reads the source once, at build
+    time, and is written to a file like any other page. Several includes are
+    resolved together, and several from one document cost one read.
+  </p>
+
+  <doc-note label="The same element works on your own pages">
+    <code>src="#pricing"</code> includes a region of the page it sits in. That
+    one is free: the region is already compiled to a function, so nothing is
+    fetched and nothing is parsed.
+    ${html(s.same)}
+    The copy leaves the id behind. A region keeps its name where it is declared,
+    which is what a swap replaces.
+  </doc-note>
 
   <h2>How extent is worked out</h2>
 

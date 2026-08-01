@@ -22,6 +22,12 @@ const RAW_TEXT = new Set(['script', 'style']);
 const HEAD_TAGS = new Set(['title', 'meta', 'link', 'base']);
 
 const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each', 'key', 'fragment']);
+
+/**
+ * The inclusion element. Reserved: an app cannot define one in `elements/`,
+ * because this is read before the component table is consulted.
+ */
+export const INCLUDE_TAG = 'transclude-fragment';
 const BRANCH = ['if', 'else-if', 'else'];
 
 export class CompileError extends Error {
@@ -50,6 +56,7 @@ export function compileFragment(nodes, opts = {}) {
     blockOf: gen.blockOf,
     slots: Object.fromEntries([...gen.slots].map(([name, out]) => [name, joinOut(out)])),
     regions: Object.fromEntries([...gen.regions].map(([name, out]) => [name, joinOut(out)])),
+    includes: gen.includes,
     consumed: [...gen.consumed],
     head: joinOut(gen.head),
     title: joinOut(gen.title),
@@ -109,6 +116,11 @@ class Codegen {
     // on its own. It renders inline like anything else *and* compiles to its own
     // function, so the same markup serves the document and the swap.
     this.regions = new Map();
+    // Every `<transclude-fragment src="#id">`, with the region it sits inside so
+    // a cycle can be found before it is a stack overflow at render time.
+    this.includes = [];
+    this.inRegion = [];
+    this.regionRoot = null;
     this.warnings = [];
     this.used = new Map();
     this.uid = 0;
@@ -294,7 +306,11 @@ class Codegen {
       // then straight into the page. Rendering it separately would be a second
       // copy of the markup that could drift from the first.
       const buffer = [];
+      this.inRegion.push(region);
+      this.regionRoot = node;
       this.emitElement(node, buffer, scope, topLevel);
+      this.regionRoot = null;
+      this.inRegion.pop();
       this.regions.set(region, buffer);
       for (const item of buffer) out.push(item);
       return;
@@ -510,6 +526,11 @@ class Codegen {
       return;
     }
 
+    if (tag === INCLUDE_TAG) {
+      this.emitInclude(el, out, scope);
+      return;
+    }
+
     if (this.components.has(tag)) {
       if (this.shadowTags.has(tag)) this.emitShadow(el, out, scope);
       else this.emitLight(el, out, scope);
@@ -564,6 +585,56 @@ class Codegen {
    * Light DOM: no shadow root, no template, markup straight into the page. Its
    * children become its default slot, rendered into their own buffer first.
    */
+  /**
+   * `<transclude-fragment src="#pricing">` — the same page's own region, in a
+   * second place.
+   *
+   * This is the case that should cost nothing: the region is already compiled to
+   * a function of the page's data, so including it is calling that function.
+   * Nothing is fetched, nothing is parsed and the markup cannot drift from the
+   * region it came from, because there is only one copy of it.
+   */
+  emitInclude(el, out, scope) {
+    const src = el.attrs?.find((a) => a.name === 'src')?.value ?? null;
+
+    if (src === null || src.trim() === '') {
+      throw new CompileError(`<${INCLUDE_TAG}> has no src. It names what to include.`, el);
+    }
+    if (!this.page || this.layout) {
+      throw new CompileError(
+        `<${INCLUDE_TAG}> includes a region of a page, and only a page has regions. ` +
+          `Put it in a route rather than in an element or a layout.`,
+        el,
+      );
+    }
+    if (/\$\{/.test(src)) {
+      throw new CompileError(
+        `<${INCLUDE_TAG}> has an interpolated src, so what it includes is not ` +
+          `knowable at compile time. Write the id out, or render the markup ` +
+          `yourself from the loader.`,
+        el,
+      );
+    }
+    if (!src.startsWith('#')) {
+      throw new CompileError(
+        `<${INCLUDE_TAG} src="${src}"> is not a region of this page. Only "#id" ` +
+          `works so far; a src naming another document is not resolved yet.`,
+        el,
+      );
+    }
+
+    const id = src.slice(1);
+    this.includes.push({ id, node: el, within: this.inRegion.at(-1) ?? null });
+
+    // The element leaves no trace. A region is several nodes inline and one node
+    // wrapping them here would mean the two spellings rendered differently.
+    // `false` for the id: the region keeps its name where it is declared, and
+    // this copy is the same content rather than a second element answering to
+    // `#id`. Two elements with one id would be invalid, and a swap aimed at the
+    // region would find whichever came first.
+    this.c(out, `__o += regions[${JSON.stringify(id)}](__d, {}, false, false);`);
+  }
+
   emitLight(el, out, scope) {
     const tag = el.tagName;
     const ref = this.componentRef(tag);
@@ -603,6 +674,13 @@ class Codegen {
   emitAttrs(el, out, scope, ref = null) {
     for (const attr of el.attrs) {
       if (DIRECTIVES.has(attr.name)) continue;
+
+      // The id of a region's own root. It names the region, and a second copy
+      // of the region in the same document must not answer to that name too.
+      if (attr.name === 'id' && el === this.regionRoot) {
+        this.c(out, `__o += __named ? ${JSON.stringify(` id="${attr.value}"`)} : '';`);
+        continue;
+      }
 
       const parts = splitInterpolations(attr.value);
       const dynamic = parts.some((p) => p.type === 'expr');

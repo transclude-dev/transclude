@@ -11,7 +11,7 @@
 
 import { cacheKey, createCache, windowOf } from './cache.js';
 import { feed, feedPath, feedType } from './feed.js';
-import { documentStore, PROXY_PATH, proxyHandler } from './proxy.js';
+import { documentStore, includeResolver, PROXY_PATH, proxyHandler } from './proxy.js';
 import { sitemap } from './sitemap.js';
 import { absoluteFrom } from './document.js';
 import {
@@ -64,6 +64,13 @@ export function createApp({
   lookup = null,
 }) {
   const cache = createCache(config.cache);
+
+  // One resolver for the app, so several pages including the same document read
+  // it once. Absent when no host is allowed, and then an external include throws
+  // with the reason rather than rendering a hole.
+  const include = config.proxy
+    ? includeResolver(config.proxy, { lookup: config.proxy.lookup ?? lookup ?? null })
+    : null;
 
   const app = baseApp({
     csrf: config.csrf,
@@ -214,6 +221,7 @@ export function createApp({
                 clientEntry: route.client,
                 stylesheet: manifest.stylesheet,
                 csp: config.csp,
+                include,
               })
             : await renderFragment(page, ctx, { region: region || null });
 
@@ -280,6 +288,7 @@ export function createApp({
             clientEntry: route.client,
             stylesheet: manifest.stylesheet,
             csp: config.csp,
+            include,
           });
 
           rendered = { ctx, html };

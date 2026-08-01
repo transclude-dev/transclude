@@ -120,7 +120,15 @@ export async function renderRoute(page, ctx, options = {}) {
   for (const mod of chain) {
     const data = await mod.load({ ...ctx, layout: inherited });
     if (data instanceof Response) return data;
-    datas.push(data);
+
+    // Before the render, because render is synchronous the whole way down and
+    // reading another document is not. A layout and a page each resolve their
+    // own, so neither can see the other's by accident.
+    datas.push(
+      mod.externals?.length
+        ? { ...data, __included: await resolveExternals(mod.externals, options.include) }
+        : data,
+    );
     if (mod !== page) inherited = { ...inherited, ...data };
   }
 
@@ -129,6 +137,35 @@ export async function renderRoute(page, ctx, options = {}) {
   // After the document exists, because the policy is built from what it inlined.
   // A prerendered page runs this once at build time and carries the result.
   return withPolicy(html, options.csp);
+}
+
+/**
+ * The markup for every `<transclude-fragment>` naming another document.
+ *
+ * All of them at once: ten includes off one page should be one round of work,
+ * and the resolver holds the parsed document so several from one source cost one
+ * read. A source that cannot be read is null here and the element falls back to
+ * its own children, or throws if it has none.
+ */
+async function resolveExternals(externals, include) {
+  if (!include?.resolve) {
+    const [first] = externals;
+    throw new Error(
+      `[transclude] <transclude-fragment src="${first.key}"> reads another site, ` +
+        `and no host is allowed to be read. Name one in \`proxy.allow\`.`,
+    );
+  }
+
+  const pairs = await Promise.all(
+    externals.map(async ({ key, url, id }) => {
+      try {
+        return [key, await include.resolve(url, id)];
+      } catch {
+        return [key, null];
+      }
+    }),
+  );
+  return Object.fromEntries(pairs);
 }
 
 /**

@@ -655,6 +655,25 @@ export function data(def, props) {
  * swapped markup names a partial the document has never rendered, `watch` notices
  * the tag and `adoptStyles` adds them once.
  */
+/**
+ * What an external include renders: the fragment the server fetched, the
+ * element's own children if it could not be read, or a throw if there are
+ * neither.
+ *
+ * A page with no fallback that silently rendered a hole would be worse than one
+ * that fails: the hole looks like content nobody wrote.
+ */
+export function included(data, key, fallback) {
+  const html = data?.__included?.[key];
+  if (html != null) return html;
+  if (fallback !== null) return fallback;
+
+  throw new Error(
+    `[transclude] <transclude-fragment src="${key}"> could not be read, and the ` +
+      `element has no children to fall back to.`,
+  );
+}
+
 export function fragment(def, props = {}, slots = {}) {
   return def.render(data(def, props), slots, true);
 }

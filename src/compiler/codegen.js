@@ -57,6 +57,7 @@ export function compileFragment(nodes, opts = {}) {
     slots: Object.fromEntries([...gen.slots].map(([name, out]) => [name, joinOut(out)])),
     regions: Object.fromEntries([...gen.regions].map(([name, out]) => [name, joinOut(out)])),
     includes: gen.includes,
+    externals: gen.externals.map(({ key, url, id }) => ({ key, url, id })),
     consumed: [...gen.consumed],
     head: joinOut(gen.head),
     title: joinOut(gen.title),
@@ -119,6 +120,7 @@ class Codegen {
     // Every `<transclude-fragment src="#id">`, with the region it sits inside so
     // a cycle can be found before it is a stack overflow at render time.
     this.includes = [];
+    this.externals = [];
     this.inRegion = [];
     this.regionRoot = null;
     this.warnings = [];
@@ -616,11 +618,8 @@ class Codegen {
       );
     }
     if (!src.startsWith('#')) {
-      throw new CompileError(
-        `<${INCLUDE_TAG} src="${src}"> is not a region of this page. Only "#id" ` +
-          `works so far; a src naming another document is not resolved yet.`,
-        el,
-      );
+      this.emitExternal(el, out, scope, src);
+      return;
     }
 
     const id = src.slice(1);
@@ -633,6 +632,53 @@ class Codegen {
     // `#id`. Two elements with one id would be invalid, and a swap aimed at the
     // region would find whichever came first.
     this.c(out, `__o += regions[${JSON.stringify(id)}](__d, {}, false, false);`);
+  }
+
+  /**
+   * `<transclude-fragment src="https://…#intro">` — a piece of a document
+   * somebody else wrote.
+   *
+   * Resolved before the render rather than during it. Render is synchronous all
+   * the way down, and a fetch is not, so what the page declares is collected at
+   * compile time and the server has the answers ready by the time render runs.
+   * That also means a prerendered page reads the source once, at build time.
+   */
+  emitExternal(el, out, scope, src) {
+    let url;
+    try {
+      url = new URL(src);
+    } catch {
+      throw new CompileError(
+        `<${INCLUDE_TAG} src="${src}"> is neither "#id" for a region of this page ` +
+          `nor an absolute URL for a document elsewhere.`,
+        el,
+      );
+    }
+    if (!url.hash || url.hash === '#') {
+      throw new CompileError(
+        `<${INCLUDE_TAG} src="${src}"> names a document but no piece of it. ` +
+          `Add "#id" to say what to include.`,
+        el,
+      );
+    }
+
+    this.externals.push({ key: src, url: url.href.replace(url.hash, ''), id: decodeURIComponent(url.hash.slice(1)), node: el });
+
+    // Children are the fallback. On success they are dropped; with none, a
+    // source that cannot be read stops the render rather than leaving a hole
+    // nobody notices.
+    const children = childrenOf(el);
+    const id = ++this.uid;
+    if (children.length) {
+      this.c(out, `const __fb${id} = (() => { let __o = '';`);
+      this.emitChildren(children, out, scope, false);
+      this.c(out, `return __o; })();`);
+    }
+
+    this.c(
+      out,
+      `__o += __incl(__d, ${JSON.stringify(src)}, ${children.length ? `__fb${id}` : 'null'});`,
+    );
   }
 
   emitLight(el, out, scope) {

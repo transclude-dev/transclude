@@ -8,7 +8,7 @@ The directory tree is the route table. A page answers GET, its verb exports answ
 POST and the other verbs, and a `.js` file in the same tree is an endpoint that
 returns a `Response`. The server is Hono.
 
-Any element with an id can be asked for on its own URL. That is the hypermedia
+An element marked `fragment` can be asked for on its own URL. That is the hypermedia
 part: a region is a resource, and the same compiled markup serves it inline and
 alone. This framework ships nothing that swaps one in. htmx, Turbo or a short
 `fetch` does that.

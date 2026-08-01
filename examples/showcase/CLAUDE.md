@@ -7,8 +7,8 @@ these are the ones about writing and running an app.
 
 HTML is the product. A page is an `.html` file, the server renders it, and what
 arrives is markup a browser already knows how to display. A form posts to an
-action. Any element with an id is a resource on its own URL, which is what a
-client swaps. An element is light DOM unless its file exports `shadow`: no
+action. An element marked `fragment` is a resource on its own URL, which is
+what a client swaps. An element is light DOM unless its file exports `shadow`: no
 boundary, page CSS reaches it, and it ships no JavaScript.
 
 `npm test` (29, about this app's own files) · `npm run check` · `npm run dev` ·

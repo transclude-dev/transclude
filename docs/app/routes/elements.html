@@ -1,5 +1,5 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all } from "../lib/code.js";
 
   export default async () => ({
     s: await all({
@@ -91,7 +91,7 @@
     this.dispatchEvent(new CustomEvent('dismiss', { bubbles: true }));
   },
 };`,
-        'js',
+        "js",
       ],
       json: `<user-card
   name="Ada Lovelace"
@@ -137,16 +137,14 @@
     name.
   </p>
 
-  ${html(s.light)}
-
-  ${html(s.use)}
+  ${html(s.light)} ${html(s.use)}
 
   <p>
     The style block is hoisted into <code>&lt;head&gt;</code> once, however many
     times the element appears. <code>:scope</code> is the element itself.
   </p>
 
-  <h2>Asking for a shadow root</h2>
+  <h2>Setting a shadow root</h2>
 
   <p>
     Export <code>shadow</code> and the element gets a
@@ -220,8 +218,8 @@
 
   <p>
     Stay light unless you need one. A light element is cheaper, your CSS reaches
-    it, and it renders the same way whether the browser asked for a whole page or
-    one fragment of it. Reach for a shadow root when you want the element's
+    it, and it renders the same way whether the browser asked for a whole page
+    or one fragment of it. Reach for a shadow root when you want the element's
     styles and DOM sealed off from the page, or when it has to re-render on its
     own.
   </p>
@@ -230,9 +228,9 @@
 
   <p>
     Both react to a prop change. A light element writes the text and attributes
-    already in the page, so a node keeps its identity and anything holding a
-    reference to it still does. It never replaces its children: the caller's
-    slotted markup is among them, and the page's script may hold them.
+    already in the page, so its nodes keep their identity. It never replaces its
+    children: they include the markup the caller slotted in, and the page's own
+    script may be holding references to them.
   </p>
 
   <p>
@@ -242,9 +240,9 @@
   </p>
 
   <doc-note label="Reacting costs a definition">
-    An element observes its props only once it is defined, and it is defined only
-    with behavior, members, or form association. A light element of plain markup
-    still ships nothing at all.
+    An element observes its props only once it is defined, and it is defined
+    only with behavior, members, or form association. A light element of plain
+    markup still ships nothing at all.
   </doc-note>
 
   <h3>What <code>&lt;slot&gt;</code> means in each</h3>
@@ -272,9 +270,13 @@
 
   <p>
     A plain <code>&lt;script&gt;</code> block runs once per element.
-    <code>host</code> is the element, <code>shadow</code> is its shadow root or
-    <code>null</code>, and <code>signal</code> aborts when the element leaves the
-    document.
+    <code>host</code> is the element and <code>shadow</code> is its shadow root,
+    or <code>null</code> without one. <code>signal</code> is an
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal"
+      >AbortSignal</a
+    >
+    that fires when the element leaves the document: pass it to
+    <code>addEventListener</code> and the listener is removed for you.
   </p>
 
   ${html(s.behavior)}
@@ -293,7 +295,8 @@
     <code>internals</code> exist only in the body of the script, which runs once
     per element. A <code>prototype</code> member is shared by every element of
     that tag, so it reaches its own element with <code>this</code>. Using
-    <code>host</code> in one is a compile error rather than a bug you find later.
+    <code>host</code> in one is a compile error rather than a bug you find
+    later.
   </doc-note>
 
   <h2>State</h2>
@@ -358,7 +361,9 @@
   <p>
     Drop it into a form and it behaves like an input. Its value is submitted
     under its <code>name</code>, and
-    <a href="https://developer.mozilla.org/en-US/docs/Web/API/FormData">FormData</a>
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/FormData"
+      >FormData</a
+    >
     reads it like any other field.
   </p>
 

@@ -225,6 +225,7 @@ export function createApp({
                 clientEntry: route.client,
                 stylesheet: manifest.stylesheet,
                 csp: config.csp,
+                lang: config.lang,
                 include,
               })
             : await renderFragment(page, ctx, { region: region || null });
@@ -292,6 +293,7 @@ export function createApp({
             clientEntry: route.client,
             stylesheet: manifest.stylesheet,
             csp: config.csp,
+            lang: config.lang,
             include,
           });
 

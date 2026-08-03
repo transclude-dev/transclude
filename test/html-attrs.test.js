@@ -138,3 +138,22 @@ test('a module with no renderHtmlAttrs still renders', () => {
   const html = renderDocument([pageOf(undefined)], [{}]);
   assert.equal(openTag(html), '<html lang="en">');
 });
+
+// ---- the site's own language ----------------------------------------------
+
+test('lang comes from the config, and defaults to en', () => {
+  // The site's language is a site-wide fact, so it belongs in the file that
+  // holds those. Before this the option existed and nothing ever passed it, so
+  // every site shipped `lang="en"` whatever it was written in.
+  const page = pageOf(() => ({}));
+
+  assert.equal(openTag(renderDocument([page], [{}], {})), '<html lang="en">');
+  assert.equal(openTag(renderDocument([page], [{}], { lang: 'cy' })), '<html lang="cy">');
+});
+
+test('a file writing <html lang> beats the config', () => {
+  // The narrower statement wins, the same as every other html attribute.
+  const page = pageOf(() => ({ lang: 'es' }));
+
+  assert.equal(openTag(renderDocument([page], [{}], { lang: 'cy' })), '<html lang="es">');
+});

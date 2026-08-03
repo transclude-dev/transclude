@@ -162,6 +162,7 @@ async function render(route, { url, params }) {
     clientEntry: assets.get(route.id) ?? null,
     stylesheet,
     csp: config.csp,
+    lang: config.lang,
     include,
   });
 

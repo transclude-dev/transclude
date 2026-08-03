@@ -1,5 +1,5 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all } from "../lib/code.js";
 
   export default async () => ({
     s: await all({
@@ -28,7 +28,7 @@
 export const PUT = async (ctx) => { … };
 export const PATCH = async (ctx) => { … };
 export const DELETE = async (ctx) => { … };`,
-        'js',
+        "js",
       ],
       intent: `<form method="post">
   <input type="hidden" name="id" value="\${note.id}" />
@@ -39,7 +39,7 @@ export const DELETE = async (ctx) => { … };`,
   method: 'DELETE',
   body: new URLSearchParams({ id }),
 });`,
-        'js',
+        "js",
       ],
       redirect: [
         `export const POST = async ({ request, url, fragment }) => {
@@ -49,26 +49,29 @@ export const DELETE = async (ctx) => { … };`,
 
   return Response.redirect(new URL(url), 303);
 };`,
-        'js',
+        "js",
       ],
     }),
   });
 </script>
 
 <title>Forms · transclude</title>
-<meta name="description" content="A page handles GET. Export a verb to handle POST and the rest." />
+<meta
+  name="description"
+  content="A page handles GET. Export a verb to handle POST and the rest."
+/>
 
 <doc-page
   heading="Forms"
-  lede="A form posts to the page it sits on. The handler runs, then the loader renders what it left behind. No client JavaScript involved."
+  lede="A form posts to itself. The handler runs, then the loader renders what it left behind. No client JavaScript involved."
 >
   ${html(s.page)}
 
   <h2>One export per method</h2>
 
   <p>
-    Handlers are named for their HTTP method, in uppercase. Endpoints are written
-    the same way, so there is one spelling to learn.
+    Handlers are named for their HTTP method, in uppercase. Endpoints are
+    written the same way, so there is one spelling to learn.
   </p>
 
   ${html(s.verbs)}
@@ -98,11 +101,17 @@ export const DELETE = async (ctx) => { … };`,
 
   ${html(s.redirect)}
 
-  <h2>One shape from every handler</h2>
+  <h2>Every handler returns the same fields</h2>
 
   <p>
-    <code>ctx.action</code> is the union of what your handlers return. Return the
-    same shape from all of them, or the loader can read none of them.
+    <code>ctx.action</code> holds whatever the handler returned, and its type is
+    every handler's return type at once. A field that only one of them sets is
+    missing from the others, so reading it in the loader is a type error.
+  </p>
+
+  <p>
+    Give every handler the same fields and leave the ones that do not apply as
+    <code>null</code>.
   </p>
 
   <doc-note label="Build a Response in a function, never share one" tone="warn">
@@ -114,7 +123,7 @@ export const DELETE = async (ctx) => { … };`,
   <h2>CSRF</h2>
 
   <p>
-    On by default, covering non-GET requests that carry a form content type. Set
+    On by default, covering non-GET requests that have a form content type. Set
     <code>csrf: false</code> to turn it off, or pass an object to allow another
     origin.
   </p>

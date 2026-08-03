@@ -13,6 +13,7 @@
 
   strict: false,
   fragmentParam: 'fragment',
+  lang: 'en',
   fragmentHeader: null,
   csrf: true,
   trailingSlash: 'never',
@@ -94,6 +95,15 @@
           <td>
             The query parameter that asks for a fragment. <code>null</code> ships
             no loader on any page.
+          </td>
+        </tr>
+        <tr>
+          <td><code>lang</code></td>
+          <td><code>'en'</code></td>
+          <td>
+            The <code>lang</code> on <code>&lt;html&gt;</code> for every page. A
+            page or <a href="/layouts">layout</a> writing
+            <code>&lt;html lang="cy"&gt;</code> wins over it.
           </td>
         </tr>
         <tr>

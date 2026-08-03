@@ -26,6 +26,11 @@ export const DEFAULT_PORT = 1960;
 /**
  * `PORT` beats the config, so a host that assigns one is obeyed without an edit.
  * Dev and production share this, so an app has one port rather than two.
+ *
+ * @param {object} [config]
+ * @param {string|undefined} [env] `PORT`, which wins
+ * @returns {number}
+ * @throws when the value is set but not a port
  */
 export function portOf(config = {}, env = undefined) {
   const asked = env ?? config.port ?? DEFAULT_PORT;
@@ -45,6 +50,9 @@ export function portOf(config = {}, env = undefined) {
  * npm runs a script with the package root as the working directory, so the
  * search almost always ends at the first try. It walks up so that running a bin
  * by hand from a subdirectory works too.
+ *
+ * @param {string} [from]
+ * @returns {string} the directory holding transclude.config.js
  */
 export function findRoot(from = process.cwd()) {
   let dir = path.resolve(from);
@@ -66,6 +74,9 @@ export function findRoot(from = process.cwd()) {
  *
  * Imported by URL rather than by path: a space in the project path stays
  * percent-encoded in a bare file path and `Atelier%20Dakroub` is not a directory.
+ *
+ * @param {string} [from]
+ * @returns {Promise<object>} the root, the config and every resolved directory
  */
 export async function loadProject(from = process.cwd()) {
   const root = findRoot(from);

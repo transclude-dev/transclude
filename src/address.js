@@ -23,7 +23,12 @@ const V4_BLOCKED = [
   [(a) => a[0] >= 224, 'multicast or reserved'],
 ];
 
-/** An IPv4 address as four numbers, or null if the text is not one. */
+/**
+ * An IPv4 address as four numbers, or null if the text is not one.
+ *
+ * @param {string} text
+ * @returns {number[]|null} four octets, or null when it is not one
+ */
 export function parseV4(text) {
   const parts = text.split('.');
   if (parts.length !== 4) return null;
@@ -42,6 +47,9 @@ export function parseV4(text) {
  * Only enough of the format to classify one. An address with a trailing IPv4
  * part is handled, because `::ffff:169.254.169.254` is the obvious way around a
  * checker that only reads the hex form.
+ *
+ * @param {string} text
+ * @returns {number[]|null} sixteen bytes, or null
  */
 export function parseV6(text) {
   let body = text;
@@ -87,6 +95,9 @@ export function parseV6(text) {
  * Takes the text of a host, with no brackets. A name that is not an address
  * returns null: whether a *name* is allowed is the allowlist's question, and
  * where it resolves to is the runtime's.
+ *
+ * @param {string} host a literal address, not a name
+ * @returns {string|null} why it is refused, or null when it is allowed
  */
 export function blockedAddress(host) {
   const v4 = parseV4(host);
@@ -120,6 +131,10 @@ export function blockedAddress(host) {
  * Default deny. An entry is an exact hostname, or `*.example.com`, which covers
  * any subdomain but not the bare domain: naming a wildcard should not quietly
  * hand over the apex too.
+ *
+ * @param {string} host
+ * @param {string[]} [allow] names, and `*.` wildcards
+ * @returns {boolean} false unless something on the list names it
  */
 export function allowedHost(host, allow = []) {
   const name = String(host).toLowerCase().replace(/\.$/, '');
@@ -137,6 +152,10 @@ export function allowedHost(host, allow = []) {
  * Order matters. The allowlist is checked before the address, so a host nobody
  * permitted is refused without this having formed an opinion about where it
  * points.
+ *
+ * @param {string} url
+ * @param {{ allow?: string[] }} [options]
+ * @returns {{ ok: boolean, reason?: string, url?: URL }}
  */
 export function checkUrl(url, { allow = [] } = {}) {
   let parsed;

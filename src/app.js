@@ -48,6 +48,12 @@ export const COMPRESSIBLE_FLOOR = 512;
  * synchronous `createHash` and a runtime with only WebCrypto has an async
  * `subtle.digest`. Awaiting costs nothing on the first and is the only way to
  * accept the second.
+ *
+ * @param {{ config: object, manifest: object, pages: Record<string, object>,
+ *   statics: object, assets: object, notFound: object, errorPage: object,
+ *   hash: Function, compress: Function|null, publicFiles?: Function|null,
+ *   middleware?: Function|null, lookup?: Function|null }} options
+ * @returns {object} a Hono app, ready to serve
  */
 export function createApp({
   config,

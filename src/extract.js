@@ -74,6 +74,9 @@ function* walk(node) {
  * Unicode letters and numbers are kept rather than folded to ASCII: a document
  * whose headings are not in English should still be addressable in its own
  * script.
+ *
+ * @param {string} text
+ * @returns {string} lowercased, punctuation dropped, spaces hyphenated
  */
 export function slugify(text) {
   return text
@@ -91,6 +94,9 @@ export function slugify(text) {
  * slug on demand would make the suffix a heading gets depend on which fragment
  * was asked for, so the same URL would mean different things on different
  * requests.
+ *
+ * @param {string} html
+ * @returns {object} the indexed document
  */
 export function readDocument(html) {
   return indexDocument(parse(html));
@@ -101,6 +107,9 @@ export function readDocument(html) {
  *
  * The proxy sanitizes and rewrites a foreign document before indexing it, and
  * indexing first would leave the table naming elements the cleaning removed.
+ *
+ * @param {object} root a parse5 tree
+ * @returns {object} the same root, with its id table
  */
 export function indexDocument(root) {
   const ids = new Map();
@@ -233,6 +242,10 @@ function ancestorsOf(element) {
  * `nodes` is a list, not one element. A heading run is several siblings, and
  * wrapping them in a container would mean the fetched fragment did not match
  * what the source document renders in that place.
+ *
+ * @param {string|object} input the HTML, or an already indexed document
+ * @param {string} id
+ * @returns {object[]|null} the nodes, or null when nothing answers to that id
  */
 export function resolveFragment(input, id) {
   const doc = typeof input === 'string' ? readDocument(input) : input;
@@ -302,6 +315,9 @@ export function resolveFragment(input, id) {
  *
  * This is the claim that the rules work on markup nobody wrote for us: run it
  * over a page and the result should read like that page's outline.
+ *
+ * @param {string|object} input
+ * @returns {Array<{ id: string, implicit: boolean, tag: string, rank: number, kind: string, text: string }>}
  */
 export function listFragments(input) {
   const doc = typeof input === 'string' ? readDocument(input) : input;

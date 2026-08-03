@@ -47,6 +47,9 @@ export const CSP_DEFAULTS = {
  * whatever the content, so matching that way is not an approximation of the
  * parser, it is the same rule. A `<script src>` runs a file rather than a body
  * and is covered by `'self'`, so it is skipped.
+ *
+ * @param {string} html the rendered document
+ * @returns {{ scripts: string[], styles: string[] }} block bodies, in source order
  */
 export function inlineSources(html) {
   const found = [];
@@ -85,6 +88,10 @@ async function sha256(source) {
  * replacing the defaults decides which directives get them. Empty means the
  * literal is dropped rather than left in, because `script-src 'self' 'hashes'`
  * with nothing to substitute is a policy naming a source that does not exist.
+ *
+ * @param {string} html
+ * @param {{ directives?: Record<string, string[]> }} [options]
+ * @returns {Promise<string>} the policy, with every `'hashes'` replaced
  */
 export async function policyFor(html, { directives = CSP_DEFAULTS } = {}) {
   const inline = inlineSources(html);
@@ -130,6 +137,9 @@ const META_ONLY = new Set(['frame-ancestors', 'report-uri', 'report-to', 'sandbo
  *
  * `null` when there are none, which is the default. Adding a header nobody asked
  * for is a header to explain later.
+ *
+ * @param {object|boolean|null} config
+ * @returns {string|null} the directives a meta tag cannot carry
  */
 export function headerPolicy(config) {
   if (!config) return null;
@@ -151,6 +161,11 @@ export function headerPolicy(config) {
   };
 }
 
+/**
+ * @param {string} html
+ * @param {object|boolean|null} config
+ * @returns {Promise<string>} the document with its meta tag, or unchanged when off
+ */
 export async function withPolicy(html, config) {
   if (!config) return html;
 

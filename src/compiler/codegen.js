@@ -39,6 +39,11 @@ export class CompileError extends Error {
   }
 }
 
+/**
+ * @param {object[]} nodes
+ * @param {object} [opts]
+ * @returns {object} the render body, the regions, the slots, the includes and the warnings
+ */
 export function compileFragment(nodes, opts = {}) {
   const gen = new Codegen(opts);
   gen.emitChildren(nodes, gen.body, gen.rootScope, true);
@@ -874,6 +879,10 @@ export const ANCHOR_CLOSE = '<!--]-->';
 /**
  * `else` / `else-if` bind to the `if` before them, so a chain is one unit. Both
  * passes have to agree on where it ends, so they share the same walk.
+ *
+ * @param {object[]} nodes
+ * @param {number} i where the `if` is
+ * @returns {{ branches: object[], end: number }}
  */
 export function gatherChain(nodes, i) {
   const dirs = directivesOf(nodes[i]);
@@ -903,6 +912,10 @@ export function gatherChain(nodes, i) {
 
 // parse5 puts template children on `.content`, not `.childNodes`. Forgetting
 // this silently skips everything inside every template.
+/**
+ * @param {object} node
+ * @returns {object[]} a template's live under `.content`, so walking `childNodes` finds nothing
+ */
 export function childrenOf(node) {
   if (node.tagName === 'template' && node.content) return node.content.childNodes ?? [];
   return node.childNodes ?? [];

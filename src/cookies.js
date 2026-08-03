@@ -18,6 +18,11 @@ import { parse, parseSigned, serialize, serializeSigned } from 'hono/utils/cooki
  * whether an env var or a secret manager, is the app's decision and not the
  * framework's. Without it, signing is an error rather than a silent downgrade to
  * unsigned, because a signature nobody checks is worse than none.
+ *
+ * @param {Request} request
+ * @param {{ headers: Headers }} response the shared envelope
+ * @param {string|null} [secret] without one, `signed` throws rather than writing unsigned
+ * @returns {object} `get`, `set`, `delete`, `all`, `signed`, and the `personal` flag the cache reads
  */
 export function cookiesOf(request, response, secret = null) {
   // Reading one is what makes a page personal, and a personal page must not be

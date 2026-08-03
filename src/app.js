@@ -185,7 +185,7 @@ export function createApp({
 
       try {
         const ctx = contextFor(route, c);
-        const html = await renderFragment(pages[route.id], ctx, { region: region || null });
+        const html = await renderFragment(pages[route.id], ctx, { region: region || null, include });
 
         if (html instanceof Response) return withEnvelope(html, ctx);
         if (html === null) return c.text(`no fragment "${region}"`, 404);
@@ -228,7 +228,7 @@ export function createApp({
                 lang: config.lang,
                 include,
               })
-            : await renderFragment(page, ctx, { region: region || null });
+            : await renderFragment(page, ctx, { region: region || null, include });
 
         if (html instanceof Response) return withEnvelope(html, ctx);
         return sendRendered(c, html, ctx);

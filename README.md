@@ -42,10 +42,29 @@ an element: those are decisions your project has not made yet.
 
 ```
 npm install
-npm test           # 928 tests, and they need no app
+npm test           # the framework's own, and they need no app
 npm run test:examples # the demo's own tests, against a build
 npm run showcase   # the showcase on http://localhost:1961
 ```
+
+### Trying the project CLI before it is published
+
+`npm create transclude` needs a package called `create-transclude` on the
+registry. Until it is there, run the bin from this checkout:
+
+```sh
+npm link                                  # once, puts create-transclude on PATH
+create-transclude my-app --template blank --link
+```
+
+`--link` is not optional here. Without it the new project depends on
+`transclude` by version, and that version is not on the registry either, so
+`npm install` fails with `notarget`. With it the dependency is a `file:` path to
+this checkout, which is also what you want while changing the framework: an edit
+here is an edit there.
+
+`npm unlink -g transclude` removes the global link. `npx --package="$PWD"
+create-transclude my-app --link` does the same thing without one.
 
 `examples/showcase` is an app built against this package, the same way any other
 project would be. It is where the browser checks live, because those need an app
@@ -1025,7 +1044,7 @@ src/static-cache.js        built output in memory, one ETag per representation
 src/negotiate.js           Accept-Encoding parsing, q-values and all
 src/compress.js            build-time brotli and gzip
 src/pool.js                bounded concurrency, order preserving
-test/                      928 tests, and they need no app
+test/                      the framework's own, and they need no app
 examples/showcase/          an app, on the far side of the boundary
 ```
 

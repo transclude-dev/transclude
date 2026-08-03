@@ -59,6 +59,11 @@
        it ends up containing is in this page's element closure. -->
   <div id="swap"></div>
 
+  <!-- htmz. A link targets the named frame, the frame loads the region, and the
+       handler moves what arrived into #htmz-dest. Nothing fetches. -->
+  <iframe hidden name="htmz" id="htmz"></iframe>
+  <div id="htmz-dest"></div>
+
   <!-- A form-associated custom element, in a real form. Nothing submits this
        form; the checks read what the browser *would* send. -->
   <form id="control-form">
@@ -782,6 +787,44 @@
     swap.innerHTML = '';
     delete swap.dataset.html;
     return 'the marker in <head> is the whole record of what is already there';
+  });
+
+  // ---- htmz -----------------------------------------------------------------
+  //
+  // A hidden frame is a swap target, and the URL hash is free because a server
+  // never receives one. So the query asks us for a region and the hash says
+  // where it goes, and neither half needs the other to know about it.
+
+  await check('an htmz swap works: query for the region, hash for the destination', async () => {
+    const frame = document.getElementById('htmz');
+
+    const swapped = new Promise((resolve) => {
+      frame.onload = function () {
+        setTimeout(() => {
+          document
+            .querySelector(this.contentWindow.location.hash || null)
+            ?.replaceWith(...this.contentDocument.body.childNodes);
+          resolve();
+        });
+      };
+    });
+
+    const link = document.createElement('a');
+    link.href = '/?fragment=matches#htmz-dest';
+    link.target = 'htmz';
+    document.body.append(link);
+    link.click();
+    await swapped;
+    link.remove();
+
+    ok(document.querySelector('data-table'), 'the region never arrived');
+    return 'a hidden frame parsed it, and nothing fetched anything';
+  });
+
+  await check('the region lands under its own id, not the name it was sent to', () => {
+    ok(!document.getElementById('htmz-dest'), 'the destination survived, so nothing was replaced');
+    ok(document.getElementById('matches'), 'the region did not bring its id');
+    return 'so a second swap has to aim at #matches: name both ends the same';
   });
 
   // ---- form association -----------------------------------------------------

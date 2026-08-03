@@ -256,7 +256,10 @@ export async function renderFragment(page, ctx, { region = null, ...options } = 
 
   const last = chain[chain.length - 1];
   if (last.includes?.length) {
-    data = { ...data, __included: await resolveIncludes(last.includes, ctx, options) };
+    // The same memo `renderRoute` makes, for the same reason: one route
+    // included twice renders once, and the store dies with the request.
+    const request = { ...options, includeMemo: options.includeMemo ?? new Map() };
+    data = { ...data, __included: await resolveIncludes(last.includes, ctx, request) };
   }
 
   // No region named: the page's whole body, still without its layouts.

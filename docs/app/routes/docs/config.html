@@ -1,5 +1,5 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all } from '../../lib/code.js';
 
   export default async () => ({
     s: await all({
@@ -103,7 +103,7 @@
           <td><code>'en'</code></td>
           <td>
             The <code>lang</code> on <code>&lt;html&gt;</code> for every page. A
-            page or <a href="/layouts">layout</a> writing
+            page or <a href="/docs/layouts">layout</a> writing
             <code>&lt;html lang="cy"&gt;</code> wins over it.
           </td>
         </tr>
@@ -126,7 +126,7 @@
           <td>
             <code>{ hostname, title, items }</code> mounts a feed and writes it
             into the build. See
-            <a href="/feeds">sitemap and feeds</a>.
+            <a href="/docs/feeds">sitemap and feeds</a>.
           </td>
         </tr>
         <tr>
@@ -164,7 +164,7 @@
             <code>{ allow: [...] }</code> mounts
             <code>/_transclude/proxy</code>, which fetches a document from an
             allowed host and answers with one fragment of it. Default deny: no
-            key, no route. See <a href="/includes">includes</a>.
+            key, no route. See <a href="/docs/includes">includes</a>.
           </td>
         </tr>
         <tr>
@@ -173,7 +173,7 @@
           <td>
             Puts a script on every page that defines and styles an element
             arriving in a swap. Worth it when
-            <a href="/fragments">fragments</a> bring in elements the page did not
+            <a href="/docs/fragments">fragments</a> bring in elements the page did not
             render.
           </td>
         </tr>
@@ -195,7 +195,7 @@
           <td><code>false</code></td>
           <td>
             <code>{ hostname }</code> mounts <code>/sitemap.xml</code> and writes
-            it into the build. See <a href="/feeds">sitemap and feeds</a>.
+            it into the build. See <a href="/docs/feeds">sitemap and feeds</a>.
           </td>
         </tr>
         <tr>

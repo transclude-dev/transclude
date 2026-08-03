@@ -1,5 +1,5 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all } from '../../lib/code.js';
 
   export default async () => ({
     s: await all({
@@ -142,7 +142,7 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
 
   <p>
     The published snippet puts its handler in an <code>onload</code> attribute.
-    Turn on the <a href="/security">policy</a> and that handler is refused: it
+    Turn on the <a href="/docs/security">policy</a> and that handler is refused: it
     hashes script blocks, and a hash never covers an attribute. The swap then
     never happens and nothing on the page says why. Assign the handler in a
     script block instead and it is hashed like any other.
@@ -157,7 +157,7 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
   </p>
 
   <p>
-    <a href="/includes">Includes</a> put a fragment in a second place on the
+    <a href="/docs/includes">Includes</a> put a fragment in a second place on the
     server.
   </p>
 

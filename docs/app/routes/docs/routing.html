@@ -1,5 +1,5 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all } from '../../lib/code.js';
 
   export default async () => ({
     empty: '${}',
@@ -168,7 +168,7 @@
   <doc-note label="html() trusts, it does not clean" tone="warn">
     It marks a value as markup you vouch for. It sanitizes nothing, so
     <code>html()</code> around anything a visitor typed is how a page runs
-    somebody else's script. <a href="/security">Security</a> has the rest.
+    somebody else's script. <a href="/docs/security">Security</a> has the rest.
   </doc-note>
 
   <h2>Directives</h2>

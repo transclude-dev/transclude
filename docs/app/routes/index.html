@@ -1,205 +1,185 @@
 <script server>
-  import { all } from "../lib/code.js";
+  import { all } from '../lib/code.js';
 
   export default async () => ({
     s: await all({
-      page: `<!-- app/routes/people/[name].html -->
-<script server>
-  import { db } from '../../data/db.js';
+      start: ['npm create @transclude my-app', 'shell'],
+      page: `<script server>
+  import { notes } from '../data/notes.js';
 
-  export default async ({ params }) => ({
-    person: await db.people.find(params.name),
-  });
+  export default async () => ({ notes: notes.all() });
+
+  export const POST = async ({ request, url }) => {
+    notes.add((await request.formData()).get('text'));
+    return Response.redirect(new URL(url).origin + '/notes', 303);
+  };
 <\/script>
 
-<h1>\${person.name}</h1>
-<p>Joined \${person.since}</p>`,
+<title>Notes</title>
+
+<form method="post">
+  <input name="text" required />
+  <button>Add</button>
+</form>
+
+<ul id="list" fragment>
+  <li each="note of notes">\${note.text}</li>
+</ul>`,
     }),
   });
+
+  // Nothing here reads the request, so the whole page is written to a file at
+  // build time and served as bytes.
 </script>
 
 <title>transclude</title>
 <meta
   name="description"
-  content="A server-side framework. Load data in an .html file, render it on the server, send HTML."
+  content="An HTML-first server framework. A page is an .html file, the directory tree is the route table, and any fragment of a page is a URL of its own."
 />
+<link rel="canonical" href="https://transclude.dev/" />
 
 <style>
-  /* The wordmark is the heading here. A class, so it beats the bare `h1` rule
-     in the site stylesheet whatever order they land in. */
+  .hero { max-width: 46rem; margin: 0 auto; padding: 5rem 1.25rem 3rem; }
+
   .wordmark {
     font-family: var(--mono);
-    font-weight: 700;
-    font-size: clamp(2.1rem, 6.5vw, 3.4rem);
-    line-height: 1.05;
-    letter-spacing: -0.035em;
-  }
-  .wordmark .hash {
-    color: var(--link);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 2.5rem;
   }
 
-  .pitch {
+  .hero h1 {
     font-family: var(--serif);
-    font-size: 1.35rem;
-    line-height: 1.5;
-    letter-spacing: -0.008em;
-    margin: 0.8rem 0 2rem;
+    font-size: clamp(2rem, 6vw, 3.1rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0 0 1.25rem;
+    text-wrap: balance;
   }
 
-  .body {
+  .hero .lede {
     font-family: var(--serif);
-    font-size: 1.0625rem;
-    line-height: 1.68;
-    max-width: var(--measure);
-  }
-  .body p {
-    margin: 0 0 1.1em;
-  }
-
-  .grid {
-    display: grid;
-    gap: 1px;
-    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-    background: var(--rule);
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    overflow: hidden;
-    margin: 2.5rem 0;
-    max-width: var(--measure);
-  }
-  .cell {
-    background: var(--ground);
-    padding: 1.1rem 1.2rem;
-  }
-  .cell h2 {
-    margin: 0 0 0.4rem;
-    padding: 0;
-    border: 0;
-    font-size: 0.95rem;
-    letter-spacing: -0.008em;
-  }
-  .cell p {
-    margin: 0;
-    font-family: var(--serif);
-    font-size: 0.94rem;
+    font-size: 1.25rem;
     line-height: 1.55;
     color: var(--muted);
+    margin: 0 0 2.5rem;
+    max-width: 34em;
+    text-wrap: pretty;
   }
 
-  .next {
+  .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+
+  .actions a {
     display: inline-block;
+    padding: 0.6rem 1.1rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    text-decoration: none;
+    font-size: 0.95rem;
+  }
+
+  .actions a.primary { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+
+  .band { border-top: 1px solid var(--rule); background: var(--surface); }
+  .band .inner { max-width: 46rem; margin: 0 auto; padding: 3.5rem 1.25rem; }
+  .band h2 { font-family: var(--serif); font-size: 1.5rem; margin: 0 0 0.75rem; }
+  .band p { color: var(--muted); margin: 0 0 1.75rem; max-width: 40em; }
+
+  .points { max-width: 46rem; margin: 0 auto; padding: 3.5rem 1.25rem; display: grid; gap: 2rem; }
+  @media (min-width: 40rem) { .points { grid-template-columns: 1fr 1fr; } }
+  .points h3 { font-size: 0.95rem; margin: 0 0 0.4rem; }
+  .points p { color: var(--muted); margin: 0; font-size: 0.95rem; line-height: 1.6; }
+
+  footer { border-top: 1px solid var(--rule); }
+  footer .inner {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 3rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 1.5rem;
     font-size: 0.9rem;
-    font-weight: 600;
+    color: var(--muted);
   }
 </style>
 
-<h1 class="wordmark"><span class="hash">#</span>transclude</h1>
+<div class="hero">
+  <p class="wordmark">transclude</p>
 
-<p class="pitch">HTML is the product.</p>
+  <h1>HTML is the product.</h1>
 
-<div class="body">
-  <p>
-    transclude is a server-side framework. A page is one <code>.html</code> file
-    holding both halves: a <code>&lt;script server&gt;</code> block that loads
-    its data, and the markup that reads it. The server runs them together and
-    sends the result.
+  <p class="lede">
+    A page is an <code>.html</code> file, the directory tree is the route table,
+    and any fragment of a page is a URL of its own. Nothing has to run in the
+    browser for the page to be correct.
   </p>
+
+  <div class="actions">
+    <a class="primary" href="/docs/getting-started">Get started</a>
+    <a href="/docs">Documentation</a>
+    <a href="https://github.com/transclude-dev/transclude">GitHub</a>
+  </div>
 </div>
 
-${html(s.page)}
-
-<div class="body">
-  <p>
-    What reaches the browser is finished HTML. No client framework starts up, no
-    second request fetches the data, and nothing has to run before the page
-    works.
-  </p>
-
-  <p>
-    Your folder structure is your routing. A page handles GET, and its loader is
-    given the URL, the path parameters and the cookies. Export
-    <code>POST</code> from the same file to handle a form. Put a
-    <code>.js</code> file beside it and it becomes an API endpoint. Hono runs
-    the server.
-  </p>
-
-  <p>
-    It is HTML-first and hypermedia-driven. The markup the server sends is the
-    state of your app, and links and forms are what change it. If that idea is
-    new to you, <a href="https://hypermedia.systems/">Hypermedia Systems</a> is
-    a good place to start.
-  </p>
-
-  <p>
-    This site is built with it. Every page you are reading is one
-    <code>.html</code> file in <code>docs/app/routes/</code>.
-  </p>
-</div>
-
-<div class="grid">
-  <div class="cell">
-    <h2>Everything in one file</h2>
+<div class="band">
+  <div class="inner">
+    <h2>One file is one route</h2>
     <p>
-      Data loading, markup, styles and behavior live together in the file the
-      URL points at.
+      The server block answers GET. Its verb exports answer everything else, so a
+      plain form works. Mark an element <code>fragment</code> and it has its own
+      URL, from the same compiled markup.
+    </p>
+    ${html(s.page)}
+  </div>
+</div>
+
+<div class="points">
+  <div>
+    <h3>No client runtime</h3>
+    <p>
+      A page ships JavaScript only for the elements it renders, and only when one
+      of them has behaviour. This site ships none.
     </p>
   </div>
-  <div class="cell">
-    <h2>Fetch any part of a page</h2>
+  <div>
+    <h3>Four runtimes, one app</h3>
     <p>
-      Mark an element and you can request just that piece, from the same
-      compiled markup.
+      Node, Bun, Deno and workerd answer identically, and a test says so across
+      ten routes.
     </p>
   </div>
-  <div class="cell">
-    <h2>Light DOM by default</h2>
+  <div>
+    <h3>Types without TypeScript</h3>
     <p>
-      An element renders into your page's own DOM. Your CSS reaches it and it
-      ships no JavaScript. Opt in to a shadow root when you want one.
+      A misspelled field, an unknown prop and a wrong-typed one are caught from
+      the shapes your loaders already return.
     </p>
   </div>
-  <div class="cell">
-    <h2>Runs anywhere</h2>
-    <p>Node, Bun, Deno and Cloudflare Workers, from the same code.</p>
+  <div>
+    <h3>A build that is files</h3>
+    <p>
+      Prerendered, compressed once at rest, with a strong ETag per encoding.
+      <code>dist/static</code> is self-contained.
+    </p>
   </div>
 </div>
 
-<h2>Where the name comes from</h2>
-
-<div class="body">
-  <p>
-    <a href="http://www.thetednelson.com/">Ted Nelson</a> coined the word
-    <em>hypertext</em> in the 1960s, and the web was built on it: a link, a
-    click, a new document. Transclusion is the other half of the same design,
-    and the web left it behind. It means putting part of one document inside
-    another by pointing at it rather than copying it, so a piece of writing can
-    sit in two places and still be one piece of writing. Nelson set it out in
-    <a href="https://archive.org/details/literarymachines00nels"
-      ><em>Literary Machines</em></a
-    >, the book describing his Project Xanadu.
-  </p>
-
-  <p>
-    HTML has always pulled in a whole resource by pointing at it: an image, a
-    stylesheet, a script, another page in an <code>&lt;iframe&gt;</code>. What
-    it has never had is a way to take one part of a document and make it part of
-    another. An iframe is a separate document in a box, with its own styles and
-    its own layout. It never becomes your text.
-  </p>
-
-  <p>
-    SVG is the one place the platform does this.
-    <code>&lt;use href="#icon"&gt;</code> points at an element by id and renders
-    it in place, which is transclusion, shipped and working. It does shapes, not
-    paragraphs.
-  </p>
-
-  <p>
-    transclude does that two ways. An <strong>element</strong> is markup pulled
-    into the page that calls it. A <strong>fragment</strong> is a piece of a
-    page that keeps a URL of its own, so you can render it in place or fetch it
-    by itself. Either way there is one copy of the markup.
-  </p>
+<div class="band">
+  <div class="inner">
+    <h2>Start one</h2>
+    <p>A layout, two pages and a stylesheet. <code>--template blank</code> is less.</p>
+    ${html(s.start)}
+  </div>
 </div>
 
-<a class="next" href="/getting-started">Getting started &rarr;</a>
+<footer>
+  <div class="inner">
+    <span>MIT</span>
+    <a href="/docs">Documentation</a>
+    <a href="https://github.com/transclude-dev/transclude">Source</a>
+    <a href="https://www.npmjs.com/package/@transclude/core">npm</a>
+  </div>
+</footer>

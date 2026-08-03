@@ -14,6 +14,14 @@
     "hono",
     "vite"
   ],
+  "homepage": "https://transclude.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/transclude-dev/transclude.git"
+  },
+  "bugs": {
+    "url": "https://github.com/transclude-dev/transclude/issues"
+  },
   "license": "MIT",
   "author": "Joe Dakroub",
   "type": "module",

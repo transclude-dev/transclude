@@ -1,2 +1,17 @@
 node_modules/
 .DS_Store
+
+# `npm run build` output, reproducible from source. The two apps ignore their
+# own; this is for anything built at the root.
+dist/
+
+# `npm pack` writes one of these beside the manifest.
+*.tgz
+
+# Secrets. `.env.example` is a committed template and is not one.
+.env
+.env.*
+!.env.example
+
+# Claude Code's working directory.
+.claude/

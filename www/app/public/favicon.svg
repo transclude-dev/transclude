@@ -1,20 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- The colours are attributes, not only CSS. A path with a class and no fill
+       is black wherever the style block is not applied, and a favicon is fetched
+       and drawn in places that do not apply one. So the light rendering is the
+       markup, and the style below only overrides it for a dark theme. -->
   <style>
-    /* The plate follows the browser's theme rather than staying white, so the
-       mark is not a lit square on a dark tab strip. Written inside the file
-       because a favicon is fetched on its own and no page CSS reaches it. */
-    .plate { fill: #fcfcfd }
-    .mark { fill: #0000ee }
-
     @media (prefers-color-scheme: dark) {
       .plate { fill: #0b0b0f }
       .mark { fill: #b8cfff }
     }
   </style>
 
-  <path class="plate" d="M0 0h32v32H0z" />
+  <path class="plate" fill="#fcfcfd" d="M0 0h32v32H0z" />
   <path
     class="mark"
+    fill="#0000ee"
     fill-rule="nonzero"
     d="M10.744 20.792H7.288v-3.52h4.096l.48-2.88h-3.36v-3.52h4l1.088-6.208h3.744L13.4 27H9.656zM19.8 4.664h3.744l-1.088 6.208h3.456v3.52h-4.096l-.48 2.88h3.36v3.52h-4L19.608 27h-3.744z"
   />

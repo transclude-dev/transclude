@@ -484,6 +484,21 @@ against.
   having a service worker hold it forever. The revision is a build-time hash and
   is not compared against a served ETag: public files go out through Hono's
   `serveStatic`, which sends none.
+- **The framework's own `<meta>` defaults go through the merge too.** The shell
+  wrote `viewport` and so did anything that wanted its own, and both shipped.
+  The default is now the outermost level handed to `mergeHead`, so a page or a
+  layout replaces it, and it is emitted back in its old position above `<title>`
+  rather than wherever the merged list puts it. `charset` stays hardcoded: it has
+  to be inside the first 1024 bytes and is not something to override. Found by
+  generating a project with the new CLI and reading the output, which is the
+  first time anything here rendered a page that writes its own viewport.
+- **`templates/` is what a new project is, and `_gitignore` is why.** A real
+  `.gitignore` inside a template is applied to the template itself by everything
+  that reads one, npm included when the package is packed, so the file is stored
+  under a name nothing recognises and renamed on the way out. The tests assert
+  the files rather than the copying: neither template ships a fragment, an
+  include or an element, because those are decisions a project makes and the
+  showcase already demonstrates.
 - **`<head>` merges across the chain, `<meta>` and canonical by key.** The chain
   was concatenated, so a root layout with a default `og:image` and a page with
   its own shipped both, and two of those is not an override: a crawler reads two

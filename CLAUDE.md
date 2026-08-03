@@ -309,6 +309,20 @@ against.
   and SSR outputs, and production served none of it. Dev 200, prod 404. Both
   servers now mount the same Hono `serveStatic`. Only the root differs, and
   production's is under `dist` so the stale-build warning stays true.
+- **A public file's validator is its size and mtime, not a hash of it.** These
+  went out with `Last-Modified` and nothing else, so a browser guessed how long
+  to hold a favicon. Hashing is what the in-memory cache does and is wrong here:
+  a video would be read in full to answer a request for its first megabyte.
+  Weak on purpose, because a size and a second can collide. `serveStatic` reads
+  no request condition, so the 304 is done around it in `public-files.js`, which
+  both Node servers now share.
+- **A `serveStatic` wrapper has to return what it was given.** A range is
+  answered by *returning* a Response rather than by setting `c.res`, so a wrapper
+  that awaits and returns nothing leaves the context unfinalized and every Range
+  request becomes a 500 saying "Context is not finalized". Nothing in the suite
+  caught it: `app.request()` takes a different branch inside `serveStatic` and
+  shows no `onFound` headers at all, so the public-file tests run against a real
+  listener on a port the OS picks.
 - **Public files are served by Hono, build output by the in-memory cache.** These
   are different on purpose. Build output is small, used often and never changes, and
   gets a strong ETag for each encoding. Public files belong to the author, can be

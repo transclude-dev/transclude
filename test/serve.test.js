@@ -410,3 +410,77 @@ test('the hint is not a header on the page, so the page is still cacheable', asy
 
   assert.equal(renders, 1, 'the preload header made the page uncacheable');
 });
+
+// ---- the author's own files ------------------------------------------------
+//
+// Against a real listener, not `app.request()`. `serveStatic` writes its headers
+// through the Node response when there is one and takes another path when there
+// is not, so the in-process route shows no ETag at all and would have made these
+// pass while the server sent nothing.
+
+const { publicFiles } = await import('../src/public-files.js');
+
+/** A directory with one file, served by a real server on a port the OS picks. */
+const withPublicServer = async (fn) => {
+  const dir = fs.mkdtempSync(path.join(process.cwd(), '.public-test-'));
+  fs.writeFileSync(path.join(dir, 'thing.txt'), 'x'.repeat(500));
+
+  const { Hono } = await import('hono');
+  const { serve } = await import('@hono/node-server');
+  const app = new Hono();
+  app.use('*', publicFiles(path.relative(process.cwd(), dir)));
+
+  const server = await new Promise((resolve) => {
+    const s = serve({ fetch: app.fetch, port: 0 }, () => resolve(s));
+  });
+  const base = `http://localhost:${server.address().port}`;
+
+  try {
+    return await fn(base);
+  } finally {
+    await new Promise((done) => server.close(done));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+};
+
+test('a public file carries a validator, so it can be revalidated', async () => {
+  await withPublicServer(async (base) => {
+    const res = await fetch(`${base}/thing.txt`);
+
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('etag') ?? '', /^W\/"/, 'no weak validator');
+    assert.match(res.headers.get('cache-control') ?? '', /must-revalidate/);
+  });
+});
+
+test('the same validator back is a 304 with no body', async () => {
+  await withPublicServer(async (base) => {
+    const etag = (await fetch(`${base}/thing.txt`)).headers.get('etag');
+    const res = await fetch(`${base}/thing.txt`, { headers: { 'if-none-match': etag } });
+
+    assert.equal(res.status, 304);
+    assert.equal(await res.text(), '');
+  });
+});
+
+test('a stale validator gets the file', async () => {
+  await withPublicServer(async (base) => {
+    const res = await fetch(`${base}/thing.txt`, { headers: { 'if-none-match': 'W/"not-it"' } });
+
+    assert.equal(res.status, 200);
+    assert.equal((await res.text()).length, 500);
+  });
+});
+
+test('a range is still answered, and the wrapper does not eat it', async () => {
+  // `serveStatic` answers a range by *returning* a Response rather than by
+  // setting `c.res`. A wrapper that awaits it and returns nothing leaves the
+  // context unfinalized and every Range request becomes a 500. Only a real
+  // server showed that.
+  await withPublicServer(async (base) => {
+    const res = await fetch(`${base}/thing.txt`, { headers: { range: 'bytes=0-99' } });
+
+    assert.equal(res.status, 206);
+    assert.equal((await res.text()).length, 100);
+  });
+});

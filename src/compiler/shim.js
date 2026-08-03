@@ -157,7 +157,7 @@ export function originalOffset(chunks, offset) {
  *
  * @param {string} source
  * @param {{ contextType: string }} options
- * @returns {{ code: string, chunks: object[], errors: object[] }}
+ * @returns {{ code: string, chunks: object[], syntaxErrors: object[] }}
  */
 export function buildEndpointShim(source, { contextType }) {
   const out = new Builder();
@@ -267,7 +267,7 @@ function actionExports(ast) {
  * @param {string} source
  * @param {{ kind: string, shadow?: boolean, contextType?: string|null,
  *   componentProps?: Map<string, string> }} options
- * @returns {{ code: string, chunks: object[], errors: object[] }}
+ * @returns {{ code: string, chunks: object[], syntaxErrors: object[] }}
  */
 export function buildShim(source, { kind, shadow = false, contextType = null, componentProps = new Map() }) {
   const blocks = splitBlocks(source);

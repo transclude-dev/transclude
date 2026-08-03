@@ -82,6 +82,22 @@ export function baseApp(options = {}) {
 
   if (csrfOption) app.use('*', csrf(csrfOption === true ? undefined : csrfOption));
 
+  /**
+   * The one security header with no judgement in it.
+   *
+   * Without it a browser may sniff a response's bytes and decide the declared
+   * type was wrong, so a text file an app serves can be read as HTML and a
+   * `.json` as script. Nothing legitimate depends on sniffing, which is what
+   * separates this from `X-Frame-Options` or HSTS: both of those refuse
+   * something an app may actually want, so they stay the author's to set.
+   *
+   * Before everything, so a public file and a prerendered page get it too.
+   */
+  app.use('*', async (c, next) => {
+    await next();
+    c.header('X-Content-Type-Options', 'nosniff');
+  });
+
   // The half of the policy a `<meta>` cannot carry. It names no hash, so it is
   // the same string for every page and costs a prerendered one nothing. Before
   // anything that answers, so a static file gets it too.

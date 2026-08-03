@@ -30,6 +30,14 @@ const FATAL = new Map([
   ['TS2554', 'the wrong number of arguments'],
   ['TS2349', 'calling something that is not a function'],
   ['TS2580', 'a runtime global with no type definition'],
+  // The drift class. Each one means an annotation and the thing it describes
+  // have come apart: a key the object has and the type does not, or the other
+  // way round. Ninety of these were live when the gate was written, every one an
+  // annotation written from memory rather than read off the code.
+  ['TS2353', 'a key the annotation does not list'],
+  ['TS2741', 'a key the annotation requires and the value lacks'],
+  ['TS2739', 'several keys the value lacks'],
+  ['TS2740', 'a shape missing most of what the type requires'],
 ]);
 
 test('the framework source has no impossible names, arities or calls', () => {

@@ -32,7 +32,9 @@ const PARSE_OPTIONS = {
  * @param {string} name what to bind the default export to
  * @param {string} label for an error
  * @param {{ flags?: string[] }} [options]
- * @returns {{ code: string, exports: string[], defaultNode: object|null, flags: object }}
+ * @returns {{ code: string, exports: string[],
+ *   imports: Array<{ source: string, specifiers: string }>,
+ *   defaultNode: object|null, flags: object }}
  */
 export function bindDefaultExport(block, name, label, { flags = [] } = {}) {
   const { code: source, line = 1 } = block;
@@ -110,7 +112,8 @@ function literalExport(ast, flag, code, line, label) {
  * @param {Array<{ code: string, line?: number }>} blocks
  * @param {string} label
  * @param {{ lift?: object|null, binding?: string, flags?: string[] }} [options]
- * @returns {{ code: string, members: string, warnings: string[] }}
+ * @returns {{ imports: string, hoisted: string, body: string,
+ *   lifted: object|null, flags: object, warnings: string[] }}
  */
 export function toFunctionBody(blocks, label, { lift = null, binding = '__members', flags = [] } = {}) {
   const imports = [];
@@ -304,7 +307,7 @@ function namesExport(statement, name) {
  *
  * @param {object} ast an acorn program
  * @param {string} name the binding members land on
- * @param {Set<string>} [perInstance] names a member may not reach
+ * @param {Set<string>|string[]} [perInstance] names a member may not reach
  * @returns {object|null} what to hoist, or null when nothing is exported
  */
 export function planLift(ast, name, perInstance = PER_INSTANCE) {
@@ -506,7 +509,7 @@ function importsOf(ast) {
  * Guards against a block exporting a name the generated module already uses.
  *
  * @param {string[]} exports
- * @param {Set<string>|string[]} reserved
+ * @param {Set<string>} reserved
  * @param {string} label
  * @returns {void}
  * @throws naming the first collision

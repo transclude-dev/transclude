@@ -933,7 +933,8 @@ export const ANCHOR_CLOSE = '<!--]-->';
  *
  * @param {object[]} nodes
  * @param {number} i where the `if` is
- * @returns {{ branches: object[], end: number }}
+ * @returns {{ chain: Array<{ node: object, kind: string, cond?: string }>, next: number }|null}
+ *   null when the element carries no `if`, so there is no chain to gather
  */
 export function gatherChain(nodes, i) {
   const dirs = directivesOf(nodes[i]);

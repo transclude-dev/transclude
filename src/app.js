@@ -51,9 +51,11 @@ export const COMPRESSIBLE_FLOOR = 512;
  * accept the second.
  *
  * @param {{ config: object, manifest: object, pages: Record<string, object>,
- *   statics: object, assets: object, notFound: object, errorPage: object,
- *   hash: Function, compress: Function|null, publicFiles?: Function|null,
- *   middleware?: Function|null, lookup?: Function|null }} options
+ *   endpoints?: Record<string, object>, statics?: object, assets?: object,
+ *   notFound?: object|null, errorPage?: object|null, hash: Function,
+ *   compress?: Function|null, publicFiles?: Function|null,
+ *   middleware?: Function|null, lookup?: Function|null,
+ *   precache?: string|null }} options
  * @returns {object} a Hono app, ready to serve
  */
 export function createApp({

@@ -218,7 +218,7 @@ export function coerceProps(defs, props, specs) {
  * exactly. No marker comments in the served HTML, and nothing evaluated.
  *
  * @param {Node} parent
- * @param {Node|null} node the node the parser built, if any
+ * @param {Text|null} node the text node the parser built, if any
  * @param {number} prefix static characters before the expression
  * @param {number} suffix static characters after it
  * @returns {Text}

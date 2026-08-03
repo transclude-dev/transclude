@@ -49,7 +49,8 @@ export const CSP_DEFAULTS = {
  * and is covered by `'self'`, so it is skipped.
  *
  * @param {string} html the rendered document
- * @returns {{ scripts: string[], styles: string[] }} block bodies, in source order
+ * @returns {Array<{ kind: string, body: string }>} every inline block, in source
+ *   order, each saying which kind it is
  */
 export function inlineSources(html) {
   const found = [];

@@ -8,9 +8,9 @@ import { absolutize, baseOf, parseSrcset, rewriteCss, sanitize } from '../src/re
 
 const BASE = 'https://source.example/guide/page.html';
 
-const clean = (html) => {
+const clean = (html, options) => {
   const root = parse(html);
-  const removed = sanitize(root);
+  const removed = sanitize(root, options);
   return { html: serialize(root), removed };
 };
 
@@ -42,6 +42,34 @@ test('a base element goes, because it would retarget the host page', () => {
 test('a link element goes, because it can pull a stylesheet from anywhere', () => {
   const { html } = clean('<link rel="stylesheet" href="https://elsewhere.example/x.css"><p>o</p>');
   assert.doesNotMatch(html, /<link/);
+});
+
+test('a style block goes, because its rules are not scoped to the fragment', () => {
+  // Same hazard as the link element above. A block of CSS in a fragment applies
+  // to the whole document it lands in, so `p { display: none }` from the source
+  // would empty the host page.
+  const { html } = clean('<style>p{display:none}</style><p>one</p>');
+
+  assert.doesNotMatch(html, /<style|display:none/);
+  assert.match(html, /<p>one<\/p>/);
+});
+
+test('a style attribute stays by default, because it paints only its element', () => {
+  // A highlighted code block carries its colors this way. Dropping them would
+  // lose what the source was saying.
+  const { html } = clean('<span style="color:#07a">const</span>');
+  assert.match(html, /style="color:#07a"/);
+});
+
+test("styles: 'strip' takes the attributes and leaves everything else", () => {
+  const { html, removed } = clean('<a href="/x" style="color:red" class="k">go</a>', {
+    styles: 'strip',
+  });
+
+  assert.doesNotMatch(html, /style=/);
+  assert.match(html, /href="\/x"/);
+  assert.match(html, /class="k"/);
+  assert.ok(removed.includes('@style'));
 });
 
 test('a meta refresh goes, and an ordinary meta stays', () => {

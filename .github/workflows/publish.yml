@@ -30,7 +30,13 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
+      # Three packages, three installs. `npm ci` reads one manifest, and the
+      # demo and the docs are separate projects that depend on this one by path.
+      # Without theirs, their tests cannot resolve `@transclude/core` and fail
+      # for a reason that has nothing to do with the release.
       - run: npm ci
+      - run: npm ci --prefix examples/showcase
+      - run: npm ci --prefix docs
 
       # The same order `bin/release.js` runs, so a tag that was cut properly
       # passes here and a tag pushed by hand is caught.

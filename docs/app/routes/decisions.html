@@ -1,0 +1,191 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      drop: [
+        `<input disabled="\${false}" />       <!-- <input /> -->
+<input disabled="\${true}" />        <!-- <input disabled> -->
+<x-list rows="\${[1, 2]}"></x-list>  <!-- rows="[1,2]" -->`,
+        'html',
+      ],
+      both: [
+        `<li if="ready" each="row of rows">…</li>
+
+<template if="ready">
+  <li each="row of rows">…</li>
+</template>`,
+        'html',
+      ],
+      template: [
+        `<template if="ready">…</template>   <!-- consumed: a fragment -->
+<template id="row">…</template>     <!-- kept: cloneNode in the browser -->`,
+        'html',
+      ],
+    }),
+  });
+</script>
+
+<title>Decisions and limits · transclude</title>
+<meta
+  name="description"
+  content="What the compiler decides for you, and what this framework does not do."
+/>
+
+<doc-page
+  heading="Decisions and limits"
+  lede="The rules the compiler enforces rather than leaves to you, and the things it does not do. Both are worth reading before you find them."
+>
+  <h2>What the compiler decides</h2>
+
+  <p>
+    <strong>The file stays valid HTML.</strong> Directives are attributes, so a
+    real parser gives a correct tree and Prettier, Emmet and your linter keep
+    working. That is the difference between this and a template language that
+    happens to look like HTML.
+  </p>
+
+  <p>
+    <strong>Everything is escaped.</strong> <code>\${x}</code> always escapes.
+    <code>\${html(x)}</code> is the only way out, and it is a marker object
+    rather than a naming convention, so it cannot happen by accident. Attribute
+    values escape by attribute rules, which are not the same rules.
+  </p>
+
+  <p>
+    <strong><code>false</code>, <code>null</code> and <code>undefined</code> drop
+    an attribute</strong> rather than becoming a string, so nothing renders
+    <code>class="false"</code>. <code>true</code> writes the name bare. An object
+    or an array serializes as JSON, which is what lets the browser read a prop
+    back off the element and render from the same data the server had.
+  </p>
+
+  ${html(s.drop)}
+
+  <p>
+    <strong><code>else</code> binds across whitespace and comments</strong>, and
+    an <code>else</code> with no <code>if</code> is a compile error with a line
+    number rather than an element that quietly never appears.
+  </p>
+
+  <p>
+    <strong><code>if</code> and <code>each</code> on one element is refused.</strong>
+    Vue 2 and Vue 3 disagreed about which runs first, and everyone lost. Wrapping
+    one in a <code>&lt;template&gt;</code> says which you meant.
+  </p>
+
+  ${html(s.both)}
+
+  <p>
+    <strong>Conditions are expressions, not strings.</strong> <code>if="0"</code>
+    is false. The grammar is small on purpose: no assignment, no arrow functions,
+    no object literals. That keeps a template declarative rather than a second
+    place to write code, and it is what makes it possible to collect the names a
+    template reads at all, which is where the type checking comes from.
+  </p>
+
+  <p>
+    <strong>A <code>&lt;template&gt;</code> carrying a directive is consumed. One
+    without any is emitted as it is</strong>, so it survives to the browser for
+    <code>content.cloneNode(true)</code>.
+  </p>
+
+  ${html(s.template)}
+
+  <p>
+    <strong>Comments are stripped</strong> from the output, and still count as
+    insignificant when linking an <code>else</code> to its <code>if</code>.
+  </p>
+
+  <p>
+    <strong>A nested loop name shadows, with a warning.</strong> The inner one
+    wins, and the compiler says the outer one became unreachable.
+  </p>
+
+  <h2>What it does not do</h2>
+
+  <p>
+    Not a roadmap. Each of these is either a decision or a cost that has not been
+    worth paying.
+  </p>
+
+  <h3>By decision</h3>
+
+  <ul>
+    <li>
+      <strong>No client-side router and nothing that swaps.</strong> Every link
+      is a document request unless you bring something.
+      <a href="/fragments">Regions</a> give it a URL; htmx, Turbo or a short
+      <code>fetch</code> does the swapping.
+    </li>
+    <li>
+      <strong>No session store and no database opinion.</strong>
+      <a href="/cookies">Signed cookies</a> are the building block. A store needs
+      a choice this does not make.
+    </li>
+    <li>
+      <strong>No streaming.</strong> The body is buffered so it can be hashed,
+      which is what buys the strong ETag, and a synchronous render is what lets
+      an <a href="/includes">include</a> resolve before the page renders. A
+      <code>Link: rel=preload</code> header goes out first, so a proxy can turn
+      it into a 103 while the page is still being made.
+    </li>
+    <li>
+      <strong>Layout loaders run in order, not at once.</strong> Each one can
+      read what the ones above it returned.
+    </li>
+  </ul>
+
+  <h3>By platform</h3>
+
+  <ul>
+    <li>
+      <strong>No byte ranges on workerd.</strong> A Range request gets 200 rather
+      than 206. Ranges are what a filesystem buys, and a worker has none.
+    </li>
+    <li>
+      <strong>A form inside a shadow root is invisible to a document-level
+      listener</strong>, because <code>submit</code> does not cross the boundary.
+      Listen on <code>shadow</code>.
+    </li>
+    <li>
+      <strong><code>@scope</code> is soft.</strong> A light
+      <a href="/elements">element</a>'s styles lose to page CSS of equal
+      specificity. That is right for content and a hazard for a widget, which is
+      one reason to reach for a shadow root.
+    </li>
+    <li>
+      <strong>A light element writes; only a shadow one rebuilds.</strong> Both
+      react to a prop change, but a light one does not own its children, so an
+      <code>if</code> or an <code>each</code> over a changing value needs the
+      boundary.
+    </li>
+  </ul>
+
+  <h3>Rough edges</h3>
+
+  <ul>
+    <li>
+      <strong>A template stack maps to the file in dev and not in a build.</strong>
+      The bundler drops the map a plugin returns for a virtual module, so a
+      prerender failure reports the message and the page rather than the line.
+    </li>
+    <li>
+      <strong>The unused-prop check reads <code>&lt;style&gt;</code> and
+      <code>&lt;script&gt;</code> by word</strong>, so a prop mentioned in either
+      is assumed used.
+    </li>
+    <li>
+      <strong>In dev, Vite logs <code>Failed to load url</code> for a
+      <code>&lt;script head src&gt;</code> pointing at a public file.</strong> The
+      file exists and the server sends it. Vite does not own it, and silencing
+      the warning would mean letting Vite serve the public directory, which is
+      the split that keeps dev and production honest.
+    </li>
+    <li>
+      <strong><code>transclude-check</code> is a separate step.</strong> The dev
+      server compiles without it, so a type error does not stop a page rendering.
+      It stops the check.
+    </li>
+  </ul>
+</doc-page>

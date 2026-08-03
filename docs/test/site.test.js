@@ -56,14 +56,20 @@ test('the fonts the stylesheet names are the fonts that exist', () => {
   assert.deepEqual(missing, [], `named but not present: ${missing.join(', ')}`);
 });
 
+const dist = path.join(root, '..', 'dist', 'static');
+
+// These read what `npm run build` wrote. Without one they skip rather than fail,
+// so a fresh clone gets a useful `npm test` and the reason is a missing build
+// rather than an ENOENT from inside an assertion.
+const describe = fs.existsSync(path.join(dist, 'index.html')) ? test : test.skip;
+
 /** A prerendered page, as it was written to dist. */
 function built(route) {
-  const dist = path.join(root, '..', 'dist', 'static');
   const file = route === '/' ? 'index.html' : path.join(route.slice(1), 'index.html');
   return fs.readFileSync(path.join(dist, file), 'utf8');
 }
 
-test('every page has a pager, and the ends have one link', () => {
+describe('every page has a pager, and the ends have one link', () => {
   // Reading order comes from the nav, so a page added to one is in the other.
   // Getting that wrong is silent: the page renders, with nothing to read next.
   const links = navLinks();
@@ -85,7 +91,7 @@ test('every page has a pager, and the ends have one link', () => {
   }
 });
 
-test('the pager points at the page the nav puts next', () => {
+describe('the pager points at the page the nav puts next', () => {
   const links = navLinks();
   const html = built(links[2]);
   const next = html.match(/rel="next"[\s\S]*?href="([^"]+)"|href="([^"]+)"[^>]*rel="next"/);

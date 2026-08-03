@@ -42,9 +42,11 @@ jobs:
       # passes here and a tag pushed by hand is caught.
       - run: npm test
       - run: npm run test:examples
-      - run: npm test --prefix docs
       - run: npm run check --prefix docs
+      # Before the docs tests: two of them read what the build wrote, and skip
+      # when there is nothing to read.
       - run: npm run build --prefix docs
+      - run: npm test --prefix docs
 
       # The tag says what version this is. A tag that disagrees with the
       # manifests would publish something nobody asked for.

@@ -195,8 +195,21 @@ const handleAction = async (route, c) => {
 };
 
 const onError = (c, err) => {
+  // Before anything reads the stack: Vite's transform means the raw one points
+  // at generated code, and a reporter given that is worse than none.
   vite.ssrFixStacktrace(err);
   console.error(err);
+
+  // The same seam production has, so a reporter is exercised while you are the
+  // one looking at it rather than first on a live site.
+  if (typeof config.onError === 'function') {
+    try {
+      config.onError(err, { request: c.req.raw, url: c.req.url, method: c.req.method });
+    } catch (failed) {
+      console.error('[transclude] onError itself threw:', failed);
+    }
+  }
+
   return c.text(`${err.name}: ${err.message}\n\n${err.stack ?? ''}`, 500);
 };
 

@@ -6,14 +6,15 @@
   "exports": {
     ".": "./src/plugin.js",
     "./app": "./src/app.js",
-    "./worker": "./src/worker.js",
-    "./runtime": "./src/runtime/index.js",
-    "./document": "./src/document.js",
     "./cookies": "./src/cookies.js",
+    "./document": "./src/document.js",
+    "./production": "./src/production.js",
     "./routes": "./src/routes.js",
-    "./typecheck": "./src/typecheck.js",
+    "./runtime": "./src/runtime/index.js",
     "./serve.bun": "./bin/serve.bun.js",
-    "./serve.deno": "./bin/serve.deno.js"
+    "./serve.deno": "./bin/serve.deno.js",
+    "./typecheck": "./src/typecheck.js",
+    "./worker": "./src/worker.js"
   },
   "bin": {
     "transclude-dev": "./bin/dev.js",

@@ -404,7 +404,10 @@ test('both servers mount the public directory', () => {
   for (const file of ['../bin/dev.js', '../src/production.js']) {
     const source = codeOf(new URL(file, import.meta.url));
     assert.match(source, /publicFiles\s*[,:]/, `${file} passes no publicFiles`);
-    assert.match(source, /serveStatic\(/, `${file} mounts nothing to serve them`);
+    // One handler now, in `public-files.js`, because both of them needed the
+    // same validator and the 304 around it. Reaching for `serveStatic` directly
+    // here would be a second copy with no ETag.
+    assert.match(source, /public-files\.js/, `${file} mounts nothing to serve them`);
   }
 });
 

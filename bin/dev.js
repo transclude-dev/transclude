@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { getRequestListener } from '@hono/node-server';
-import { serveStatic } from '@hono/node-server/serve-static';
+import { publicFiles as publicHandler } from '../src/public-files.js';
 import { createServer as createViteServer } from 'vite';
 import {
   ACTION_METHODS,
@@ -59,7 +59,7 @@ const publicRoot = config.publicDir
 // copy in dist. Not `precompressed`: nothing has written a .br next to these yet.
 const publicFiles =
   publicRoot && fs.existsSync(publicRoot)
-    ? serveStatic({ root: path.relative(process.cwd(), publicRoot) || '.' })
+    ? publicHandler(path.relative(process.cwd(), publicRoot) || '.')
     : null;
 
 // Built before Vite, because Vite needs it: in middleware mode with no `hmr`

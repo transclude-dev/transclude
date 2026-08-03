@@ -2,11 +2,33 @@
   "name": "@transclude/create",
   "version": "0.1.0",
   "description": "Starts a transclude project. `npm create @transclude my-app`.",
-  "keywords": ["transclude", "scaffold", "starter", "create"],
+  "keywords": [
+    "transclude",
+    "scaffold",
+    "starter",
+    "create"
+  ],
+  "homepage": "https://transclude.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/transclude-dev/transclude.git",
+    "directory": "create"
+  },
+  "bugs": {
+    "url": "https://github.com/transclude-dev/transclude/issues"
+  },
   "license": "MIT",
   "author": "Joe Dakroub",
   "type": "module",
-  "engines": { "node": ">=22" },
-  "bin": { "create-transclude": "./index.js" },
-  "files": ["index.js", "templates", "LICENSE"]
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "create-transclude": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "templates",
+    "LICENSE"
+  ]
 }

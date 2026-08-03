@@ -307,6 +307,7 @@ export function createApp({
    */
   for (const route of manifest.routes ?? []) {
     const window = windowOf(pages[route.id]);
+    const preload = preloadHeader(manifest.stylesheet, route.client);
 
     app.get(route.pattern, async (c) => {
       try {
@@ -346,12 +347,12 @@ export function createApp({
 
           // A hit ran no loader, so there is no envelope to carry. A cached page
           // has none by definition: one with a header was never stored.
-          return sendRendered(c, html, rendered?.ctx ?? contextFor(route, c));
+          return sendRendered(c, html, rendered?.ctx ?? contextFor(route, c), preload);
         }
 
         await render();
         if (rendered.html instanceof Response) return withEnvelope(rendered.html, rendered.ctx);
-        return sendRendered(c, rendered.html, rendered.ctx);
+        return sendRendered(c, rendered.html, rendered.ctx, preload);
       } catch (err) {
         return internalError(c, err);
       }
@@ -360,9 +361,55 @@ export function createApp({
 
   app.notFound((c) => (notFound ? send(c, notFound, REVALIDATE, 404) : c.text('not found', 404)));
 
+  /**
+   * Where a failed request is reported.
+   *
+   * `console.error` is the default and not much of one: a real site sends this
+   * to something that can page a person. `onError` is that seam, and it is given
+   * the request as well, because an error with no URL and no method is most of
+   * the way to useless.
+   *
+   * It is called inside a `try`. A reporter that throws would otherwise replace
+   * the error being reported, which is the one failure mode a reporting hook
+   * must not have.
+   */
+  function report(err, c) {
+    if (typeof config.onError !== 'function') {
+      console.error(err);
+      return;
+    }
+    try {
+      config.onError(err, { request: c.req.raw, url: c.req.url, method: c.req.method });
+    } catch (failed) {
+      console.error(err);
+      console.error('[transclude] onError itself threw:', failed);
+    }
+  }
+
+  /**
+   * What a page is going to ask for, said in a header.
+   *
+   * This is not streaming. Render is `__o += …` to the last component, which is
+   * what lets an include resolve before it and a prerendered page stay a file,
+   * and making it async would tax every component call for something most pages
+   * here do not need. So the body still leaves in one piece.
+   *
+   * What it does buy: the stylesheet and the client entry come from the route
+   * table, not from a loader, so they are known before any loader runs. A proxy
+   * that reads this sends a 103 and the browser fetches them while the page is
+   * still being made. Cloudflare and Fastly do. A browser reading it directly
+   * gets less, since these headers arrive with the body anyway.
+   */
+  function preloadHeader(stylesheet, clientEntry) {
+    const parts = [];
+    if (stylesheet) parts.push(`<${stylesheet}>; rel=preload; as=style`);
+    if (clientEntry) parts.push(`<${clientEntry}>; rel=preload; as=script; crossorigin`);
+    return parts.length ? parts.join(', ') : null;
+  }
+
   /** Every `catch` above. One place decides what a failed request looks like. */
   function internalError(c, err) {
-    console.error(err);
+    report(err, c);
     // No ETag and no Cache-Control: nothing about a failure should be stored or
     // revalidated, and the same bytes would be sent for an unrelated one next time.
     if (!errorPage) return c.text('Internal error', 500);
@@ -407,7 +454,13 @@ export function createApp({
    *
    * `TextEncoder` rather than `Buffer`: the latter is Node's, and this file is not.
    */
-  async function sendRendered(c, html, ctx = null) {
+  async function sendRendered(c, html, ctx = null, preload = null) {
+    // Before the body is even built: a proxy that understands this turns it into
+    // a 103, and the browser starts the stylesheet while the loader is still
+    // waiting. Set here rather than on `ctx.response`, because a header there is
+    // one of the things that makes a page too personal to cache.
+    if (preload) c.header('Link', preload);
+
     const body = encoder.encode(html);
     const base = await hash(body);
 

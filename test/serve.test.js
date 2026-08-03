@@ -263,3 +263,150 @@ test('an unknown encoding passes the body through untouched', async () => {
 test('the floor is shared with the build, so both agree what is worth encoding', () => {
   assert.equal(COMPRESSIBLE_FLOOR, 512);
 });
+
+// ---- reporting a failure ---------------------------------------------------
+
+const { createApp } = await import('../src/app.js');
+const bytes = (t) => new TextEncoder().encode(t);
+
+/** An app whose only page throws, so every request reaches `internalError`. */
+function appThatThrows(config) {
+  return createApp({
+    config: { csrf: false, trailingSlash: 'never', cookieSecret: 's', ...config },
+    manifest: { routes: [{ id: 'index', pattern: '/', params: [], client: null }], endpoints: [] },
+    pages: {
+      index: {
+        revalidate: 0,
+        layouts: [],
+        css: '',
+        headScript: '',
+        hasTitle: false,
+        renderTitle: () => '',
+        renderHead: () => '',
+        elements: [],
+        includes: [],
+        regions: {},
+        load: async () => {
+          throw new Error('loader gave up');
+        },
+        render: () => ({ default: '' }),
+      },
+    },
+    statics: { get: () => null },
+    assets: { get: () => null },
+    notFound: { body: bytes('nope'), etag: '"n"', encodings: new Map(), type: 'text/html' },
+    errorPage: { body: bytes('broke'), etag: '"e"', encodings: new Map(), type: 'text/html' },
+    hash: (b) => `"${b.length.toString(36)}"`,
+    compress: null,
+  });
+}
+
+// A failed request logs by design. These make it fail on purpose, so the log is
+// noise rather than news.
+const quietly = async (fn) => {
+  const real = console.error;
+  console.error = () => {};
+  try {
+    return await fn();
+  } finally {
+    console.error = real;
+  }
+};
+
+test('a 500 goes to onError with the request, and the page still ships', async () => {
+  const seen = [];
+  const app = appThatThrows({ onError: (err, ctx) => seen.push({ err, ctx }) });
+
+  const res = await quietly(() => app.request('http://x/'));
+
+  assert.equal(res.status, 500);
+  assert.equal(seen.length, 1);
+  assert.match(seen[0].err.message, /loader gave up/);
+  assert.equal(seen[0].ctx.url, 'http://x/');
+  assert.equal(seen[0].ctx.method, 'GET');
+});
+
+test('a reporter that throws does not replace the error it was given', async () => {
+  // The one failure mode a reporting hook must not have. Without the guard the
+  // visitor sees the reporter's stack instead of the 500 page.
+  const app = appThatThrows({
+    onError: () => {
+      throw new Error('the reporter is down');
+    },
+  });
+
+  const res = await quietly(() => app.request('http://x/'));
+  assert.equal(res.status, 500);
+  assert.match(await res.text(), /broke/, 'the error page did not ship');
+});
+
+test('with no hook it still logs, and says nothing to the visitor', async () => {
+  const app = appThatThrows({});
+  const res = await quietly(() => app.request('http://x/'));
+
+  assert.equal(res.status, 500);
+  assert.doesNotMatch(await res.text(), /loader gave up/, 'the message reached the body');
+});
+
+// ---- what a page will ask for ----------------------------------------------
+
+const pageApp = (over = {}) =>
+  createApp({
+    config: { csrf: false, trailingSlash: 'never', cookieSecret: 's', fragmentParam: 'fragment' },
+    manifest: {
+      stylesheet: '/assets/site-abc.css',
+      routes: [{ id: 'index', pattern: '/', params: [], client: '/assets/index-def.js' }],
+      endpoints: [],
+    },
+    pages: {
+      index: {
+        revalidate: 0,
+        layouts: [],
+        css: '',
+        headScript: '',
+        hasTitle: false,
+        renderTitle: () => '',
+        renderHead: () => '',
+        elements: [],
+        includes: [],
+        regions: { part: () => '<p>region</p>' },
+        load: async () => ({}),
+        render: () => ({ default: '<p>page</p>' }),
+        ...over,
+      },
+    },
+    statics: { get: () => null },
+    assets: { get: () => null },
+    notFound: { body: bytes('nope'), etag: '"n"', encodings: new Map(), type: 'text/html' },
+    errorPage: { body: bytes('broke'), etag: '"e"', encodings: new Map(), type: 'text/html' },
+    hash: (b) => `"${b.length.toString(36)}"`,
+    compress: null,
+  });
+
+test('a document says what it is going to fetch, so a proxy can send a 103', async () => {
+  const res = await pageApp().request('http://x/');
+  const link = res.headers.get('link');
+
+  assert.match(link, /<\/assets\/site-abc\.css>; rel=preload; as=style/);
+  assert.match(link, /<\/assets\/index-def\.js>; rel=preload; as=script/);
+});
+
+test('a region carries none of it, because it has no head to fill', async () => {
+  const res = await pageApp().request('http://x/?fragment=part');
+
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('link'), null);
+});
+
+test('the hint is not a header on the page, so the page is still cacheable', async () => {
+  // A header written by a loader is one of the things that makes a page too
+  // personal to hold. This one is set on the way out instead, so a second
+  // request for a page with a revalidate window is still a cache hit.
+  let renders = 0;
+  const app = pageApp({ revalidate: 60, load: async () => (renders++, {}) });
+
+  await app.request('http://x/');
+  await app.request('http://x/');
+
+  assert.equal(renders, 1, 'the preload header made the page uncacheable');
+});

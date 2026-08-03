@@ -34,7 +34,9 @@ const ERROR = '500';
 
 /**
  * @param {string} dir
- * @returns {object[]} one entry per file the tree routes to
+ * @returns {{ routes: object[], endpoints: object[], notFound: object|null,
+ *   error: object|null }} the pages, the endpoints, and the two pages that are
+ *   reached for rather than routed to
  */
 export function scanRoutes(dir) {
   const routes = [];

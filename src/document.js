@@ -374,7 +374,8 @@ export async function resolveIncludes(includes, ctx, options = {}) {
  *
  * @param {object} page
  * @param {object} ctx
- * @param {{ region?: string|null }} [options] the rest is passed to the includes
+ * @param {{ region?: string|null, include?: object, includeMemo?: Map<string, unknown> }}
+ *   [options] everything but `region` travels on to the includes
  * @returns {Promise<string|Response|null>} null when no such region
  */
 export async function renderFragment(page, ctx, { region = null, ...options } = {}) {

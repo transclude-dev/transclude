@@ -65,7 +65,7 @@ function resolveFlags(fromProps = {}, fromClient = {}, tag) {
  *
  * @param {string} source the whole .html file
  * @param {string} [label] what to call it in an error
- * @returns {{ shadow: boolean, formAssociated: boolean }}
+ * @returns {Record<string, boolean>} one entry per `ELEMENT_FLAGS` name
  */
 export function readFlags(source, label = 'element') {
   const blocks = splitBlocks(source);
@@ -476,7 +476,7 @@ function withMap(code, template, source, filename) {
  * @param {string} source
  * @param {{ id: string, components?: Map<string, string>,
  *   shadowTags?: Set<string>, runtime: string }} options
- * @returns {{ code: string, warnings: string[] }}
+ * @returns {{ code: string, warnings: string[], components: string[] }}
  */
 export function compileLayout(source, { id, components = new Map(), shadowTags = new Set(), runtime }) {
   const blocks = splitBlocks(source);
@@ -569,7 +569,7 @@ export function scopeCss(css, tag, nested = []) {
  *
  * @param {string} source
  * @param {Map<string, string>|Set<string>} registry every known tag
- * @returns {string[]} the tags this source renders
+ * @returns {Set<string>} the tags this source renders
  */
 export function usedComponents(source, registry) {
   const found = new Set();
@@ -595,12 +595,15 @@ export function usedComponents(source, registry) {
  * imported statically and defined before first paint, and any other tag in the
  * app is one dynamic import away, taken only if it ever shows up in the DOM.
  *
- * @param {string[]} sources the element files the page needs
- * @param {{ tags?: string[] }} [what]
- * @param {{ runtime: string, elements?: boolean }} options
- * @returns {string} a module, or empty when the page needs none
+ * @param {Array<{ source: string, filename: string }>} sources the files whose
+ *   `<script>` blocks run in the browser, layouts first and the page last
+ * @param {{ tags?: string[] }} [what] the elements to define
+ * @param {{ runtime: string, elements?: boolean }} options required, not
+ *   defaulted: `runtime` is written into the module's import, and without it the
+ *   output says `from undefined` and fails only when something tries to load it
+ * @returns {{ code: string }} the code is empty when the page needs no entry
  */
-export function compileClientEntry(sources, { tags = [] } = {}, { runtime, elements = false } = {}) {
+export function compileClientEntry(sources, { tags = [] } = {}, { runtime, elements = false }) {
   // Layouts first, page last: the same order they wrap in.
   const blocks = sources.map(({ source, filename }) =>
     assertModule(splitBlocks(source).client, `${filename} <script>`),
@@ -638,8 +641,8 @@ export const ELEMENTS_ENTRY = 'virtual:transclude-elements';
  * chunk lands, and `import()` is how you ask it. Nothing has to be written into
  * a manifest, threaded through the server, or kept in sync with a hash.
  *
- * @param {string[]} tags
- * @returns {string}
+ * @param {Iterable<string>} tags every element the app defines
+ * @returns {{ code: string }}
  */
 export function compileElementsEntry(tags) {
   const entries = [...tags]

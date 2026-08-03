@@ -316,8 +316,20 @@ const publicSrc = config.publicDir
 const publicOut = path.join(dist, 'public');
 let publicFiles = 0;
 
+/**
+ * What an operating system leaves in a directory, which nobody put there.
+ *
+ * These were copied into the build and served: `/.DS_Store` answered 200 on the
+ * docs site and lists every file beside it. Dotfiles are not skipped wholesale,
+ * because `.well-known` is a directory people mean to publish.
+ */
+const JUNK = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini']);
+
 if (publicSrc && fs.existsSync(publicSrc)) {
-  fs.cpSync(publicSrc, publicOut, { recursive: true });
+  fs.cpSync(publicSrc, publicOut, {
+    recursive: true,
+    filter: (from) => !JUNK.has(path.basename(from)),
+  });
   publicFiles = countFiles(publicOut);
 }
 

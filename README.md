@@ -1,7 +1,7 @@
 # transclude
 
 HTML is the product. A page is an `.html` file, the directory tree is the route
-table, and any region of a page is a URL of its own. Nothing has to run in the
+table, and any fragment of a page is a URL of its own. Nothing has to run in the
 browser for the page to be correct.
 
 The same app runs on Node, Bun, Deno and workerd, and ships no client JavaScript
@@ -55,9 +55,9 @@ so a swap cannot drift from the page it replaces part of.
 - **Pages and endpoints.** An `.html` file answers GET; its `POST`, `PUT`,
   `PATCH` and `DELETE` exports answer the rest, so a plain `<form method="post">`
   works. A `.js` file in the same tree returns a `Response`.
-- **Regions.** Mark an element `fragment` and it has a URL of its own. htmx,
+- **Fragments.** Mark an element `fragment` and it has a URL of its own. htmx,
   Turbo or a short `fetch` swaps it in. The framework ships nothing that does.
-- **Includes.** `<transclude src="#id">` puts a region in a second place,
+- **Includes.** `<transclude src="#id">` puts a fragment in a second place,
   `src="/other#id"` reads another route of the app, and `src="https://…#id"`
   reads a document somebody else wrote, through an allowlist.
 - **Elements.** An `.html` file in `app/elements/` becomes a custom element.

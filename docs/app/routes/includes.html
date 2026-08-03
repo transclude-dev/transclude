@@ -39,7 +39,7 @@
       ],
       refused: [
         `<transclude src="#nope">
-<!-- names no region of this page -->
+<!-- names no fragment of this page -->
 
 <div id="a" fragment>
   <transclude src="#a"></transclude>
@@ -129,12 +129,12 @@
       <tbody>
         <tr>
           <td><code>#pricing</code></td>
-          <td>A <a href="/fragments">region</a> of this page</td>
+          <td>A <a href="/fragments">fragment</a> of this page</td>
           <td>A function call</td>
         </tr>
         <tr>
           <td><code>/notes#notes</code></td>
-          <td>A region of another route of this app</td>
+          <td>A fragment of another route of this app</td>
           <td>That route's loaders</td>
         </tr>
         <tr>
@@ -146,10 +146,10 @@
     </table>
   </div>
 
-  <h2>A region of this page</h2>
+  <h2>A fragment of this page</h2>
 
   <p>
-    The region is already a function of the page's data, so including it is a
+    The fragment is already a function of the page's data, so including it is a
     call. One copy of the markup, in two places.
   </p>
 
@@ -159,16 +159,16 @@
 
   <p>
     The copy leaves the id behind. Two elements cannot share one, and
-    <code>#pricing</code> should name the region a swap replaces.
+    <code>#pricing</code> should name the fragment a swap replaces.
   </p>
 
-  <h2>A region of another route</h2>
+  <h2>A fragment of another route</h2>
 
   ${html(s.route)}
 
   <p>
     That route's loaders run and its layouts' markup does not, the same as when a
-    region is asked for over HTTP. It is rendered in this process, not fetched.
+    fragment is asked for over HTTP. It is rendered in this process, not fetched.
     One route included twice runs its loaders once.
   </p>
 
@@ -183,7 +183,7 @@
 
   <p>
     The only form that leaves the server, and the only one that needs
-    configuring. A page you did not write marks no regions, so which piece to
+    configuring. A page you did not write marks no fragments, so which piece to
     take is worked out from its HTML. That is the second half of this page.
   </p>
 
@@ -224,7 +224,7 @@
   <h2>Reading a document that marks nothing</h2>
 
   <p>
-    Your own pages say what a region is. A page somebody else wrote does not, so
+    Your own pages say what a fragment is. A page somebody else wrote does not, so
     the rest of this is how a piece of one is found and made safe to show.
   </p>
 

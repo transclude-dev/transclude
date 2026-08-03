@@ -129,15 +129,15 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
   ${html(s.htmz)}
 
   <p>
-    The query asks this app for a region. The hash says where it goes. Neither
+    The query asks this app for a fragment. The hash says where it goes. Neither
     half knows about the other, so nothing here is a framework feature.
   </p>
 
   <doc-note label="Name both ends the same" tone="warn">
-    htmz replaces the destination element, and a region arrives carrying its own
+    htmz replaces the destination element, and a fragment arrives carrying its own
     id. Send <code>matches</code> to <code>#results</code> and the page ends up
     with <code>#matches</code> where <code>#results</code> was, so the next click
-    finds nothing and does nothing. Point the hash at the region's own name.
+    finds nothing and does nothing. Point the hash at the fragment's own name.
   </doc-note>
 
   <p>
@@ -157,7 +157,7 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
   </p>
 
   <p>
-    <a href="/includes">Includes</a> put a region in a second place on the
+    <a href="/includes">Includes</a> put a fragment in a second place on the
     server.
   </p>
 
@@ -193,7 +193,7 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
   </p>
 
   <p>
-    A header naming a region is a hint, and an unknown name is ignored. Client
+    A header naming a fragment is a hint, and an unknown name is ignored. Client
     libraries send these headers on every request, including ones that want a
     whole document. <code>HX-Target</code> from htmx works this way.
   </p>

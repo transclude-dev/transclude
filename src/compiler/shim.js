@@ -309,12 +309,13 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
   out.add('/**\n');
   out.add(' * @param {__Data} __d\n');
   out.add(' * @param {(value: unknown) => string} html\n');
+  out.add(' * @param {(value: unknown) => string} json\n');
   out.add(' * @param {(value: unknown) => void} __expr\n');
   for (const tag of used) {
     out.add(` * @param {(value: Partial<${componentProps.get(tag)}>) => void} ${propsFn(tag)}\n`);
   }
   out.add(' */\n');
-  out.add(`function __template(__d, html, __expr${used.map((tag) => `, ${propsFn(tag)}`).join('')}) {\n`);
+  out.add(`function __template(__d, html, json, __expr${used.map((tag) => `, ${propsFn(tag)}`).join('')}) {\n`);
   emitNodes(blocks.nodes, out, new Set(), componentProps, 1);
   out.add('}\n');
 

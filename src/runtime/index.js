@@ -30,7 +30,48 @@ export function escape(value) {
   return String(value).replace(/[&<>"']/g, (c) => ESCAPES[c]);
 }
 
-/** Interpolation inside a larger string (mixed attribute values, raw text). */
+/**
+ * Characters that would end a `<script>` early or shift the HTML tokenizer into
+ * a state where the rest of the element is read as something else. Escaped as
+ * `\uXXXX`, which JSON and JavaScript both read back as the original character.
+ * U+2028 and U+2029 are here because JSON allows them raw in a string and
+ * JavaScript reads them as line terminators.
+ */
+const JSON_ESCAPES = {
+  '<': '\\u003c',
+  '>': '\\u003e',
+  '&': '\\u0026',
+  '\u2028': '\\u2028',
+  '\u2029': '\\u2029',
+};
+
+/**
+ * Data for a `<script>`, as JSON that cannot escape the element.
+ *
+ * This is the only interpolation a script may carry, and the compiler refuses
+ * every other one. Nothing can make `${expr}` safe in a position where the
+ * result is read as code: a value ending the string it was written into runs
+ * whatever follows, and no escaping of the surrounding HTML changes that. Data
+ * is a different question and has an answer, so that is the part offered.
+ *
+ * @param {unknown} value anything `JSON.stringify` accepts
+ * @returns {RawHtml} the JSON, safe to write inside a script element
+ */
+export function json(value) {
+  const text = JSON.stringify(value ?? null) ?? 'null';
+  return new RawHtml(text.replace(/[<>&\u2028\u2029]/g, (c) => JSON_ESCAPES[c]));
+}
+
+/**
+ * Interpolation inside a larger string, which is a mixed attribute value.
+ *
+ * It does not escape, because the caller does: every use is concatenated and
+ * handed to `attr`, which escapes the whole result. Do not reach for this from a
+ * position that writes straight into the document.
+ *
+ * @param {unknown} value
+ * @returns {string}
+ */
 export function str(value) {
   if (value == null || value === false) return '';
   if (value instanceof RawHtml) return value.value;

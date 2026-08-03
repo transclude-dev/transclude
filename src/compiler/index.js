@@ -680,7 +680,7 @@ function unusedProps(defaultNode, reads, blocks) {
 // ---- module assembly helpers ---------------------------------------------
 
 function runtimeImport(runtime) {
-  return `import { escape as __e, attr as __a, attrProp as __ap, str as __str, shadow as __sh, data as __data, included as __incl, textAt as __textAt, setText as __setText, setParts as __setParts, setAttr as __setAttr, setAttrProp as __setAttrProp, blockAt as __blockAt, updateBlock as __updateBlock, coerceProps, defineComponent, defineLight, html } from ${JSON.stringify(runtime)};`;
+  return `import { escape as __e, attr as __a, attrProp as __ap, str as __str, json, shadow as __sh, data as __data, included as __incl, textAt as __textAt, setText as __setText, setParts as __setParts, setAttr as __setAttr, setAttrProp as __setAttrProp, blockAt as __blockAt, updateBlock as __updateBlock, coerceProps, defineComponent, defineLight, html } from ${JSON.stringify(runtime)};`;
 }
 
 function layoutImports(layouts) {

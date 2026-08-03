@@ -160,3 +160,32 @@ test('a region is rendered in fragment mode', async () => {
   await renderFragment(page, {}, { region: 'list' });
   assert.equal(sawFragment, true);
 });
+
+// ---- a region name is attacker input ---------------------------------------
+
+const { hasRegion, regionOf } = await import('../src/document.js');
+
+test('a name from Object.prototype is not a region', () => {
+  // `?fragment=constructor` used to find `Object`: truthy, callable, and so a
+  // "found" region. `hasRegion` is what an action runs behind, so the same name
+  // ran the action and then answered with whatever Object(data) stringifies to
+  // instead of the 404 the guard exists to send.
+  const page = { regions: { real: () => 'ok' } };
+
+  for (const name of ['constructor', 'toString', 'valueOf', '__proto__', 'hasOwnProperty']) {
+    assert.equal(regionOf(page, name), null, name);
+    assert.equal(hasRegion(page, name), false, name);
+  }
+});
+
+test('a real region is still found, and an empty name is the whole page', () => {
+  const page = { regions: { real: () => 'ok' } };
+
+  assert.equal(typeof regionOf(page, 'real'), 'function');
+  assert.equal(hasRegion(page, 'real'), true);
+  assert.equal(hasRegion(page, ''), true);
+});
+
+test('an own property that is not a function is not a region either', () => {
+  assert.equal(regionOf({ regions: { a: 'not a function' } }, 'a'), null);
+});

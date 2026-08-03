@@ -240,7 +240,7 @@ export async function resolveIncludes(includes, ctx, options = {}) {
  * than an empty swap: asking for something that does not exist should say so.
  */
 export async function renderFragment(page, ctx, { region = null, ...options } = {}) {
-  const target = region ? page.regions?.[region] : null;
+  const target = region ? regionOf(page, region) : null;
   if (region && !target) return null;
 
   const chain = [...page.layouts, page];
@@ -328,8 +328,36 @@ export function withEnvelope(response, ctx) {
  * request that cannot be answered should not have mutated anything on its way to
  * saying so.
  */
+/**
+ * The render function for a named region, or null.
+ *
+ * Own properties only, and it has to be a function. The name comes from a query
+ * string, so a plain lookup answers for everything on `Object.prototype`:
+ * `?fragment=constructor` found `Object`, which is truthy and callable, so the
+ * region was "found", the action before it ran, and the reply was whatever
+ * `Object(data)` stringifies to. `hasRegion` is the check that an action runs
+ * behind, so a name that gets past it gets past that too.
+ *
+ * @param {object|null|undefined} page a compiled page module
+ * @param {string} region             the name from the URL
+ * @returns {Function|null}
+ */
+export function regionOf(page, region) {
+  const regions = page?.regions;
+  if (!regions || !Object.hasOwn(regions, region)) return null;
+  return typeof regions[region] === 'function' ? regions[region] : null;
+}
+
+/**
+ * Whether a page answers for this region. An empty name means the whole page,
+ * which every page answers for.
+ *
+ * @param {object|null|undefined} page
+ * @param {string} region
+ * @returns {boolean}
+ */
 export function hasRegion(page, region) {
-  return !region || Boolean(page?.regions?.[region]);
+  return !region || regionOf(page, region) !== null;
 }
 
 /** What a page answers, for an `Allow` header. GET is not optional. */

@@ -567,6 +567,29 @@ against.
   inert, so a URL returning it would return markup the source document never
   showed. `kidsOf` returns `[]` for a template on purpose rather than by
   accident.
+- **`${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the
+  one way through.** Text in those two is raw text: escaping it would change what
+  the browser reads, since `&amp;` is an ampersand in prose and four characters
+  in JavaScript. So `emitText` emitted `__str`, which does not escape, and
+  `<div><script>var a = "${x}"</script></div>` wrote a value straight into code.
+  A top-level `<script>` in a page is read as a block and never hit this; a
+  nested one is markup and did. No escape fixes it either: a value closing the
+  string it was written into runs whatever follows, which is a fact about
+  JavaScript rather than about markup. `json()` answers the narrower question,
+  JSON with `< > &` and U+2028/9 as `\uXXXX`, and `assertRawTextSafe` allows it
+  only as the entire text of the script. It is in `GLOBALS` so it resolves to the
+  runtime rather than to a field of the page's data. For a style there is no
+  carve-out: read the value through a custom property, which is an attribute and
+  is escaped. Write U+2028 and U+2029 as escapes in source, never as literals; a
+  raw one inside a regex literal is a line terminator and the file will not
+  parse, which happened twice writing this.
+- **A region name is attacker input, so look it up with `Object.hasOwn`.**
+  `page.regions?.[region]` answered for everything on `Object.prototype`:
+  `?fragment=constructor` found `Object`, truthy and callable, so the region was
+  "found". `hasRegion` is the check an action runs behind, so that name ran the
+  action and then replied with whatever `Object(data)` stringifies to instead of
+  the 404 the guard exists to send. `__proto__` gave a 500 instead. `regionOf` is
+  the one lookup now, own properties only and the value has to be a function.
 - **A literal `${` cannot be written in a template.** There is no escape for it.
   The compiler reads every one as an interpolation, so `${}` in prose fails with
   `bad expression "": empty expression` and a line number in the compiled file

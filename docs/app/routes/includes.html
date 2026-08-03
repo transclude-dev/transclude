@@ -58,6 +58,18 @@
 };`,
         'js',
       ],
+      credit: [
+        `<transclude src="https://developer.mozilla.org/en-US/docs/Web/HTML#reference">
+  <p>The reference could not be read just now.</p>
+</transclude>
+
+<p>
+  From
+  <a href="https://developer.mozilla.org/en-US/docs/Web/HTML">HTML: HyperText Markup Language</a>
+  on MDN, <a href="https://creativecommons.org/licenses/by-sa/2.5/">CC BY-SA 2.5</a>.
+</p>`,
+        'html',
+      ],
       bookmark: [
         `<a id="install"></a>
 <h2>Installing</h2>
@@ -72,6 +84,7 @@
   redirects: 5,
   maxAge: 60_000,
   sanitize: true,
+  styles: 'keep',
 }`,
         'js',
       ],
@@ -215,6 +228,27 @@
     the rest of this is how a piece of one is found and made safe to show.
   </p>
 
+  <doc-note label="Someone else's words are still theirs" tone="warn">
+    This copies. Your server reads the document and serves the piece from your
+    origin as part of your page, and a prerendered page carries it in a file that
+    ships with your build. Name a host when you have the right to republish what
+    it holds, and read its license and its terms: a share-alike license can put
+    conditions on the page you put the fragment in.
+  </doc-note>
+
+  <p>
+    Nothing is attributed for you. Write the credit yourself, next to the
+    include.
+  </p>
+
+  ${html(s.credit)}
+
+  <p>
+    A license decides what that line has to say, and a document does not carry
+    its author or its license anywhere a program can read them. So this is yours
+    to write.
+  </p>
+
   <h3>Turning it on</h3>
 
   <p>
@@ -273,17 +307,25 @@
   <p>
     Scripts, frames, plugins and event handlers are removed.
     <code>javascript:</code> URLs go everywhere; <code>data:</code> survives only
-    on an image source. <code>&lt;base&gt;</code> and <code>&lt;link&gt;</code>
-    go too: a <code>&lt;base&gt;</code> retargets every relative URL in the page
-    the fragment lands in, and a <code>&lt;link&gt;</code> pulls a stylesheet
-    from anywhere.
+    on an image source. <code>&lt;base&gt;</code>, <code>&lt;link&gt;</code> and
+    <code>&lt;style&gt;</code> go too, because none of them stop at the fragment.
+    A <code>&lt;base&gt;</code> retargets every relative URL in the page the
+    fragment lands in. The other two restyle that whole page: one pulls a
+    stylesheet from anywhere, and one carries it.
+  </p>
+
+  <p>
+    A <code>style</code> attribute is kept, because it paints the element it sits
+    on and nothing else. A highlighted code block carries its colors that way.
+    Set <code>styles: 'strip'</code> to drop them and leave the look to your own
+    CSS.
   </p>
 
   <p>
     Every relative URL is made absolute against the source, including a hash-only
     <code>href</code>, which otherwise addresses an id in your page.
     <code>srcset</code> is parsed, since a candidate URL may contain a comma, and
-    <code>url()</code> is rewritten in style attributes and style blocks.
+    <code>url()</code> is rewritten inside a style attribute.
   </p>
 
   <p>

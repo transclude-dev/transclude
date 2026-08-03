@@ -10,7 +10,7 @@
 import { parse } from 'parse5';
 
 /** Removed outright. Their content goes with them. */
-const STRIP = new Set(['script', 'iframe', 'object', 'embed', 'base', 'link']);
+const STRIP = new Set(['script', 'iframe', 'object', 'embed', 'base', 'link', 'style']);
 
 /** Attributes holding a URL, and what a URL there is allowed to be. */
 const NAVIGATIONAL = new Set(['href', 'action', 'formaction', 'ping', 'longdesc', 'cite']);
@@ -43,10 +43,17 @@ function remove(node) {
  *
  * `<base>` is on the list for a reason that is easy to miss: it does not affect
  * the fragment, it retargets every relative URL in the document the fragment is
- * inserted into. `<link>` goes because it can pull a stylesheet from anywhere.
- * Both are read for their own purposes before this runs.
+ * inserted into. `<link>` and `<style>` go because their rules are not scoped to
+ * the fragment: both restyle the whole page the fragment lands in, one by
+ * pulling a stylesheet from anywhere and one by carrying it. `<base>` and
+ * `<link>` are read for their own purposes before this runs.
+ *
+ * A `style` attribute is the other kind. It paints the element it sits on and
+ * nothing else, so it is kept unless `styles` says otherwise. Dropping them by
+ * default would flatten the source's own meaning: a highlighted code block
+ * carries its colors that way.
  */
-export function sanitize(root) {
+export function sanitize(root, { styles = 'keep' } = {}) {
   const removed = [];
 
   const visit = (node) => {
@@ -64,6 +71,10 @@ export function sanitize(root) {
         // Every event handler, whatever it is called.
         if (/^on/i.test(attr.name)) {
           removed.push(`@${attr.name}`);
+          return false;
+        }
+        if (styles === 'strip' && attr.name === 'style') {
+          removed.push('@style');
           return false;
         }
         return true;

@@ -21,12 +21,32 @@ const DEFAULTS = {
   timeout: 10_000,
   redirects: 5,
   sanitize: true,
+  // What to do with a `style` attribute the source wrote. `<style>` blocks and
+  // `<link>` are removed either way, because their rules reach the whole page.
+  styles: 'keep',
   cache: 50,
   // How long a held document is used without asking the source anything. Ten
   // fragments off one page during a render should be one request, not ten
   // conditional ones.
   maxAge: 60_000,
 };
+
+const STYLE_MODES = new Set(['keep', 'strip']);
+
+/**
+ * Defaults filled in, and the one value worth checking checked. A misspelled
+ * `styles` would keep every style attribute and say nothing, which reads exactly
+ * like the setting working.
+ */
+function settings(options) {
+  const config = { ...DEFAULTS, ...options };
+  if (!STYLE_MODES.has(config.styles)) {
+    throw new Error(
+      `[transclude] proxy.styles is ${JSON.stringify(config.styles)}. It is 'keep' or 'strip'.`,
+    );
+  }
+  return config;
+}
 
 /** A refusal that is safe to show, since it repeats only what was asked for. */
 class Refused extends Error {
@@ -148,7 +168,7 @@ export function documentStore(max = DEFAULTS.cache) {
  * and index last so the table never names something the cleaning took out.
  */
 export async function readForeign(url, options = {}, deps = {}) {
-  const config = { ...DEFAULTS, ...options };
+  const config = settings(options);
   const store = deps.store ?? null;
   const now = deps.now ?? (() => Date.now());
 
@@ -185,7 +205,7 @@ export async function readForeign(url, options = {}, deps = {}) {
   const base = baseOf(html, final);
 
   const root = parse(html);
-  const removed = config.sanitize ? sanitize(root) : [];
+  const removed = config.sanitize ? sanitize(root, { styles: config.styles }) : [];
   absolutize(root, base);
 
   const entry = {
@@ -219,7 +239,7 @@ export async function readForeign(url, options = {}, deps = {}) {
  * cost one read.
  */
 export function includeResolver(options = {}, deps = {}) {
-  const config = { ...DEFAULTS, ...options };
+  const config = settings(options);
   const store = deps.store ?? documentStore(config.cache);
 
   return {
@@ -231,7 +251,7 @@ export function includeResolver(options = {}, deps = {}) {
 }
 
 export function proxyHandler(options = {}, deps = {}) {
-  const config = { ...DEFAULTS, ...options };
+  const config = settings(options);
   const store = deps.store ?? documentStore(config.cache);
 
   return async (request) => {

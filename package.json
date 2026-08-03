@@ -42,9 +42,11 @@
     "test:examples": "npm test --prefix examples/showcase",
     "test:docs": "npm test --prefix docs",
     "showcase": "npm run dev --prefix examples/showcase",
-    "docs": "npm run dev --prefix docs"
+    "docs": "npm run dev --prefix docs",
+    "check:src": "tsc -p tsconfig.src.json"
   },
   "devDependencies": {
+    "@types/node": "^22.20.1",
     "typescript": "^5.9.3",
     "vite": "^8.1.5"
   }

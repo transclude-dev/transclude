@@ -35,7 +35,9 @@ const excluded = (path, rules) =>
  *
  * @param {object} manifest
  * @param {Record<string, object>} pages
- * @param {{ entries?: object[], exclude?: string[] }} [config]
+ * @param {{ entries?: object[] | (() => object[] | Promise<object[]>),
+ *   exclude?: string[] }} [config] `entries` may be a function, so an app can
+ *   build them from its own data rather than list them
  * @returns {Promise<Array<{ path: string, lastmod?: string }>>}
  */
 export async function sitemapEntries(manifest, pages, { entries = [], exclude = [] } = {}) {

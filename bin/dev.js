@@ -151,7 +151,7 @@ const fragmentOf = (c) => {
 const sendFragment = async (route, c, region, extra = {}) => {
   const page = await vite.ssrLoadModule(pageModuleId(route.id));
   const ctx = contextFor(route, c, extra);
-  const html = await renderFragment(page, ctx, { region: region || null });
+  const html = await renderFragment(page, ctx, { region: region || null, include });
 
   if (html instanceof Response) return withEnvelope(html, ctx);
   if (html === null) return c.text(`no fragment "${region}" on ${route.rel}`, 404);

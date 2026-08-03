@@ -21,6 +21,18 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
   hx-trigger="input changed delay:200ms"
 />`,
       header: [`fragmentHeader: 'HX-Target',`, 'js'],
+      htmz: `<iframe hidden name="htmz"></iframe>
+
+<a href="/?fragment=matches#matches" target="htmz">Refresh</a>`,
+      trampoline: [
+        `document.querySelector('iframe[name=htmz]').onload = function () {
+  setTimeout(() =>
+    document
+      .querySelector(this.contentWindow.location.hash || null)
+      ?.replaceWith(...this.contentDocument.body.childNodes));
+};`,
+        'js',
+      ],
     }),
   });
 </script>
@@ -104,6 +116,45 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
   </p>
 
   ${html(s.header)}
+
+  <h2>htmz</h2>
+
+  <p>
+    <a href="https://leanrada.com/htmz/">htmz</a> swaps with no fetch. A hidden
+    iframe loads the URL and one line of script moves what came back into the
+    page. A URL hash is never sent to a server, so it is free for the client to
+    use, and htmz reads it as the destination.
+  </p>
+
+  ${html(s.htmz)}
+
+  <p>
+    The query asks this app for a region. The hash says where it goes. Neither
+    half knows about the other, so nothing here is a framework feature.
+  </p>
+
+  <doc-note label="Name both ends the same" tone="warn">
+    htmz replaces the destination element, and a region arrives carrying its own
+    id. Send <code>matches</code> to <code>#results</code> and the page ends up
+    with <code>#matches</code> where <code>#results</code> was, so the next click
+    finds nothing and does nothing. Point the hash at the region's own name.
+  </doc-note>
+
+  <p>
+    The published snippet puts its handler in an <code>onload</code> attribute.
+    Turn on the <a href="/security">policy</a> and that handler is refused: it
+    hashes script blocks, and a hash never covers an attribute. The swap then
+    never happens and nothing on the page says why. Assign the handler in a
+    script block instead and it is hashed like any other.
+  </p>
+
+  ${html(s.trampoline)}
+
+  <p>
+    With no JavaScript a link that targets the frame loads into it and the
+    visitor sees nothing. Add <code>target</code> from a script if the page has
+    to work without one.
+  </p>
 
   <p>
     <a href="/includes">Includes</a> put a region in a second place on the

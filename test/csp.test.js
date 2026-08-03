@@ -115,6 +115,20 @@ test('script stays strict while style does not', async () => {
   assert.doesNotMatch(policy, /script-src[^;]*unsafe-inline/);
 });
 
+test('an inline handler attribute is not covered, the same as a style attribute', async () => {
+  // The mirror of the style-attribute rule above, and it decides something
+  // practical: htmz publishes its swap in an `onload="…"` attribute, and an app
+  // that turns this policy on refuses it. Assigning the handler inside a
+  // <script> block is hashed and runs. Neither literal is emitted, and either
+  // one would allow the attribute.
+  const policy = await policyFor(doc('<script>a()</script>', '<button onclick="b()">x</button>'));
+  const [, scriptSrc] = policy.match(/script-src ([^;]+)/);
+
+  assert.ok(!scriptSrc.includes("'unsafe-inline'"), 'inline handlers would be allowed');
+  assert.ok(!scriptSrc.includes("'unsafe-hashes'"), 'inline handlers would be allowed by hash');
+  assert.ok(scriptSrc.includes("'self'"), 'the block itself has to keep working');
+});
+
 test("style-src can still be hashed by hand, for a page with no style attributes", async () => {
   const policy = await policyFor(doc('<style>p{}</style>'), {
     directives: { 'style-src': ["'self'", "'hashes'"] },

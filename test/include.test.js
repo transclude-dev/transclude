@@ -389,3 +389,75 @@ test('a properly closed include keeps what follows it', () => {
   const html = await0('<p id="a" fragment>x</p><transclude src="#a"></transclude><p>after</p>');
   assert.match(html, /<p>after<\/p>$/);
 });
+
+// ---- through the real app --------------------------------------------------
+//
+// The gap the source-reading test above cannot see. All three servers build an
+// include context; the question here is whether every render call site is given
+// it. `renderRoute` was, and `renderFragment` was not, so a page holding any
+// include served its whole document happily and answered 500 for every one of
+// its regions. Only a request through `createApp` reaches that.
+
+const { createApp } = await import('../src/app.js');
+
+const bytes = (text) => new TextEncoder().encode(text);
+
+const stub = (over) => ({
+  revalidate: 0,
+  layouts: [],
+  css: '',
+  headScript: '',
+  hasTitle: false,
+  renderTitle: () => '',
+  renderHead: () => '',
+  elements: [],
+  includes: [],
+  regions: {},
+  load: async () => ({}),
+  render: () => ({ default: '' }),
+  ...over,
+});
+
+/** A page with one region and one include of another route's region. */
+function appWithInclude() {
+  return createApp({
+    config: { csrf: false, trailingSlash: 'never', fragmentParam: 'fragment', cookieSecret: 's' },
+    manifest: {
+      routes: [
+        { id: 'index', pattern: '/', params: [], client: null },
+        { id: 'notes', pattern: '/notes', params: [], client: null },
+      ],
+      endpoints: [],
+    },
+    pages: {
+      index: stub({
+        includes: [{ key: '/notes#notes', kind: 'route', where: '/notes', id: 'notes' }],
+        regions: { matches: (data) => `<div id="matches">${data.__included['/notes#notes']}</div>` },
+        render: (data) => ({ default: `<main>${data.__included['/notes#notes']}</main>` }),
+      }),
+      notes: stub({
+        regions: { notes: () => '<p id="notes">from notes</p>' },
+        render: () => ({ default: '<p>notes page</p>' }),
+      }),
+    },
+    statics: { get: () => null },
+    assets: { get: () => null },
+    notFound: { body: bytes('nope'), etag: '"n"', encodings: new Map(), type: 'text/html' },
+    errorPage: { body: bytes('broke'), etag: '"e"', encodings: new Map(), type: 'text/html' },
+    hash: (body) => `"${body.length.toString(36)}"`,
+    compress: null,
+  });
+}
+
+test('a region of a page that includes another route is served, not a 500', async () => {
+  const app = appWithInclude();
+
+  const whole = await app.request('http://x/');
+  assert.equal(whole.status, 200, 'the whole document');
+
+  // The half that was broken. It rendered the same include through a different
+  // call site, and that one was handed nothing to resolve it with.
+  const region = await app.request('http://x/?fragment=matches');
+  assert.equal(region.status, 200, 'the region');
+  assert.match(await region.text(), /from notes/);
+});

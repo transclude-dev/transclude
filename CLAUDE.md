@@ -458,6 +458,16 @@ against.
   server-rendered page. `includeContext` in `src/include.js` answers it for all
   three, and a test reads all three files for the call. This is the same shape as
   `clientManifest` deciding who ships a client entry, and it broke the same way.
+- **Building the include context is half of it. Every render call site has to be
+  handed it.** All three servers built one and only `renderRoute` was given it,
+  so a page holding any include served its whole document and answered 500 for
+  every one of its regions: `/` was 200 and `/?fragment=matches` threw "no way to
+  reach one". Three call sites had the same omission, `src/app.js` twice for GET
+  and for the render after an action, and `bin/dev.js` once. The source-reading
+  test above could not see it, because every one of those files does call
+  `includeContext`. Only a request through `createApp` reaches it, which is the
+  same lesson as the cookie cache flag. `renderFragment` makes its own
+  `includeMemo` for the reason `renderRoute` does.
 - **An included route reads cookies through the host's, and that is the point.**
   The cache refuses to hold a page whose loader *reads* a cookie, and a route
   include is a second loader running inside the first page's render. Giving it

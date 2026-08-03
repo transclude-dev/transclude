@@ -57,8 +57,8 @@ export function baseApp(options = {}) {
    *
    * `strict: false` does not merely match /about/ as well as /about: it strips
    * the slash from `c.req.path` before any middleware runs. Measured: with it on,
-   * `trimTrailingSlash` never fires, because the thing it looks for is gone by the
-   * time it looks. The two do not work together. They exclude each other.
+   * `trimTrailingSlash` never fires, because the thing it looks for is gone by
+   * the time it looks. The two exclude each other.
    *
    * So 'never' means strict routing plus a 301 to the one URL, and every
    * URL this framework generates is already that form: `routes/about.html` is

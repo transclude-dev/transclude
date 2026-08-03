@@ -121,10 +121,11 @@ export function createApp({
    * The region this request asked for, or undefined for the whole document.
    *
    * The query parameter is the agreement. It is written out, it can be linked to,
-   * and it is strict: an unknown name is a 404, because someone typed it. A header is the opposite:
-   * clients send `HX-Target` on every request, including the boosted ones that
-   * want a whole document, so a name that is not a region is ignored rather than
-   * refused. Guessing wrong there would break more than it fixed.
+   * and it is strict: an unknown name is a 404, because someone typed it. A
+   * header is the opposite: clients send `HX-Target` on every request, including
+   * the boosted ones that want a whole document, so a name that is not a region
+   * is ignored rather than refused. Guessing wrong there would break more than
+   * it fixed.
    */
   function regionOf(route, c) {
     const asked = config.fragmentParam ? c.req.query(config.fragmentParam) : undefined;

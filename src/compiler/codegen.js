@@ -1,6 +1,6 @@
 // Walks a parse5 tree and emits the body of a render function.
 //
-// Rules this file encodes (see README):
+// Rules this file encodes:
 //   - every ${} is escaped; html() opts out
 //   - `if` / `else-if` / `else` bind across whitespace + comments only
 //   - `if` and `each` on the same element is a hard error
@@ -78,15 +78,15 @@ class Codegen {
     blocks = false,
     fragments = true,
   } = {}) {
-    // Whether this template can be asked for a fragment. A page or a partial
-    // can; a shadow component cannot, because a fragment emits the element bare
+    // Whether this template can be asked for a fragment. A page or a light
+    // element can; a shadow one cannot, because a fragment emits the element bare
     // and never calls its render at all. That matters beyond tidiness: with
     // `blocks` on, an `if` or `each` compiles to its own module-scope function,
     // and a `__fragment` passed from render would not be in scope inside it.
     this.fragments = fragments;
     // With `blocks` on, `if` and `each` at the top level compile to their own
     // function and are wrapped in comment anchors, so an update can re-render
-    // one region instead of the whole shadow root. Only a component is ever
+    // one region instead of the whole shadow root. Only an element is ever
     // updated, so nothing else pays for the anchors.
     this.blocks = blocks && !layout;
     this.blockDefs = [];
@@ -117,10 +117,9 @@ class Codegen {
     // on its own. It renders inline like anything else *and* compiles to its own
     // function, so the same markup serves the document and the swap.
     this.regions = new Map();
-    // Every `<transclude src="#id">`, with the region it sits inside so
-    // a cycle can be found before it is a stack overflow at render time.
-    // `<transclude>` naming a region of this page. Resolved at compile
-    // time, which is why it is kept apart from the ones below.
+    // Every `<transclude src="#id">`, with the region it sits inside, so a cycle
+    // is found at compile time rather than as a stack overflow during a render.
+    // Kept apart from the ones below because these need no server to resolve.
     this.regionIncludes = [];
     // The ones a server has to resolve before the render: another route of this
     // app, or a document elsewhere.
@@ -595,8 +594,8 @@ class Codegen {
    * children become its default slot, rendered into their own buffer first.
    */
   /**
-   * `<transclude src="#pricing">` — the same page's own region, in a
-   * second place.
+   * `<transclude src="#pricing">`, the same page's own region, in a second
+   * place.
    *
    * This is the case that should cost nothing: the region is already compiled to
    * a function of the page's data, so including it is calling that function.
@@ -656,8 +655,8 @@ class Codegen {
   }
 
   /**
-   * `<transclude src="https://…#intro">` — a piece of a document
-   * somebody else wrote.
+   * `<transclude src="https://…#intro">`, a piece of a document somebody
+   * else wrote.
    *
    * Resolved before the render rather than during it. Render is synchronous all
    * the way down, and a fetch is not, so what the page declares is collected at
@@ -826,23 +825,17 @@ class Codegen {
 /**
  * What a `<script>` or a `<style>` may interpolate, which is almost nothing.
  *
- * Text in these two elements is written to the document raw, because escaping it
- * would change what the browser reads: `&amp;` is an ampersand in prose and four
- * characters in JavaScript. So an expression here lands in code.
+ * Text in these two is raw: escaping it would change what the browser reads,
+ * since `&amp;` is an ampersand in prose and four characters in JavaScript. So a
+ * value lands in code, and one that closes the string it was written into runs
+ * whatever follows. No escape fixes that, which is why this refuses.
  *
- * For a script nothing can make that safe. A value that closes the string it was
- * written into runs whatever comes after it, and no amount of HTML escaping
- * touches that, so the answer is not a better escape. Data is a narrower
- * question with a real answer, and `json()` is it: JSON with the characters that
- * could end the element written as `\uXXXX`. One of those, alone, is allowed.
+ * `json()` answers the narrower question, and only as the whole text of a
+ * script. A style needs no carve-out, because a custom property is an attribute.
  *
- * For a style there is no such carve-out. Anything read from a value can be
- * written as a custom property on the element instead, where it goes through
- * `attr` and is escaped: `<div style="--brand: ${color}">`.
- *
- * @param {string} tag        'script' or 'style'
- * @param {string} text       the raw text node's contents
- * @param {object} el         the element, for the line number
+ * @param {string} tag  'script' or 'style'
+ * @param {string} text the raw text node's contents
+ * @param {object} el   the element, for the line number
  */
 function assertRawTextSafe(tag, text, el) {
   const parts = splitInterpolations(text);

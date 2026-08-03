@@ -14,6 +14,7 @@ import { feed, feedPath, feedType } from './feed.js';
 import { documentStore, PROXY_PATH, proxyHandler } from './proxy.js';
 import { includeContext } from './include.js';
 import { sitemap } from './sitemap.js';
+import { PRECACHE_PATH } from './precache.js';
 import { absoluteFrom } from './document.js';
 import {
   ACTION_METHODS,
@@ -68,6 +69,10 @@ export function createApp({
   errorPage = null,
   hash,
   compress = null,
+  // What the build wrote to `dist/static/precache.json`, or null. It is a build
+  // artifact: only the build knows an asset's hashed name, and the worker's
+  // byte store answers `get` and cannot be enumerated.
+  precache = null,
   // Resolving a hostname needs the runtime, and one of the four cannot do it at
   // all, so the servers that can supply this and workerd leaves it out. Without
   // it the proxy's allowlist is the whole defense.
@@ -169,6 +174,20 @@ export function createApp({
       const xml = await sitemap(manifest, pages, config.sitemap, page ?? null);
       return c.body(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
     });
+  }
+
+  // A list of what the build produced, for whoever wants to cache it. The
+  // framework ships nothing that reads this: a service worker is the app's, the
+  // same way a swapper is.
+  if (precache) {
+    app.get(PRECACHE_PATH, (c) =>
+      c.body(precache, 200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        // It names the version of every file, so holding it is how a client
+        // misses the build that changed them.
+        'Cache-Control': 'no-cache',
+      }),
+    );
   }
 
   if (config.feed) {

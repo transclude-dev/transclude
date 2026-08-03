@@ -9,7 +9,7 @@
 
 import { createApp } from 'transclude/app';
 import { bytesFrom, fileHandler, hash, pageEntry } from 'transclude/worker';
-import { assets, errorPage, notFound, publicFiles, statics } from './dist/server/assets.js';
+import { assets, errorPage, notFound, precache, publicFiles, statics } from './dist/server/assets.js';
 import { endpoints, middleware, pages } from './dist/server/entry.js';
 import manifestText from './dist/routes.json';
 import config from './transclude.config.js';
@@ -42,6 +42,7 @@ function appFor(env) {
     errorPage: pageEntry(errorPage),
     hash,
     compress: null,
+    precache,
   });
   return app;
 }

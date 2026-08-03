@@ -25,9 +25,24 @@ The same app runs on Node, Bun, Deno and workerd. A page ships no client
 JavaScript unless it uses a component, and the browser downloads no runtime
 dependencies.
 
+## Starting a project
+
+```sh
+npx create-transclude my-app
+cd my-app
+npm install
+npm run dev
+```
+
+That is a layout, two pages, a 404 and a stylesheet. `--template blank` is a
+heading and a paragraph and nothing else. Neither brings a region, an include or
+an element: those are decisions your project has not made yet.
+
+## Working on the framework
+
 ```
 npm install
-npm test           # 515 tests, and they need no app
+npm test           # 928 tests, and they need no app
 npm run test:examples # the demo's own tests, against a build
 npm run showcase   # the showcase on http://localhost:1961
 ```
@@ -1010,7 +1025,7 @@ src/static-cache.js        built output in memory, one ETag per representation
 src/negotiate.js           Accept-Encoding parsing, q-values and all
 src/compress.js            build-time brotli and gzip
 src/pool.js                bounded concurrency, order preserving
-test/                      515 tests, and they need no app
+test/                      928 tests, and they need no app
 examples/showcase/          an app, on the far side of the boundary
 ```
 

@@ -4,6 +4,11 @@
   export default async () => ({
     interpolation: '${value}',
     s: await all({
+      create: [`npx create-transclude my-app
+cd my-app
+npm install
+npm run dev`, 'shell'],
+      blank: ['npx create-transclude my-app --template blank', 'shell'],
       install: ['npm install transclude', 'shell'],
       config: [
         `export default {
@@ -60,9 +65,28 @@ export default defineConfig({
 
 <doc-page
   heading="Getting started"
-  lede="Install the package, write one .html file, and the directory it sits in is its URL."
+  lede="One command writes a project. A page is an .html file, and the directory it sits in is its URL."
 >
-  <h2>Install</h2>
+  ${html(s.create)}
+
+  <p>
+    That is a layout, two pages, a 404 and a stylesheet. For a heading and a
+    paragraph and nothing else:
+  </p>
+
+  ${html(s.blank)}
+
+  <p>
+    Neither one brings a region, an include or an element. Those are decisions
+    the project has not made yet, and every page here shows them when you want
+    them.
+  </p>
+
+  <h2>Or by hand</h2>
+
+  <p>
+    Nothing above is magic, and the rest of this page is what it wrote.
+  </p>
 
   ${html(s.install)}
 
@@ -72,8 +96,6 @@ export default defineConfig({
     <code>vite.config.js</code> imports it directly and those two do not hoist a
     peer dependency the way npm does.
   </p>
-
-  <h2>Two files to start</h2>
 
   <p>
     An app is a directory with a <code>transclude.config.js</code> in it. It says

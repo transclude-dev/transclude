@@ -11,7 +11,7 @@ action. An element marked `fragment` is a resource on its own URL, which is
 what a client swaps. An element is light DOM unless its file exports `shadow`: no
 boundary, page CSS reaches it, and it ships no JavaScript.
 
-`npm test` (29, about this app's own files) · `npm run check` · `npm run dev` ·
+`npm test` (38, about this app's own files) · `npm run check` · `npm run dev` ·
 `npm run preview`
 
 ## House style
@@ -37,7 +37,7 @@ when to merge.
   helper here needs a `_` prefix or it becomes a URL.
 - `app/elements/` holds every custom element. Light DOM unless the file exports
   `shadow`, which either script block can carry.
-- `app/routes/check.html`. 53 assertions that run in a browser. The framework has
+- `app/routes/check.html`. 55 assertions that run in a browser. The framework has
   no browser coverage of its own, so this is it.
 - `app/server.js`. This app's own Hono middleware.
 - `worker.js`, `test/`, `transclude.config.js`. The app's wiring, at the root.

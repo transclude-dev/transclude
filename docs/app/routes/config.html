@@ -139,6 +139,15 @@
           </td>
         </tr>
         <tr>
+          <td><code>onError</code></td>
+          <td><code>null</code></td>
+          <td>
+            <code>(error, { request, url, method })</code> for every request that
+            fails. The 500 page ships either way, and a reporter that throws is
+            caught. Without one, the error is logged.
+          </td>
+        </tr>
+        <tr>
           <td><code>precache</code></td>
           <td><code>false</code></td>
           <td>

@@ -1,0 +1,141 @@
+<script server>
+  import { all } from '../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      request: [
+        `import test from 'node:test';
+import assert from 'node:assert/strict';
+import { app } from 'transclude/production';
+
+test('the notes page answers', async () => {
+  const res = await app.request('http://localhost/notes');
+
+  assert.equal(res.status, 200);
+  assert.match(await res.text(), /<h1/);
+});`,
+        'js',
+      ],
+      guard: [
+        `import fs from 'node:fs';
+
+const built = fs.existsSync('dist/routes.json');
+const describe = built ? test : test.skip;
+
+const { app } = built ? await import('transclude/production') : { app: null };`,
+        'js',
+      ],
+      env: [
+        `// Before the first import, because the config reads it as it loads.
+process.env.COOKIE_SECRET ??= 'a-secret-for-tests-only';`,
+        'js',
+      ],
+      form: [
+        `const res = await app.request('http://localhost/notes', {
+  method: 'POST',
+  headers: {
+    origin: 'http://localhost',
+    'content-type': 'application/x-www-form-urlencoded',
+  },
+  body: 'text=from+a+test',
+  redirect: 'manual',
+});
+
+assert.equal(res.status, 303);`,
+        'js',
+      ],
+      region: [
+        `const region = await app.request('http://localhost/?fragment=matches');
+const markup = await region.text();
+
+assert.doesNotMatch(markup, /<!doctype/i);
+assert.ok(whole.includes(markup.trim()));`,
+        'js',
+      ],
+      script: [
+        `{
+  "scripts": {
+    "test": "node --test --env-file-if-exists=.env \\"test/**/*.test.js\\""
+  }
+}`,
+        'json',
+      ],
+    }),
+  });
+</script>
+
+<title>Testing · transclude</title>
+<meta name="description" content="Ask the app for a URL and read what comes back." />
+
+<doc-page
+  heading="Testing"
+  lede="The app is a function from a request to a response. A test asks it for a URL and reads what comes back, with nothing stubbed."
+>
+  <p>
+    <code>transclude/production</code> is the same app <code>npm start</code>
+    serves. Importing it gives you a <code>request</code> method that takes a URL
+    and answers the way the server does.
+  </p>
+
+  ${html(s.request)}
+
+  <p>
+    Everything a browser would meet runs: the trailing-slash redirect, CSRF, your
+    own middleware, cookies, the cache and the route table. A test that passes
+    here is about the site rather than about a copy of it.
+  </p>
+
+  <h2>It reads a build</h2>
+
+  <p>
+    The app is assembled from <code>dist</code>, so run
+    <code>npm run build</code> first. Skip rather than fail when there is no
+    build, and a fresh clone still gets a useful <code>npm test</code>.
+  </p>
+
+  ${html(s.guard)}
+
+  <h2>The server's environment is not the test's</h2>
+
+  <p>
+    <code>npm start</code> passes <code>--env-file-if-exists=.env</code> and
+    <code>node --test</code> does not, so a secret the config reads is missing
+    and the first page that touches a signed cookie answers 500. Either add the
+    flag to the test script, or set the value before the first import.
+  </p>
+
+  ${html(s.script)}
+
+  ${html(s.env)}
+
+  <h2>What to ask for</h2>
+
+  <p>
+    A form post is a real post. Give it an <code>origin</code>, or CSRF refuses
+    it, which is itself worth a test.
+  </p>
+
+  ${html(s.form)}
+
+  <p>
+    A <a href="/fragments">region</a> is a URL, so it is read the same way. The
+    useful assertion is that the page and the region agree, since one compiled
+    template produces both.
+  </p>
+
+  ${html(s.region)}
+
+  <h2>What this does not reach</h2>
+
+  <p>
+    Anything that needs a browser: an <a href="/elements">element</a> upgrading,
+    a shadow root, focus surviving an update, a swap. Nothing in Node models
+    those, and a test that says otherwise is describing its own stand-in.
+  </p>
+
+  <p>
+    Put those on a page and open it. The showcase keeps its at
+    <code>/check</code>, which runs its assertions in the browser and posts the
+    result back.
+  </p>
+</doc-page>

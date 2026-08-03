@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { serveStatic } from '@hono/node-server/serve-static';
+import { publicFiles } from './public-files.js';
 import { createApp } from './app.js';
 import { etagOf, loadAssets, loadStatic } from './static-cache.js';
 import { compressResponse } from './compress.js';
@@ -99,9 +99,7 @@ export const app = createApp({
   // `serveStatic` joins `root` onto the request path, so it resolves against the
   // working directory. This file works from its own location so it does not depend
   // on where the process was started.
-  publicFiles: fs.existsSync(publicRoot)
-    ? serveStatic({ root: relativeToCwd(publicRoot), precompressed: true })
-    : null,
+  publicFiles: fs.existsSync(publicRoot) ? publicFiles(relativeToCwd(publicRoot)) : null,
   notFound: readPage('404.html'),
   errorPage: readPage('500.html'),
   hash: etagOf,

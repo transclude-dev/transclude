@@ -487,3 +487,19 @@ test('the summary is shared, so three adapters cannot disagree about it', () => 
     assert.doesNotMatch(source, /prerendered/, `${file} reimplements the summary`);
   }
 });
+
+test('every response says not to sniff its type', async () => {
+  // The one security header with no judgement in it: nothing legitimate depends
+  // on a browser second-guessing a declared Content-Type. `X-Frame-Options` and
+  // HSTS both refuse something an app may want, so they stay the author's.
+  const app = baseApp({ csrf: false });
+  app.get('/x', (c) => c.text('hi'));
+
+  const res = await app.request('http://x/x');
+  assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+});
+
+test('a 404 gets it too, not just a page that answered', async () => {
+  const res = await baseApp({ csrf: false }).request('http://x/nothing');
+  assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+});

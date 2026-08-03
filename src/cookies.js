@@ -68,7 +68,7 @@ export function cookiesOf(request, response, secret = null) {
     },
 
     set(name, value, options = {}) {
-      write(serialize(name, value, withDefaults(options)));
+      write(serialize(name, value, withDefaults(options, request)));
     },
 
     /**
@@ -76,7 +76,7 @@ export function cookiesOf(request, response, secret = null) {
      * The path has to match the one it was set with or the browser keeps it.
      */
     delete(name, options = {}) {
-      write(serialize(name, '', { ...withDefaults(options), maxAge: 0, expires: new Date(0) }));
+      write(serialize(name, '', { ...withDefaults(options, request), maxAge: 0, expires: new Date(0) }));
     },
 
     /**
@@ -110,7 +110,7 @@ export function cookiesOf(request, response, secret = null) {
             name,
             value,
             requireSecret('signing a cookie'),
-            withDefaults(options),
+            withDefaults(options, request),
           ),
         );
       },
@@ -119,12 +119,39 @@ export function cookiesOf(request, response, secret = null) {
 }
 
 /**
+ * Whether this request arrived over TLS, so a cookie can say `Secure`.
+ *
+ * A proxy that terminates TLS forwards plain HTTP, so the request's own URL says
+ * `http:` for a visitor who used `https:`. `X-Forwarded-Proto` is a header a
+ * client can set, and trusting it here is safe in the only direction it can be
+ * wrong: a lie turns `Secure` *on*, and a cookie that is then not sent over
+ * plain HTTP fails closed. Nothing reads it to turn `Secure` off.
+ *
+ * @param {Request|null|undefined} request
+ * @returns {boolean}
+ */
+function overTls(request) {
+  const forwarded = request?.headers?.get('x-forwarded-proto') ?? '';
+  if (forwarded.split(',')[0].trim().toLowerCase() === 'https') return true;
+
+  try {
+    return new URL(request.url).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Defaults worth having rather than defaults the spec gives you. A cookie with
  * no `Path` is scoped to the current directory, which is almost never what was
  * meant; without `HttpOnly` a script can read a session id; and `SameSite=Lax`
  * is what stops it riding along on a cross-site request. That is the same hole
  * CSRF protection closes from the other side.
+ *
+ * `Secure` follows the connection rather than being always on, because always
+ * on breaks `http://localhost` and an author who cannot keep a session in dev
+ * turns the whole thing off. Set it yourself to override either way.
  */
-function withDefaults(options) {
-  return { path: '/', httpOnly: true, sameSite: 'Lax', ...options };
+function withDefaults(options, request) {
+  return { path: '/', httpOnly: true, sameSite: 'Lax', secure: overTls(request), ...options };
 }

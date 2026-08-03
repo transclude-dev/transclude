@@ -404,6 +404,21 @@ against.
   parses the source again in document mode purely to read that element. Using the
   real parser rather than searching the text is what makes `<html>` inside a
   script block or a comment stay a string.
+- **`Secure` follows the connection, and `X-Forwarded-Proto` is trusted only to
+  turn it on.** A cookie had `Path`, `HttpOnly` and `SameSite=Lax` and no
+  `Secure`, so a session could go over plain HTTP. Always on breaks
+  `http://localhost`, and an author who cannot keep a session in dev turns the
+  whole thing off, so it follows the request. Behind a proxy that terminates TLS
+  the request's own URL says `http:`, and the forwarded header is what closes
+  that. Believing a client-set header is safe in exactly one direction: a lie
+  turns `Secure` *on* and the cookie is then withheld over plain HTTP, which
+  fails closed. Nothing reads it to turn `Secure` off.
+- **`nosniff` is sent always; `X-Frame-Options` and HSTS are not.** Nothing
+  legitimate depends on a browser second-guessing a declared Content-Type, so
+  that header has no judgement in it and is on for every response including a
+  404 and a public file. The other two refuse something an app may actually
+  want, one being embedded and one being reachable over HTTP at all, so they
+  stay the author's to set.
 - **Most of what `check:src` reported was the JSDoc being wrong, not the code
   being untypeable.** It was called noise from parse5 node shapes and it was not:
   of 180 diagnostics, 115 were annotations that disagreed with the thing they

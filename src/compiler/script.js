@@ -27,6 +27,12 @@ const PARSE_OPTIONS = {
  * leaving imports and named exports exactly where the author put them.
  * Returns the exported names so callers can check them against the names the
  * generated module already uses.
+ *
+ * @param {{ code: string, line?: number }} block
+ * @param {string} name what to bind the default export to
+ * @param {string} label for an error
+ * @param {{ flags?: string[] }} [options]
+ * @returns {{ code: string, exports: string[], defaultNode: object|null, flags: object }}
  */
 export function bindDefaultExport(block, name, label, { flags = [] } = {}) {
   const { code: source, line = 1 } = block;
@@ -100,6 +106,11 @@ function literalExport(ast, flag, code, line, label) {
  * `lift` names one export that is not setup code: the element's members. It goes
  * to module scope, and so does anything it reads, because a prototype is shared by
  * every instance and the function body is not.
+ *
+ * @param {Array<{ code: string, line?: number }>} blocks
+ * @param {string} label
+ * @param {{ lift?: object|null, binding?: string, flags?: string[] }} [options]
+ * @returns {{ code: string, members: string, warnings: string[] }}
  */
 export function toFunctionBody(blocks, label, { lift = null, binding = '__members', flags = [] } = {}) {
   const imports = [];
@@ -290,6 +301,11 @@ function namesExport(statement, name) {
  *
  * Shared with the shim, which copies the same slices so tsc resolves what the
  * generated module resolves.
+ *
+ * @param {object} ast an acorn program
+ * @param {string} name the binding members land on
+ * @param {Set<string>} [perInstance] names a member may not reach
+ * @returns {object|null} what to hoist, or null when nothing is exported
  */
 export function planLift(ast, name, perInstance = PER_INSTANCE) {
   const statement = ast.body.find(
@@ -450,7 +466,14 @@ function freeNames(node, bound, out) {
   }
 }
 
-/** Module-level client code (a page entry) only needs validating. */
+/**
+ * Module-level client code (a page entry) only needs validating.
+ *
+ * @param {Array<{ code: string, line?: number }>} blocks
+ * @param {string} label
+ * @returns {void}
+ * @throws with the offset mapped back to the .html file
+ */
 export function assertModule(blocks, label) {
   for (const block of blocks) parseOrThrow(block.code, label, block.line ?? 1);
   return blocks.map((b) => b.code).join('\n');
@@ -479,7 +502,15 @@ function importsOf(ast) {
   return out;
 }
 
-/** Guards against a block exporting a name the generated module already uses. */
+/**
+ * Guards against a block exporting a name the generated module already uses.
+ *
+ * @param {string[]} exports
+ * @param {Set<string>|string[]} reserved
+ * @param {string} label
+ * @returns {void}
+ * @throws naming the first collision
+ */
 export function assertNoCollisions(exports, reserved, label) {
   for (const name of exports) {
     if (reserved.has(name)) {
@@ -495,6 +526,11 @@ export function assertNoCollisions(exports, reserved, label) {
  * A page's handlers are verb exports. An `actions` object is what they used to
  * be, and nothing reads one now, so leaving it would answer 405 to every form
  * on the page and say nothing about why.
+ *
+ * @param {string[]} exports
+ * @param {string} label
+ * @returns {void}
+ * @throws because nothing reads one, so a page keeping it would 405 in silence
  */
 export function assertNoActionsObject(exports, label) {
   if (!exports.includes('actions')) return;

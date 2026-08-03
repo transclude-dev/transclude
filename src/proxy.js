@@ -136,6 +136,9 @@ async function bodyWithin(response, maxBytes) {
  * Several fragments usually come from one page, so the parse, the cleaning and
  * the slug table are done once and shared. Keyed by the final URL rather than
  * the requested one, so two requests that redirect to the same place hit.
+ *
+ * @param {number} [max] how many documents to hold
+ * @returns {{ get: Function, set: Function }}
  */
 export function documentStore(max = DEFAULTS.cache) {
   const held = new Map();
@@ -166,6 +169,11 @@ export function documentStore(max = DEFAULTS.cache) {
  * The order is deliberate: read the base before `<base>` is stripped, strip
  * before rewriting so nothing rewrites a URL on an element about to be removed,
  * and index last so the table never names something the cleaning took out.
+ *
+ * @param {string} url
+ * @param {object} [options] the `proxy` config
+ * @param {{ fetch?: Function, store?: object, now?: Function, lookup?: Function }} [deps]
+ * @returns {Promise<object>} the indexed document, its base, and what was removed
  */
 export async function readForeign(url, options = {}, deps = {}) {
   const config = settings(options);
@@ -237,6 +245,10 @@ export async function readForeign(url, options = {}, deps = {}) {
  * Shares a store with nothing else on purpose. Includes are resolved during a
  * render, and holding the parsed document is what makes ten of them off one page
  * cost one read.
+ *
+ * @param {object} [options]
+ * @param {object} [deps]
+ * @returns {{ resolve: (url: string, id: string) => Promise<string> }}
  */
 export function includeResolver(options = {}, deps = {}) {
   const config = settings(options);
@@ -250,6 +262,11 @@ export function includeResolver(options = {}, deps = {}) {
   };
 }
 
+/**
+ * @param {object} [options]
+ * @param {object} [deps]
+ * @returns {(request: Request) => Promise<Response>}
+ */
 export function proxyHandler(options = {}, deps = {}) {
   const config = settings(options);
   const store = deps.store ?? documentStore(config.cache);

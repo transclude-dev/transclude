@@ -134,15 +134,30 @@ function atom(items, config, stamp) {
   );
 }
 
-/** What the response is served as. A reader picks the parser from this. */
+/**
+ * What the response is served as. A reader picks the parser from this.
+ *
+ * @param {object|null|undefined} config
+ * @returns {string}
+ */
 export const feedType = (config) =>
   config?.format === 'atom'
     ? 'application/atom+xml; charset=utf-8'
     : 'application/rss+xml; charset=utf-8';
 
-/** Where it is mounted, and where the build writes it. */
+/**
+ * Where it is mounted, and where the build writes it.
+ *
+ * @param {object|null|undefined} config
+ * @returns {string}
+ */
 export const feedPath = (config) => config?.path ?? '/feed.xml';
 
+/**
+ * @param {object} [config] the `feed` block, plus its `items`
+ * @returns {Promise<string>} an RSS or Atom document
+ * @throws when Atom is asked for without an author or a date
+ */
 export async function feed(config = {}) {
   const { hostname, title, format = 'rss', author, updated } = config;
 

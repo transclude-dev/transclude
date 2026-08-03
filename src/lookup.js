@@ -22,6 +22,9 @@ import { blockedAddress } from './address.js';
  * resolved once for the check and again by the connection, and a record whose
  * TTL expires in between can change. The allowlist is what actually holds, and
  * this is defense behind it.
+ *
+ * @param {{ resolver?: object }} [deps] injected so a test needs no DNS
+ * @returns {(hostname: string) => Promise<string[]>} every address the name answers with
  */
 export function nodeLookup({ resolver = dns } = {}) {
   return async (hostname) => {

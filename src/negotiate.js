@@ -41,9 +41,34 @@ export function identityAcceptable(header) {
   return qualityOf(accepted, 'identity') > 0;
 }
 
+/**
+ * Parsed headers, keyed by the header itself.
+ *
+ * Every response negotiates, and clients send a handful of distinct
+ * Accept-Encoding strings between them, so the same dozen values are parsed for
+ * the life of the process. This was the largest piece of our own code in a
+ * profile of the request path.
+ *
+ * The value is shared, so nothing may write to it. `qualityOf` only reads.
+ */
+const parsed = new Map();
+const PARSED_MAX = 64;
+
 function parse(header) {
   if (!header || !header.trim()) return null;
 
+  const held = parsed.get(header);
+  if (held !== undefined) return held;
+
+  const answer = read(header);
+  // A client can send anything, so the table is bounded. Oldest out first, which
+  // is enough: the values that matter are sent by every request and go back in.
+  if (parsed.size >= PARSED_MAX) parsed.delete(parsed.keys().next().value);
+  parsed.set(header, answer);
+  return answer;
+}
+
+function read(header) {
   const entries = new Map();
   for (const part of header.split(',')) {
     const [name, ...params] = part.trim().split(';');
@@ -53,8 +78,8 @@ function parse(header) {
     for (const param of params) {
       const [key, value] = param.split('=').map((s) => s.trim());
       if (key === 'q') {
-        const parsed = Number.parseFloat(value);
-        quality = Number.isFinite(parsed) ? parsed : 0;
+        const q = Number.parseFloat(value);
+        quality = Number.isFinite(q) ? q : 0;
       }
     }
     entries.set(name.trim().toLowerCase(), quality);

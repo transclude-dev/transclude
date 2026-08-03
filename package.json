@@ -59,7 +59,8 @@
     "test:docs": "npm test --prefix docs",
     "showcase": "npm run dev --prefix examples/showcase",
     "docs": "npm run dev --prefix docs",
-    "check:src": "tsc -p tsconfig.src.json"
+    "check:src": "tsc -p tsconfig.src.json",
+    "release": "node bin/release.js"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.12",

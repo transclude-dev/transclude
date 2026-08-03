@@ -1,0 +1,68 @@
+# Publishes both packages, from a tag.
+#
+# A merge does not publish. Every merge publishing means a version for every
+# typo fix and no way to hold a release back, so the trigger is a tag that
+# `npm run release` writes after everything has passed locally. CI runs it all
+# again, because "it passed on my machine" is not the claim being made.
+#
+# `id-token: write` is what lets npm sign provenance: the published package
+# carries a verifiable link back to this workflow, this commit and this
+# repository. It needs `repository` in the manifest, which is set.
+
+name: publish
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      # The same order `bin/release.js` runs, so a tag that was cut properly
+      # passes here and a tag pushed by hand is caught.
+      - run: npm test
+      - run: npm run test:examples
+      - run: npm test --prefix docs
+      - run: npm run check --prefix docs
+      - run: npm run build --prefix docs
+
+      # The tag says what version this is. A tag that disagrees with the
+      # manifests would publish something nobody asked for.
+      - name: The tag and the manifests agree
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          for manifest in package.json create/package.json; do
+            version=$(node -p "require('./$manifest').version")
+            if [ "$version" != "$tag" ]; then
+              echo "$manifest is $version and the tag is $tag"
+              exit 1
+            fi
+          done
+
+      # Core first: the dependency `@transclude/create` writes into a new
+      # project names it by version, so it has to exist by the time anyone
+      # runs the CLI.
+      - name: Publish @transclude/core
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @transclude/create
+        run: npm publish --access public --provenance
+        working-directory: create
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -40,6 +40,11 @@ const absolute = (hostname, path) => `${hostname.replace(/\/$/, '')}${path}`;
  * Sorting is stable, so items with no date keep the order they were given in
  * rather than being shuffled among the dated ones.
  */
+/**
+ * @param {{ items?: object[] | (() => object[] | Promise<object[]>), limit?: number }} config
+ *   `items` may be a function, so an app builds them from its own data
+ * @returns {Promise<object[]>}
+ */
 async function itemsOf({ items = [], limit = LIMIT }) {
   const list = typeof items === 'function' ? await items() : await items;
 

@@ -9,7 +9,11 @@
 // a name to one is the runtime's job, and one of the four runtimes cannot do it
 // at all.
 
-/** Ranges that are not the public internet, as [first octet test, why]. */
+/**
+ * Ranges that are not the public internet, as [test, why].
+ *
+ * @type {Array<[(a: number[]) => boolean, string]>}
+ */
 const V4_BLOCKED = [
   [(a) => a[0] === 0, 'this network'],
   [(a) => a[0] === 10, 'private'],

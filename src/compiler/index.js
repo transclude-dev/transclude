@@ -2,6 +2,7 @@
 
 import { parse, parseFragment } from 'parse5';
 import { compileFragment, childrenOf, CompileError } from './codegen.js';
+import { lineMap, sourceMap } from './sourcemap.js';
 import { compileBindings } from './bind.js';
 import {
   ScriptError,
@@ -341,6 +342,19 @@ ${template.components.map(({ ref }) => `  ${ref}_define();`).join('\n')}
   };
 }
 
+/**
+ * Where a mapped block starts, once the module is assembled.
+ *
+ * The assemblers are one template literal each. Rather than restructure them to
+ * count lines as they go, each block is written under a marker that `lineMap`
+ * finds, measures and removes. Nothing reaches the output.
+ */
+const MARK = {
+  body: '/*@transclude:body*/',
+  head: '/*@transclude:head*/',
+  title: '/*@transclude:title*/',
+};
+
 export function compilePage(
   source,
   {
@@ -348,6 +362,9 @@ export function compilePage(
     shadowTags = new Set(),
     runtime,
     filename = 'page',
+    // What the source map names. `filename` is what an error message says, which
+    // is the short route id; a stack wants the path an editor can open.
+    sourcePath = null,
     layouts = [],
     client = { tags: [], hasScript: false, needed: false },
   },
@@ -387,6 +404,7 @@ export async function load(ctx) {
 
 export function renderTitle(__d) {
   let __o = '';
+${MARK.title}
 ${indent(template.title)}
   return __o;
 }
@@ -397,6 +415,7 @@ export function renderHtmlAttrs(__d) {
 
 export function renderHead(__d) {
   let __o = '';
+${MARK.head}
 ${indent(template.head)}
   return __o;
 }
@@ -408,7 +427,46 @@ ${slotBodies(template)}
 }
 `;
 
-  return { code, warnings: template.warnings, components: template.components.map((c) => c.tag) };
+  const mapped = withMap(code, template, source, sourcePath ?? `${filename}.html`);
+
+  return {
+    code: mapped.code,
+    map: mapped.map,
+    warnings: template.warnings,
+    components: template.components.map((c) => c.tag),
+  };
+}
+
+/**
+ * The module, its markers removed, with a map from its lines to the file's.
+ *
+ * Server-side only: a page module is never sent to a browser, so embedding the
+ * source costs a visitor nothing and is what lets a stack read on a host with no
+ * access to the file.
+ *
+ * @param {string} code the assembled module, markers and all
+ * @param {object} template what `compileFragment` returned
+ * @param {string} source the original `.html`
+ * @param {string} filename how it should be named in a stack
+ * @returns {{ code: string, map: string|null }}
+ */
+function withMap(code, template, source, filename) {
+  const blocks = [
+    { marker: MARK.body, at: template.at?.body ?? [] },
+    { marker: MARK.head, at: template.at?.head ?? [] },
+    { marker: MARK.title, at: template.at?.title ?? [] },
+  ];
+
+  const { code: clean, lines } = lineMap(code, blocks);
+  // Nothing mapped means nothing to say. An empty map is a file a tool will
+  // fetch and read to learn that it knows nothing.
+  if (!lines.some((line) => line !== null)) return { code: clean, map: null };
+
+  // Handed back rather than written into the code as a comment. Vite reads a
+  // map a `load` hook returns and composes it; an inline comment on the code it
+  // returns is not looked at, which is why the stack still named the virtual
+  // module and a generated line.
+  return { code: clean, map: sourceMap(lines, filename, source) };
 }
 
 /**
@@ -880,7 +938,7 @@ function slotBodies(template) {
     `  const __named = true;`,
     `  const __pass = new Set(${consumed});`,
     `  for (const __name in __slots) if (!__pass.has(__name)) __out[__name] = __slots[__name];`,
-    `  {\n    let __o = '';\n${indent(indent(template.body))}\n    __out.default = __o;\n  }`,
+    `  {\n    let __o = '';\n${MARK.body}\n${indent(indent(template.body))}\n    __out.default = __o;\n  }`,
   ];
 
   for (const [name, body] of Object.entries(template.slots ?? {})) {

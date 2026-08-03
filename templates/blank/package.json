@@ -1,0 +1,19 @@
+{
+  "name": "__NAME__",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env node_modules/.bin/transclude-dev",
+    "build": "transclude-build",
+    "start": "node --env-file-if-exists=.env node_modules/.bin/transclude-serve",
+    "preview": "npm run build && npm start",
+    "check": "transclude-check"
+  },
+  "dependencies": {
+    "transclude": "__TRANSCLUDE__"
+  },
+  "devDependencies": {
+    "typescript": "^5.9",
+    "vite": "^8"
+  }
+}

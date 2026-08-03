@@ -53,6 +53,120 @@ export function absoluteFrom(base, requestUrl) {
   };
 }
 
+/**
+ * Which `<meta>` and `<link>` may appear once, and what identifies them.
+ *
+ * `name`, `property` and `http-equiv` each name a different meta. Only
+ * `rel="canonical"` is unique among links: a page has several `alternate`s for
+ * its feeds and translations, and several `preload`s, all meant.
+ */
+function headKey(tag) {
+  const name = tagAttr(tag, 'name');
+  if (name !== null) return `meta name=${name.toLowerCase()}`;
+
+  const property = tagAttr(tag, 'property');
+  if (property !== null) return `meta property=${property.toLowerCase()}`;
+
+  const equiv = tagAttr(tag, 'http-equiv');
+  if (equiv !== null) return `meta http-equiv=${equiv.toLowerCase()}`;
+
+  const rel = tagAttr(tag, 'rel');
+  if (rel !== null && rel.toLowerCase() === 'canonical') return 'link rel=canonical';
+
+  return null;
+}
+
+const ATTR = /([a-zA-Z][\w-]*)\s*=\s*"([^"]*)"/g;
+
+/** A quoted value cannot hold a `"`, because both escapers turn it into `&quot;`. */
+function tagAttr(tag, want) {
+  ATTR.lastIndex = 0;
+  for (let m = ATTR.exec(tag); m; m = ATTR.exec(tag)) {
+    if (m[1].toLowerCase() === want) return m[2];
+  }
+  return null;
+}
+
+/**
+ * Where a `<meta>` or `<link>` ends.
+ *
+ * Quote-aware, because `escapeAttr` leaves `>` alone: `content="a > b"` is legal
+ * HTML and stops nothing, and looking for the first `>` would cut the tag in
+ * half.
+ */
+function tagEnd(html, from) {
+  let quote = null;
+  for (let i = from; i < html.length; i++) {
+    const c = html[i];
+    if (quote) {
+      if (c === quote) quote = null;
+    } else if (c === '"' || c === "'") {
+      quote = c;
+    } else if (c === '>') {
+      return i + 1;
+    }
+  }
+  return html.length;
+}
+
+const HEAD_TAG = /<(meta|link)\b/gi;
+
+/** Every uniquely-named tag in one level's head, as `{ start, end, key }`. */
+function keyedTags(html) {
+  const found = [];
+  HEAD_TAG.lastIndex = 0;
+  for (let m = HEAD_TAG.exec(html); m; m = HEAD_TAG.exec(html)) {
+    const end = tagEnd(html, m.index);
+    const key = headKey(html.slice(m.index, end));
+    if (key) found.push({ start: m.index, end, key });
+    HEAD_TAG.lastIndex = end;
+  }
+  return found;
+}
+
+/**
+ * A tag an inner level restates, dropped from the outer one.
+ *
+ * The chain was concatenated, so a root layout with a default `og:image` and a
+ * page with its own shipped both. That is not an override: a crawler reads two
+ * `og:image` as two images and takes the first, which is the outermost, which is
+ * backwards. This is the rule `htmlAttrsOf` applies to `<html>`, which `<head>`
+ * never got.
+ *
+ * Across levels only. Two `og:image` at one level are deliberate and both stay.
+ *
+ * @param {string[]} parts one rendered head per level, outermost first
+ * @returns {string[]} the same, with what an inner level owns removed
+ */
+function mergeHead(parts) {
+  if (parts.length < 2) return parts;
+
+  const tags = parts.map((html) => (html ? keyedTags(html) : []));
+  const claimed = new Set();
+  const out = new Array(parts.length);
+
+  // Innermost first, so the first level to claim a key is the one that keeps it.
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const drop = tags[i].filter((tag) => claimed.has(tag.key));
+
+    if (drop.length) {
+      let html = '';
+      let at = 0;
+      for (const tag of drop) {
+        html += parts[i].slice(at, tag.start);
+        at = tag.end;
+      }
+      out[i] = (html + parts[i].slice(at)).trim();
+    } else {
+      out[i] = parts[i];
+    }
+
+    // After the level is done, so two of one key written here both survive.
+    for (const tag of tags[i]) claimed.add(tag.key);
+  }
+  return out;
+}
+
 /** A name that cannot break out of the tag it is written into. */
 const ATTR_NAME = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 
@@ -427,7 +541,7 @@ export function renderDocument(
 
   // Everything else accumulates outermost first, so a page's <meta> comes last
   // and a page's <style> can override a layout's.
-  const head = chain.map((mod, i) => mod.renderHead(datas[i])).filter(Boolean);
+  const head = mergeHead(chain.map((mod, i) => mod.renderHead(datas[i]))).filter(Boolean);
 
   // Ahead of the stylesheet, because a <link> blocks the scripts after it and
   // the point of a head script is to run before anything else.

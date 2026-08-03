@@ -231,6 +231,41 @@ test('script and event handlers do not come back', async () => {
   assert.match(body, /<h2 id="a">A<\/h2>/);
 });
 
+test('a style block does not come back, because it would restyle the host page', async () => {
+  const source = '<h2 id="a">A</h2><style>body{display:none}</style><p style="color:red">one</p>';
+  const { fetch } = fakeFetch({ 'https://source.example/x': html(source) });
+
+  const body = await (
+    await proxyHandler(ALLOW, { fetch })(request('url=https://source.example/x&id=a'))
+  ).text();
+
+  assert.doesNotMatch(body, /<style|display:none/);
+  // The attribute is the other kind. It paints its own element and stays.
+  assert.match(body, /style="color:red"/);
+});
+
+test("proxy.styles: 'strip' takes the attributes too", async () => {
+  const source = '<h2 id="a">A</h2><p style="color:red">one</p>';
+  const { fetch } = fakeFetch({ 'https://source.example/x': html(source) });
+  const config = { ...ALLOW, styles: 'strip' };
+
+  const body = await (
+    await proxyHandler(config, { fetch })(request('url=https://source.example/x&id=a'))
+  ).text();
+
+  assert.doesNotMatch(body, /style=/);
+  assert.match(body, /<p>one<\/p>/);
+});
+
+test('a styles value nobody recognises throws rather than quietly keeping them', async () => {
+  const { fetch } = fakeFetch({ 'https://source.example/x': html('<h2 id="a">A</h2>') });
+
+  await assert.rejects(
+    () => readForeign('https://source.example/x', { ...ALLOW, styles: 'none' }, { fetch }),
+    /proxy\.styles is "none"/,
+  );
+});
+
 test('the index is built after cleaning, so it names nothing that was removed', async () => {
   // Indexing first would list `gone` and then fail to resolve it.
   const source = '<h2 id="a">A</h2><iframe id="gone"></iframe>';

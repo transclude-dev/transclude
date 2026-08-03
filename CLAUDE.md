@@ -25,7 +25,7 @@ dependencies.
 
 This repository is the package. `examples/showcase` is an app built against it,
 installed from `file:../..` like any other project would install it. `npm test`
-runs 928 tests here and needs no app. `npm run test:examples` runs the demo's, and
+runs the framework's own tests and needs no app. `npm run test:examples` runs the demo's, and
 `npm run showcase` starts it, which is where the browser checks are.
 
 ## House style
@@ -56,7 +56,7 @@ when to merge.
   and `bin/serve.deno.js` are adapters that only listen.
 - `src/project.js`. Finds the project root and loads its config. The one place
   that answers where the app is.
-- `test/`. 928 tests. They need no app, and a change that makes them need one is
+- `test/`. They need no app, and a change that makes them need one is
   the boundary breaking.
 - `examples/showcase/`. An app, on the far side of the boundary. It depends on the
   package by name, and a test says nothing in the package reaches into `examples/`.

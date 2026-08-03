@@ -321,11 +321,18 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
           shadowTags,
           runtime,
           filename: name,
+          // Absolute, not relative to the project. A bundler composing this map
+          // into its own resolves `sources` against the *output* directory, so a
+          // repo-relative path came out as `dist/server/app/routes/…` and the
+          // stack named whichever file that collided with.
+          sourcePath: route.file,
           layouts: chainFor(route),
           client: clientManifest(route),
         });
         report(name, out.warnings);
-        return out.code;
+        // The map goes back with it. Vite composes what a load hook returns; a
+        // comment on the code is not read, so a stack named the virtual module.
+        return out.map ? { code: out.code, map: out.map } : out.code;
       }
 
       const name = virt.slice(P_CLIENT.length);

@@ -55,17 +55,35 @@ export function compileFragment(nodes, opts = {}) {
   const htmlNode = opts.html ?? null;
   const htmlAttrs = htmlNode?.attrs?.length ? gen.htmlAttrsJs(htmlNode, gen.rootScope) : null;
 
+  const body = joinOut(gen.body);
+  const head = joinOut(gen.head);
+  const title = joinOut(gen.title);
+  const slots = [...gen.slots].map(([name, out]) => [name, joinOut(out)]);
+  const regions = [...gen.regions].map(([name, out]) => [name, joinOut(out)]);
+
+  // Every block's code, and beside it which source line each of its lines came
+  // from. The assemblers put the code into a module and record where each block
+  // landed; `lineMap` turns the two into a source map.
+  const at = {
+    body: body.at,
+    head: head.at,
+    title: title.at,
+    slots: Object.fromEntries(slots.map(([name, out]) => [name, out.at])),
+    regions: Object.fromEntries(regions.map(([name, out]) => [name, out.at])),
+  };
+
   return {
-    body: joinOut(gen.body),
+    body: body.code,
+    at,
     blockDefs: gen.blockDefs.join('\n'),
     blockOf: gen.blockOf,
-    slots: Object.fromEntries([...gen.slots].map(([name, out]) => [name, joinOut(out)])),
-    regions: Object.fromEntries([...gen.regions].map(([name, out]) => [name, joinOut(out)])),
+    slots: Object.fromEntries(slots.map(([name, out]) => [name, out.code])),
+    regions: Object.fromEntries(regions.map(([name, out]) => [name, out.code])),
     regionIncludes: gen.regionIncludes,
     includes: gen.includes.map(({ key, kind, where, id }) => ({ key, kind, where, id })),
     consumed: [...gen.consumed],
-    head: joinOut(gen.head),
-    title: joinOut(gen.title),
+    head: head.code,
+    title: title.code,
     hasTitle: gen.title.length > 0,
     htmlAttrs,
     warnings: gen.warnings,
@@ -139,11 +157,32 @@ class Codegen {
   // ---- helpers ------------------------------------------------------------
 
   s(out, text) {
-    if (text) out.push({ t: 's', v: text });
+    if (text) out.push({ t: 's', v: text, at: this.at });
   }
 
   c(out, code) {
-    out.push({ t: 'c', v: code });
+    out.push({ t: 'c', v: code, at: this.at });
+  }
+
+  /**
+   * The source line everything emitted from here belongs to.
+   *
+   * Carried on the chunk rather than worked out later, because by the time the
+   * lines are joined the node that produced them is gone. `null` when parse5 gave
+   * no location, which is what a synthesised node has: the map simply says
+   * nothing about those lines rather than guessing.
+   */
+  at = null;
+
+  /** Runs `fn` with the position set to `node`'s, and puts it back after. */
+  from(node, fn) {
+    const was = this.at;
+    this.at = node?.sourceCodeLocation?.startLine ?? was;
+    try {
+      return fn();
+    } finally {
+      this.at = was;
+    }
   }
 
   warn(message, node) {
@@ -255,7 +294,7 @@ class Codegen {
     const params = ['__d', ...args].join(', ');
     this.blockOf.set(node, id);
     this.blockDefs.push(
-      `const __blk${id} = { ${extra}html: (${params}) => { let __o = '';\n${joinOut(body)}\nreturn __o; } };`,
+      `const __blk${id} = { ${extra}html: (${params}) => { let __o = '';\n${joinOut(body).code}\nreturn __o; } };`,
     );
     this.s(out, ANCHOR_OPEN);
     this.c(out, `__o += __blk${id}.html(${params});`);
@@ -292,6 +331,10 @@ class Codegen {
   }
 
   emitNode(node, out, scope, topLevel) {
+    return this.from(node, () => this.emitNodeAt(node, out, scope, topLevel));
+  }
+
+  emitNodeAt(node, out, scope, topLevel) {
     if (node.nodeName === '#text') {
       this.emitText(node.value ?? '', out, scope, node, false);
       return;
@@ -469,7 +512,7 @@ class Codegen {
       (ranged ? `ranged: true, ` : '') +
       `list: (${outer}) => (${listJs}) ?? [], ` +
       `key: (${each}) => ${key ? `(${this.expr(key.value, inner, el)})` : indexJs}, ` +
-      `item: (${each}) => { let __o = ${open};\n${joinOut(item)}\nreturn __o${close}; }, `
+      `item: (${each}) => { let __o = ${open};\n${joinOut(item).code}\nreturn __o${close}; }, `
     );
   }
 
@@ -816,14 +859,22 @@ class Codegen {
   }
 
   emitText(value, out, scope, node, raw) {
+    const start = node?.sourceCodeLocation?.startLine ?? this.at;
+    let line = start;
+
     for (const part of splitInterpolations(value)) {
+      this.at = line;
       if (part.type === 'text') {
         this.s(out, raw ? part.value : escapeText(part.value));
       } else {
         const js = this.expr(part.value, scope, node);
         this.c(out, raw ? `__o += __str(${js});` : `__o += __e(${js});`);
       }
+      // A paragraph of prose is one text node. Counting as we go is what puts a
+      // `${}` on line 40 at line 40 rather than at the line the node opened on.
+      if (start !== null) line += countNewlines(part.value);
     }
+    this.at = start;
   }
 }
 
@@ -955,22 +1006,48 @@ function parseEach(value, node) {
 
 // ---- output ---------------------------------------------------------------
 
+/** Newlines in a string, for walking a multi-line text node. */
+function countNewlines(text) {
+  let n = 0;
+  for (let i = 0; i < text.length; i++) if (text[i] === '\n') n += 1;
+  return n;
+}
+
+/**
+ * Chunks to code, and which source line each generated line came from.
+ *
+ * `.at` is one entry per line of the returned code, so a caller that knows where
+ * this block landed in the assembled module can turn it into a mapping. Static
+ * chunks are buffered into one `__o +=`, and the line it reports is the first
+ * chunk's: that is where the run of markup started.
+ */
 function joinOut(entries) {
   const lines = [];
+  const at = [];
   let buffer = '';
+  let bufferAt = null;
+
+  const flush = () => {
+    if (!buffer) return;
+    lines.push(`__o += ${JSON.stringify(buffer)};`);
+    at.push(bufferAt);
+    buffer = '';
+    bufferAt = null;
+  };
+
   for (const entry of entries) {
     if (entry.t === 's') {
+      if (!buffer) bufferAt = entry.at ?? null;
       buffer += entry.v;
       continue;
     }
-    if (buffer) {
-      lines.push(`__o += ${JSON.stringify(buffer)};`);
-      buffer = '';
-    }
+    flush();
     lines.push(entry.v);
+    at.push(entry.at ?? null);
   }
-  if (buffer) lines.push(`__o += ${JSON.stringify(buffer)};`);
-  return lines.join('\n');
+  flush();
+
+  return { code: lines.join('\n'), at };
 }
 
 // parse5 hands us decoded text, so static output has to be re-encoded.

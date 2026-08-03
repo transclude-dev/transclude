@@ -404,6 +404,25 @@ against.
   parses the source again in document mode purely to read that element. Using the
   real parser rather than searching the text is what makes `<html>` inside a
   script block or a comment stay a string.
+- **A source map is handed back from `load`, not written into the code.** Vite
+  composes a map a plugin returns and does not read a `//# sourceMappingURL`
+  comment on the code it was given, so the inline version changed nothing and a
+  dev stack still named `virtual:transclude-page/x` and a generated line. With
+  the map returned, it names the `.html` and the line of markup.
+  `compiler/sourcemap.js` writes the v3 encoding: line level, because a
+  generated line is one statement from one expression and a column would claim
+  precision the codegen does not have. The blocks are found by a marker the
+  assembler writes above each one, resolved **in the order they appear** rather
+  than the order the caller listed them: removing a marker shifts every line
+  already noted below it, silently, one per marker, and the first test passed
+  only because it listed them in file order.
+- **The production bundle does not map yet, and `sourcemap: true` is worse than
+  off.** Rolldown composed no `.html` into `dist/server/entry.js.map`: the
+  sources are the runtime and the app's own `.js` only. With SSR maps on, a page
+  frame then resolves to whichever neighbouring module's range covers it, so a
+  throw in `colophon.html` reported `app/lib/code.js:81` with full confidence.
+  A wrong map is worse than none, so it stays off until the composition is
+  understood. Dev is verified and is where a template is written.
 - **A preload hint is set on the way out, never on `ctx.response`.** A header on
   that object is one of the things that makes a page too personal to cache, so
   writing the `Link` there would turn every page in the app into a miss.

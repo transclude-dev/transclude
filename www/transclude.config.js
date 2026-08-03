@@ -14,9 +14,12 @@ export default {
 
   strict: false,
 
-  // Every page on this site is a document with no per-request state, so the
-  // build writes each one to a file and no page carries a region loader.
-  fragmentParam: null,
+  // The landing page says a fragment is a URL and links to one, so this site has
+  // to answer it. Every page here is still written to a file at build time: a
+  // prerendered document and a fragment of it are the same compiled markup, and
+  // the server answers the second on the same route. It costs no client
+  // JavaScript. `watchElements` is what would, and nothing here swaps anything.
+  fragmentParam: 'fragment',
 
   csrf: true,
 

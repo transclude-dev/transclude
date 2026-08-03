@@ -91,9 +91,9 @@ function verify() {
     // The part that is a gate is a test, and `npm test` runs it.
     ['the framework', 'npm', ['test']],
     ['the demo', 'npm', ['run', 'test:examples']],
-    ['the docs', 'npm', ['test', '--prefix', 'docs']],
-    ['the docs types', 'npm', ['run', 'check', '--prefix', 'docs']],
-    ['the docs build', 'npm', ['run', 'build', '--prefix', 'docs']],
+    ['the docs', 'npm', ['test', '--prefix', 'www']],
+    ['the docs types', 'npm', ['run', 'check', '--prefix', 'www']],
+    ['the docs build', 'npm', ['run', 'build', '--prefix', 'www']],
   ];
 
   for (const [what, command, args] of steps) {

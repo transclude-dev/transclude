@@ -4,8 +4,8 @@ HTML is the product. A page is an `.html` file, the directory tree is the route
 table, and any fragment of a page is a URL of its own. Nothing has to run in the
 browser for the page to be correct.
 
-The same app runs on Node, Bun, Deno and workerd, and ships no client JavaScript
-by default.
+The same app runs on Node, Bun, Deno and Cloudflare Workers, and ships no client
+JavaScript by default.
 
 **[transclude.dev](https://transclude.dev)** has the documentation.
 
@@ -79,7 +79,7 @@ so a swap cannot drift from the page it replaces part of.
   103 while the page is still being made.
 - **No session store and no database opinion.** Signed cookies are the building
   block.
-- **No byte ranges on workerd.** A Range request gets 200 rather than 206.
+- **No byte ranges on Cloudflare Workers.** A Range request gets 200 rather than 206.
   Ranges are what a filesystem buys, and a worker has none.
 - **`@scope` is soft scoping.** A light element's styles lose to page CSS of
   equal specificity: right for content, a hazard for widgets.
@@ -103,8 +103,9 @@ npm run check:src     # type-check the framework itself
 
 `examples/showcase` is an app built against this package the same way any other
 project would be. It is where the browser checks live, because those need an app
-to run against, and it is what the four runtimes are checked with. `docs/` is the
-site at transclude.dev, and is itself built with the framework.
+to run against, and it is what the four runtimes are checked with. `www/` is the
+site at transclude.dev: a landing page, the documentation under `/docs`, and
+itself built with the framework.
 
 ### Trying the CLI against this checkout
 

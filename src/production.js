@@ -73,6 +73,12 @@ const bundle = noBuild
 const assets = loadAssets(path.join(dist, 'client'));
 const statics = loadStatic(path.join(dist, 'static'));
 
+/** A build artifact under `static/`, as text. Absent until a build writes it. */
+const readText = (name) => {
+  const file = path.join(dist, 'static', name);
+  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
+};
+
 /** A page the framework reaches for rather than routes to. */
 const readPage = (name) => {
   const file = path.join(dist, 'static', name);
@@ -100,6 +106,7 @@ export const app = createApp({
   errorPage: readPage('500.html'),
   hash: etagOf,
   compress: compressResponse,
+  precache: readText('precache.json'),
 });
 
 /**

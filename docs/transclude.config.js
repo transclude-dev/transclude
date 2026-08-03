@@ -29,6 +29,11 @@ export default {
   // so nothing has to be listed by hand.
   sitemap: { hostname: 'https://transclude.dev' },
 
+  // A list of what the build produced, at /precache.json. The framework ships
+  // no service worker: only the build knows an asset's hashed name, so this is
+  // the half an app cannot write for itself.
+  precache: true,
+
   // The origin `ctx.absolute()` resolves against. The request's own is wrong
   // behind a proxy, and there is no request at all while prerendering.
   metadataBase: 'https://transclude.dev',

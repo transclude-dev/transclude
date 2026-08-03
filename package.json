@@ -1,8 +1,31 @@
 {
-  "name": "transclude",
+  "name": "@transclude/core",
   "version": "0.1.0",
+  "description": "An HTML-first server framework. A page is an .html file, the directory tree is the route table, and any region of a page is a URL of its own. Runs on Node, Bun, Deno and workerd, and ships no client JavaScript by default.",
+  "keywords": [
+    "html",
+    "hypermedia",
+    "ssr",
+    "server-side-rendering",
+    "framework",
+    "custom-elements",
+    "declarative-shadow-dom",
+    "htmx",
+    "hono",
+    "vite"
+  ],
+  "license": "MIT",
+  "author": "Joe Dakroub",
   "type": "module",
-  "description": "Single-file .html routes, layouts, partials and components. Compiles once to server-rendered markup, optionally a declarative shadow root and a custom element.",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "transclude-build": "./bin/build.js",
+    "transclude-check": "./bin/check.js",
+    "transclude-dev": "./bin/dev.js",
+    "transclude-serve": "./bin/serve.js"
+  },
   "exports": {
     ".": "./src/plugin.js",
     "./app": "./src/app.js",
@@ -16,12 +39,19 @@
     "./typecheck": "./src/typecheck.js",
     "./worker": "./src/worker.js"
   },
-  "bin": {
-    "create-transclude": "./bin/create.js",
-    "transclude-build": "./bin/build.js",
-    "transclude-check": "./bin/check.js",
-    "transclude-dev": "./bin/dev.js",
-    "transclude-serve": "./bin/serve.js"
+  "files": [
+    "LICENSE",
+    "bin",
+    "editor",
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "test:examples": "npm test --prefix examples/showcase",
+    "test:docs": "npm test --prefix docs",
+    "showcase": "npm run dev --prefix examples/showcase",
+    "docs": "npm run dev --prefix docs",
+    "check:src": "tsc -p tsconfig.src.json"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.12",
@@ -33,20 +63,6 @@
   "peerDependencies": {
     "typescript": "^5.9",
     "vite": "^8"
-  },
-  "files": [
-    "bin",
-    "editor",
-    "src",
-    "templates"
-  ],
-  "scripts": {
-    "test": "node --test \"test/**/*.test.js\"",
-    "test:examples": "npm test --prefix examples/showcase",
-    "test:docs": "npm test --prefix docs",
-    "showcase": "npm run dev --prefix examples/showcase",
-    "docs": "npm run dev --prefix docs",
-    "check:src": "tsc -p tsconfig.src.json"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

@@ -492,7 +492,14 @@ against.
   to be inside the first 1024 bytes and is not something to override. Found by
   generating a project with the new CLI and reading the output, which is the
   first time anything here rendered a page that writes its own viewport.
-- **`templates/` is what a new project is, and `_gitignore` is why.** A real
+- **Two packages, and `@transclude/create` depends on neither.** Scaffolding six
+  files should not download a compiler, so the CLI carries its own copy of the
+  templates and names `@transclude/core` in what it writes rather than importing
+  it. `npm create @transclude` resolves to `@transclude/create`, which is npm's
+  own rule: `npm init <@scope>` is `npx <@scope>/create`. The unscoped
+  `transclude` on the registry is somebody else's, published in 2017 and
+  untouched since, and is not worth a dispute.
+- **`create/templates/` is what a new project is, and `_gitignore` is why.** A real
   `.gitignore` inside a template is applied to the template itself by everything
   that reads one, npm included when the package is packed, so the file is stored
   under a name nothing recognises and renamed on the way out. The tests assert
@@ -719,7 +726,7 @@ against.
   examples in from the loader, where a JS string can hold them. That is what
   `docs/` does, and it is why its code samples are data rather than markup.
 - **A `file:` dependency does not bring its peers.** npm installs a peer
-  dependency alongside a package from the registry, so `npm install transclude`
+  dependency alongside a package from the registry, so `npm install @transclude/core`
   gets Vite and TypeScript. It does not do that for `file:..`, which is how both
   apps here depend on the package. So `examples/showcase` and `docs` each list
   Vite and TypeScript again in their own `devDependencies`. Those entries look

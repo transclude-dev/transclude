@@ -9,7 +9,7 @@ cd my-app
 npm install
 npm run dev`, 'shell'],
       blank: ['npx create-transclude my-app --template blank', 'shell'],
-      install: ['npm install transclude', 'shell'],
+      install: ['npm install @transclude/core', 'shell'],
       config: [
         `export default {
   appDir: 'app',
@@ -23,7 +23,7 @@ npm run dev`, 'shell'],
       ],
       vite: [
         `import { defineConfig } from 'vite';
-import transclude from 'transclude';
+import transclude from '@transclude/core';
 import config from './transclude.config.js';
 
 export default defineConfig({

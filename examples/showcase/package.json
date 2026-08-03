@@ -15,7 +15,7 @@
     "start:worker": "wrangler dev"
   },
   "dependencies": {
-    "transclude": "file:../.."
+    "@transclude/core": "file:../.."
   },
   "devDependencies": {
     "typescript": "^5.9.3",

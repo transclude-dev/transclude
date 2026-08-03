@@ -1,5 +1,9 @@
 // Starting a project.
 //
+// `@transclude/create` is its own package: scaffolding six files should not
+// download a compiler. Its tests live here because `npm test` runs here, and
+// because the templates they check have to keep building against this checkout.
+//
 // These run the bin the way a person does and read what lands. What is in
 // `templates/` is what a new project is, so the assertions are about the files
 // rather than about the code that copies them.
@@ -13,7 +17,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const create = path.join(root, 'bin', 'create.js');
+const create = path.join(root, 'create', 'index.js');
 
 /** Runs the bin into a fresh directory and hands back that directory. */
 const make = (args, fn) => {
@@ -74,14 +78,14 @@ test('the directory name becomes the package name and the heading', () => {
 test('it depends on a published version, not on wherever this checkout is', () => {
   make(['--template', 'blank'], (dir) => {
     const { dependencies } = JSON.parse(read(dir, 'package.json'));
-    assert.match(dependencies.transclude, /^\^\d+\.\d+\.\d+$/);
+    assert.match(dependencies['@transclude/core'], /^\^\d+\.\d+\.\d+$/);
   });
 });
 
 test('--link points at the checkout instead, which is how the framework is worked on', () => {
   make(['--template', 'blank', '--link'], (dir) => {
     const { dependencies } = JSON.parse(read(dir, 'package.json'));
-    assert.equal(dependencies.transclude, `file:${root}`);
+    assert.equal(dependencies['@transclude/core'], `file:${root}`);
   });
 });
 

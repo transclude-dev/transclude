@@ -13,8 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 // `fileURLToPath`, never `url.pathname`: a space in the path stays
 // percent-encoded in the second one, and `Atelier%20Dakroub` is not a directory.
-const here = path.dirname(fileURLToPath(import.meta.url));
-const root = path.dirname(here);
+const root = path.dirname(fileURLToPath(import.meta.url));
 const templates = path.join(root, 'templates');
 
 const TEMPLATES = [
@@ -88,9 +87,15 @@ function checkTarget(dir) {
   }
 }
 
-/** The dependency a new project declares on this framework. */
+/**
+ * What a new project declares.
+ *
+ * `--link` points at a checkout of the framework, which is the only way to try
+ * an unpublished one: the version below is this package's, and the two are
+ * released together.
+ */
 function dependency(link) {
-  if (link) return `file:${root}`;
+  if (link) return `file:${path.resolve(root, '..')}`;
   const { version } = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   return `^${version}`;
 }

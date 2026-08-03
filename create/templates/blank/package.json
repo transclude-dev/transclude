@@ -10,7 +10,7 @@
     "check": "transclude-check"
   },
   "dependencies": {
-    "transclude": "__TRANSCLUDE__"
+    "@transclude/core": "__TRANSCLUDE__"
   },
   "devDependencies": {
     "typescript": "^5.9",

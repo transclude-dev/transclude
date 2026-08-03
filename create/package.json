@@ -1,0 +1,12 @@
+{
+  "name": "@transclude/create",
+  "version": "0.1.0",
+  "description": "Starts a transclude project. `npm create @transclude my-app`.",
+  "keywords": ["transclude", "scaffold", "starter", "create"],
+  "license": "MIT",
+  "author": "Joe Dakroub",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "bin": { "create-transclude": "./index.js" },
+  "files": ["index.js", "templates", "LICENSE"]
+}

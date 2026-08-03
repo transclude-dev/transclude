@@ -113,7 +113,7 @@ package names a path of its own.
 ```jsonc
 // package.json
 {
-  "dependencies": { "transclude": "^0.1.0" },
+  "dependencies": { "@transclude/core": "^0.1.0" },
   "scripts": {
     "dev": "transclude-dev",       // Hono + Vite, http://localhost:1960
     "build": "transclude-build",   // -> dist/
@@ -1053,7 +1053,7 @@ nothing in the package reaches into `examples/`:
 
 ```
 examples/showcase/
-  package.json             "transclude": "file:../.."
+  package.json             "@transclude/core": "file:../.."
   transclude.config.js     where the app is. The whole interface
   worker.js                its workerd entry, wiring transclude/worker
   test/                    its own tests, about its build output and its wiring

@@ -53,8 +53,8 @@ test('the worker entry reaches the framework by name, not by path', () => {
   // The whole point of the package boundary. A relative import here would work
   // in this repo and nowhere else.
   const source = sourceOf('worker.js');
-  assert.match(source, /from 'transclude\/app'/);
-  assert.match(source, /from 'transclude\/worker'/);
+  assert.match(source, /from '@transclude\/core\/app'/);
+  assert.match(source, /from '@transclude\/core\/worker'/);
   assert.doesNotMatch(source, /from '\.\.?\/framework/, 'it reaches into the package directory');
 });
 

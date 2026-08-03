@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { renderRoute, responseOf } from 'transclude/document';
-import { cookiesOf } from 'transclude/cookies';
+import { renderRoute, responseOf } from '@transclude/core/document';
+import { cookiesOf } from '@transclude/core/cookies';
 
 // These assert on this app's built output, so they belong to the app rather
 // than to the framework. test/ -> project root

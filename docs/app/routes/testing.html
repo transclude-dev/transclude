@@ -6,7 +6,7 @@
       request: [
         `import test from 'node:test';
 import assert from 'node:assert/strict';
-import { app } from 'transclude/production';
+import { app } from '@transclude/core/production';
 
 test('the notes page answers', async () => {
   const res = await app.request('http://localhost/notes');

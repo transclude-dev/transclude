@@ -1,6 +1,6 @@
 // The app answering real requests.
 //
-// `transclude/production` builds the same Hono app `npm start` serves, from
+// `@transclude/core/production` builds the same Hono app `npm start` serves, from
 // `dist`. Asking it for a URL runs everything a browser would meet: the
 // trailing-slash redirect, CSRF, the app's own middleware, cookies, the cache,
 // and the route table. Nothing is stubbed, so a test that passes here is about
@@ -24,7 +24,7 @@ const describe = built ? test : test.skip;
 // happens on the first import below.
 process.env.COOKIE_SECRET ??= 'a-secret-for-tests-only';
 
-const { app } = built ? await import('transclude/production') : { app: null };
+const { app } = built ? await import('@transclude/core/production') : { app: null };
 const get = (url, init) => app.request(`http://localhost${url}`, { redirect: 'manual', ...init });
 
 const form = (body) => ({

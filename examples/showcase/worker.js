@@ -7,8 +7,8 @@
 // The cost of having no filesystem is that the assets are in the bundle. Plain
 // bytes only, and the platform compresses on the way out.
 
-import { createApp } from 'transclude/app';
-import { bytesFrom, fileHandler, hash, pageEntry } from 'transclude/worker';
+import { createApp } from '@transclude/core/app';
+import { bytesFrom, fileHandler, hash, pageEntry } from '@transclude/core/worker';
 import { assets, errorPage, notFound, precache, publicFiles, statics } from './dist/server/assets.js';
 import { endpoints, middleware, pages } from './dist/server/entry.js';
 import manifestText from './dist/routes.json';

@@ -186,3 +186,53 @@ test('a status the envelope carries is not lost on a short circuit', () => {
   const out = withEnvelope(new Response('b', { status: 418 }), ctx);
   assert.equal(out.status, 418);
 });
+
+// ---- Secure follows the connection -----------------------------------------
+
+const req = (url, headers = {}) => new Request(url, { headers });
+const setOn = (request) => {
+  const response = { headers: new Headers() };
+  cookiesOf(request, response, 'secret').set('session', 'abc');
+  return response.headers.get('set-cookie');
+};
+
+test('a cookie set over https says Secure', () => {
+  assert.match(setOn(req('https://site.example/')), /Secure/);
+});
+
+test('a cookie set over http does not, so localhost still works in dev', () => {
+  // Always on would break `http://localhost`, and an author who cannot keep a
+  // session in dev turns the whole thing off, which is the worse outcome.
+  assert.doesNotMatch(setOn(req('http://localhost:1960/')), /Secure/);
+});
+
+test('a proxy that terminates TLS is believed, because the lie fails closed', () => {
+  // The request's own URL says http: for a visitor who used https:. Trusting the
+  // header can only turn Secure on, and a cookie that is then withheld over
+  // plain HTTP is the safe direction to be wrong in.
+  const forwarded = req('http://site.example/', { 'x-forwarded-proto': 'https' });
+  assert.match(setOn(forwarded), /Secure/);
+
+  // A chain lists the original first.
+  const chained = req('http://site.example/', { 'x-forwarded-proto': 'https, http' });
+  assert.match(setOn(chained), /Secure/);
+});
+
+test('the header cannot turn Secure off', () => {
+  const lying = req('https://site.example/', { 'x-forwarded-proto': 'http' });
+  assert.match(setOn(lying), /Secure/);
+});
+
+test('an explicit value wins either way', () => {
+  const response = { headers: new Headers() };
+  cookiesOf(req('http://localhost/'), response, 's').set('a', '1', { secure: true });
+  assert.match(response.headers.get('set-cookie'), /Secure/);
+});
+
+test('the other defaults are unchanged', () => {
+  const header = setOn(req('https://site.example/'));
+
+  assert.match(header, /HttpOnly/);
+  assert.match(header, /SameSite=Lax/);
+  assert.match(header, /Path=\//);
+});

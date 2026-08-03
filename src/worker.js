@@ -27,8 +27,9 @@ function etagOf(bytes) {
  * because nothing here is precompressed, and the code that reads it already
  * treats an empty map as "identity is all there is".
  *
- * @param {Record<string, { body: string }>} map base64 from the build
- * @returns {Map<string, object>} the same entries with real bytes
+ * @param {Record<string, { body: string, type: string }>} map base64 from the build
+ * @returns {{ get: (pathname: string) => object|null }} the same entries with
+ *   real bytes, behind the lookup `createApp` uses
  */
 export function bytesFrom(map) {
   const built = new Map();

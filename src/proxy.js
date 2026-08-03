@@ -138,7 +138,7 @@ async function bodyWithin(response, maxBytes) {
  * the requested one, so two requests that redirect to the same place hit.
  *
  * @param {number} [max] how many documents to hold
- * @returns {{ get: Function, set: Function }}
+ * @returns {{ get: Function, set: Function, size: () => number }}
  */
 export function documentStore(max = DEFAULTS.cache) {
   const held = new Map();

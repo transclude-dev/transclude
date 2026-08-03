@@ -55,7 +55,8 @@ const LAYOUT_FILE = '_layout.html';
 /**
  * @param {{ root: string, appDir: string, routesDir: string, elementsDir: string,
  *   strict?: boolean }} options
- * @returns {{ check: Function, dispose: Function }}
+ * @returns {{ files: Function, update: Function, rebuild: Function,
+ *   check: Function, quickInfo: Function, describe: Function }}
  */
 export function createChecker({
   root,

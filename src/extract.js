@@ -245,7 +245,9 @@ function ancestorsOf(element) {
  *
  * @param {string|object} input the HTML, or an already indexed document
  * @param {string} id
- * @returns {object[]|null} the nodes, or null when nothing answers to that id
+ * @returns {{ id: string, implicit: boolean, nodes: object[], html: string,
+ *   kind: string, standalone: boolean, diagnostics: object[] }|null} null when
+ *   nothing answers to that id
  */
 export function resolveFragment(input, id) {
   const doc = typeof input === 'string' ? readDocument(input) : input;

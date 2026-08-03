@@ -1,0 +1,10 @@
+/* Linked by every page. It goes through Vite, so nesting and @import work, and
+   the build hashes and compresses it. */
+
+body {
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  max-width: 42rem;
+  font: 16px/1.6 system-ui, sans-serif;
+  color-scheme: light dark;
+}

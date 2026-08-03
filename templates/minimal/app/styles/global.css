@@ -1,0 +1,24 @@
+/* Linked by every page. It goes through Vite, so nesting and @import work, and
+   the build hashes and compresses it. */
+
+:root {
+  --muted: #666;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root { --muted: #999; }
+}
+
+body {
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  max-width: 42rem;
+  font: 16px/1.6 system-ui, sans-serif;
+}
+
+h1 { font-size: 1.6rem; margin: 0 0 1rem; }
+a { color: inherit; }
+
+nav { display: flex; gap: 1rem; margin-bottom: 2rem; }
+nav a[aria-current='page'] { font-weight: 600; }

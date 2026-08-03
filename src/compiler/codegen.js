@@ -556,7 +556,10 @@ class Codegen {
 
     if (RAW_TEXT.has(tag)) {
       for (const child of childrenOf(el)) {
-        if (child.nodeName === '#text') this.emitText(child.value ?? '', target, scope, child, true);
+        if (child.nodeName === '#text') {
+          assertRawTextSafe(tag, child.value ?? '', el);
+          this.emitText(child.value ?? '', target, scope, child, true);
+        }
       }
     } else {
       this.emitChildren(childrenOf(el), target, scope, false);
@@ -817,6 +820,58 @@ class Codegen {
         this.c(out, raw ? `__o += __str(${js});` : `__o += __e(${js});`);
       }
     }
+  }
+}
+
+/**
+ * What a `<script>` or a `<style>` may interpolate, which is almost nothing.
+ *
+ * Text in these two elements is written to the document raw, because escaping it
+ * would change what the browser reads: `&amp;` is an ampersand in prose and four
+ * characters in JavaScript. So an expression here lands in code.
+ *
+ * For a script nothing can make that safe. A value that closes the string it was
+ * written into runs whatever comes after it, and no amount of HTML escaping
+ * touches that, so the answer is not a better escape. Data is a narrower
+ * question with a real answer, and `json()` is it: JSON with the characters that
+ * could end the element written as `\uXXXX`. One of those, alone, is allowed.
+ *
+ * For a style there is no such carve-out. Anything read from a value can be
+ * written as a custom property on the element instead, where it goes through
+ * `attr` and is escaped: `<div style="--brand: ${color}">`.
+ *
+ * @param {string} tag        'script' or 'style'
+ * @param {string} text       the raw text node's contents
+ * @param {object} el         the element, for the line number
+ */
+function assertRawTextSafe(tag, text, el) {
+  const parts = splitInterpolations(text);
+  const exprs = parts.filter((p) => p.type === 'expr');
+  if (exprs.length === 0) return;
+
+  if (tag === 'script' && parts.length === 1 && isJsonCall(exprs[0].value)) return;
+
+  const alternative =
+    tag === 'script'
+      ? 'Pass data with ${json(value)}, which is the whole text of the script, ' +
+        'or put it in an attribute and read it from a file.'
+      : 'Set a custom property on the element instead: ' +
+        '<div style="--brand: ${color}">, which is escaped.';
+
+  throw new CompileError(
+    `\${} inside <${tag}> is written to the page as code, so a value could end ` +
+      `the element or the statement it sits in. ${alternative}`,
+    el,
+  );
+}
+
+/** `json(x)` and nothing else: not `json(x) + y`, and not `notJson(x)`. */
+function isJsonCall(source) {
+  try {
+    const node = parseExpr(source);
+    return node.type === 'CallExpression' && node.callee?.type === 'Identifier' && node.callee.name === 'json';
+  } catch {
+    return false;
   }
 }
 

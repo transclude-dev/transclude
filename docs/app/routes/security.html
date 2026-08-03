@@ -28,6 +28,17 @@ export default {
 
 <p>\${comment}</p>`,
       escapedOut: [`<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>`, 'html'],
+      refused: [
+        `<script>var user = "\${name}";<\/script>
+<style>.a { color: \${color} }</style>`,
+        'html',
+      ],
+      jsonOk: [
+        `<script type="application/ld+json">\${json(schema)}<\/script>
+
+<div style="--brand: \${color}"></div>`,
+        'html',
+      ],
       trusted: `<p>\${html(post.renderedMarkdown)}</p>`,
       parseOrder: `<!-- The comment ends at the first --> in the file, and an
      interpolation cannot put one there later. -->
@@ -89,6 +100,34 @@ export default {
   </p>
 
   ${html(s.parseOrder)}
+
+  <h2>Scripts and styles take no expressions</h2>
+
+  <p>
+    Text in a <code>&lt;script&gt;</code> or a <code>&lt;style&gt;</code> reaches
+    the page as written, because escaping it would change what the browser reads:
+    <code>&amp;amp;</code> is an ampersand in prose and four characters in
+    JavaScript. So a value there lands in code, and both of these are compile
+    errors.
+  </p>
+
+  ${html(s.refused)}
+
+  <p>
+    No escape fixes the first one. A value that closes the string it was written
+    into runs whatever follows it, and that is a fact about JavaScript rather
+    than about markup.
+  </p>
+
+  <p>
+    Data is a narrower question and has an answer. <code>json()</code> is JSON
+    with the characters that could end the element written as
+    <code>&#92;uXXXX</code>, and one of those, alone, is what a script may carry. For
+    a style, read the value through a custom property, which is an attribute and
+    is escaped.
+  </p>
+
+  ${html(s.jsonOk)}
 
   <h2>Hashes, not a nonce</h2>
 

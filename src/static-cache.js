@@ -26,12 +26,43 @@ const TYPES = {
   '.woff2': 'font/woff2',
 };
 
-/** Prerendered pages, keyed by the URL they stand for. */
+/**
+ * @typedef {object} Entry
+ * @property {Buffer} body
+ * @property {string} etag
+ * @property {Map<string, { body: Buffer, etag: string }>} encodings one per content encoding
+ * @property {string} type the Content-Type to send
+ */
+
+/**
+ * @typedef {object} Store
+ * @property {number} count
+ * @property {number} bytes held in memory
+ * @property {number} onDisk left on disk because the budget ran out
+ * @property {number} encoded how many have a precompressed variant
+ * @property {Map<string, Entry|{ file: string }>} entries for the build, which
+ *   serialises these for a runtime with no filesystem
+ * @property {(pathname: string) => Entry|null} get
+ */
+
+/**
+ * Prerendered pages, keyed by the URL they stand for.
+ *
+ * @param {string} dir the directory of built pages
+ * @param {{ maxBytes?: number }} [options] how much to hold in memory
+ * @returns {Store}
+ */
 export function loadStatic(dir, options = {}) {
   return load(dir, pageUrl, options);
 }
 
-/** Build assets, keyed by their path under the output directory. */
+/**
+ * Build assets, keyed by their path under the output directory.
+ *
+ * @param {string} dir
+ * @param {{ maxBytes?: number }} [options]
+ * @returns {Store}
+ */
 export function loadAssets(dir, options = {}) {
   return load(dir, (relative) => `/${relative.split(path.sep).join('/')}`, options);
 }
@@ -97,6 +128,16 @@ function read(file) {
   return { body, etag, encodings, type: TYPES[path.extname(file)] ?? 'application/octet-stream' };
 }
 
+/**
+ * A cache key for a body, not a signature.
+ *
+ * Truncated on purpose: this says whether two responses are the same bytes, and
+ * nothing trusts it for anything else. Anything that needs a digest a browser
+ * will agree with uses `crypto.subtle`.
+ *
+ * @param {Buffer|Uint8Array|string} body
+ * @returns {string} a quoted ETag
+ */
 export function etagOf(body) {
   return `"${createHash('sha1').update(body).digest('base64url').slice(0, 20)}"`;
 }

@@ -8,7 +8,12 @@
 // behind it, so nobody waits for a re-render. That is the whole point: the cost
 // of being out of date is bounded, and no visitor pays it.
 
-/** What a page means by `export const revalidate`. */
+/**
+ * What a page means by `export const revalidate`, in milliseconds.
+ *
+ * @param {object|null|undefined} page a compiled page module
+ * @returns {number} 0 for a page that is rendered every time
+ */
 export function windowOf(page) {
   const value = page?.revalidate;
   if (value === undefined || value === null || value === false) return null;
@@ -31,6 +36,9 @@ export function windowOf(page) {
  * has as many entries as there are searches. Oldest out first, which is not
  * least-recently-used and is enough: an entry that matters is rewritten by its
  * own revalidation and moves back to the end.
+ *
+ * @param {{ max?: number }} [options]
+ * @returns {{ get: Function, set: Function, delete: Function, clear: Function, size: () => number }}
  */
 export function memoryStore({ max = 1000 } = {}) {
   const entries = new Map();
@@ -62,6 +70,10 @@ export function memoryStore({ max = 1000 } = {}) {
  * or when a loader put a header on the response: a `Set-Cookie` held in a shared
  * cache is somebody else's session handed to the next visitor. That is the same
  * rule the build uses to decide a route can be a file.
+ *
+ * @param {object} [store] anything with the `memoryStore` shape
+ * @param {{ now?: () => number }} [deps] injected so a test can move time
+ * @returns {{ resolve: Function, revalidatePath: Function }}
  */
 export function createCache(store = memoryStore(), { now = () => Date.now() } = {}) {
   // One render per key at a time. Without this the first request past the window
@@ -113,7 +125,12 @@ export function createCache(store = memoryStore(), { now = () => Date.now() } = 
   };
 }
 
-/** Path plus query, because a page that reads `?q=` renders differently for each. */
+/**
+ * Path plus query, because a page that reads `?q=` renders differently for each.
+ *
+ * @param {string} url an absolute URL
+ * @returns {string}
+ */
 export function cacheKey(url) {
   const { pathname, search } = new URL(url);
   return pathname + search;

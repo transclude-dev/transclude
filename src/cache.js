@@ -74,7 +74,7 @@ export function memoryStore({ max = 1000 } = {}) {
  *
  * @param {object} [store] anything with the `memoryStore` shape
  * @param {{ now?: () => number }} [deps] injected so a test can move time
- * @returns {{ resolve: Function, revalidatePath: Function }}
+ * @returns {{ read: Function, revalidateTag: Function, revalidatePath: Function }}
  */
 export function createCache(store = memoryStore(), { now = () => Date.now() } = {}) {
   // One render per key at a time. Without this the first request past the window

@@ -21,7 +21,8 @@ import { feed, feedPath } from '../src/feed.js';
 import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
 import { sitemap } from '../src/sitemap.js';
-import { loadAssets, loadStatic } from '../src/static-cache.js';
+import { etagOf, loadAssets, loadStatic } from '../src/static-cache.js';
+import { PRECACHE_PATH, precacheDocument, precacheList } from '../src/precache.js';
 import { cookiesOf } from '../src/cookies.js';
 import { pool } from '../src/pool.js';
 import { precompress } from '../src/compress.js';
@@ -373,6 +374,8 @@ export const assets = ${encode(loadAssets(path.join(dist, 'client')).entries)};
 
 export const publicFiles = ${encode(publicMap)};
 
+export const precache = ${precacheJson === null ? 'null' : JSON.stringify(precacheJson)};
+
 export const notFound = ${page('404.html')};
 export const errorPage = ${page('500.html')};
 `;
@@ -401,6 +404,35 @@ const MIMES = {
   '.txt': 'text/plain; charset=utf-8',
 };
 const mimeOf = (file) => MIMES[path.extname(file)] ?? 'application/octet-stream';
+
+// ---- precache manifest ----------------------------------------------------
+//
+// Written before the asset module, so a runtime with no disk carries it too, and
+// before compression, so it ships with a .br and a .gz like anything else.
+
+let precacheJson = null;
+if (config.precache) {
+  const files = fs.existsSync(publicOut)
+    ? walkAll(publicOut)
+        .filter((file) => !file.endsWith('.br') && !file.endsWith('.gz'))
+        .map((file) => [
+          `/${path.relative(publicOut, file).split(path.sep).join('/')}`,
+          { etag: etagOf(fs.readFileSync(file)) },
+        ])
+    : [];
+
+  // Every entry read, so every one has an ETag. The default budget leaves a
+  // large file on disk with no hash, and `precacheList` refuses that rather than
+  // calling it immutable.
+  const entries = precacheList({
+    pages: loadStatic(path.join(dist, 'static'), { maxBytes: Infinity }).entries,
+    assets: loadAssets(path.join(dist, 'client'), { maxBytes: Infinity }).entries,
+    files,
+  });
+
+  precacheJson = precacheDocument(entries, etagOf(JSON.stringify(entries)).replaceAll('"', ''));
+  write(PRECACHE_PATH.replace(/^\//, ''), precacheJson);
+}
 
 fs.writeFileSync(path.join(dist, 'server/assets.js'), assetModule());
 

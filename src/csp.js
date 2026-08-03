@@ -139,7 +139,8 @@ const META_ONLY = new Set(['frame-ancestors', 'report-uri', 'report-to', 'sandbo
  * for is a header to explain later.
  *
  * @param {object|boolean|null} config
- * @returns {string|null} the directives a meta tag cannot carry
+ * @returns {{ name: string, value: string }|null} the directives a meta tag
+ *   cannot carry, and which header carries them
  */
 export function headerPolicy(config) {
   if (!config) return null;

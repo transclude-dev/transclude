@@ -33,6 +33,10 @@ export function responseOf() {
  *
  * A path that is already absolute is returned untouched, so a value that came
  * from somewhere else can be passed through without checking it first.
+ *
+ * @param {string|null|undefined} base `metadataBase` from the config
+ * @param {string} requestUrl
+ * @returns {URL}
  */
 export function absoluteFrom(base, requestUrl) {
   return (path) => {
@@ -111,6 +115,11 @@ function htmlOpenTag(lang, attrs) {
  * For everything else the page still renders, and `ctx.response` decides what it
  * is wrapped in: a 404 status on a page that renders its own "not found" body, an
  * `HX-Trigger` header, a `Set-Cookie`.
+ *
+ * @param {object} page a compiled page module
+ * @param {object} ctx the request context
+ * @param {object} [options] `clientEntry`, `stylesheet`, `csp`, `lang`, `include`
+ * @returns {Promise<string|Response>} a Response when a loader answered for itself
  */
 export async function renderRoute(page, ctx, options = {}) {
   // Held for this request only. A page including one route twice should run its
@@ -160,6 +169,10 @@ export const INCLUDE_DEPTH = 10;
  * Only what a route pattern can hold: `:name` and a trailing `:name{.+}`. An
  * include names a path an author wrote, so this answers the same question the
  * router does without needing the router.
+ *
+ * @param {{ pattern: string }} route
+ * @param {string} pathname
+ * @returns {Record<string, string>|null} null when the route does not match
  */
 export function paramsFor(route, pathname) {
   const names = [];
@@ -173,6 +186,12 @@ export function paramsFor(route, pathname) {
   return Object.fromEntries(names.map((name, at) => [name, decodeURIComponent(found[at + 1])]));
 }
 
+/**
+ * @param {Array<{ key: string, kind: string, where: string, id: string }>} includes
+ * @param {object} ctx
+ * @param {object} [options] carries `include`, `includeMemo` and `includeChain`
+ * @returns {Promise<Record<string, string|null>>} keyed by the src as written
+ */
 export async function resolveIncludes(includes, ctx, options = {}) {
   const include = options.include ?? null;
   const chain = options.includeChain ?? [];
@@ -238,6 +257,11 @@ export async function resolveIncludes(includes, ctx, options = {}) {
  *
  * Returns null when the page has no region by that name, which is a 404 rather
  * than an empty swap: asking for something that does not exist should say so.
+ *
+ * @param {object} page
+ * @param {object} ctx
+ * @param {{ region?: string|null }} [options] the rest is passed to the includes
+ * @returns {Promise<string|Response|null>} null when no such region
  */
 export async function renderFragment(page, ctx, { region = null, ...options } = {}) {
   const target = region ? regionOf(page, region) : null;
@@ -290,6 +314,11 @@ export const ACTION_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
  *
  * `null` is "this page does not answer that method", which is a 405 rather than
  * a 404. The URL exists.
+ *
+ * @param {object} page
+ * @param {object} ctx
+ * @param {string} method
+ * @returns {Promise<object>} what the handler returned, for the render after it
  */
 export async function runAction(page, ctx, method) {
   const action = page[method];
@@ -310,6 +339,10 @@ export async function runAction(page, ctx, method) {
  *
  * So the headers go onto a copy. `new Response(body, response)` keeps the status
  * and every header the author set, and comes with a mutable guard.
+ *
+ * @param {Response} response
+ * @param {object} ctx
+ * @returns {Response} a copy, because a redirect's headers cannot be written to
  */
 export function withEnvelope(response, ctx) {
   const collected = [...(ctx?.response?.headers ?? [])];
@@ -360,7 +393,12 @@ export function hasRegion(page, region) {
   return !region || regionOf(page, region) !== null;
 }
 
-/** What a page answers, for an `Allow` header. GET is not optional. */
+/**
+ * What a page answers, for an `Allow` header. GET is not optional.
+ *
+ * @param {object|null|undefined} page
+ * @returns {string[]} for an Allow header
+ */
 export function methodsOf(page) {
   return ['GET', ...ACTION_METHODS.filter((method) => typeof page?.[method] === 'function')];
 }

@@ -61,6 +61,10 @@ function resolveFlags(fromProps = {}, fromClient = {}, tag) {
  * The plugin needs `shadow` before it can compile anything, because how a tag
  * renders decides how every other file that mentions it compiles. Same blocks
  * and the same extractor as the compile itself, so there is one answer.
+ *
+ * @param {string} source the whole .html file
+ * @param {string} [label] what to call it in an error
+ * @returns {{ shadow: boolean, formAssociated: boolean }}
  */
 export function readFlags(source, label = 'element') {
   const blocks = splitBlocks(source);
@@ -89,6 +93,10 @@ export function readFlags(source, label = 'element') {
  *
  * Each block carries the line it starts on so parse errors can point back into
  * the .html file rather than into generated output.
+ *
+ * @param {string} source
+ * @returns {object} the script blocks, the styles, the markup nodes and the
+ *   `<html>` element read from a second parse
  */
 export function splitBlocks(source) {
   const doc = parseFragment(source, { sourceCodeLocationInfo: true });
@@ -406,6 +414,11 @@ ${slotBodies(template)}
 /**
  * A layout is a page that renders a hole. `render` receives the slot map its
  * child produced, and returns its own for the level above.
+ *
+ * @param {string} source
+ * @param {{ id: string, components?: Map<string, string>,
+ *   shadowTags?: Set<string>, runtime: string }} options
+ * @returns {{ code: string, warnings: string[] }}
  */
 export function compileLayout(source, { id, components = new Map(), shadowTags = new Set(), runtime }) {
   const blocks = splitBlocks(source);
@@ -480,6 +493,11 @@ export default { css, headScript, elements, hasTitle, load, renderTitle, renderH
  *
  * The `to` clause is the donut: styles stop at any light element nested inside,
  * so an outer one cannot reach into one it merely contains.
+ *
+ * @param {string} css
+ * @param {string} tag the element the rules belong to
+ * @param {string[]} [nested] tags rendered inside it, which the scope has to reach
+ * @returns {string}
  */
 export function scopeCss(css, tag, nested = []) {
   if (!css) return '';
@@ -488,7 +506,13 @@ export function scopeCss(css, tag, nested = []) {
   return `@scope (${tag})${limit} {\n${indented}\n}`;
 }
 
-/** Component tags a template uses. This is how only those get shipped. */
+/**
+ * Component tags a template uses. This is how only those get shipped.
+ *
+ * @param {string} source
+ * @param {Map<string, string>|Set<string>} registry every known tag
+ * @returns {string[]} the tags this source renders
+ */
 export function usedComponents(source, registry) {
   const found = new Set();
 
@@ -512,6 +536,11 @@ export function usedComponents(source, registry) {
  * `elements` adds the loader for everything else: the page's own tags are
  * imported statically and defined before first paint, and any other tag in the
  * app is one dynamic import away, taken only if it ever shows up in the DOM.
+ *
+ * @param {string[]} sources the element files the page needs
+ * @param {{ tags?: string[] }} [what]
+ * @param {{ runtime: string, elements?: boolean }} options
+ * @returns {string} a module, or empty when the page needs none
  */
 export function compileClientEntry(sources, { tags = [] } = {}, { runtime, elements = false } = {}) {
   // Layouts first, page last: the same order they wrap in.
@@ -550,6 +579,9 @@ export const ELEMENTS_ENTRY = 'virtual:transclude-elements';
  * A thunk rather than a URL: the bundler is the only thing that knows where the
  * chunk lands, and `import()` is how you ask it. Nothing has to be written into
  * a manifest, threaded through the server, or kept in sync with a hash.
+ *
+ * @param {string[]} tags
+ * @returns {string}
  */
 export function compileElementsEntry(tags) {
   const entries = [...tags]

@@ -52,6 +52,10 @@ function remove(node) {
  * nothing else, so it is kept unless `styles` says otherwise. Dropping them by
  * default would flatten the source's own meaning: a highlighted code block
  * carries its colors that way.
+ *
+ * @param {object} root a parse5 tree, modified in place
+ * @param {{ styles?: 'keep'|'strip' }} [options]
+ * @returns {string[]} what was taken out, for a caller that wants to report it
  */
 export function sanitize(root, { styles = 'keep' } = {}) {
   const removed = [];
@@ -127,6 +131,10 @@ const isXlink = (name) => name === 'xlink:href' || name === 'href';
  *
  * A `<base href>` wins over the URL the response came from, because that is
  * what the source document's own relative links were written against.
+ *
+ * @param {string} html
+ * @param {string} responseUrl the URL after every redirect
+ * @returns {string} what relative URLs resolve against
  */
 export function baseOf(html, responseUrl) {
   const found = parse(html);
@@ -165,6 +173,10 @@ const absolute = (value, base) => {
  * It cannot be split on commas: a URL may contain one, and plenty do. A
  * candidate's URL ends at whitespace, or at a comma that is part of the URL
  * token itself, which is the rule the HTML parser uses.
+ *
+ * @param {string} value
+ * @returns {Array<{ url: string, descriptor: string }>} split on the commas that separate
+ *   candidates rather than the ones inside a URL
  */
 export function parseSrcset(value) {
   const out = [];
@@ -197,7 +209,13 @@ export function parseSrcset(value) {
 
 const CSS_URL = /url\(\s*(['"]?)([^'")]*)\1\s*\)/gi;
 
-/** `url()` references inside a style attribute or a `<style>` block. */
+/**
+ * `url()` references inside a style attribute or a `<style>` block.
+ *
+ * @param {string} css
+ * @param {string} base
+ * @returns {string}
+ */
 export function rewriteCss(css, base) {
   return css.replace(CSS_URL, (whole, quote, url) => {
     const value = url.trim();
@@ -212,6 +230,10 @@ export function rewriteCss(css, base) {
  * A hash-only href is included on purpose. Left alone it would point at the
  * page the fragment was inserted into, which is a different document that
  * probably has no such id.
+ *
+ * @param {object} root modified in place
+ * @param {string} base
+ * @returns {object} the same root
  */
 export function absolutize(root, base) {
   const visit = (node) => {

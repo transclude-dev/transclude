@@ -33,6 +33,11 @@ const VOID = new Set([
 const RAW_TEXT = new Set(['script', 'style']);
 const EACH = /^\s*([A-Za-z_$][\w$]*)\s*(?:,\s*([A-Za-z_$][\w$]*)\s*)?\s+of\s+([\s\S]+?)\s*$/;
 
+/**
+ * @param {object[]} nodes the same parse5 nodes the renderer walked
+ * @param {object} [opts]
+ * @returns {{ code: string, volatile: string[] }} `volatile` is what it could not bind
+ */
 export function compileBindings(nodes, opts = {}) {
   const gen = new Bindgen(opts);
   gen.walk(nodes, { parent: '__root', index: opts.rootOffset ?? 0 });

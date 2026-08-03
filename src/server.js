@@ -25,6 +25,12 @@ import { trimTrailingSlash } from 'hono/trailing-slash';
  */
 const OPTIONS = new Set(['csrf', 'csp', 'trailingSlash', 'publicFiles', 'middleware']);
 
+/**
+ * @param {{ csrf?: object|boolean, csp?: object|boolean, trailingSlash?: string,
+ *   publicFiles?: Function|null, middleware?: Function|null }} [options]
+ * @returns {object} a Hono app
+ * @throws on a key it does not know
+ */
 export function baseApp(options = {}) {
   const {
     csrf: csrfOption = true,
@@ -118,6 +124,11 @@ export const SERVER_FILE = 'server.js';
  * Returning a `Response` is required rather than encouraged. There is no
  * template to fall back to, and a handler that returns a bare object has almost
  * certainly forgotten `Response.json`.
+ *
+ * @param {object} mod the endpoint module
+ * @param {object} ctx
+ * @param {string} method
+ * @returns {Promise<Response|null>} null when the module answers no such verb
  */
 export async function runEndpoint(mod, ctx, method) {
   const name = method.toUpperCase();
@@ -145,7 +156,12 @@ export async function runEndpoint(mod, ctx, method) {
  */
 export const ENDPOINT_METHODS = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
 
-/** What an endpoint answers, for an `Allow` header. */
+/**
+ * What an endpoint answers, for an `Allow` header.
+ *
+ * @param {object|null|undefined} mod
+ * @returns {string[]} sorted, for an Allow header
+ */
 export function endpointMethods(mod) {
   return ENDPOINT_METHODS.filter((name) => typeof mod?.[name] === 'function').sort();
 }

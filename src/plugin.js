@@ -358,62 +358,24 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
   };
 }
 
-/** Browser URL for a virtual module id. */
+/**
+ * Browser URL for a virtual module id.
+ *
+ * @param {string} page the route id
+ * @returns {string} the URL Vite serves its entry from
+ */
 export function clientEntryUrl(page) {
   return `/@id/__x00__${P_CLIENT}${page}`;
 }
 
+/**
+ * @param {string} page
+ * @returns {string} the virtual module id for that page
+ */
 export function pageModuleId(page) {
   return `${P_PAGE}${page}`;
 }
 
-
-/** Bare specifier resolution, walking up node_modules the way Node does. */
-function resolveBare(fromDir, specifier) {
-  const parts = specifier.split('/');
-  const name = specifier.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0];
-  const rest = specifier.slice(name.length).replace(/^\//, '');
-  const subpath = rest ? `./${rest}` : '.';
-
-  let dir = fromDir;
-  for (;;) {
-    const pkgDir = path.join(dir, 'node_modules', name);
-    const manifest = path.join(pkgDir, 'package.json');
-
-    if (fs.existsSync(manifest)) {
-      let pkg;
-      try {
-        pkg = JSON.parse(fs.readFileSync(manifest, 'utf8'));
-      } catch {
-        return null;
-      }
-
-      // `exports` is exhaustive when present: a subpath it does not describe is
-      // not reachable, and falling back to main would resolve what Node would
-      // refuse to.
-      if (pkg.exports !== undefined) {
-        const target = resolveExports(pkg.exports, subpath);
-        return target ? existingFile(path.join(pkgDir, target)) : null;
-      }
-
-      if (subpath !== '.') return existingFile(path.join(pkgDir, rest));
-      const legacy = pkg.module ?? pkg.main;
-      return legacy ? existingFile(path.join(pkgDir, legacy)) : existingFile(path.join(pkgDir, 'index'));
-    }
-
-    if (fs.existsSync(pkgDir)) return existingFile(path.join(pkgDir, rest || 'index'));
-
-    const parent = path.dirname(dir);
-    if (parent === dir) return null;
-    dir = parent;
-  }
-}
-
-/**
- * The `exports` field: condition objects, subpath maps, `*` patterns, arrays of
- * alternatives, and `null` to block a path. Conditions nest arbitrarily, so
- * picking one is recursive rather than a couple of `??`s.
- */
 /** `routes/_layout.html` -> "root", `routes/people/_layout.html` -> "people". */
 function scanLayouts(dir, base = dir, out = new Map()) {
   if (!fs.existsSync(dir)) return out;

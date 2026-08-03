@@ -9,7 +9,9 @@
     "start": "transclude-serve",
     "check": "transclude-check",
     "test": "node --test \"test/**/*.test.js\"",
-    "preview": "npm run build && npm start"
+    "preview": "npm run build && npm start",
+    "deploy": "npm run build && wrangler deploy",
+    "start:worker": "npm run build && wrangler dev"
   },
   "dependencies": {
     "shiki": "^4.3.1",
@@ -17,6 +19,7 @@
   },
   "devDependencies": {
     "typescript": "^5.9.3",
-    "vite": "^8.1.5"
+    "vite": "^8.1.5",
+    "wrangler": "^4"
   }
 }

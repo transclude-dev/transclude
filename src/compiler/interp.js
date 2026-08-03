@@ -1,6 +1,20 @@
 // Splits raw text / attribute values into static + `${expr}` parts.
 // Brace matching is quote-aware so `${a ? "}" : "x"}` does not terminate early.
 
+/**
+ * @typedef {{ type: 'text', value: string } | { type: 'expr', value: string }} Part
+ */
+
+/**
+ * Text and `${expr}` in source order.
+ *
+ * There is no escape for a literal `${`, so anything documenting the syntax has
+ * to pass its examples in as data rather than write them in a template.
+ *
+ * @param {string} str raw text or an attribute value
+ * @returns {Part[]} empty only for an empty string
+ * @throws if a `${` is never closed
+ */
 export function splitInterpolations(str) {
   const parts = [];
   let text = '';
@@ -31,6 +45,15 @@ export function splitInterpolations(str) {
   return parts;
 }
 
+/**
+ * Whether a string holds an interpolation, without parsing one.
+ *
+ * A `\${` is a literal and does not count, which is what the leading character
+ * in the pattern is checking.
+ *
+ * @param {string} str
+ * @returns {boolean}
+ */
 export function hasInterpolation(str) {
   return /(^|[^\\])\$\{/.test(str);
 }

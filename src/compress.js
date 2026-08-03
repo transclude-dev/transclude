@@ -36,6 +36,10 @@ const DYNAMIC = {
 /**
  * Compresses a response as it goes out. Async so the work lands on libuv's
  * thread pool rather than the event loop.
+ *
+ * @param {Buffer|Uint8Array} body
+ * @param {'br'|'gzip'|string} encoding anything else is returned unchanged
+ * @returns {Promise<Buffer|Uint8Array>}
  */
 export async function compressResponse(body, encoding) {
   if (encoding === 'br') return brotli(body, DYNAMIC.br(body));
@@ -43,6 +47,14 @@ export async function compressResponse(body, encoding) {
   return body;
 }
 
+/**
+ * Writes a `.br` and a `.gz` beside every compressible file in `dirs`.
+ *
+ * @param {string[]} dirs
+ * @param {{ floor?: number, concurrency?: number }} [options] `floor` is the
+ *   size below which framing costs more than it saves
+ * @returns {Promise<{ files: number, raw: number, gzip: number, brotli: number }>}
+ */
 export async function precompress(dirs, { floor = COMPRESSIBLE_FLOOR, concurrency = 8 } = {}) {
   const files = dirs.flatMap((dir) => walk(dir)).filter((file) => {
     if (!COMPRESSIBLE.has(path.extname(file))) return false;

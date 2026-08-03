@@ -30,7 +30,48 @@ export function escape(value) {
   return String(value).replace(/[&<>"']/g, (c) => ESCAPES[c]);
 }
 
-/** Interpolation inside a larger string (mixed attribute values, raw text). */
+/**
+ * Characters that would end a `<script>` early or shift the HTML tokenizer into
+ * a state where the rest of the element is read as something else. Escaped as
+ * `\uXXXX`, which JSON and JavaScript both read back as the original character.
+ * U+2028 and U+2029 are here because JSON allows them raw in a string and
+ * JavaScript reads them as line terminators.
+ */
+const JSON_ESCAPES = {
+  '<': '\\u003c',
+  '>': '\\u003e',
+  '&': '\\u0026',
+  '\u2028': '\\u2028',
+  '\u2029': '\\u2029',
+};
+
+/**
+ * Data for a `<script>`, as JSON that cannot escape the element.
+ *
+ * This is the only interpolation a script may carry, and the compiler refuses
+ * every other one. Nothing can make `${expr}` safe in a position where the
+ * result is read as code: a value ending the string it was written into runs
+ * whatever follows, and no escaping of the surrounding HTML changes that. Data
+ * is a different question and has an answer, so that is the part offered.
+ *
+ * @param {unknown} value anything `JSON.stringify` accepts
+ * @returns {RawHtml} the JSON, safe to write inside a script element
+ */
+export function json(value) {
+  const text = JSON.stringify(value ?? null) ?? 'null';
+  return new RawHtml(text.replace(/[<>&\u2028\u2029]/g, (c) => JSON_ESCAPES[c]));
+}
+
+/**
+ * Interpolation inside a larger string, which is a mixed attribute value.
+ *
+ * It does not escape, because the caller does: every use is concatenated and
+ * handed to `attr`, which escapes the whole result. Do not reach for this from a
+ * position that writes straight into the document.
+ *
+ * @param {unknown} value
+ * @returns {string}
+ */
 export function str(value) {
   if (value == null || value === false) return '';
   if (value instanceof RawHtml) return value.value;
@@ -537,8 +578,8 @@ export function writeProp(element, prop, value, fallback, specs) {
  * same thing twice.
  *
  * The attribute is the only state. A getter reads and coerces it; a setter
- * writes it, which for a component triggers attributeChangedCallback and a
- * re-render, and for a partial drives attribute selectors in CSS. Nothing is
+ * writes it, which for a shadow element triggers attributeChangedCallback and a
+ * re-render, and for a light one drives attribute selectors in CSS. Nothing is
  * mirrored, so nothing can drift.
  */
 function defineProps(Class, defs, specs) {
@@ -647,13 +688,13 @@ export function data(def, props) {
 }
 
 /**
- * A partial rendered for insertion into a live document: its own light markup,
- * with any component inside it left bare for the client to paint.
+ * A light element rendered for insertion into a live document: its own markup,
+ * with any shadow element inside it left bare for the client to paint.
  *
  * Its styles are left out on purpose. They are one `<style>` per tag in <head>,
- * not one per use, so putting them here would ship a copy on every swap. When the
- * swapped markup names a partial the document has never rendered, `watch` notices
- * the tag and `adoptStyles` adds them once.
+ * not one per use, so putting them here would ship a copy on every swap. When
+ * the swapped markup names a tag the document has never rendered, `watch`
+ * notices it and `adoptStyles` adds them once.
  */
 /**
  * What an external include renders: the fragment the server fetched, the
@@ -706,13 +747,12 @@ export function adoptStyles(def) {
  *
  * A page's client entry defines what the page can render. A fragment swapped in
  * from another route can contain anything, and it arrives as plain markup. A
- * partial arrives with no styles, a component with no definition.
+ * light element arrives with no styles, a shadow one with no definition.
  *
  * The framework does not do the swapping. Whoever does, whether htmx, Turbo or a
  * short fetch, cannot be counted on to announce it, and half of them use plain
- * innerHTML. So this watches the result rather than the cause. Whatever put the
- * tag in the document, it is in the document, and that is the signal. It is the one piece of client code that exists to make somebody
- * else's swapper work.
+ * innerHTML. So this watches the result rather than the cause: whatever put the
+ * tag in the document, it is in the document, and that is the signal.
  *
  * `loaders` is tag -> dynamic import, so a tag that never appears costs one
  * string. The observer disconnects once every tag it knows about has been seen.
@@ -759,7 +799,7 @@ export function watch(loaders, root = globalThis.document) {
  * markup it was served is the markup it keeps.
  */
 export function defineLight(def, init) {
-  // Before every other exit below: styles are the half of this that a partial
+  // Before every other exit below: styles are the half of this that an element
   // with no behaviour still has, and the half a swapped-in one arrives without.
   adoptStyles(def);
 

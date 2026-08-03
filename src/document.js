@@ -542,7 +542,15 @@ export function renderDocument(
 
   // Everything else accumulates outermost first, so a page's <meta> comes last
   // and a page's <style> can override a layout's.
-  const head = mergeHead(chain.map((mod, i) => mod.renderHead(datas[i]))).filter(Boolean);
+  // The framework's own defaults go through the merge as the outermost level, so
+  // a page or a layout writing its own `viewport` replaces this one instead of
+  // shipping beside it. `charset` is not here: it has to be inside the first
+  // 1024 bytes and is not something to override.
+  const [defaults, ...rest] = mergeHead([
+    '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    ...chain.map((mod, i) => mod.renderHead(datas[i])),
+  ]);
+  const head = rest.filter(Boolean);
 
   // Ahead of the stylesheet, because a <link> blocks the scripts after it and
   // the point of a head script is to run before anything else.
@@ -580,7 +588,7 @@ export function renderDocument(
 ${htmlOpenTag(lang, htmlAttrsOf(chain, datas))}
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+${defaults}
 ${title}
 ${headScripts.join('\n')}
 ${stylesheet ? `<link rel="stylesheet" href="${stylesheet}">` : ''}

@@ -17,10 +17,11 @@
     "./worker": "./src/worker.js"
   },
   "bin": {
-    "transclude-dev": "./bin/dev.js",
+    "create-transclude": "./bin/create.js",
     "transclude-build": "./bin/build.js",
-    "transclude-serve": "./bin/serve.js",
-    "transclude-check": "./bin/check.js"
+    "transclude-check": "./bin/check.js",
+    "transclude-dev": "./bin/dev.js",
+    "transclude-serve": "./bin/serve.js"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.12",
@@ -35,8 +36,9 @@
   },
   "files": [
     "bin",
+    "editor",
     "src",
-    "editor"
+    "templates"
   ],
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",

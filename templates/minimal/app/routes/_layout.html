@@ -1,0 +1,16 @@
+<script server>
+  // A layout wraps every page in its directory and below. This one takes the
+  // current path so it can mark the link you are on.
+  export default async ({ route }) => ({ path: route.path });
+</script>
+
+<title>__NAME__</title>
+
+<nav>
+  <a href="/" aria-current="${path === '/' ? 'page' : 'false'}">Home</a>
+  <a href="/about" aria-current="${path === '/about' ? 'page' : 'false'}">About</a>
+</nav>
+
+<!-- The page renders here. A layout with no <slot> is a warning, because
+     nothing inside it could appear. -->
+<main><slot></slot></main>

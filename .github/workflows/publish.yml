@@ -5,9 +5,11 @@
 # `npm run release` writes after everything has passed locally. CI runs it all
 # again, because "it passed on my machine" is not the claim being made.
 #
-# `id-token: write` is what lets npm sign provenance: the published package
-# carries a verifiable link back to this workflow, this commit and this
-# repository. It needs `repository` in the manifest, which is set.
+# There is no token. Both packages name this repository and this file as a
+# trusted publisher, so npm accepts the OIDC identity `id-token: write` mints and
+# signs provenance from it: the published package carries a verifiable link back
+# to this workflow, this commit and this repository. Nothing to rotate, and
+# nothing in the repository's secrets that could publish on its own.
 
 name: publish
 
@@ -29,6 +31,10 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+
+      # The npm bundled with Node 22 predates OIDC publishing. Without this the
+      # publish falls back to looking for a token that is deliberately not here.
+      - run: npm install -g npm@latest
 
       # Three packages, three installs. `npm ci` reads one manifest, and the
       # demo and the docs are separate projects that depend on this one by path.
@@ -65,12 +71,8 @@ jobs:
       # project names it by version, so it has to exist by the time anyone
       # runs the CLI.
       - name: Publish @transclude/core
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
 
       - name: Publish @transclude/create
-        run: npm publish --access public --provenance
+        run: npm publish --access public
         working-directory: create
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

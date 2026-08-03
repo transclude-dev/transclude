@@ -129,6 +129,7 @@ const renderPage = async (route, c, status = null, extra = {}) => {
     // `Accept: text/css`, so the plain path returns the stylesheet.
     stylesheet: config.stylesheet ? `/${config.stylesheet}` : null,
     csp: config.csp,
+    lang: config.lang,
     include,
   });
   // A loader answered for itself: a redirect, or something that is not a page.

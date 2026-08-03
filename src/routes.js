@@ -147,7 +147,7 @@ function walk(dir, base = dir, out = []) {
   if (!fs.existsSync(dir)) return out;
 
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    // `_` marks something that is not a route: partials, helpers, drafts.
+    // `_` marks something that is not a route: helpers and drafts.
     if (entry.name.startsWith('_') || entry.name.startsWith('.')) continue;
 
     const full = path.join(dir, entry.name);

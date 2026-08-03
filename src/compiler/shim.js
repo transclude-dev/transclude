@@ -469,14 +469,15 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
  * the value is. Including `T` in the intersection is what lets one member call
  * another.
  *
- * `shadowRoot` is narrowed rather than left as `ShadowRoot | null`: a component
- * always has one by the time any of this runs, and a partial never does. The
- * DOM's type cannot know that, but the directory the file is in does.
+ * `shadowRoot` is narrowed rather than left as `ShadowRoot | null`: a shadow
+ * element always has one by the time any of this runs, and a light one never
+ * does. The DOM's type cannot know that; the file's `shadow` flag does.
  *
  * Only the members and what they read come across. The rest of the block runs
  * with `host`, `shadow` and `signal` in scope, which tsc has no way to know. Its
- * imports may be browser-only, so they are copied only where a member uses them. Blocks that will not parse are skipped in silence here;
- * the syntax pass below is what reports them, once.
+ * imports may be browser-only, so they are copied only where a member uses
+ * them. A block that will not parse is skipped in silence here, because the
+ * syntax pass below is what reports it, once.
  */
 function emitMembers(blocks, out, shadow) {
   for (const block of blocks) {

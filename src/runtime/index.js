@@ -578,8 +578,8 @@ export function writeProp(element, prop, value, fallback, specs) {
  * same thing twice.
  *
  * The attribute is the only state. A getter reads and coerces it; a setter
- * writes it, which for a component triggers attributeChangedCallback and a
- * re-render, and for a partial drives attribute selectors in CSS. Nothing is
+ * writes it, which for a shadow element triggers attributeChangedCallback and a
+ * re-render, and for a light one drives attribute selectors in CSS. Nothing is
  * mirrored, so nothing can drift.
  */
 function defineProps(Class, defs, specs) {
@@ -688,13 +688,13 @@ export function data(def, props) {
 }
 
 /**
- * A partial rendered for insertion into a live document: its own light markup,
- * with any component inside it left bare for the client to paint.
+ * A light element rendered for insertion into a live document: its own markup,
+ * with any shadow element inside it left bare for the client to paint.
  *
  * Its styles are left out on purpose. They are one `<style>` per tag in <head>,
- * not one per use, so putting them here would ship a copy on every swap. When the
- * swapped markup names a partial the document has never rendered, `watch` notices
- * the tag and `adoptStyles` adds them once.
+ * not one per use, so putting them here would ship a copy on every swap. When
+ * the swapped markup names a tag the document has never rendered, `watch`
+ * notices it and `adoptStyles` adds them once.
  */
 /**
  * What an external include renders: the fragment the server fetched, the
@@ -747,13 +747,12 @@ export function adoptStyles(def) {
  *
  * A page's client entry defines what the page can render. A fragment swapped in
  * from another route can contain anything, and it arrives as plain markup. A
- * partial arrives with no styles, a component with no definition.
+ * light element arrives with no styles, a shadow one with no definition.
  *
  * The framework does not do the swapping. Whoever does, whether htmx, Turbo or a
  * short fetch, cannot be counted on to announce it, and half of them use plain
- * innerHTML. So this watches the result rather than the cause. Whatever put the
- * tag in the document, it is in the document, and that is the signal. It is the one piece of client code that exists to make somebody
- * else's swapper work.
+ * innerHTML. So this watches the result rather than the cause: whatever put the
+ * tag in the document, it is in the document, and that is the signal.
  *
  * `loaders` is tag -> dynamic import, so a tag that never appears costs one
  * string. The observer disconnects once every tag it knows about has been seen.
@@ -800,7 +799,7 @@ export function watch(loaders, root = globalThis.document) {
  * markup it was served is the markup it keeps.
  */
 export function defineLight(def, init) {
-  // Before every other exit below: styles are the half of this that a partial
+  // Before every other exit below: styles are the half of this that an element
   // with no behaviour still has, and the half a swapped-in one arrives without.
   adoptStyles(def);
 

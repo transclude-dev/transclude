@@ -227,8 +227,8 @@ export function createChecker({
    * tsc what the previous one produced.
    */
   const build = () => {
-    // Partials take props exactly like components, so they are checked the same
-    // way and their prop types are available to whatever renders them.
+    // Light and shadow elements take props the same way, so they are checked
+    // the same way and their prop types reach whatever renders them.
     const componentProps = new Map();
     const componentMembers = new Map();
     const files = componentFiles();
@@ -239,8 +239,8 @@ export function createChecker({
       const tag = path.basename(file, '.html');
       const blocks = splitBlocks(sourceOf(file));
       componentProps.set(tag, propTypeOf(file));
-      // A partial with neither block registers no custom element, so it has no
-      // accessors and no members. Saying otherwise in transclude-env.d.ts would be a claim
+      // An element with neither block registers nothing, so it has no accessors
+      // and no members. Saying otherwise in transclude-env.d.ts would be a claim
       // the browser does not back up.
       // Members live in the client block now, so the shim is what knows whether
       // there are any. An empty `__Members` means the block exported no

@@ -25,7 +25,8 @@ const COMPONENT_EXPORTS = new Set([
  * `<script>`. Neither is a prop and neither is setup code: each decides
  * something about the tag, the same for every element of it.
  *
- * `shadow` is the one that used to be the directory a file sat in.
+ * `shadow` decides how the tag renders, so it is read before anything is
+ * compiled: every other file mentioning the tag compiles differently for it.
  */
 export const ELEMENT_FLAGS = ['shadow', 'formAssociated'];
 
@@ -149,12 +150,12 @@ export function splitBlocks(source) {
 }
 
 /**
- * Compiles a partial or a component. Which one it is comes from the directory it
- * lives in. One decision, in one place, visible in the file tree.
+ * Compiles one element. `export const shadow = true` in the file decides which
+ * kind it is, so the file answers for itself.
  *
- * A partial is light DOM: styles scoped with `@scope`, markup inline, page CSS
- * reaching it, form controls and label references working because there is no
- * boundary. A component gets a shadow root and everything that follows from it.
+ * Light is the default: styles scoped with `@scope`, markup inline, page CSS
+ * reaching it, and form controls and `<label for>` working because there is no
+ * boundary. A shadow root is the opt-in, with everything that follows from it.
  */
 export function compileComponent(
   source,
@@ -211,9 +212,8 @@ export function compileComponent(
     // Anchors are what an update writes through, so every element that can be
     // updated needs them and no other element should carry them.
     blocks: defined,
-    // A fragment emits a component bare and lets it paint itself, so a
-    // component's own render is never the thing being asked for a fragment.
-    // A partial's is.
+    // A fragment emits a shadow element bare and lets it paint itself, so its
+    // own render is never what a fragment asks for. A light element's is.
     fragments: !isShadow,
   });
 
@@ -566,8 +566,8 @@ export function compileElementsEntry(tags) {
  * `update` writes to them. `volatile` is the list of prop names whose change needs
  * a full repaint, because nothing here can reach them.
  *
- * A partial gets the same shape with nothing in it, so the runtime does not
- * have to ask whether it exists.
+ * An element with nothing to bind gets the same shape, empty, so the runtime
+ * never has to ask whether it exists.
  */
 function bindingsCode(bindings) {
   if (!bindings) {

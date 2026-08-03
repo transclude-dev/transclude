@@ -1,5 +1,5 @@
 <script server>
-  import { all } from "../lib/code.js";
+  import { all } from "../../lib/code.js";
 
   export default async () => ({
     s: await all({
@@ -86,7 +86,7 @@
     <a href="http://www.thetednelson.com/">Ted Nelson</a> coined
     <em>transclusion</em> in the 1960s: the same piece of writing appearing in
     more than one document while remaining one piece. That is what this
-    framework is named for, and what <a href="/fragments">fragments</a> are. An
+    framework is named for, and what <a href="/docs/fragments">fragments</a> are. An
     element you mark has its own URL, and the same compiled markup serves it
     inline and alone.
   </p>
@@ -131,8 +131,8 @@
   </p>
 
   <doc-note label="Where to start">
-    <a href="/">The overview</a> covers what the framework does.
-    <a href="/getting-started">Getting started</a> is the install and the first
+    <a href="/docs">The overview</a> covers what the framework does.
+    <a href="/docs/getting-started">Getting started</a> is the install and the first
     page.
   </doc-note>
 </doc-page>

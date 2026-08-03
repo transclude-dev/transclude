@@ -12,17 +12,24 @@ import { fileURLToPath } from 'node:url';
 const root = path.dirname(fileURLToPath(import.meta.url));
 const routes = path.join(root, '..', 'app', 'routes');
 
+// The docs live under /docs so the landing page can own / and not inherit their
+// shell. The nav, the pager and these tests all read from the same place.
+const docs = path.join(routes, 'docs');
+
 /** Every page the nav claims to link to. */
 function navLinks() {
-  const layout = fs.readFileSync(path.join(routes, '_layout.html'), 'utf8');
+  const layout = fs.readFileSync(path.join(docs, '_layout.html'), 'utf8');
   return [...layout.matchAll(/href:\s*'([^']+)'/g)].map(([, href]) => href);
 }
 
+/** The file behind a URL the nav names. */
+function pageFor(href) {
+  const rel = href === '/docs' ? 'index' : href.replace(/^\/docs\//, '');
+  return path.join(docs, `${rel}.html`);
+}
+
 test('every nav link has a page behind it', () => {
-  const missing = navLinks().filter((href) => {
-    const name = href === '/' ? 'index' : href.slice(1);
-    return !fs.existsSync(path.join(routes, `${name}.html`));
-  });
+  const missing = navLinks().filter((href) => !fs.existsSync(pageFor(href)));
 
   assert.deepEqual(missing, [], `nav links with no page: ${missing.join(', ')}`);
 });
@@ -30,9 +37,14 @@ test('every nav link has a page behind it', () => {
 test('every page has a title and a description', () => {
   const without = [];
 
-  for (const name of fs.readdirSync(routes)) {
+  const files = [
+    ...fs.readdirSync(routes).map((name) => [name, routes]),
+    ...fs.readdirSync(docs).map((name) => [name, docs]),
+  ];
+
+  for (const [name, dir] of files) {
     if (!name.endsWith('.html') || name.startsWith('_')) continue;
-    const source = fs.readFileSync(path.join(routes, name), 'utf8');
+    const source = fs.readFileSync(path.join(dir, name), 'utf8');
 
     if (!/<title>/.test(source)) without.push(`${name}: no <title>`);
     // The error pages are reached for rather than linked to, so they need no

@@ -1,5 +1,5 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all } from '../../lib/code.js';
 
   export default async () => ({
     s: await all({
@@ -129,7 +129,7 @@
       <tbody>
         <tr>
           <td><code>#pricing</code></td>
-          <td>A <a href="/fragments">fragment</a> of this page</td>
+          <td>A <a href="/docs/fragments">fragment</a> of this page</td>
           <td>A function call</td>
         </tr>
         <tr>
@@ -373,7 +373,7 @@
 
   <p>
     It answers with the fragment, sanitized and rewritten, and it is same-origin,
-    which the default <a href="/security">policy</a> requires: that policy names
+    which the default <a href="/docs/security">policy</a> requires: that policy names
     <code>'self'</code> and refuses a cross-origin fetch.
   </p>
 </doc-page>

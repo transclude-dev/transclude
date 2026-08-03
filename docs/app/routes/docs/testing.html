@@ -1,5 +1,5 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all } from '../../lib/code.js';
 
   export default async () => ({
     s: await all({
@@ -118,7 +118,7 @@ assert.ok(whole.includes(markup.trim()));`,
   ${html(s.form)}
 
   <p>
-    A <a href="/fragments">fragment</a> is a URL, so it is read the same way. The
+    A <a href="/docs/fragments">fragment</a> is a URL, so it is read the same way. The
     useful assertion is that the page and the fragment agree, since one compiled
     template produces both.
   </p>
@@ -128,7 +128,7 @@ assert.ok(whole.includes(markup.trim()));`,
   <h2>What this does not reach</h2>
 
   <p>
-    Anything that needs a browser: an <a href="/elements">element</a> upgrading,
+    Anything that needs a browser: an <a href="/docs/elements">element</a> upgrading,
     a shadow root, focus surviving an update, a swap. Nothing in Node models
     those, and a test that says otherwise is describing its own stand-in.
   </p>

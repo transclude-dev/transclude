@@ -1,5 +1,5 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all } from '../../lib/code.js';
 
   export default async () => ({
     s: await all({
@@ -115,18 +115,18 @@
     <li>
       <strong>No client-side router and nothing that swaps.</strong> Every link
       is a document request unless you bring something.
-      <a href="/fragments">Fragments</a> give it a URL; htmx, Turbo or a short
+      <a href="/docs/fragments">Fragments</a> give it a URL; htmx, Turbo or a short
       <code>fetch</code> does the swapping.
     </li>
     <li>
       <strong>No session store and no database opinion.</strong>
-      <a href="/cookies">Signed cookies</a> are the building block. A store needs
+      <a href="/docs/cookies">Signed cookies</a> are the building block. A store needs
       a choice this does not make.
     </li>
     <li>
       <strong>No streaming.</strong> The body is buffered so it can be hashed,
       which is what buys the strong ETag, and a synchronous render is what lets
-      an <a href="/includes">include</a> resolve before the page renders. A
+      an <a href="/docs/includes">include</a> resolve before the page renders. A
       <code>Link: rel=preload</code> header goes out first, so a proxy can turn
       it into a 103 while the page is still being made.
     </li>
@@ -150,7 +150,7 @@
     </li>
     <li>
       <strong><code>@scope</code> is soft.</strong> A light
-      <a href="/elements">element</a>'s styles lose to page CSS of equal
+      <a href="/docs/elements">element</a>'s styles lose to page CSS of equal
       specificity. That is right for content and a hazard for a widget, which is
       one reason to reach for a shadow root.
     </li>

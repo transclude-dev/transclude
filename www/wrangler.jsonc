@@ -1,0 +1,14 @@
+{
+  "name": "transclude-www",
+  "main": "worker.js",
+  "compatibility_date": "2026-01-01",
+
+  // There is no JSON module type here, so the route table arrives as text and
+  // `worker.js` parses it. `fallthrough` matters: without it this rule replaces
+  // the default text rule for .txt and .html rather than adding to it.
+  "rules": [{ "type": "Text", "globs": ["**/routes.json"], "fallthrough": true }],
+
+  // The build output is imported by `worker.js`, so wrangler bundles it. Nothing
+  // is uploaded as a separate asset.
+  "keep_vars": true
+}

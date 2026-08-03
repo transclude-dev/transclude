@@ -1,7 +1,14 @@
 <script server>
   import { all } from '../lib/code.js';
 
-  export default async () => ({
+  // `fragment` names the region this request wants, or null for the document.
+  // Asking for `demo` needs none of the highlighting below, and skipping it is
+  // not only faster: the highlighter compiles WebAssembly, which Cloudflare
+  // Workers refuses at runtime, so the page renders there because of this line.
+  export default async ({ fragment }) => {
+    if (fragment) return {};
+
+    return {
     s: await all({
       start: ['npm create @transclude my-app', 'shell'],
       page: `<script server>
@@ -26,10 +33,12 @@
   <li each="note of notes">\${note.text}</li>
 </ul>`,
     }),
-  });
+    };
+  };
 
-  // Nothing here reads the request, so the whole page is written to a file at
-  // build time and served as bytes.
+  // The document is written to a file at build time and served as bytes. The
+  // fragment is rendered when it is asked for, which is why this site runs a
+  // server at all.
 </script>
 
 <title>transclude</title>

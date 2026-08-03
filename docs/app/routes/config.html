@@ -14,6 +14,7 @@
   strict: false,
   fragmentParam: 'fragment',
   lang: 'en',
+  watchElements: false,
   fragmentHeader: null,
   csrf: true,
   trailingSlash: 'never',
@@ -145,6 +146,16 @@
             <code>/_transclude/proxy</code>, which fetches a document from an
             allowed host and answers with one fragment of it. Default deny: no
             key, no route. See <a href="/includes">includes</a>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>watchElements</code></td>
+          <td><code>false</code></td>
+          <td>
+            Puts a script on every page that defines and styles an element
+            arriving in a swap. Worth it when
+            <a href="/fragments">fragments</a> bring in elements the page did not
+            render.
           </td>
         </tr>
         <tr>

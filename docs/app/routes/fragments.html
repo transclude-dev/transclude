@@ -123,13 +123,15 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
 
   <p>
     A fragment can land on a page that never rendered the elements inside it.
-    While <code>fragmentParam</code> is set, every page carries a small script
-    that notices a new tag, loads its definition and adds its styles once.
+    Those elements have no definition there and no styles. Set
+    <code>watchElements</code> and every page carries a small script that notices
+    a new tag, loads its definition and adds its styles once.
   </p>
 
   <p>
-    Set <code>fragmentParam: null</code> and a page ships exactly what it
-    renders. This site is built that way.
+    It is off by default, because it puts that script on every page and only
+    earns it when swaps really do bring in elements the page did not already
+    render. This site does not turn it on.
   </p>
 
   <h2>The parameter is strict, the header is not</h2>

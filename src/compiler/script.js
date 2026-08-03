@@ -105,6 +105,7 @@ export function toFunctionBody(blocks, label, { lift = null, binding = '__member
   const imports = [];
   const hoisted = [];
   const bodies = [];
+  const warnings = [];
   let lifted = null;
   // `null` until a block declares one, so "not said" and "said false" differ.
   const found = Object.fromEntries(flags.map((flag) => [flag, null]));
@@ -115,6 +116,8 @@ export function toFunctionBody(blocks, label, { lift = null, binding = '__member
     // even though it would not be in a module. That is how cleanup is declared.
     const ast = parseOrThrow(code, label, line, { allowReturnOutsideFunction: true });
     const cuts = [];
+
+    warnUnsignalled(ast, code, line, warnings);
 
     const plan = lift ? planLift(ast, lift) : null;
     if (plan) {
@@ -191,7 +194,72 @@ export function toFunctionBody(blocks, label, { lift = null, binding = '__member
     body: bodies.join('\n'),
     lifted,
     flags: found,
+    warnings,
   };
+}
+
+/** Targets that outlive the element listening to them. */
+const OUTLIVES = new Set(['document', 'window', 'globalThis', 'screen', 'navigator', 'visualViewport']);
+
+/**
+ * A listener on something that outlives this element, with no `signal`.
+ *
+ * A listener on `host` is collected with the element, so it needs nothing. One
+ * on `document` is not: the element goes and the listener stays, holding the
+ * closure and everything it captured, and every element after it adds another.
+ * Nothing reports that, which is why it is worth saying at compile time.
+ */
+function warnUnsignalled(ast, code, line, warnings) {
+  const seen = new Set();
+
+  const looksSignalled = (arg) => {
+    if (!arg) return false;
+    // A boolean third argument is `capture`, which is the old spelling and
+    // carries no signal.
+    if (arg.type === 'Literal' && typeof arg.value === 'boolean') return false;
+    // Anything else that is not a plain object could hold one, so this only
+    // reports the shapes it can read.
+    if (arg.type !== 'ObjectExpression') return true;
+    return arg.properties.some(
+      (property) =>
+        property.type === 'SpreadElement' ||
+        property.key?.name === 'signal' ||
+        property.key?.value === 'signal',
+    );
+  };
+
+  const visit = (node) => {
+    if (!node || typeof node.type !== 'string') return;
+
+    if (
+      node.type === 'CallExpression' &&
+      node.callee?.type === 'MemberExpression' &&
+      node.callee.property?.name === 'addEventListener' &&
+      node.callee.object?.type === 'Identifier' &&
+      OUTLIVES.has(node.callee.object.name) &&
+      !looksSignalled(node.arguments[2])
+    ) {
+      const target = node.callee.object.name;
+      const event = node.arguments[0]?.value;
+      const at = lineOf(node, code, line);
+      const message =
+        `${target}.addEventListener(${event ? `"${event}"` : '…'}) has no \`signal\`, so the ` +
+        `listener stays after this element leaves the document. Pass \`{ signal }\` ` +
+        `(line ${at})`;
+      if (!seen.has(message)) {
+        seen.add(message);
+        warnings.push(message);
+      }
+    }
+
+    for (const key of Object.keys(node)) {
+      const value = node[key];
+      if (Array.isArray(value)) value.forEach(visit);
+      else if (value && typeof value.type === 'string') visit(value);
+    }
+  };
+
+  visit(ast);
 }
 
 /** What only exists once the element does, and so cannot be reached from a prototype. */

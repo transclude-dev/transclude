@@ -93,15 +93,16 @@ export default {
   <h2>Hashes, not a nonce</h2>
 
   <p>
-    A nonce is fresh per request, so a page carrying one cannot be a file. A hash
-    is fixed when the page renders, survives being written to disk, and is
-    correct on a host that runs none of this.
+    A policy has to name each inline script it allows. There are two ways to name
+    one: a nonce, which is a random value the server puts on both the tag and the
+    policy, or a hash of the script's own text.
   </p>
 
   <p>
-    A hash is fixed when the page renders. It is written into the file, stays
-    correct, and a host that has never heard of this framework serves it
-    unchanged.
+    A nonce has to be different on every request. Most pages here are written to
+    a file at build time and sent as bytes, so there is no request to make one
+    for. A hash is decided when the page renders and stays true afterwards, which
+    is what a file needs.
   </p>
 
   ${html(s.output)}

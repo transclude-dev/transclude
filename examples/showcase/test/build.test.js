@@ -349,3 +349,26 @@ describe('the home page carries the transcluded section, not the fallback', () =
   // over this page in prose.
   assert.doesNotMatch(home, /<transclude[\s>]/, 'the element was left in the output');
 });
+
+// ---- what the build must not publish ---------------------------------------
+
+describe('an operating system leaving a file in public does not publish it', () => {
+  // `/.DS_Store` answered 200 on the docs site and lists every file beside it.
+  // Dotfiles are not skipped wholesale: `.well-known` is meant to be published.
+  const files = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else files.push(entry.name);
+    }
+  };
+
+  const out = path.join(dist, 'public');
+  if (!fs.existsSync(out)) return;
+  walk(out);
+
+  for (const junk of ['.DS_Store', 'Thumbs.db', 'desktop.ini']) {
+    assert.ok(!files.includes(junk), `${junk} was copied into the build`);
+  }
+});

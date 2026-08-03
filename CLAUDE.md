@@ -304,6 +304,12 @@ against.
   landed at the project root first, which put the one directory of site content
   outside the boundary the config's own opening line draws. A favicon in
   `app/public/`, which is where it belongs, was not served and nothing said so.
+- **The public copy skips what an operating system left there.** `.DS_Store` was
+  copied into the build and served: `/.DS_Store` answered 200 on the docs site
+  and lists every file beside it. Being in `.gitignore` does nothing about this,
+  which is the trap: the build reads the directory, not the index. Dotfiles are
+  not skipped wholesale, because `.well-known` is a directory people mean to
+  publish, so the filter names the three files nobody ever puts there on purpose.
 - **`app/public/` is copied to `dist/public`, and Vite's own `publicDir` is off.**
   Left on, Vite serves it in dev ahead of Hono and copies it into both the client
   and SSR outputs, and production served none of it. Dev 200, prod 404. Both

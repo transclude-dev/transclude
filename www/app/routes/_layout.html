@@ -1,0 +1,18 @@
+<script server>
+  // The site's outermost layout. It renders no chrome: the landing page and the
+  // docs look nothing alike and each brings its own. What belongs here is what
+  // every page needs and no page should have to remember, which today is the
+  // icons.
+  //
+  // Layouts chain, so `docs/_layout.html` nests inside this one and both halves
+  // of the site inherit whatever is added here.
+  export default async () => ({});
+</script>
+
+<!-- `/favicon.ico` is requested with no link tag at all, so it needs none. These
+     two do. The SVG carries its own dark-mode rule, since nothing on the page
+     styles a file the browser fetches on its own. -->
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+<slot></slot>

@@ -31,13 +31,13 @@ jobs:
       # demo and the docs are separate projects that depend on this one by path.
       - run: npm ci
       - run: npm ci --prefix examples/showcase
-      - run: npm ci --prefix docs
+      - run: npm ci --prefix www
 
       - run: npm test
       - run: npm run test:examples
 
       # The docs are built before they are tested: two of those tests read what
       # the build wrote, and skip when there is nothing to read.
-      - run: npm run check --prefix docs
-      - run: npm run build --prefix docs
-      - run: npm test --prefix docs
+      - run: npm run check --prefix www
+      - run: npm run build --prefix www
+      - run: npm test --prefix www

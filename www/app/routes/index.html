@@ -44,11 +44,19 @@
 
   .wordmark {
     font-family: var(--mono);
-    font-size: 0.8rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 0 0 2.5rem;
+    font-weight: 700;
+    font-size: 1.45rem;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin: 0 0 3rem;
+  }
+  .wordmark .hash { color: var(--link); }
+
+  .what {
+    font-size: 1rem;
+    color: var(--ink);
+    margin: 0 0 0.75rem;
+    font-weight: 600;
   }
 
   .hero h1 {
@@ -88,6 +96,16 @@
   .band h2 { font-family: var(--serif); font-size: 1.5rem; margin: 0 0 0.75rem; }
   .band p { color: var(--muted); margin: 0 0 1.75rem; max-width: 40em; }
 
+  .demo {
+    border: 1px solid var(--note-rule);
+    background: var(--note-bg);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem;
+    margin-top: 1.75rem;
+  }
+  .demo p { margin: 0; }
+  .demo .demo-note { margin-top: 0.6rem; color: var(--muted); font-size: 0.95rem; }
+
   .points { max-width: 46rem; margin: 0 auto; padding: 3.5rem 1.25rem; display: grid; gap: 2rem; }
   @media (min-width: 40rem) { .points { grid-template-columns: 1fr 1fr; } }
   .points h3 { font-size: 0.95rem; margin: 0 0 0.4rem; }
@@ -107,14 +125,17 @@
 </style>
 
 <div class="hero">
-  <p class="wordmark">transclude</p>
+  <p class="wordmark"><span class="hash">#</span>transclude</p>
+
+  <p class="what">A server-side web framework. HTML and hypermedia first.</p>
 
   <h1>HTML is the product.</h1>
 
   <p class="lede">
     A page is an <code>.html</code> file, the directory tree is the route table,
-    and any fragment of a page is a URL of its own. Nothing has to run in the
-    browser for the page to be correct.
+    and any fragment of a page is a URL of its own. The server renders it and
+    sends markup a browser already knows how to display. Nothing has to run in
+    the browser for the page to be correct.
   </p>
 
   <div class="actions">
@@ -133,6 +154,20 @@
       URL, from the same compiled markup.
     </p>
     ${html(s.page)}
+
+    <div id="demo" fragment class="demo">
+      <p>
+        <strong>This box is a fragment.</strong> It is part of this page, and it
+        is also a URL: <a href="/?fragment=demo"><code>/?fragment=demo</code></a>
+        answers with this markup and nothing else. No layout, no
+        <code>&lt;head&gt;</code>, no second template that could drift from this
+        one.
+      </p>
+      <p class="demo-note">
+        Open it. What comes back is what you are reading, because there is only
+        one compiled copy of it.
+      </p>
+    </div>
   </div>
 </div>
 
@@ -147,8 +182,8 @@
   <div>
     <h3>Four runtimes, one app</h3>
     <p>
-      Node, Bun, Deno and workerd answer identically, and a test says so across
-      ten routes.
+      Node, Bun, Deno and Cloudflare Workers answer identically, and a test says
+      so across ten routes.
     </p>
   </div>
   <div>
@@ -159,10 +194,11 @@
     </p>
   </div>
   <div>
-    <h3>A build that is files</h3>
+    <h3>Prerendered where it can be</h3>
     <p>
-      Prerendered, compressed once at rest, with a strong ETag per encoding.
-      <code>dist/static</code> is self-contained.
+      A page that does not read the request is written to a file, compressed once
+      at rest, with a strong ETag per encoding. Everything else is rendered by the
+      server, on the same routes. This site is both.
     </p>
   </div>
 </div>

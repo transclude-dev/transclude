@@ -150,7 +150,12 @@ function main() {
   }
 
   run('git', ['add', ...MANIFESTS]);
-  run('git', ['commit', '-m', `Release ${version}`]);
+
+  // A first release at the version the manifests already carry changes nothing,
+  // and an empty commit is not worth making. The tag is the release either way.
+  const staged = run('git', ['diff', '--cached', '--name-only']).trim();
+  if (staged) run('git', ['commit', '-m', `Release ${version}`]);
+
   run('git', ['tag', '-a', `v${version}`, '-m', `Release ${version}`]);
 
   process.stdout.write(

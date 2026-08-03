@@ -58,7 +58,7 @@ export function emitTypes({ components = [], partials = [], layouts = [], pages 
   if (components.length || partials.length) {
     out.push('declare global {');
     out.push('  interface HTMLElementTagNameMap {');
-    // A partial is an undefined custom element, so it is an HTMLElement too.
+    // A light element registers as a custom element too, so it is an HTMLElement.
     // querySelector should know about it even though nothing registers it.
     for (const { tag, upgrades, members, state } of [...components, ...partials]) {
       const name = interfaceName(tag);

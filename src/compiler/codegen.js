@@ -1,6 +1,6 @@
 // Walks a parse5 tree and emits the body of a render function.
 //
-// Rules this file encodes (see README):
+// Rules this file encodes:
 //   - every ${} is escaped; html() opts out
 //   - `if` / `else-if` / `else` bind across whitespace + comments only
 //   - `if` and `each` on the same element is a hard error
@@ -78,15 +78,15 @@ class Codegen {
     blocks = false,
     fragments = true,
   } = {}) {
-    // Whether this template can be asked for a fragment. A page or a partial
-    // can; a shadow component cannot, because a fragment emits the element bare
+    // Whether this template can be asked for a fragment. A page or a light
+    // element can; a shadow one cannot, because a fragment emits the element bare
     // and never calls its render at all. That matters beyond tidiness: with
     // `blocks` on, an `if` or `each` compiles to its own module-scope function,
     // and a `__fragment` passed from render would not be in scope inside it.
     this.fragments = fragments;
     // With `blocks` on, `if` and `each` at the top level compile to their own
     // function and are wrapped in comment anchors, so an update can re-render
-    // one region instead of the whole shadow root. Only a component is ever
+    // one region instead of the whole shadow root. Only an element is ever
     // updated, so nothing else pays for the anchors.
     this.blocks = blocks && !layout;
     this.blockDefs = [];
@@ -117,10 +117,9 @@ class Codegen {
     // on its own. It renders inline like anything else *and* compiles to its own
     // function, so the same markup serves the document and the swap.
     this.regions = new Map();
-    // Every `<transclude src="#id">`, with the region it sits inside so
-    // a cycle can be found before it is a stack overflow at render time.
-    // `<transclude>` naming a region of this page. Resolved at compile
-    // time, which is why it is kept apart from the ones below.
+    // Every `<transclude src="#id">`, with the region it sits inside, so a cycle
+    // is found at compile time rather than as a stack overflow during a render.
+    // Kept apart from the ones below because these need no server to resolve.
     this.regionIncludes = [];
     // The ones a server has to resolve before the render: another route of this
     // app, or a document elsewhere.
@@ -556,7 +555,10 @@ class Codegen {
 
     if (RAW_TEXT.has(tag)) {
       for (const child of childrenOf(el)) {
-        if (child.nodeName === '#text') this.emitText(child.value ?? '', target, scope, child, true);
+        if (child.nodeName === '#text') {
+          assertRawTextSafe(tag, child.value ?? '', el);
+          this.emitText(child.value ?? '', target, scope, child, true);
+        }
       }
     } else {
       this.emitChildren(childrenOf(el), target, scope, false);
@@ -592,8 +594,8 @@ class Codegen {
    * children become its default slot, rendered into their own buffer first.
    */
   /**
-   * `<transclude src="#pricing">` — the same page's own region, in a
-   * second place.
+   * `<transclude src="#pricing">`, the same page's own region, in a second
+   * place.
    *
    * This is the case that should cost nothing: the region is already compiled to
    * a function of the page's data, so including it is calling that function.
@@ -653,8 +655,8 @@ class Codegen {
   }
 
   /**
-   * `<transclude src="https://…#intro">` — a piece of a document
-   * somebody else wrote.
+   * `<transclude src="https://…#intro">`, a piece of a document somebody
+   * else wrote.
    *
    * Resolved before the render rather than during it. Render is synchronous all
    * the way down, and a fetch is not, so what the page declares is collected at
@@ -817,6 +819,52 @@ class Codegen {
         this.c(out, raw ? `__o += __str(${js});` : `__o += __e(${js});`);
       }
     }
+  }
+}
+
+/**
+ * What a `<script>` or a `<style>` may interpolate, which is almost nothing.
+ *
+ * Text in these two is raw: escaping it would change what the browser reads,
+ * since `&amp;` is an ampersand in prose and four characters in JavaScript. So a
+ * value lands in code, and one that closes the string it was written into runs
+ * whatever follows. No escape fixes that, which is why this refuses.
+ *
+ * `json()` answers the narrower question, and only as the whole text of a
+ * script. A style needs no carve-out, because a custom property is an attribute.
+ *
+ * @param {string} tag  'script' or 'style'
+ * @param {string} text the raw text node's contents
+ * @param {object} el   the element, for the line number
+ */
+function assertRawTextSafe(tag, text, el) {
+  const parts = splitInterpolations(text);
+  const exprs = parts.filter((p) => p.type === 'expr');
+  if (exprs.length === 0) return;
+
+  if (tag === 'script' && parts.length === 1 && isJsonCall(exprs[0].value)) return;
+
+  const alternative =
+    tag === 'script'
+      ? 'Pass data with ${json(value)}, which is the whole text of the script, ' +
+        'or put it in an attribute and read it from a file.'
+      : 'Set a custom property on the element instead: ' +
+        '<div style="--brand: ${color}">, which is escaped.';
+
+  throw new CompileError(
+    `\${} inside <${tag}> is written to the page as code, so a value could end ` +
+      `the element or the statement it sits in. ${alternative}`,
+    el,
+  );
+}
+
+/** `json(x)` and nothing else: not `json(x) + y`, and not `notJson(x)`. */
+function isJsonCall(source) {
+  try {
+    const node = parseExpr(source);
+    return node.type === 'CallExpression' && node.callee?.type === 'Identifier' && node.callee.name === 'json';
+  } catch {
+    return false;
   }
 }
 

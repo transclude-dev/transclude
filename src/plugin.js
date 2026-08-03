@@ -63,7 +63,7 @@ export default function transclude({
         .map((route) => [route.id, route]),
     );
     endpoints = new Map(scanned.endpoints.map((route) => [route.id, route]));
-    // A dash keeps these valid custom element names. That is what makes a partial
+    // A dash keeps these valid custom element names. That is what makes a light element
     // an undefined custom element rather than an unknown one, and what lets its
     // styles be scoped to its own tag with no class or hash.
     for (const tag of [...components.keys()]) {

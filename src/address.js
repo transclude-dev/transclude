@@ -159,7 +159,7 @@ export function allowedHost(host, allow = []) {
  *
  * @param {string} url
  * @param {{ allow?: string[] }} [options]
- * @returns {{ ok: boolean, reason?: string, url?: URL }}
+ * @returns {string|null} why it is refused, or null when it may be fetched
  */
 export function checkUrl(url, { allow = [] } = {}) {
   let parsed;

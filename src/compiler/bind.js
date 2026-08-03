@@ -36,7 +36,9 @@ const EACH = /^\s*([A-Za-z_$][\w$]*)\s*(?:,\s*([A-Za-z_$][\w$]*)\s*)?\s+of\s+([\
 /**
  * @param {object[]} nodes the same parse5 nodes the renderer walked
  * @param {object} [opts]
- * @returns {{ code: string, volatile: string[] }} `volatile` is what it could not bind
+ * @returns {{ locate: string, writes: string, cursors: object, parts: string,
+ *   volatile: string[] }} `volatile` is what it could not bind, which is what
+ *   decides whether a light element may update in place
  */
 export function compileBindings(nodes, opts = {}) {
   const gen = new Bindgen(opts);

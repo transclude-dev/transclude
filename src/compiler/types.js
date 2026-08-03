@@ -4,9 +4,11 @@
 // formats and names things and nothing else. Nothing infers.
 
 /**
- * @param {{ components?: string[], partials?: string[], layouts?: object[], pages?: object[] }}
- *   [what] `partials` is the light elements. The key is the old name and is
- *   load-bearing until the callers change with it.
+ * @param {{ components?: object[], partials?: object[], layouts?: object[],
+ *   pages?: object[] }} [what] each element carries its `tag`, its props `type`,
+ *   its `members`, its `state` and whether anything `upgrades` it. `partials` is
+ *   the light elements: the key is the old name and is load-bearing until the
+ *   callers change with it.
  * @returns {string} the contents of transclude-env.d.ts
  */
 export function emitTypes({ components = [], partials = [], layouts = [], pages = [] } = {}) {

@@ -404,6 +404,18 @@ against.
   parses the source again in document mode purely to read that element. Using the
   real parser rather than searching the text is what makes `<html>` inside a
   script block or a comment stay a string.
+- **Most of what `check:src` reported was the JSDoc being wrong, not the code
+  being untypeable.** It was called noise from parse5 node shapes and it was not:
+  of 180 diagnostics, 115 were annotations that disagreed with the thing they
+  described, nearly all of them written in one pass from memory rather than read
+  off the code. `scanRoutes` was documented as returning an array and returns
+  four named lists. `checkUrl` was documented as returning an object and returns
+  a string or null. `createApp`'s parameter never listed `endpoints`. Fixing them
+  is what took it to 65. The gate now includes TS2353, TS2741, TS2739 and TS2740,
+  which are that class in both directions, so it cannot come back. What is left
+  is genuine: `rendered` that TS cannot prove is set, `selectionStart` on an
+  `Element` the code has already checked, and `updated` on a class the author
+  supplies.
 - **A source map is handed back from `load`, not written into the code.** Vite
   composes a map a plugin returns and does not read a `//# sourceMappingURL`
   comment on the code it was given, so the inline version changed nothing and a

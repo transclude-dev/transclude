@@ -38,8 +38,7 @@ export function windowOf(page) {
  * own revalidation and moves back to the end.
  *
  * @param {{ max?: number }} [options]
- * @returns {{ get: Function, set: Function, delete: Function, clear: Function,
- *   size: () => number }}
+ * @returns {{ get: Function, set: Function, delete: Function, deleteByTag: Function }}
  */
 export function memoryStore({ max = 1000 } = {}) {
   const entries = new Map();

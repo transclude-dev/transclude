@@ -83,8 +83,6 @@ so a swap cannot drift from the page it replaces part of.
   Ranges are what a filesystem buys, and a worker has none.
 - **`@scope` is soft scoping.** A light element's styles lose to page CSS of
   equal specificity: right for content, a hazard for widgets.
-- **Chrome, Safari and Firefox are measured.** Nothing older is, and no mobile
-  browser is.
 
 ## The packages
 

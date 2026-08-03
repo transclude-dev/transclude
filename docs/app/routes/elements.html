@@ -279,6 +279,12 @@
     <code>addEventListener</code> and the listener is removed for you.
   </p>
 
+  <p>
+    A listener on the element itself needs nothing, since it goes when the
+    element does. One on <code>document</code> or <code>window</code> outlives
+    it, so leaving out <code>signal</code> there is a build warning.
+  </p>
+
   ${html(s.behavior)}
 
   <h3>A public API</h3>

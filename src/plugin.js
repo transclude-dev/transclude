@@ -33,11 +33,12 @@ export default function transclude({
   elementsDir = 'elements',
   routesDir = 'routes',
   fragmentParam = 'fragment',
+  watchElements = false,
 } = {}) {
-  // Fragment routing on means markup can arrive after the page did, from any
-  // route, so every page carries the loader that defines what shows up. With it
-  // off, a page ships exactly what it renders, which is the content-site case.
-  const watchElements = Boolean(fragmentParam);
+  // Off unless asked for. It puts a script on every page, and it only earns that
+  // when swapped-in markup names an element the page did not already render.
+  // A page that renders its own elements defines them without this.
+  const watching = watchElements === true;
   let root;
   let app;
   let runtime;
@@ -159,7 +160,7 @@ export default function transclude({
       // Elements to define or script to run, and otherwise nothing at all. The
       // exception is fragments, where any page can be swapped into and needs the
       // loader that defines whatever arrives.
-      needed: watchElements || tags.length > 0 || hasScript,
+      needed: watching || tags.length > 0 || hasScript,
     };
   };
 
@@ -337,7 +338,7 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
       ];
       return compileClientEntry(sources, clientManifest(route), {
         runtime,
-        elements: watchElements,
+        elements: watching,
       }).code;
     },
 

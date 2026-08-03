@@ -264,6 +264,7 @@ export function compileComponent(
 
   const warnings = [
     ...template.warnings,
+    ...client.warnings,
     ...unusedProps(props.defaultNode, template.reads, blocks),
   ];
 

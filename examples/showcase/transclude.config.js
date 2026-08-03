@@ -69,6 +69,12 @@ export default {
   // renders, which is the content-site case.
   fragmentParam: "fragment",
 
+  // Markup swapped into a page here can name an element that page never
+  // rendered, so every page carries the script that notices a new tag and loads
+  // its definition and styles. Off by default: it is only worth the script when
+  // swaps really do bring in elements.
+  watchElements: true,
+
   // Cross-site request forgery. On by default, and the only middleware the
   // framework registers for you: the whole form story here is
   // `<form method="post">`, and a page on another origin can post one to you

@@ -221,6 +221,18 @@ against.
   paints into a shadow root is out of reach of anything watching the document, so a
   module's `define` calls its children's. The `__defined` flag stops a cycle,
   because an element may render itself.
+- **The swap watcher is opt-in, and used to follow `fragmentParam`.** Any app
+  that could serve a fragment paid for the script whether or not a swap ever
+  brought in an element, which is most of them: a page that renders its own
+  elements defines them without it. `watchElements` in the config, off by
+  default. The starter went from three client entries to none.
+- **A listener on `document` outlives the element that added it.** One on `host`
+  is collected with the element, so it needs nothing; one on `document`,
+  `window` or `globalThis` holds its closure forever and every element after it
+  adds another. `warnUnsignalled` in `script.js` reports a missing `signal` for
+  those targets only. A boolean third argument is `capture` and counts as
+  missing; a variable is left alone, because guessing would make the warning
+  something to switch off.
 - **One rule decides who ships a client entry, in `clientManifest`.** The dev
   server and the build both read `client.needed`. They each had their own copy of
   that condition once, and only one got updated, so dev served a page with no entry

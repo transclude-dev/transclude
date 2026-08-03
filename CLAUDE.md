@@ -390,6 +390,23 @@ against.
   parses the source again in document mode purely to read that element. Using the
   real parser rather than searching the text is what makes `<html>` inside a
   script block or a comment stay a string.
+- **A preload hint is set on the way out, never on `ctx.response`.** A header on
+  that object is one of the things that makes a page too personal to cache, so
+  writing the `Link` there would turn every page in the app into a miss.
+  `sendRendered` sets it on the response instead, after `cacheable` has been
+  decided. A test renders twice and counts, and the mutation that catches it is
+  writing the header inside the render closure rather than at send time: doing it
+  later in `sendRendered` is already too late to break anything, so that
+  mutation proves nothing.
+- **There is no streaming, and the synchronous render is why.** Every render
+  function is `__o += …` to the last component, which is what lets an external
+  include resolve before the render and a prerendered page stay a file. Async
+  render would tax every component call for something most pages here do not
+  need. The mitigation that is portable is a `Link: rel=preload` header for the
+  stylesheet and the client entry, which come from the route table rather than
+  from a loader and so are known before any loader runs. A proxy that reads it
+  sends a 103. 103 cannot be sent from here directly: a `Response` carries one
+  status, and the Fetch API does not model an informational one.
 - **The precache list is a build artifact, and cannot be anything else.** Only
   the build knows an asset's hashed name, and a runtime with no disk cannot be
   asked: `bytesFrom` in `worker.js` returns `{ get }` and nothing that

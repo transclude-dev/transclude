@@ -32,6 +32,9 @@ import { cookiesOf } from './cookies.js';
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 const REVALIDATE = 'public, max-age=0, must-revalidate';
 
+// One per process rather than one per render. It holds no state between calls.
+const encoder = new TextEncoder();
+
 /** Below this, the framing costs more than it saves. A 91 byte file gzips to 120. */
 export const COMPRESSIBLE_FLOOR = 512;
 
@@ -349,7 +352,11 @@ export function createApp({
    * here: without it a shared cache would serve one encoding to everyone.
    */
   function send(c, entry, cacheControl, status = 200) {
-    const encoding = pickEncoding(c.req.header('accept-encoding'), [...entry.encodings.keys()]);
+    // The key list is built once per entry rather than per request. An entry is
+    // produced at load time and never changes, so the spread was a fresh array
+    // for every hit on the same file.
+    entry.encodingList ??= [...entry.encodings.keys()];
+    const encoding = pickEncoding(c.req.header('accept-encoding'), entry.encodingList);
     const chosen = encoding ? entry.encodings.get(encoding) : null;
 
     const body = chosen?.body ?? entry.body;
@@ -376,7 +383,7 @@ export function createApp({
    * `TextEncoder` rather than `Buffer`: the latter is Node's, and this file is not.
    */
   async function sendRendered(c, html, ctx = null) {
-    const body = new TextEncoder().encode(html);
+    const body = encoder.encode(html);
     const base = await hash(body);
 
     const available = compress && body.length >= COMPRESSIBLE_FLOOR ? ['br', 'gzip'] : [];

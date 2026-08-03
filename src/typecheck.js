@@ -52,6 +52,11 @@ const TYPE_FORMAT =
 
 const LAYOUT_FILE = '_layout.html';
 
+/**
+ * @param {{ root: string, appDir: string, routesDir: string, elementsDir: string,
+ *   strict?: boolean }} options
+ * @returns {{ check: Function, dispose: Function }}
+ */
 export function createChecker({
   root,
   appDir = 'app',
@@ -453,7 +458,13 @@ export function createChecker({
   };
 }
 
-/** Line and column for an offset, for anything that reports to a human. */
+/**
+ * Line and column for an offset, for anything that reports to a human.
+ *
+ * @param {string} source
+ * @param {number} offset
+ * @returns {{ line: number, column: number }} both 1-based, for a message a reader can follow
+ */
 export function positionAt(source, offset) {
   const before = source.slice(0, offset);
   const line = before.split('\n').length;

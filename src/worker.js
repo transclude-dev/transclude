@@ -26,6 +26,9 @@ function etagOf(bytes) {
  * The same entry shape the Node server builds from a disk. `encodings` is empty
  * because nothing here is precompressed, and the code that reads it already
  * treats an empty map as "identity is all there is".
+ *
+ * @param {Record<string, { body: string }>} map base64 from the build
+ * @returns {Map<string, object>} the same entries with real bytes
  */
 export function bytesFrom(map) {
   const built = new Map();
@@ -44,6 +47,9 @@ export function bytesFrom(map) {
 /**
  * Public files, as a handler rather than a directory. No byte ranges, because
  * those need a filesystem and this runtime has none.
+ *
+ * @param {Record<string, object>} map
+ * @returns {Function} a Hono handler
  */
 export function fileHandler(map) {
   const files = bytesFrom(map);
@@ -56,11 +62,21 @@ export function fileHandler(map) {
   };
 }
 
-/** A prerendered error page, which is sent as bytes and never revalidated. */
+/**
+ * A prerendered error page, which is sent as bytes and never revalidated.
+ *
+ * @param {{ body: string, type: string }|null|undefined} page base64 from the build
+ * @returns {object|null} the entry shape `send` expects
+ */
 export const pageEntry = (page) =>
   page && { body: decode(page.body), type: page.type, etag: '"error"', encodings: new Map() };
 
-/** Rendered responses get the real thing, which on this runtime is async. */
+/**
+ * Rendered responses get the real thing, which on this runtime is async.
+ *
+ * @param {Uint8Array} body
+ * @returns {Promise<string>} a quoted ETag
+ */
 export async function hash(body) {
   const digest = await crypto.subtle.digest('SHA-1', body);
   const bytes = new Uint8Array(digest);

@@ -32,6 +32,10 @@ const NOT_FOUND = '404';
  */
 const ERROR = '500';
 
+/**
+ * @param {string} dir
+ * @returns {object[]} one entry per file the tree routes to
+ */
 export function scanRoutes(dir) {
   const routes = [];
   const endpoints = [];
@@ -68,6 +72,11 @@ export function scanRoutes(dir) {
   return { routes, endpoints, notFound, error };
 }
 
+/**
+ * @param {string} rel the path under the routes directory
+ * @param {string} file
+ * @returns {object} its id, URL pattern, params and kind
+ */
 export function toRoute(rel, file) {
   const kind = rel.endsWith(ENDPOINT_EXT) ? 'endpoint' : 'page';
   const ext = kind === 'endpoint' ? ENDPOINT_EXT : EXT;
@@ -166,6 +175,11 @@ function walk(dir, base = dir, out = []) {
  * pages, at which point the name was no longer true. A missing directory otherwise
  * produces an empty route table and a site of 404s, which is a confusing way to
  * learn about a rename.
+ *
+ * @param {string} app the app directory
+ * @param {string} routesDir from the config
+ * @returns {string}
+ * @throws when the old `pages/` name is still there
  */
 export function resolveRoutesDir(app, routesDir) {
   const dir = path.resolve(app, routesDir);

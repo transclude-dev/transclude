@@ -123,6 +123,10 @@ class Builder {
 /**
  * Maps an offset in the shim back to an offset in the .html file, or null when
  * it landed in generated scaffolding.
+ *
+ * @param {object[]} chunks what the Builder recorded
+ * @param {number} offset into the shim
+ * @returns {number|null} the offset in the .html file, or null when it does not map
  */
 export function originalOffset(chunks, offset) {
   let low = 0;
@@ -150,6 +154,10 @@ export function originalOffset(chunks, offset) {
  *
  * Copied with offsets like every other shim, so a diagnostic points at the real
  * line in the real file.
+ *
+ * @param {string} source
+ * @param {{ contextType: string }} options
+ * @returns {{ code: string, chunks: object[], errors: object[] }}
  */
 export function buildEndpointShim(source, { contextType }) {
   const out = new Builder();
@@ -255,6 +263,11 @@ function actionExports(ast) {
 /**
  * `page`, `layout` and `component` differ only in where their data comes from:
  * a loader checked against a route context, or a props object.
+ *
+ * @param {string} source
+ * @param {{ kind: string, shadow?: boolean, contextType?: string|null,
+ *   componentProps?: Map<string, string> }} options
+ * @returns {{ code: string, chunks: object[], errors: object[] }}
  */
 export function buildShim(source, { kind, shadow = false, contextType = null, componentProps = new Map() }) {
   const blocks = splitBlocks(source);

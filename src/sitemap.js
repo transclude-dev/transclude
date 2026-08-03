@@ -32,6 +32,11 @@ const excluded = (path, rules) =>
  *
  * `paths()` is the page's own, the one the build calls, so the two cannot
  * disagree about which URLs exist.
+ *
+ * @param {object} manifest
+ * @param {Record<string, object>} pages
+ * @param {{ entries?: object[], exclude?: string[] }} [config]
+ * @returns {Promise<Array<{ path: string, lastmod?: string }>>}
  */
 export async function sitemapEntries(manifest, pages, { entries = [], exclude = [] } = {}) {
   const found = [];
@@ -96,6 +101,12 @@ function index(count, hostname, limit) {
  *
  * Past the cap the bare path answers with an index and `?p=` answers with a
  * slice, because a file over 50000 URLs is not a sitemap a crawler will read.
+ *
+ * @param {object} manifest
+ * @param {Record<string, object>} pages
+ * @param {object} config the `sitemap` block, which has to name a hostname
+ * @param {number|null} [page] which sheet, when there are more URLs than one holds
+ * @returns {Promise<string>} an XML document
  */
 export async function sitemap(manifest, pages, config, page = null) {
   const { hostname, limit = LIMIT } = config;

@@ -529,10 +529,16 @@ against.
   element about to be removed, and the id table is built last. Indexing first
   leaves the table naming elements the cleaning took out, so `listFragments`
   advertises a fragment that then fails to resolve.
-- **`<base>` and `<link>` are stripped from foreign markup for the host page's
-  sake, not the fragment's.** Neither does anything to the fragment. A `<base>`
-  retargets every relative URL in the document the fragment is inserted into,
-  and a `<link>` can pull a stylesheet from anywhere.
+- **`<base>`, `<link>` and `<style>` are stripped from foreign markup for the
+  host page's sake, not the fragment's.** None of them stops at the fragment. A
+  `<base>` retargets every relative URL in the document the fragment is inserted
+  into, a `<link>` can pull a stylesheet from anywhere, and a `<style>` block is
+  unscoped CSS: `p { display: none }` from the source empties the page it lands
+  in. `<style>` was missed at first, which left the `<link>` rule half applied.
+  A `style` attribute is the other kind and is kept, because it paints one
+  element; `proxy.styles: 'strip'` drops those for an app that wants its own
+  look. The value is checked, since a misspelling would keep every attribute and
+  read exactly like the setting working.
 - **`src/extract.js` never runs on our own pages.** A region here is compiled:
   `<div id="x" fragment>` becomes its own render function and the same markup
   serves it inline and alone, so nothing in that path parses HTML. `extract.js`

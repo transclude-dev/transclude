@@ -416,13 +416,19 @@ against.
   than the order the caller listed them: removing a marker shifts every line
   already noted below it, silently, one per marker, and the first test passed
   only because it listed them in file order.
-- **The production bundle does not map yet, and `sourcemap: true` is worse than
-  off.** Rolldown composed no `.html` into `dist/server/entry.js.map`: the
-  sources are the runtime and the app's own `.js` only. With SSR maps on, a page
-  frame then resolves to whichever neighbouring module's range covers it, so a
-  throw in `colophon.html` reported `app/lib/code.js:81` with full confidence.
-  A wrong map is worse than none, so it stays off until the composition is
-  understood. Dev is verified and is where a template is written.
+- **The production bundle does not map, and it is not our map that is wrong.**
+  Measured on Vite 8.1.5 with rolldown 1.1.5: the `load` hook returns a valid map
+  for every page, twenty-four times on the docs site, counted with a probe, and
+  `dist/server/entry.js.map` lists two sources, the runtime and the app's own
+  `.js`. No `.html` at all. The same map is consumed correctly by Vite in dev, so
+  it decodes; returning it as an object rather than a JSON string changes
+  nothing, and so does making `sources` relative rather than absolute. Page
+  modules are `\0`-prefixed virtual ids, which is the standard convention and the
+  likeliest reason they are skipped: there is no file behind them.
+  `sourcemap: true` on the SSR build is therefore *worse* than off, because a
+  page frame then resolves to whichever neighbouring module's range covers it and
+  a throw in `colophon.html` reported `app/lib/code.js:81` with full confidence.
+  It stays off. Dev is verified and is where a template is written.
 - **A preload hint is set on the way out, never on `ctx.response`.** A header on
   that object is one of the things that makes a page too personal to cache, so
   writing the `Link` there would turn every page in the app into a miss.

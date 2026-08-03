@@ -401,3 +401,86 @@ test('a false boolean removes the attribute rather than writing "false"', () => 
   rt.writeProp(el, 'open', false, false);
   assert.equal(el.attrs.has('open'), false);
 });
+
+// ---- head, merged across the chain ----------------------------------------
+//
+// The chain used to be concatenated. A root layout with a default `og:image`
+// and a page with its own shipped both, and two of those is not an override: a
+// crawler reads them as two images and takes the first, which is the outermost.
+
+/** The <head> of a document whose levels contribute only the given head markup. */
+const headOf = (...heads) => {
+  const chain = heads.map((head, i) => level(`l${i}`, { head }));
+  const html = renderDocument(chain, chain.map(() => ({})), {});
+  return html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
+};
+
+test('a page meta replaces the layout one of the same name', () => {
+  const head = headOf(
+    '<meta property="og:image" content="/default.png">',
+    '<meta property="og:image" content="/mine.png">',
+  );
+
+  assert.match(head, /\/mine\.png/);
+  assert.doesNotMatch(head, /\/default\.png/, 'the layout default survived');
+});
+
+test('name, property and http-equiv are different keys', () => {
+  const head = headOf(
+    '<meta name="description" content="outer">',
+    '<meta property="description" content="inner">',
+  );
+
+  assert.match(head, /name="description" content="outer"/, 'a property dropped a name');
+  assert.match(head, /property="description" content="inner"/);
+});
+
+test('two of one key at a single level are both kept', () => {
+  // Deliberate: og:image really can be a list. The merge is across levels.
+  const head = headOf(
+    '<meta name="x" content="1">',
+    '<meta property="og:image" content="/a.png"><meta property="og:image" content="/b.png">',
+  );
+
+  assert.match(head, /\/a\.png/);
+  assert.match(head, /\/b\.png/);
+});
+
+test('only canonical is unique among links', () => {
+  const head = headOf(
+    '<link rel="canonical" href="/outer"><link rel="alternate" href="/feed.xml">',
+    '<link rel="canonical" href="/inner"><link rel="alternate" href="/atom.xml">',
+  );
+
+  assert.match(head, /canonical" href="\/inner"/);
+  assert.doesNotMatch(head, /canonical" href="\/outer"/, 'two canonicals');
+  assert.match(head, /\/feed\.xml/, 'an alternate was dropped');
+  assert.match(head, /\/atom\.xml/);
+});
+
+test('a > inside a value does not cut the tag short', () => {
+  // `escapeAttr` leaves `>` alone, because a quoted value may hold one. A scan
+  // stopping at the first `>` would read the wrong end and miss the key.
+  const head = headOf(
+    '<meta name="description" content="a > b">',
+    '<meta name="description" content="mine">',
+  );
+
+  assert.match(head, /content="mine"/);
+  // Not just "the value is gone": a scan that stopped early would cut the tag
+  // mid-value and leave the tail behind, which no search for the whole value
+  // finds. What is checked is that exactly one tag remains and nothing of the
+  // other one does.
+  assert.equal(head.match(/name="description"/g).length, 1, 'both descriptions survived');
+  assert.doesNotMatch(head, /b">/, 'the tag was cut inside its value, leaving the tail');
+});
+
+test('a link that is not canonical is never dropped', () => {
+  const head = headOf(
+    '<link rel="preload" href="/a.woff2" as="font">',
+    '<link rel="preload" href="/b.woff2" as="font">',
+  );
+
+  assert.match(head, /a\.woff2/);
+  assert.match(head, /b\.woff2/);
+});

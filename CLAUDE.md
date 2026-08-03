@@ -390,6 +390,30 @@ against.
   parses the source again in document mode purely to read that element. Using the
   real parser rather than searching the text is what makes `<html>` inside a
   script block or a comment stay a string.
+- **The precache list is a build artifact, and cannot be anything else.** Only
+  the build knows an asset's hashed name, and a runtime with no disk cannot be
+  asked: `bytesFrom` in `worker.js` returns `{ get }` and nothing that
+  enumerates. So `bin/build.js` writes `dist/static/precache.json` before the
+  asset module and before compression, the module carries it for workerd, and
+  `production.js` reads it back. `revision: null` means the URL is the version,
+  which is true of a hashed asset and false of everything else, so
+  `precacheList` throws on a page with no ETag rather than emitting null and
+  having a service worker hold it forever. The revision is a build-time hash and
+  is not compared against a served ETag: public files go out through Hono's
+  `serveStatic`, which sends none.
+- **`<head>` merges across the chain, `<meta>` and canonical by key.** The chain
+  was concatenated, so a root layout with a default `og:image` and a page with
+  its own shipped both, and two of those is not an override: a crawler reads two
+  images and takes the first, which is the outermost, which is backwards. Same
+  rule as `renderHtmlAttrs`, which `<head>` never got. `name`, `property` and
+  `http-equiv` are separate keys, and among links only `rel="canonical"` is
+  unique, because a page has several `alternate`s and several `preload`s on
+  purpose. Across levels only: two `og:image` written at one level are meant.
+  The scan is quote-aware because `escapeAttr` escapes `& " <` and *not* `>`, so
+  `content="a > b"` is legal and stopping at the first `>` cuts the tag inside
+  its value and leaves the tail in the document. The test for that was vacuous
+  at first: it searched for the whole value, which a truncated cut does not
+  leave behind either. It counts the surviving tags now.
 - **`renderHtmlAttrs` returns an object, not markup.** The chain merges by name,
   innermost winning per attribute, so a root layout setting the theme and a page
   setting `dir` both survive. Concatenating serialized attributes instead would

@@ -276,7 +276,7 @@ class Codegen {
   }
 
   emitBranches(chain, out, scope, topLevel) {
-    chain.forEach((branch, idx) => {
+    for (const branch of chain) {
       if (branch.kind === 'if') {
         this.c(out, `if (${this.expr(branch.cond, scope, branch.node)}) {`);
       } else if (branch.kind === 'else-if') {
@@ -286,8 +286,8 @@ class Codegen {
       }
       // Inside a branch the element may still carry `each`; emitNode handles it,
       // but the if+each combination is rejected up front.
-      this.emitNode(branch.node, out, scope, topLevel, idx);
-    });
+      this.emitNode(branch.node, out, scope, topLevel);
+    }
     this.c(out, `}`);
   }
 

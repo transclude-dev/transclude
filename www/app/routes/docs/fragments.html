@@ -130,6 +130,14 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
     header in the config and <code>?fragment=</code> becomes optional.
   </p>
 
+  <doc-note label="Set hx-swap to outerHTML" tone="warn">
+    A fragment arrives carrying its own id, and htmx fills the target rather
+    than replacing it unless told otherwise. So the returned
+    <code>&lt;ul id="list"&gt;</code> lands <em>inside</em> the one already on
+    the page, and again on the next request. This is the same trap as the htmz
+    one below, in the shape htmx gives it.
+  </doc-note>
+
   ${html(s.header)}
 
   <h2>Strict parameter, loose header</h2>

@@ -36,6 +36,13 @@ npm start        # serves dist/ on 1960`,
     changes.
   </p>
 
+  <doc-note label="Forgetting it stops the build">
+    A page that reads a cookie, answers with a <code>Response</code>, or sets a
+    status other than 200 cannot be one file for everyone. The build names it,
+    says which of those it did, and exits non-zero. It does not write a file
+    that would be wrong for every visitor after the first.
+  </doc-note>
+
   <h2>Caching</h2>
 
   <p>Build output is compressed once, and each encoding gets its own ETag.</p>
@@ -76,7 +83,19 @@ npm start        # serves dist/ on 1960`,
 
   <p>
     <code>404.html</code> and <code>500.html</code> are rendered at build time
-    and served as static files.
+    and served as static files. A page that has to render after a request has
+    already failed can fail too, so these are always bytes.
+  </p>
+
+  <doc-note label="prerender does not apply to them" tone="warn">
+    They are written whatever they say, so nothing they render may depend on a
+    request. A layout above them reading a cookie stops the build.
+    <code>ctx.request</code> is <code>null</code> while prerendering, and at no
+    other time, which is how a shared layout can skip the part that needs a
+    visitor.
+  </doc-note>
+
+  <p>
   </p>
 
   <p>

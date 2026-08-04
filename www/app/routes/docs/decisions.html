@@ -124,11 +124,14 @@
       a choice this does not make.
     </li>
     <li>
-      <strong>No streaming.</strong> The body is buffered so it can be hashed,
-      which is what buys the strong ETag, and a synchronous render is what lets
-      an <a href="/docs/includes">include</a> resolve before the page renders. A
-      <code>Link: rel=preload</code> header goes out first, so a proxy can turn
-      it into a 103 while the page is still being made.
+      <strong>A page does not stream.</strong> Its body is buffered so it can
+      be hashed, which is what buys the strong ETag, and a synchronous render is
+      what lets an <a href="/docs/includes">include</a> resolve before the page
+      renders. A <code>Link: rel=preload</code> header goes out first, so a
+      proxy can turn it into a 103 while the page is still being made. An
+      <a href="/docs/endpoints">endpoint</a> is not a page: it returns a
+      <code>Response</code> you build, so it can answer with a
+      <code>ReadableStream</code> and stay open.
     </li>
     <li>
       <strong>Layout loaders run in order, not at once.</strong> Each one can

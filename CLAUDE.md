@@ -484,7 +484,13 @@ against.
   writing the header inside the render closure rather than at send time: doing it
   later in `sendRendered` is already too late to break anything, so that
   mutation proves nothing.
-- **There is no streaming, and the synchronous render is why.** Every render
+- **A page does not stream, and the synchronous render is why.** An endpoint
+  does: it returns a `Response` the app never touches the body of, so a
+  `ReadableStream` reaches the client through `runEndpoint` and `withEnvelope`,
+  and Node flushes it as it is written. Measured against a live server, with a
+  header set on `ctx.response` so the envelope had to rebuild the `Response`,
+  which is the step that could have dropped the body. `examples/live` is that.
+  For a page it is still true, and every render
   function is `__o += …` to the last component, which is what lets an external
   include resolve before the render and a prerendered page stay a file. Async
   render would tax every component call for something most pages here do not

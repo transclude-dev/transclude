@@ -231,3 +231,52 @@ test('the word is fragment, never region', () => {
 
   assert.deepEqual(found, [], `prose saying region:\n${found.join('\n')}`);
 });
+
+test('the documented defaults are the defaults', () => {
+  // `loadProject` applied none of these until an example was written with a
+  // short config, so the table was a description of what should happen. Now it
+  // is a description of what does, and the two can drift again.
+  const source = path.join(
+    root,
+    '..',
+    'node_modules',
+    '@transclude',
+    'core',
+    'src',
+    'project.js',
+  );
+  if (!fs.existsSync(source)) return; // not installed: nothing to compare against
+
+  const code = fs.readFileSync(source, 'utf8');
+  const block = code.slice(code.indexOf('const DEFAULTS = {'));
+  const real = Object.fromEntries(
+    [...block.slice(0, block.indexOf('};')).matchAll(/^\s*(\w+): (.+),$/gm)].map(([, key, value]) => [
+      key,
+      value.replace(/['`]/g, ''),
+    ]),
+  );
+  assert.notEqual(Object.keys(real).length, 0, 'DEFAULTS was found and parsed');
+
+  const page = fs.readFileSync(path.join(docs, 'config.html'), 'utf8');
+  const body = page.slice(page.indexOf('<doc-page'));
+  const documented = Object.fromEntries(
+    [...body.matchAll(/<tr>\s*<td><code>(\w+)<\/code><\/td>\s*<td>([\s\S]*?)<\/td>/g)].map(
+      ([, key, value]) => [
+        key,
+        value
+          .replace(/<[^>]+>/g, '')
+          .replace(/\s+/g, ' ')
+          .replace(/['`]/g, '')
+          .trim(),
+      ],
+    ),
+  );
+
+  const wrong = [];
+  for (const [key, value] of Object.entries(real)) {
+    if (documented[key] === undefined) wrong.push(`${key}: not in the table`);
+    else if (documented[key] !== value) wrong.push(`${key}: table says ${documented[key]}, code says ${value}`);
+  }
+
+  assert.deepEqual(wrong, []);
+});

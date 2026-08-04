@@ -17,7 +17,9 @@ import config from './transclude.config.js';
 // There is no JSON module type in Workers, so the manifest arrives as a string.
 // Importing it and using it as an object gave a route table of `undefined` and a
 // site of 404s that looked exactly like a routing bug.
-const manifest = JSON.parse(manifestText);
+// The cast is the other half of that: every other runtime hands this back as an
+// object, so TypeScript types the import that way and `JSON.parse` refuses it.
+const manifest = JSON.parse(/** @type {any} */ (manifestText));
 
 /**
  * Built once, on the first request, because that is when `env` exists.

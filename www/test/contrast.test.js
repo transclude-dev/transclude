@@ -51,6 +51,7 @@ function token(name, theme) {
 
 // Body text wants 90, everything else that is read wants 75, and code tokens
 // want 60. These are the APCA levels, not ones invented here.
+/** @type {[string, string, string, number][]} */
 const PAIRS = [
   ['body text', 'ink', 'ground', 90],
   ['code text', 'ink', 'sunken', 90],

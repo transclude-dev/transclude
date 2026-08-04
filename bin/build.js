@@ -111,9 +111,15 @@ await build({
   },
 });
 
+// A worker entry imports this bundle, and an editor set to check the app's JS
+// then checks a file nobody wrote. Twenty errors in the showcase, all of them
+// about generated code. The banner is what keeps it out of that program.
+const entry = path.join(dist, 'server/entry.js');
+fs.writeFileSync(entry, `// @ts-nocheck\n${fs.readFileSync(entry, 'utf8')}`);
+
 // ---- prerender ------------------------------------------------------------
 
-const { pages } = await import(pathToFileURL(path.join(dist, 'server/entry.js')).href);
+const { pages } = await import(pathToFileURL(entry).href);
 
 /**
  * A static route has one URL. A dynamic route has as many as its `paths` export

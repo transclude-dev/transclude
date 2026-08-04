@@ -163,6 +163,12 @@ describe('the server bundle runs without vite', () => {
   assert.match(entry, /export\s*\{[^}]*pages/, 'exports the page map');
 });
 
+describe('the server bundle is not type checked by the app that imports it', () => {
+  // `worker.js` imports this file, and `worker.js` is in the app's jsconfig, so
+  // without the banner an editor reports twenty errors about generated code.
+  assert.match(read('server/entry.js'), /^\/\/ @ts-nocheck\n/);
+});
+
 describe('a page opting out of prerendering is left to the server', () => {
   const patterns = manifest().dynamic.map((route) => route.pattern);
 

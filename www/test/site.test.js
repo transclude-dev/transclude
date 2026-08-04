@@ -287,7 +287,7 @@ test('the ports the examples page lists are the ports they run on', () => {
   // command works and the URL under it is wrong.
   const page = fs.readFileSync(path.join(docs, 'examples.html'), 'utf8');
   const listed = [...page.matchAll(/npm run (\w+)\s+# http:\/\/localhost:(\d+)/g)].map(
-    ([, name, port]) => [name, Number(port)],
+    ([, name, port]) => /** @type {[string, number]} */ ([name, Number(port)]),
   );
   assert.notEqual(listed.length, 0, 'the page lists some');
 

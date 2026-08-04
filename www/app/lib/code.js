@@ -70,6 +70,7 @@ export function tree(source) {
  * @returns {Promise<Record<string, string>>}
  */
 export async function all(samples) {
+  /** @type {Record<string, string>} */
   const out = {};
 
   for (const [name, value] of Object.entries(samples)) {

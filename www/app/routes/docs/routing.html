@@ -40,12 +40,39 @@
 
 <input name="q" value="\${q}" disabled="\${busy}" />
 <user-card name="\${person.name}" tags="\${person.tags}"></user-card>`,
-    directives: `<li each="tag of tags">\${tag}</li>
-<li each="note of notes" key="note.id">\${note.text}</li>
+    branch: `<p if="query">Searching for \${query}</p>
+<p else-if="people.length">Everyone.</p>
+<p else>Nobody here yet.</p>`,
+    branchOut: `<p>Everyone.</p>`,
+    loop: `<li each="tag of tags">\${tag}</li>`,
+    loopIndex: `<li each="tag, i of tags">\${i + 1}. \${tag}</li>`,
+    loopOut: `<li>1. notes</li>
+<li>2. ideas</li>`,
+    loopScope: `<div each="group of groups">
+  <h2>\${group.name}</h2>
+  <a each="person of group.people" href="/people/\${person.slug}">
+    \${person.name}, \${group.name}
+  </a>
+</div>`,
+    loopEmpty: `<p if="!tags.length">No tags yet.</p>
+<ul else>
+  <li each="tag of tags">\${tag}</li>
+</ul>`,
+    keyed: `<li each="note of notes" key="note.id">
+  <input name="text" value="\${note.text}" />
+</li>`,
+    refused: [
+      `<li if="note.done" each="note of notes">…</li>
+<!-- which runs first would be unclear -->
 
-<p if="query">Searching for \${query}</p>
-<p else-if="people.length > 2">More than two.</p>
-<p else>Not many here.</p>`,
+<p>A</p>
+<p else>B</p>
+<!-- "else" with no "if" before it -->
+
+<li each="\${notes}">…</li>
+<!-- a directive takes an expression, not an interpolation -->`,
+      'html',
+    ],
     }),
   });
 </script>
@@ -254,18 +281,116 @@
   <h2>Directives</h2>
 
   <p>
-    A directive's value reads as an expression, not as a string. There is no
-    <code>${empty}</code> inside one, and no quotes around a name.
+    Four attributes decide whether an element renders and how many times. They
+    are the whole templating language.
   </p>
 
-  ${html(s.directives)}
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Directive</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>if="expr"</code></td>
+          <td>Render this element only when the expression is true.</td>
+        </tr>
+        <tr>
+          <td><code>else-if="expr"</code>, <code>else</code></td>
+          <td>Continue the chain from the element before.</td>
+        </tr>
+        <tr>
+          <td><code>each="item of list"</code></td>
+          <td>Render this element once per item.</td>
+        </tr>
+        <tr>
+          <td><code>key="expr"</code></td>
+          <td>Which item is which, across a re-render.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
   <p>
-    <code>key</code> tells the browser which item is which, so input values and
-    focus survive a reorder.
+    A directive's value is an expression, not a string. There is no
+    <code>${empty}</code> inside one, and no quotes around a name:
+    <code>if="query"</code> reads the field called <code>query</code>.
   </p>
 
+  <h3>if, else-if, else</h3>
+
+  <p>The first one whose expression is true renders. The others are left out.</p>
+
+  ${html(s.branch)}
+
+  <p>With no query and two people, that renders:</p>
+
+  ${html(s.branchOut)}
+
+  <p>
+    The chain is made of neighbors. Whitespace and comments between them are
+    fine, and another element ends it. An <code>else</code> with no
+    <code>if</code> before it is a compile error, rather than an element that
+    never appears.
+  </p>
+
+  <h3>each</h3>
+
+  <p>The element is repeated, once per item, with the item in scope inside it.</p>
+
+  ${html(s.loop)}
+
+  <p>Add a second name for the index, counting from zero.</p>
+
+  ${html(s.loopIndex)}
+
+  <p>With <code>tags</code> of <code>['notes', 'ideas']</code>, that renders:</p>
+
+  ${html(s.loopOut)}
+
+  <p>
+    The name reaches everything inside the element, attributes included, and a
+    loop inside a loop can read the one around it.
+  </p>
+
+  ${html(s.loopScope)}
+
+  <doc-note label="An empty list renders nothing at all">
+    Not an empty row and not a message. If a list has something to say when it
+    is empty, that is an <code>if</code> beside it.
+  </doc-note>
+
+  ${html(s.loopEmpty)}
+
+  <h3>key</h3>
+
+  <p>
+    <code>key</code> says which item is which, so a re-render can move a row
+    rather than rewrite it. Input values, focus and scroll position survive a
+    reorder.
+  </p>
+
+  ${html(s.keyed)}
+
+  <p>
+    It matters where something re-renders in the browser, which is a
+    <a href="/docs/elements">shadow element</a>. A page is rendered once per
+    request, so a key there changes nothing.
+  </p>
+
+  <h3>What is refused</h3>
+
+  <p>Each of these is a compile error with a line number.</p>
+
+  ${html(s.refused)}
+
   <doc-note label="Filtering belongs in the loader">
-    Sorting, filtering and formatting are the loader's job.
+    Sorting, filtering and formatting are the loader's job. A template decides
+    what appears, not what the data is. It is also what makes the names a page
+    reads collectible, which is where the
+    <a href="/docs/types">type checking</a> comes from.
   </doc-note>
 </doc-page>

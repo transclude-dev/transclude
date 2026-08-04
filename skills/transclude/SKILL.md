@@ -96,7 +96,7 @@ the render, which is how a layout does a login redirect.
 
 ## Forms and actions
 
-A page answers GET with its loader. Other verbs are named exports on the same
+A page responds to GET with its loader. Other verbs are named exports on the same
 file.
 
 ```html

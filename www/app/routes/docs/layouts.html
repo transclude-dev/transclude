@@ -28,6 +28,14 @@
     <p>Pages can fill this by declaring a named slot.</p>
   </slot>
 </aside>`,
+      bodyAttrs: `<!-- app/routes/_layout.html -->
+<script server>
+  export default async ({ route }) => ({ section: route.path.split('/')[1] || 'home' });
+<\/script>
+
+<body data-section="\${section}" class="site">
+
+<slot></slot>`,
       htmlAttrs: `<!-- app/routes/_layout.html -->
 <script server>
   export default async ({ cookies }) => ({
@@ -100,7 +108,7 @@
     during the build. Nothing there can stand in for a guard in a layout.
   </p>
 
-  <h2>Attributes on &lt;html&gt;</h2>
+  <h2>Attributes on &lt;html&gt; and &lt;body&gt;</h2>
 
   <p>
     The root layout owns the document, so it is where a theme or a text
@@ -117,6 +125,20 @@
     attribute is <code>true</code>, and <code>false</code> or <code>null</code>
     drops it. <code>lang</code> is there already and can be overwritten.
   </p>
+
+  <p>
+    <code>&lt;body&gt;</code> works the same way, and is where a class the page
+    styles itself with belongs.
+  </p>
+
+  ${html(s.bodyAttrs)}
+
+  <doc-note label="Neither tag is written twice">
+    You write one <code>&lt;html&gt;</code> or <code>&lt;body&gt;</code> and the
+    document gets one. The attributes are collected from every level and
+    serialized once. Two <code>class</code> attributes in a tag would leave the
+    parser taking the first, which is the outermost, which is backwards.
+  </doc-note>
 
   <h2>Sharing the response</h2>
 

@@ -69,7 +69,7 @@ so a swap cannot drift from the page it replaces part of.
 
 ## What is in it
 
-- **Pages and endpoints.** An `.html` file answers GET; its `POST`, `PUT`,
+- **Pages and endpoints.** An `.html` file responds to GET; its `POST`, `PUT`,
   `PATCH` and `DELETE` exports answer the rest, so a plain `<form method="post">`
   works. A `.js` file in the same tree returns a `Response`.
 - **Fragments.** Mark an element `fragment` and it has a URL of its own. htmx,

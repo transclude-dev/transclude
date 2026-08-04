@@ -74,8 +74,11 @@ export function compileFragment(nodes, opts = {}) {
   // html start tag is not something that can appear in a body, so parse5 throws
   // it away attributes and all. `splitBlocks` reads it in document mode, where
   // it is the element it names.
+  // `<body>` is read the same way, for the same reason.
   const htmlNode = opts.html ?? null;
-  const htmlAttrs = htmlNode?.attrs?.length ? gen.htmlAttrsJs(htmlNode, gen.rootScope) : null;
+  const bodyNode = opts.body ?? null;
+  const htmlAttrs = htmlNode?.attrs?.length ? gen.openTagAttrsJs(htmlNode, gen.rootScope) : null;
+  const bodyAttrs = bodyNode?.attrs?.length ? gen.openTagAttrsJs(bodyNode, gen.rootScope) : null;
 
   const body = joinOut(gen.body);
   const head = joinOut(gen.head);
@@ -108,6 +111,7 @@ export function compileFragment(nodes, opts = {}) {
     title: title.code,
     hasTitle: gen.title.length > 0,
     htmlAttrs,
+    bodyAttrs,
     warnings: gen.warnings,
     reads: gen.reads,
     components: [...gen.used.entries()].map(([tag, ref]) => ({ tag, ref })),
@@ -847,15 +851,17 @@ class Codegen {
   }
 
   /**
-   * `<html lang="en" data-theme="${theme}">` as `{ "lang": "en", "data-theme": theme }`.
+   * `<html lang="en" data-theme="${theme}">` as `{ "lang": "en", "data-theme": theme }`,
+   * and the same for `<body>`.
    *
    * An object rather than serialized markup, because the chain merges these by
    * name: a root layout setting the theme and a page setting `dir` must both
    * survive, and two `data-theme` attributes in one tag would leave the parser
    * taking the first, which is the outermost. `renderDocument` serializes.
    */
-  htmlAttrsJs(el, scope) {
-    // <html> is read by a second parse, so it never reaches emitElement.
+  openTagAttrsJs(el, scope) {
+    // `<html>` and `<body>` are read by a second parse, so neither reaches
+    // emitElement and neither is checked by it.
     assertStaticAttrNames(el);
     const pairs = el.attrs
       .filter((attr) => !DIRECTIVES.has(attr.name))

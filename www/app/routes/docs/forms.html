@@ -3,9 +3,12 @@
 
   export default async () => ({
     s: await all({
-      page: `<script server>
+      page: `<!-- app/routes/notes.html -->
+<script server>
+  import { notes } from '../data/notes.js';
+
   export default async ({ action }) => ({
-    notes,
+    notes: notes.all(),
     error: action?.error ?? null,
   });
 
@@ -14,7 +17,7 @@
     const text = String(form.get('text') ?? '').trim();
     if (!text) return { error: 'a note needs some text' };
 
-    notes.push({ id: nextId++, text });
+    notes.add(text);
     return Response.redirect(new URL(url), 303);
   };
 <\/script>

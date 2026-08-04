@@ -19,7 +19,8 @@ export default {
     'frame-ancestors': ["'self'"],
   },
 },`, 'js'],
-      escaped: `<script server>
+      escaped: `<!-- app/routes/comments.html -->
+<script server>
   export default async () => ({
     // Whatever a visitor typed.
     comment: '<script>alert(1)<\\/script>',

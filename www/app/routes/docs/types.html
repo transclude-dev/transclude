@@ -5,7 +5,8 @@
     passThrough: 'hx-get="/x?id=${id}"',
     s: await all({
       check: ['npm run check', 'shell'],
-      jsdoc: `<script server>
+      jsdoc: `<!-- app/routes/people/[name].html -->
+<script server>
   /** @param {{ params: { name: string } }} ctx */
   export default async ({ params }) => {
     return { name: params.name };

@@ -17,7 +17,8 @@ npm install
 npm run dev`,
           "shell",
         ],
-        page: `<script server>
+        page: `<!-- app/routes/notes.html -->
+<script server>
   import { notes } from '../data/notes.js';
 
   export default async () => ({ notes: notes.all() });
@@ -381,22 +382,18 @@ npm run dev`,
 
   <p>
     You write HTML, CSS and JavaScript. The file you edit is the page that
-    ships, and view source shows what you wrote. There is no component tree to
-    reconcile, no hydration step, and no build output the browser has to run
-    before the text appears.
+    ships, and view source shows what you wrote.
   </p>
 
   <p>
-    Nothing on the client holds a second copy of the state, because there is no
-    client application. So there is nothing that can disagree with the server,
-    nothing to rehydrate, and when a page is wrong there is one place it can be
-    wrong.
+    There is no client application, so nothing holds a second copy of the state
+    and nothing has to run before the text appears. When a page is wrong, there
+    is one place it can be wrong.
   </p>
 
   <p>
-    Save the file and refresh. That is the loop, and it is the whole loop. Hot
-    reload is here and it is a convenience: the page is correct without it,
-    which is the point.
+    Save the file and refresh. That is the loop. Hot reload is here and it is a
+    convenience: the page is correct without it.
   </p>
 
   <p class="why-more">

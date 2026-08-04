@@ -4,11 +4,11 @@
   export default async () => ({
     interpolation: '${value}',
     s: await all({
-      create: [`npx create-transclude my-app
+      create: [`npm create @transclude my-app
 cd my-app
 npm install
 npm run dev`, 'shell'],
-      blank: ['npx create-transclude my-app --template blank', 'shell'],
+      blank: ['npm create @transclude my-app -- --template blank', 'shell'],
       install: ['npm install @transclude/core', 'shell'],
       config: [
         `export default {

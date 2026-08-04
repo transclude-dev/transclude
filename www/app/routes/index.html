@@ -1,5 +1,5 @@
 <script server>
-  import { all } from '../lib/code.js';
+  import { all } from "../lib/code.js";
 
   // `fragment` names the region this request wants, or null for the document.
   // Asking for `demo` needs none of the highlighting below, and skipping it is
@@ -9,9 +9,9 @@
     if (fragment) return {};
 
     return {
-    s: await all({
-      start: ['npm create @transclude my-app', 'shell'],
-      page: `<script server>
+      s: await all({
+        start: ["npm create @transclude my-app", "shell"],
+        page: `<script server>
   import { notes } from '../data/notes.js';
 
   export default async () => ({ notes: notes.all() });
@@ -32,7 +32,7 @@
 <ul id="list" fragment>
   <li each="note of notes">\${note.text}</li>
 </ul>`,
-    }),
+      }),
     };
   };
 
@@ -49,7 +49,11 @@
 <link rel="canonical" href="https://transclude.dev/" />
 
 <style>
-  .hero { max-width: 46rem; margin: 0 auto; padding: 5rem 1.25rem 3rem; }
+  .hero {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 5rem 1.25rem 3rem;
+  }
 
   .wordmark {
     font-family: var(--mono);
@@ -57,14 +61,16 @@
     font-size: 1.45rem;
     letter-spacing: -0.03em;
     color: var(--ink);
-    margin: 0 0 3rem;
+    margin: 0;
   }
-  .wordmark .hash { color: var(--link); }
+  .wordmark .hash {
+    color: var(--link);
+  }
 
   .what {
     font-size: 1rem;
     color: var(--ink);
-    margin: 0 0 0.75rem;
+    margin: 0.5rem 0 3rem 0;
     font-weight: 600;
   }
 
@@ -87,7 +93,12 @@
     text-wrap: pretty;
   }
 
-  .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+  }
 
   .actions a {
     display: inline-block;
@@ -98,12 +109,31 @@
     font-size: 0.95rem;
   }
 
-  .actions a.primary { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .actions a.primary {
+    background: var(--ink);
+    color: var(--ground);
+    border-color: var(--ink);
+  }
 
-  .band { border-top: 1px solid var(--rule); background: var(--surface); }
-  .band .inner { max-width: 46rem; margin: 0 auto; padding: 3.5rem 1.25rem; }
-  .band h2 { font-family: var(--serif); font-size: 1.5rem; margin: 0 0 0.75rem; }
-  .band p { color: var(--muted); margin: 0 0 1.75rem; max-width: 40em; }
+  .band {
+    border-top: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .band .inner {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 3.5rem 1.25rem;
+  }
+  .band h2 {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    margin: 0 0 0.75rem;
+  }
+  .band p {
+    color: var(--muted);
+    margin: 0 0 1.75rem;
+    max-width: 40em;
+  }
 
   .demo {
     border: 1px solid var(--note-rule);
@@ -112,11 +142,25 @@
     padding: 1.1rem 1.25rem;
     margin-top: 1.75rem;
   }
-  .demo p { margin: 0; }
-  .demo .demo-note { margin-top: 0.6rem; color: var(--muted); font-size: 0.95rem; }
+  .demo p {
+    margin: 0;
+  }
+  .demo .demo-note {
+    margin-top: 0.6rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
 
-  .why { max-width: 46rem; margin: 0 auto; padding: 3.5rem 1.25rem 1rem; }
-  .why h2 { font-family: var(--serif); font-size: 1.5rem; margin: 0 0 1rem; }
+  .why {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 3.5rem 1.25rem 1rem;
+  }
+  .why h2 {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    margin: 0 0 1rem;
+  }
   .why p {
     font-family: var(--serif);
     font-size: 1.0625rem;
@@ -124,14 +168,38 @@
     margin: 0 0 1.1rem;
     max-width: 40em;
   }
-  .why .why-more { color: var(--muted); font-size: 0.95rem; font-family: var(--sans); }
+  .why .why-more {
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-family: var(--sans);
+  }
 
-  .points { max-width: 46rem; margin: 0 auto; padding: 3.5rem 1.25rem; display: grid; gap: 2rem; }
-  @media (min-width: 40rem) { .points { grid-template-columns: 1fr 1fr; } }
-  .points h3 { font-size: 0.95rem; margin: 0 0 0.4rem; }
-  .points p { color: var(--muted); margin: 0; font-size: 0.95rem; line-height: 1.6; }
+  .points {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 3.5rem 1.25rem;
+    display: grid;
+    gap: 2rem;
+  }
+  @media (min-width: 40rem) {
+    .points {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .points h3 {
+    font-size: 0.95rem;
+    margin: 0 0 0.4rem;
+  }
+  .points p {
+    color: var(--muted);
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
 
-  footer { border-top: 1px solid var(--rule); }
+  footer {
+    border-top: 1px solid var(--rule);
+  }
   footer .inner {
     max-width: 46rem;
     margin: 0 auto;
@@ -147,7 +215,7 @@
 <div class="hero">
   <p class="wordmark"><span class="hash">#</span>transclude</p>
 
-  <p class="what">A server-side web framework. HTML and hypermedia first.</p>
+  <p class="what">An HTML-first server-side web framework.</p>
 
   <h1>HTML is the product.</h1>
 
@@ -169,23 +237,24 @@
   <div class="inner">
     <h2>One file is one route</h2>
     <p>
-      The server block answers GET. Its verb exports answer everything else, so a
-      plain form works. Mark an element <code>fragment</code> and it has its own
-      URL, from the same compiled markup.
+      The server block answers GET. Its verb exports answer everything else, so
+      a plain form works. Mark an element <code>fragment</code> and it has its
+      own URL, from the same compiled markup.
     </p>
     ${html(s.page)}
 
     <div id="demo" fragment class="demo">
       <p>
         <strong>This box is a fragment.</strong> It is part of this page, and it
-        is also a URL: <a href="/?fragment=demo"><code>/?fragment=demo</code></a>
+        is also a URL:
+        <a href="/?fragment=demo"><code>/?fragment=demo</code></a>
         answers with this markup and nothing else. No layout, no
         <code>&lt;head&gt;</code>, no second template that could drift from this
         one.
       </p>
       <p class="demo-note">
-        <a href="/?fragment=demo">Open it</a> and what comes back is what you are
-        reading, because there is only one compiled copy of it.
+        <a href="/?fragment=demo">Open it</a> and what comes back is what you
+        are reading, because there is only one compiled copy of it.
       </p>
     </div>
   </div>
@@ -195,8 +264,8 @@
   <h2>Three languages, and one loop</h2>
 
   <p>
-    You write HTML, CSS and JavaScript. The file you edit is the page that ships,
-    and view source shows what you wrote. There is no component tree to
+    You write HTML, CSS and JavaScript. The file you edit is the page that
+    ships, and view source shows what you wrote. There is no component tree to
     reconcile, no hydration step, and no build output the browser has to run
     before the text appears.
   </p>
@@ -210,8 +279,8 @@
 
   <p>
     Save the file and refresh. That is the loop, and it is the whole loop. Hot
-    reload is here and it is a convenience: the page is correct without it, which
-    is the point.
+    reload is here and it is a convenience: the page is correct without it,
+    which is the point.
   </p>
 
   <p class="why-more">
@@ -225,8 +294,8 @@
   <div>
     <h3>No client runtime</h3>
     <p>
-      A page ships JavaScript only for the elements it renders, and only when one
-      of them has behaviour. This site ships none.
+      A page ships JavaScript only for the elements it renders, and only when
+      one of them has behavior. This site ships none.
     </p>
   </div>
   <div>
@@ -246,9 +315,9 @@
   <div>
     <h3>Prerendered where it can be</h3>
     <p>
-      A page that does not read the request is written to a file, compressed once
-      at rest, with a strong ETag per encoding. Everything else is rendered by the
-      server, on the same routes. This site is both.
+      A page that does not read the request is written to a file, compressed
+      once at rest, with a strong ETag per encoding. Everything else is rendered
+      by the server, on the same routes. This site is both.
     </p>
   </div>
 </div>
@@ -256,7 +325,10 @@
 <div class="band">
   <div class="inner">
     <h2>Start one</h2>
-    <p>A layout, two pages and a stylesheet. <code>--template blank</code> is less.</p>
+    <p>
+      A layout, two pages and a stylesheet. <code>--template blank</code> is
+      less.
+    </p>
     ${html(s.start)}
   </div>
 </div>
@@ -264,7 +336,9 @@
 <footer>
   <div class="inner">
     <span>&copy; 2026 Joe Dakroub</span>
-    <a href="https://github.com/transclude-dev/transclude/blob/main/LICENSE">MIT</a>
+    <a href="https://github.com/transclude-dev/transclude/blob/main/LICENSE"
+      >MIT</a
+    >
     <a href="/docs">Documentation</a>
     <a href="https://github.com/transclude-dev/transclude">Source</a>
     <a href="https://www.npmjs.com/package/@transclude/core">npm</a>

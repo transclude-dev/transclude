@@ -958,7 +958,7 @@ export const ANCHOR_CLOSE = '<!--]-->';
  *
  * @param {object[]} nodes
  * @param {number} i where the `if` is
- * @returns {{ chain: Array<{ node: object, kind: string, cond?: string }>, next: number }|null}
+ * @returns {{ chain: Array<{ node: object, kind: string, cond: string|null }>, next: number }|null}
  *   null when the element carries no `if`, so there is no chain to gather
  */
 export function gatherChain(nodes, i) {
@@ -977,7 +977,10 @@ export function gatherChain(nodes, i) {
       continue;
     }
     if (d?.has('else')) {
-      chain.push({ node: nodes[k], kind: 'else' });
+      // `cond: null` rather than absent, so every entry in the chain is one
+      // shape. `emitBranches` reads `kind` to decide, and never reads the
+      // condition of an `else`.
+      chain.push({ node: nodes[k], kind: 'else', cond: null });
       next = k + 1;
     }
     break;

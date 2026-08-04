@@ -1,8 +1,12 @@
-# Two ecosystems, grouped, so an update is one pull request rather than eight.
+# Two ecosystems, and majors kept out of the group.
+#
+# Grouping everything put TypeScript 7 in the same pull request as a Hono patch,
+# so one breaking change held three safe ones. A major is its own branch: it is
+# a decision, and the others are not.
 #
 # Only the root npm manifest is watched. The examples and the site depend on the
-# framework by path and pin nothing a bump would help with, and eight more
-# manifests would be eight more pull requests for the same lockfile churn.
+# framework by path, so eight more manifests would be eight more pull requests
+# about the same lockfile.
 
 version: 2
 updates:
@@ -18,7 +22,16 @@ updates:
     directory: /
     schedule:
       interval: monthly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 5
     groups:
-      dependencies:
+      # One pull request for everything that should not need reading.
+      safe:
         patterns: ['*']
+        update-types: [minor, patch]
+    ignore:
+      # `src/typecheck.js` uses the TypeScript compiler API, and 7.x moved it:
+      # `ts.TypeFormatFlags` is undefined there, so the module does not load at
+      # all. That is a port rather than a bump. Tracked separately; take this
+      # entry out when it is done.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]

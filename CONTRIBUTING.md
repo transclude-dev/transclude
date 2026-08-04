@@ -105,8 +105,8 @@ a description of one.
 
 ## Security
 
-Do not open a public issue for a security problem. Mail **admin@dakroub.co**.
-Say what an attacker can do and how you got there.
+Do not open a public issue for a security problem.
+[SECURITY.md](SECURITY.md) says where to send it and what to include.
 
 ## License
 

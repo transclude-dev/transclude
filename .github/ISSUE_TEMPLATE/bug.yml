@@ -1,0 +1,69 @@
+name: Bug report
+description: Something does not do what it says.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The most useful thing you can give is a file that reproduces it. A
+        `.html` page, an element, or a `transclude.config.js` is worth more than
+        a description of one.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: The smallest thing that shows it
+      description: A page, an element, or a config. Paste it here.
+      render: html
+    validations:
+      required: true
+
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      description: Where you saw it. Several is useful to know.
+      multiple: true
+      options:
+        - Node
+        - Bun
+        - Deno
+        - workerd (Cloudflare Workers)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: when
+    attributes:
+      label: When
+      options:
+        - npm run dev
+        - npm run build
+        - npm start, serving the build
+        - npm run check
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "`npm ls @transclude/core`"
+      placeholder: 0.2.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: What it printed
+      description: The error, the stack, or the markup that came back. Left blank if there was none, which is itself worth saying.
+      render: shell

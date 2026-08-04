@@ -1,0 +1,24 @@
+# Two ecosystems, grouped, so an update is one pull request rather than eight.
+#
+# Only the root npm manifest is watched. The examples and the site depend on the
+# framework by path and pin nothing a bump would help with, and eight more
+# manifests would be eight more pull requests for the same lockfile churn.
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      dependencies:
+        patterns: ['*']

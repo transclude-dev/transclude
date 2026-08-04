@@ -28,7 +28,7 @@
   heading="Why transclude"
   lede="The browser already knows how to display a document, follow a link and submit a form. A framework does not have to replace any of that."
 >
-  <h2>HTML is the product</h2>
+  <h2>The file is the page</h2>
 
   <p>
     A page here is an <code>.html</code> file. The server renders it, and what
@@ -42,6 +42,25 @@
     That file is the whole page. There is no component tree to reconcile, no
     hydration step, and no build output the browser has to execute before the
     text appears. View source shows what you wrote.
+  </p>
+
+  <h2>One file, one concern</h2>
+
+  <p>
+    Server code in an HTML file looks like a mixing of concerns. It is the
+    opposite. A page's data and the markup that reads it are one concern, and
+    they change together. Splitting them into two files splits by technology.
+  </p>
+
+  <p>
+    HTML, CSS and JavaScript are three languages. They were never three
+    concerns. A page that loads notes and lists them is one thing to
+    understand, and it reads from top to bottom.
+  </p>
+
+  <p>
+    The block costs the visitor nothing. It is compiled into the route and
+    never appears in the page, so none of it reaches the browser.
   </p>
 
   <h2>Not another JavaScript framework</h2>

@@ -96,6 +96,13 @@
 
   ${html(s.loader)}
 
+  <doc-note label="Why it is in the page">
+    The loader and the markup that reads it change together, so they are one
+    file to open and one file to review. The block is compiled into the route
+    and never reaches the browser.
+    <a href="/docs/why">Why transclude</a> makes the longer case.
+  </doc-note>
+
   <h3>The context</h3>
 
   <div class="scroller">

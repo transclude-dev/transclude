@@ -44,6 +44,28 @@ export class CompileError extends Error {
  * @param {object} [opts]
  * @returns {object} the render body, the regions, the slots, the includes and the warnings
  */
+/**
+ * An attribute name is emitted exactly as written, so `${…}` in one reaches the
+ * page as those characters rather than as a value. Nothing downstream reads it,
+ * which made this the one interpolation mistake that rendered instead of
+ * failing. A spread parses as an attribute name too, and is caught here.
+ *
+ * @param {object} el
+ * @throws {CompileError} when a name holds an interpolation
+ */
+function assertStaticAttrNames(el) {
+  for (const attr of el.attrs ?? []) {
+    if (!attr.name.includes('${')) continue;
+
+    throw new CompileError(
+      `<${el.tagName}> interpolates an attribute name: "${attr.name}". ` +
+        `Only a value takes \${…}, so write the name out. To choose between two, ` +
+        `put the condition in the value: class="\${cond ? 'a' : 'b'}".`,
+      el,
+    );
+  }
+}
+
 export function compileFragment(nodes, opts = {}) {
   const gen = new Codegen(opts);
   gen.emitChildren(nodes, gen.body, gen.rootScope, true);
@@ -553,6 +575,7 @@ class Codegen {
   }
 
   emitElement(el, out, scope, topLevel) {
+    assertStaticAttrNames(el);
     const tag = el.tagName;
 
     // In a layout, <slot> is where the child's content goes. In a component it
@@ -832,6 +855,8 @@ class Codegen {
    * taking the first, which is the outermost. `renderDocument` serializes.
    */
   htmlAttrsJs(el, scope) {
+    // <html> is read by a second parse, so it never reaches emitElement.
+    assertStaticAttrNames(el);
     const pairs = el.attrs
       .filter((attr) => !DIRECTIVES.has(attr.name))
       .map((attr) => {

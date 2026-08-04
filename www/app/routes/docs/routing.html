@@ -34,6 +34,12 @@
       interpolation: `<p>\${name}</p>
 
 <p>\${html(body)}</p>`,
+    attributes: `<a href="/notes/\${note.id}" class="\${note.done ? 'done' : ''}">
+  \${note.text}
+</a>
+
+<input name="q" value="\${q}" disabled="\${busy}" />
+<user-card name="\${person.name}" tags="\${person.tags}"></user-card>`,
     directives: `<li each="tag of tags">\${tag}</li>
 <li each="note of notes" key="note.id">\${note.text}</li>
 
@@ -116,32 +122,48 @@
       </thead>
       <tbody>
         <tr>
-          <td><code>params</code></td>
-          <td>The path segments this route captured.</td>
-        </tr>
-        <tr>
-          <td><code>url</code></td>
-          <td>The full URL. <code>null</code> while prerendering.</td>
-        </tr>
-        <tr>
-          <td><code>route</code></td>
-          <td>The matched route, including its <code>path</code>.</td>
+          <td><code>absolute</code></td>
+          <td>
+            <code>absolute('/og.png')</code> against
+            <code>metadataBase</code>.
+          </td>
         </tr>
         <tr>
           <td><code>action</code></td>
           <td>What this page's action returned, if one ran.</td>
         </tr>
         <tr>
-          <td><code>fragment</code></td>
-          <td>The fragment asked for, or <code>null</code>.</td>
-        </tr>
-        <tr>
           <td><code>cookies</code></td>
           <td>Read and write, signed or plain.</td>
         </tr>
         <tr>
+          <td><code>fragment</code></td>
+          <td>The fragment asked for, or <code>null</code>.</td>
+        </tr>
+        <tr>
+          <td><code>params</code></td>
+          <td>The path segments this route captured.</td>
+        </tr>
+        <tr>
+          <td><code>request</code></td>
+          <td>
+            The <code>Request</code>. <code>null</code> while prerendering,
+            which is the only time there is none.
+          </td>
+        </tr>
+        <tr>
           <td><code>response</code></td>
           <td>The status and headers for the response.</td>
+        </tr>
+        <tr>
+          <td><code>route</code></td>
+          <td>The matched route, including its <code>path</code>.</td>
+        </tr>
+        <tr>
+          <td><code>url</code></td>
+          <td>
+            The full URL, as a string. <code>new URL(url)</code> for its parts.
+          </td>
         </tr>
       </tbody>
     </table>
@@ -179,11 +201,61 @@
     somebody else's script. <a href="/docs/security">Security</a> has the rest.
   </doc-note>
 
+  <h3>In an attribute</h3>
+
+  <p>
+    An attribute value takes <code>${empty}</code> too, whole or in part, as
+    many times as you like.
+  </p>
+
+  ${html(s.attributes)}
+
+  <p>
+    The value is escaped by attribute rules, which are not the text rules. What
+    a value is decides what the attribute becomes.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>The value</th>
+          <th>The attribute</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>false</code>, <code>null</code>, <code>undefined</code></td>
+          <td>dropped, rather than written as a string</td>
+        </tr>
+        <tr>
+          <td><code>true</code></td>
+          <td>the name on its own, as <code>disabled</code></td>
+        </tr>
+        <tr>
+          <td>an object or an array</td>
+          <td>JSON, which is how an element reads it back</td>
+        </tr>
+        <tr>
+          <td>anything else</td>
+          <td>the string, escaped</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <doc-note label="Names are written out, values are not" tone="warn">
+    Only a value is read. An interpolation in the attribute <em>name</em> is a
+    compile error, because emitting it would put <code>${empty}</code> into the
+    page as those characters. To pick between two spellings, put the condition
+    in the value.
+  </doc-note>
+
   <h2>Directives</h2>
 
   <p>
-    Attributes read as expressions, not as strings. There is no
-    <code>${empty}</code> inside one.
+    A directive's value reads as an expression, not as a string. There is no
+    <code>${empty}</code> inside one, and no quotes around a name.
   </p>
 
   ${html(s.directives)}

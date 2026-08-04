@@ -2,8 +2,10 @@
   import { all, tree } from '../../lib/code.js';
 
   export default async () => ({
-    helpers: tree(`routes/api/people.js    /api/people
-routes/api/_shared.js   not a route`),
+    layout: tree(`routes/api/people.js        /api/people
+routes/api/people/[id].js   /api/people/:id
+routes/api/[...rest].js     /api/*
+routes/api/_shared.js       not a route`),
     s: await all({
       endpoint: [
         `// app/routes/api/people.js
@@ -18,36 +20,279 @@ export const POST = async ({ request }) => {
 };`,
         'js',
       ],
+      calls: [
+        `GET  /api/people   ->  200  [{ "name": "Ada" }]
+POST /api/people   ->  201  { "name": "Grace" }
+PUT  /api/people   ->  405  Allow: GET, POST`,
+        'text',
+      ],
+      rest: [
+        `// app/routes/api/people/[id].js
+import { people } from '../../../data/people.js';
+
+export const GET = ({ params }) => {
+  const person = people.find((p) => p.id === params.id);
+  if (!person) return Response.json({ error: 'not found' }, { status: 404 });
+  return Response.json(person);
+};
+
+export const PATCH = async ({ params, request }) => {
+  const person = people.find((p) => p.id === params.id);
+  if (!person) return Response.json({ error: 'not found' }, { status: 404 });
+
+  Object.assign(person, await request.json());
+  return Response.json(person);
+};
+
+export const DELETE = ({ params }) => {
+  const at = people.findIndex((p) => p.id === params.id);
+  if (at === -1) return Response.json({ error: 'not found' }, { status: 404 });
+
+  people.splice(at, 1);
+  return new Response(null, { status: 204 });
+};`,
+        'js',
+      ],
+      body: [
+        `await request.json();        // parsed JSON
+await request.formData();    // a form post or an upload
+await request.text();        // the bytes as they arrived
+await request.arrayBuffer(); // the bytes themselves`,
+        'js',
+      ],
+      response: [
+        `export const POST = async ({ cookies, request }) => {
+  const form = await request.formData();
+
+  cookies.set('seen', '1', { maxAge: 604800 });
+
+  return new Response('made', {
+    status: 201,
+    headers: { location: '/api/people/' + form.get('id') },
+  });
+};`,
+        'js',
+      ],
+      webhook: [
+        `// app/routes/api/hooks/payments.js
+const encoder = new TextEncoder();
+
+async function signed(secret, body, signature) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['verify'],
+  );
+  const sent = Uint8Array.from(signature.match(/../g) ?? [], (h) => parseInt(h, 16));
+  return crypto.subtle.verify('HMAC', key, sent, encoder.encode(body));
+}
+
+export const POST = async ({ request }) => {
+  // The raw text, not request.json(). A signature covers the bytes that were
+  // sent, and parsing and re-serializing gives different bytes.
+  const body = await request.text();
+  const signature = request.headers.get('x-signature') ?? '';
+
+  if (!(await signed(process.env.HOOK_SECRET, body, signature))) {
+    return new Response('bad signature', { status: 401 });
+  }
+
+  const event = JSON.parse(body);
+  await handle(event);
+
+  // Answer fast. Most senders retry on anything that is not 2xx.
+  return new Response(null, { status: 204 });
+};`,
+        'js',
+      ],
+      cors: [
+        `// app/server.js
+import { cors } from 'hono/cors';
+
+export default (app) => {
+  app.use('/api/*', cors({ origin: 'https://app.example' }));
+};`,
+        'js',
+      ],
     }),
   });
 </script>
 
 <title>Endpoints · transclude</title>
-<meta name="description" content="A .js file in routes/ returns a Response." />
+<meta name="description" content="A .js file in routes/ answers with a Response you build." />
 
 <doc-page
   heading="Endpoints"
-  lede="A .js file in the route tree answers with a Response you build yourself."
+  lede="A .js file in the route tree is an endpoint. It answers with a Response you build yourself. A JSON API, a webhook receiver and a file download are all the same kind of file."
 >
   ${html(s.endpoint)}
 
+  <p>That file answers three requests.</p>
+
+  ${html(s.calls)}
+
   <p>
-    One export per verb, uppercase. Each one returns a
+    One export per verb, uppercase.
+    <code>GET</code>, <code>HEAD</code>, <code>POST</code>, <code>PUT</code>,
+    <code>PATCH</code>, <code>DELETE</code> and <code>OPTIONS</code>. A verb the
+    file does not export answers 405, with an <code>Allow</code> header naming
+    the ones it does.
+  </p>
+
+  <p>
+    Each handler returns a
     <a href="https://developer.mozilla.org/en-US/docs/Web/API/Response"
       >Response</a
-    >, the same object the browser's own <code>fetch</code> gives you. Its
+    >, the same object the browser's own <code>fetch</code> gives you.
     <a href="https://developer.mozilla.org/en-US/docs/Web/API/Response/json_static"
       >Response.json()</a
     >
-    helper covers most of what an API returns.
+    covers most of what an API returns.
   </p>
+
+  <doc-note label="A handler has to return one">
+    Returning nothing, or anything that is not a <code>Response</code>, throws
+    and says so. An endpoint has no template to fall back on.
+  </doc-note>
+
+  <h2>A whole resource</h2>
+
+  <p>
+    The path is the route, the same as for a page. A bracketed segment is a
+    parameter, and it arrives in <code>ctx.params</code>.
+  </p>
+
+  ${html(layout)}
+
+  ${html(s.rest)}
+
+  <h2>Reading the request</h2>
+
+  <p>
+    <code>ctx.request</code> is a standard
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Request">Request</a>.
+    Read the body in whichever shape you need.
+  </p>
+
+  ${html(s.body)}
+
+  <p>
+    A body can be read once. Take <code>text()</code> and parse it yourself when
+    you need both the string and the object.
+  </p>
+
+  <h2>The answer</h2>
+
+  <p>
+    Status and headers go on the <code>Response</code>.
+    <code>ctx.cookies</code> works here the way it does in a loader, and what it
+    sets survives the response you return.
+  </p>
+
+  ${html(s.response)}
+
+  <h2>Webhooks</h2>
+
+  <p>
+    A webhook is an endpoint somebody else calls. Two things about it differ
+    from an API your own pages use.
+  </p>
+
+  <p>
+    The first is the body. A signature covers the exact bytes that were sent, so
+    verify against <code>request.text()</code> and parse afterwards. Parsing
+    first and re-serializing gives different bytes and a signature that never
+    matches.
+  </p>
+
+  ${html(s.webhook)}
+
+  <p>
+    The second is CSRF. It is on by default and guards every method except
+    <code>GET</code> and <code>HEAD</code>. A guarded request passes when its
+    <code>Origin</code> is your own site, or when it carries a content type no
+    HTML form can send.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>A POST from somewhere else, sending</th>
+          <th>Reaches your handler</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>application/json</code></td>
+          <td>yes</td>
+        </tr>
+        <tr>
+          <td><code>application/x-www-form-urlencoded</code></td>
+          <td><strong>403</strong></td>
+        </tr>
+        <tr>
+          <td><code>multipart/form-data</code></td>
+          <td><strong>403</strong></td>
+        </tr>
+        <tr>
+          <td><code>text/plain</code>, or no content type at all</td>
+          <td><strong>403</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>A sender posting JSON needs nothing, and most of them do.</p>
+
+  <doc-note label="No content type counts as text/plain" tone="warn">
+    <code>curl -X POST /api/people</code> sends no content type, so it is
+    refused with 403 before reaching your handler. Add
+    <code>-H 'content-type: application/json'</code> and the same request gets
+    through. This is the usual reason an endpoint looks broken when it is tested
+    by hand.
+  </doc-note>
+
+  <doc-note label="A form-encoded sender needs a way through" tone="warn">
+    A sender that posts a form body is refused, and the 403 says nothing about
+    why. Give it an origin the guard accepts, or narrow
+    <a href="/docs/config">csrf</a> to the paths that serve your own forms.
+  </doc-note>
+
+  <h2>Calling it from another origin</h2>
+
+  <p>
+    Nothing is sent to a browser on another origin unless you say so. CORS is
+    Hono middleware in <a href="/docs/middleware">app/server.js</a>.
+  </p>
+
+  ${html(s.cors)}
 
   <h2>Helpers</h2>
 
   <p>
-    A <code>.js</code> file in <code>routes/</code> is a route. Give a helper a
-    <code>_</code> prefix.
+    Every <code>.js</code> file in <code>routes/</code> is a route. Give a helper
+    a <code>_</code> prefix and it is not one. The same goes for a directory.
   </p>
 
-  ${html(helpers)}
+  <p>
+    Anything larger belongs outside the route tree, in
+    <code>app/lib/</code> or <code>app/data/</code>, and is imported.
+  </p>
+
+  <h2>What you get for free</h2>
+
+  <p>
+    <code>transclude-check</code> types every handler, so a
+    <code>ctx</code> field that does not exist and a handler that forgets to
+    return are both caught. See <a href="/docs/types">types</a>.
+  </p>
+
+  <p>
+    <code>X-Content-Type-Options: nosniff</code> is on every response, an
+    endpoint's included. Its <code>Response</code> goes through the same
+    envelope as everything else, so cookies and headers survive a redirect.
+  </p>
 </doc-page>

@@ -9,7 +9,8 @@
     _layout.html        wraps /docs and below, inside the one above
     routing.html        /docs/routing`),
     s: await all({
-      layout: `<script server>
+      layout: `<!-- app/routes/_layout.html -->
+<script server>
   export default async ({ route }) => ({
     path: route.path,
   });
@@ -27,7 +28,8 @@
     <p>Pages can fill this by declaring a named slot.</p>
   </slot>
 </aside>`,
-      htmlAttrs: `<script server>
+      htmlAttrs: `<!-- app/routes/_layout.html -->
+<script server>
   export default async ({ cookies }) => ({
     theme: cookies.get('theme') ?? 'auto',
   });

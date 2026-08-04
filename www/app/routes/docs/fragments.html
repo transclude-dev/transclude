@@ -3,7 +3,8 @@
 
   export default async () => ({
     s: await all({
-      page: `<script server>
+      page: `<!-- app/routes/index.html -->
+<script server>
   import { people } from '../data/people.js';
 
   export default async ({ url }) => {

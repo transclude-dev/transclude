@@ -32,7 +32,8 @@ export default defineConfig({
 });`,
         'js',
       ],
-      page: `<script server>
+      page: `<!-- app/routes/index.html -->
+<script server>
   export default async () => ({
     title: 'Hello',
     items: ['one', 'two', 'three'],

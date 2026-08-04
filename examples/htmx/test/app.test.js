@@ -77,3 +77,45 @@ describe('htmx is served from this origin, which the policy requires', async () 
   assert.match(page, /<script src="\/htmx\.min\.js"/, 'the tag survives compiling');
   assert.match(page, /script-src 'self'/, 'which is why a CDN would not work here');
 });
+
+test('a POST names the fragment in the URL, not only in a header', () => {
+  // The header is a convenience for a GET. A request that changes data says
+  // what it wants back, because the query parameter is the strict one: a name
+  // it does not know is a 404 rather than a whole document swapped into a list.
+  const page = fs.readFileSync(path.join(root, 'app', 'routes', 'index.html'), 'utf8');
+  const posts = [...page.matchAll(/hx-post="([^"]*)"/g)].map(([, url]) => url);
+
+  assert.notEqual(posts.length, 0);
+  for (const url of posts) assert.match(url, /\?fragment=people$/);
+});
+
+test('everything that changes lives inside the fragment', () => {
+  // A swap replaces one element. A count outside it keeps whatever the last
+  // whole-page render left there, and the page contradicts itself.
+  const page = fs.readFileSync(path.join(root, 'app', 'routes', 'index.html'), 'utf8');
+  const fragment = page.slice(page.indexOf('<ul id="people"'), page.indexOf('</ul>'));
+
+  assert.match(fragment, /\$\{total\}/, 'the count belongs in the swapped element');
+});
+
+test('every call that targets the fragment replaces it rather than filling it', () => {
+  // htmx swaps innerHTML by default, and a fragment arrives carrying its own
+  // id, so the returned `<ul id="people">` lands inside the one already on the
+  // page, and again on the next keystroke.
+  const page = fs.readFileSync(path.join(root, 'app', 'routes', 'index.html'), 'utf8');
+  const targets = [...page.matchAll(/hx-target="#people"/g)].length;
+  const swaps = [...page.matchAll(/hx-swap="outerHTML"/g)].length;
+
+  assert.notEqual(targets, 0);
+  assert.equal(swaps, targets, 'every hx-target on the fragment needs the outerHTML swap');
+});
+
+test('the search form still submits through htmx', () => {
+  // Naming any trigger replaces the default, and for a form the default is
+  // submit. Leave it out and the Search button navigates the whole page while
+  // every other control swaps.
+  const page = fs.readFileSync(path.join(root, 'app', 'routes', 'index.html'), 'utf8');
+  const trigger = page.match(/hx-trigger="([^"]*)"/)?.[1] ?? '';
+
+  assert.match(trigger, /\bsubmit\b/);
+});

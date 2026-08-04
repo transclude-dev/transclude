@@ -51,7 +51,7 @@
   </form>
 </search>
 
-<!-- The region. `/?q=form&fragment=results` returns this element and nothing
+<!-- The fragment. `/?q=form&fragment=results` returns this element and nothing
      else, from this same markup. -->
 <div id="results" fragment aria-live="polite">
   <p class="count" if="asked">
@@ -71,8 +71,8 @@
 </div>
 
 <script type="module">
-  // The whole client. It asks for the region instead of the document and puts
-  // what comes back where the region already is.
+  // The whole client. It asks for the fragment instead of the document and puts
+  // what comes back where the fragment already is.
   //
   // This framework ships nothing that does this. htmx and Turbo are the same
   // idea with more of it written for you; twenty lines is the other end.

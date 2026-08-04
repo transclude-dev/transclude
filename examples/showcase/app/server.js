@@ -39,7 +39,7 @@ export default function (app) {
   // decision the whole app has to agree on:
   //   trailingSlash: 'never'   301s /about/ to /about (hono/trailing-slash)
   //   publicDir: 'public'      files served at the root (hono serveStatic)
-  //   fragmentHeader           a request header that may name a region; set it to
+  //   fragmentHeader           a request header that may name a fragment; set it to
   //                            'HX-Target' and hx-target="#list" needs no ?fragment=
   //
   // On htmx and CSRF, since it looks like it should be a problem and is not:

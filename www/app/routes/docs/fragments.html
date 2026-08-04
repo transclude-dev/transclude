@@ -42,21 +42,21 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
 <title>Fragments · transclude</title>
 <meta
   name="description"
-  content="A fragment is a region of a page with its own URL."
+  content="A fragment is a fragment of a page with its own URL."
 />
 
 <doc-page
   heading="Fragments"
-  lede="A fragment is a region of a page that has its own URL. Ask for that URL and you get the region on its own, from the same compiled markup that renders it in the page."
+  lede="A fragment is a part of a page that has its own URL. Ask for that URL and you get that part on its own, from the same compiled markup that renders it in the page."
 >
   <p>
     Use one for anything that changes while the rest of the page stays put.
     Search results as you type. A list after something is added to it. The next
-    page of a table. Fetch the region and replace the copy in the page, instead
+    page of a table. Fetch the fragment and replace the copy in the page, instead
     of loading the whole document again.
   </p>
 
-  <h2>Mark a region</h2>
+  <h2>Mark a fragment</h2>
 
   <p>
     Give the element an <code>id</code> and a <code>fragment</code> attribute.
@@ -150,7 +150,7 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
 
   <p>
     <code>POST /?fragment=nope</code> changes nothing and returns 404. The
-    region is checked before the action runs.
+    fragment is checked before the action runs.
   </p>
 
   <p>

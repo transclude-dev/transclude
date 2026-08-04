@@ -1,7 +1,7 @@
 <script server>
   import { all } from "../lib/code.js";
 
-  // `fragment` names the region this request wants, or null for the document.
+  // `fragment` names the fragment this request wants, or null for the document.
   // Asking for `demo` needs none of the highlighting below, and skipping it is
   // not only faster: the highlighter compiles WebAssembly, which workerd
   // refuses at runtime, so the page renders there because of this line.

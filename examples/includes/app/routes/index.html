@@ -1,0 +1,49 @@
+<script server>
+  export default async () => ({ price: 'Two pounds' });
+</script>
+
+<title>Includes</title>
+<meta name="description" content="The same content in more than one place." />
+
+<h1>Includes</h1>
+
+<p>
+  Transclusion is showing the same content in more than one place while it stays
+  one piece of writing. <code>&lt;transclude src&gt;</code> is how, and it is
+  resolved on the server, so the tag leaves no trace in what arrives.
+</p>
+
+<h2>The same page</h2>
+
+<div id="pricing" fragment class="card">
+  <h3>Pricing</h3>
+  <p>${price}, and no more than that.</p>
+</div>
+
+<p>
+  That card is a fragment. Here it is again, from the same markup, without writing
+  it twice:
+</p>
+
+<aside class="card muted">
+  <transclude src="#pricing"></transclude>
+</aside>
+
+<p>
+  The copy drops the <code>id</code>. Two elements answering to one name is
+  invalid, and a swap aimed at that name would find whichever came first.
+</p>
+
+<h2>Another route</h2>
+
+<p>
+  <a href="/summary">Summary</a> includes the list from
+  <a href="/notes">Notes</a>. Neither page knows about the other's data.
+</p>
+
+<h2>Another site</h2>
+
+<p>
+  <a href="/elsewhere">Elsewhere</a> reads a section out of a page on another
+  host, through a proxy that has to be turned on and told which hosts.
+</p>

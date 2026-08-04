@@ -2,7 +2,7 @@
 
 ## Fragments
 
-A fragment is a region of a page that has its own URL. Give the element an `id`
+A fragment is a part of a page that has its own URL. Give the element an `id`
 and a `fragment` attribute.
 
 ```html
@@ -44,18 +44,18 @@ const res = await fetch('/?q=ada&fragment=matches');
 document.getElementById('matches').setHTMLUnsafe(await res.text());
 ```
 
-**This framework ships nothing that swaps a region into a page.** htmx, Turbo,
+**This framework ships nothing that swaps a fragment into a page.** htmx, Turbo,
 htmz or a short `fetch` does that. Do not look for a trigger attribute and do
 not invent one.
 
 htmx sends the target's id in an `HX-Target` header. Setting `fragmentHeader:
 'HX-Target'` in the config makes `?fragment=` optional. The query parameter is
-strict and an unknown name is a 404; a header naming an unknown region is
+strict and an unknown name is a 404; a header naming an unknown fragment is
 ignored, because clients send it on every request.
 
 ### Actions and fragments
 
-`POST /?fragment=nope` changes nothing and returns 404. The region is checked
+`POST /?fragment=nope` changes nothing and returns 404. The fragment is checked
 before the action runs. `ctx.fragment` tells a form submission from a fetch: the
 first wants a redirect, the second wants markup.
 

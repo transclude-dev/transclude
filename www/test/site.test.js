@@ -216,3 +216,18 @@ test('nothing is sold and nothing is hedged', () => {
 
   assert.deepEqual(found, [], `words design/voice.md rules out: ${found.join(', ')}`);
 });
+
+test('the word is fragment, never region', () => {
+  // `design/voice.md` spends its jargon on three words: hypermedia, element and
+  // fragment. `region` is what the compiler and CLAUDE.md call the same thing,
+  // and it reads naturally enough while writing that it kept arriving in prose.
+  // Code keeps its own names; only what a reader sees is checked.
+  const found = [];
+  for (const [name, source] of pages()) {
+    for (const paragraph of prose(source)) {
+      if (/\bregions?\b/i.test(paragraph)) found.push(`${name}: ${paragraph.slice(0, 60)}…`);
+    }
+  }
+
+  assert.deepEqual(found, [], `prose saying region:\n${found.join('\n')}`);
+});

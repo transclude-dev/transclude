@@ -17,7 +17,7 @@ Naming that header in `transclude.config.js`:
 fragmentHeader: 'HX-Target',
 ```
 
-means the header alone can ask for a region. So `hx-get="/"` with
+means the header alone can ask for a fragment. So `hx-get="/"` with
 `hx-target="#people"` needs no `?fragment=` on the URL, and no framework client
 code exists to put one there.
 
@@ -33,8 +33,8 @@ a cache key is a real cost for a feature an app may not use.
 
 ## One handler, two callers
 
-`ctx.fragment` is how the `POST` serves both. htmx asked for a region, so it
-gets the region back; a redirect would swap a whole document into a list. A
+`ctx.fragment` is how the `POST` serves both. htmx asked for a fragment, so it
+gets the fragment back; a redirect would swap a whole document into a list. A
 plain form submission gets the 303, which is what stops a reload from repeating
 the change.
 

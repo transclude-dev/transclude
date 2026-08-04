@@ -182,7 +182,7 @@ text containing it in from the loader as data.
 **Directive values are expressions, not interpolations.** Write
 `each="note of notes"`, never `each="${notes}"`.
 
-**A `fragment` element cannot carry `if`, `else` or `each`.** A region is one
+**A `fragment` element cannot carry `if`, `else` or `each`.** A fragment is one
 element with one id, so it cannot be conditional or repeated. Put the condition
 on something inside it.
 

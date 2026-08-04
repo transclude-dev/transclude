@@ -259,10 +259,10 @@
      It wraps the message as well as the list, because both are part of what
      changed. A fragment that covered only the <ul> would leave a stale "Added …"
      sitting above a list that had moved on. -->
-<!-- The same region, in a second place. `<transclude>` compiles to a
-     call to the region's own render function, so this is one copy of the markup
+<!-- The same fragment, in a second place. `<transclude>` compiles to a
+     call to the fragment's own render function, so this is one copy of the markup
      appearing twice rather than two that could drift. Nothing is fetched and
-     nothing is parsed. The copy leaves the id behind: `#notes` names the region
+     nothing is parsed. The copy leaves the id behind: `#notes` names the fragment
      where it is declared, which is what a swap replaces. -->
 <details>
   <summary>The same list again, transcluded</summary>

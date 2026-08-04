@@ -1,0 +1,21 @@
+{
+  "name": "transclude-example-includes",
+  "private": true,
+  "type": "module",
+  "description": "The same content in more than one place. Same page, another route, another site.",
+  "scripts": {
+    "dev": "transclude-dev",
+    "build": "transclude-build",
+    "start": "transclude-serve",
+    "check": "transclude-check",
+    "test": "node --test \"test/**/*.test.js\"",
+    "preview": "npm run build && npm start"
+  },
+  "dependencies": {
+    "@transclude/core": "file:../.."
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5"
+  }
+}

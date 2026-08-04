@@ -1,7 +1,7 @@
 <script server>
   // The same job as the `search` example, driven by htmx instead of a fetch.
   //
-  // Nothing in this file mentions htmx. The region below is a region; the
+  // Nothing in this file mentions htmx. The fragment below is a fragment; the
   // attributes that ask for it are markup. Swap htmx for Turbo, or for the
   // twenty lines in `examples/search`, and the server side does not change.
   import { search, add, remove, all } from '../data/people.js';
@@ -42,7 +42,7 @@
 <h1>People</h1>
 
 <p class="lede">
-  ${total} of them. The list below is a region, and htmx asks for it by name.
+  ${total} of them. The list below is a fragment, and htmx asks for it by name.
   Turn JavaScript off and every control here still works.
 </p>
 
@@ -53,6 +53,7 @@
   role="search"
   hx-get="/"
   hx-target="#people"
+  hx-swap="outerHTML"
   hx-trigger="input changed delay:200ms, search"
   hx-push-url="true"
 >
@@ -61,7 +62,7 @@
   <button type="submit">Search</button>
 </form>
 
-<form class="add" method="post" hx-post="/" hx-target="#people">
+<form id="add" class="add" method="post" hx-post="/" hx-target="#people" hx-swap="outerHTML">
   <label for="name">Name</label>
   <input id="name" name="name" placeholder="Name" required />
   <label for="role">Role</label>
@@ -69,15 +70,20 @@
   <button type="submit">Add</button>
 </form>
 
-<!-- The region. `hx-target="#people"` above puts its id in the `HX-Target`
+<!-- The fragment. `hx-target="#people"` above puts its id in the `HX-Target`
      header, and `fragmentHeader` in the config is what reads it, so none of
-     these URLs carry `?fragment=`. -->
+     these URLs carry `?fragment=`.
+
+     `hx-swap="outerHTML"` on every call, because a fragment arrives carrying
+     its own id. htmx swaps `innerHTML` by default, which would put this
+     `<ul id="people">` inside the one already on the page, and again on the
+     next keystroke. -->
 <ul id="people" fragment>
   <li each="person of people">
     <strong>${person.name}</strong>
     <span class="role">${person.role}</span>
 
-    <form method="post" hx-post="/" hx-target="#people">
+    <form method="post" hx-post="/" hx-target="#people" hx-swap="outerHTML">
       <input type="hidden" name="intent" value="remove" />
       <input type="hidden" name="id" value="${person.id}" />
       <button class="destroy" type="submit" aria-label="Remove ${person.name}">×</button>
@@ -86,3 +92,19 @@
 
   <li class="empty" if="!people.length">Nobody matched.</li>
 </ul>
+
+<script>
+  // Clear the fields after a person is added. htmx swapped the list, and left
+  // the form exactly as it was, which is right for a search box and wrong for
+  // this one.
+  //
+  // A script block rather than an `hx-on` attribute, because the policy hashes
+  // blocks and a hash never covers an attribute. Turn `csp` on with the handler
+  // in an attribute and the browser refuses it, with nothing on the page to say
+  // why.
+  const add = document.querySelector('#add');
+
+  add.addEventListener('htmx:afterRequest', (event) => {
+    if (event.detail.successful) add.reset();
+  });
+</script>

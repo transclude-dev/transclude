@@ -40,7 +40,7 @@ app/
 
 | | |
 | --- | --- |
-| `/` | cards, a partial, and a region asked for on its own URL |
+| `/` | cards, a partial, and a fragment asked for on its own URL |
 | `/notes` | a form. POST, change the data, 303, render. Works with JavaScript off |
 | `/people/:name` | a dynamic route with a layout above it |
 | `/docs/*` | a catch-all, and the one route the server still renders per request |

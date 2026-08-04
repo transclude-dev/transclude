@@ -57,13 +57,14 @@
   ],
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
-    "test:examples": "npm test --prefix examples/showcase && npm test --prefix examples/todomvc && npm test --prefix examples/blog && npm test --prefix examples/search && npm test --prefix examples/htmx",
+    "test:examples": "npm test --prefix examples/showcase && npm test --prefix examples/todomvc && npm test --prefix examples/blog && npm test --prefix examples/search && npm test --prefix examples/htmx && npm test --prefix examples/includes",
     "test:www": "npm test --prefix www",
     "showcase": "npm run dev --prefix examples/showcase",
     "todomvc": "npm run dev --prefix examples/todomvc",
     "blog": "npm run dev --prefix examples/blog",
     "search": "npm run dev --prefix examples/search",
     "htmx": "npm run dev --prefix examples/htmx",
+    "includes": "npm run dev --prefix examples/includes",
     "www": "npm run dev --prefix www",
     "check:src": "tsc -p tsconfig.src.json",
     "release": "node bin/release.js"

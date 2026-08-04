@@ -23,7 +23,22 @@ if (!fs.existsSync(types) || fs.readFileSync(types, 'utf8') !== next) {
 
 // Nothing downstream reads this file, so nothing else would notice it being
 // wrong. Parse what we just wrote, or a bad identifier ships silently.
-const emitted = ts.createProgram([types], { noEmit: true, skipLibCheck: true });
+//
+// `skipLibCheck` has to be off, and it was on. This is a .d.ts, which is the one
+// kind of file that flag skips, so the guard checked nothing at all: every
+// project shipped a file naming `__Cookies` and declaring it nowhere. An editor
+// missed it too, because a jsconfig.json implies the same flag.
+//
+// `types: []` keeps it to this file: whatever `@types` a project happens to have
+// installed is not what is being checked here, and one of them failing to
+// resolve its own dependency would read as our file being broken.
+const emitted = ts.createProgram([types], {
+  noEmit: true,
+  skipLibCheck: false,
+  types: [],
+  target: ts.ScriptTarget.ESNext,
+  lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
+});
 const broken = [
   ...emitted.getSyntacticDiagnostics(),
   ...emitted.getSemanticDiagnostics(),

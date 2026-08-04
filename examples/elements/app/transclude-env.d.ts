@@ -4,6 +4,28 @@
 
 export {};
 
+// Declared by the compiler. Every context type below names these.
+type __Cookies = {
+  get(name: string): string | undefined;
+  all(): Record<string, string>;
+  set(name: string, value: string, options?: __CookieOptions): void;
+  delete(name: string, options?: __CookieOptions): void;
+  signed: {
+    get(name: string): Promise<string | undefined>;
+    all(): Promise<Record<string, string>>;
+    set(name: string, value: string, options?: __CookieOptions): Promise<void>
+  }
+};
+type __CookieOptions = {
+  path?: string;
+  domain?: string;
+  maxAge?: number;
+  expires?: Date;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: 'Strict' | 'Lax' | 'None'
+};
+
 /** Properties of `<person-card>`, from its <script properties> block. */
 export type PersonCardProps = {
   name: string;

@@ -73,7 +73,7 @@ export const posts = [
 ];
 
 /** Newest first, which is the order a blog is read in. */
-export const byDate = () => [...posts].sort((a, b) => b.date - a.date);
+export const byDate = () => [...posts].sort((a, b) => b.date.getTime() - a.date.getTime());
 
 /** @param {string} slug */
 export const find = (slug) => posts.find((post) => post.slug === slug) ?? null;

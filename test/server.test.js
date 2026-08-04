@@ -411,6 +411,17 @@ test('both servers mount the public directory', () => {
   }
 });
 
+test('both servers register the compiler themselves', () => {
+  // A project needs no `vite.config.js`, so neither server may rely on one to
+  // supply the plugin. Dev did, and deleting that file from an app left every
+  // page 500 with "Failed to load url virtual:transclude-page/index", while the
+  // build carried on working: it passed the plugin already.
+  for (const file of ['../bin/dev.js', '../bin/build.js']) {
+    const source = codeOf(new URL(file, import.meta.url));
+    assert.match(source, /plugins:\s*\[\s*transclude\(/, `${file} leaves the plugin to the app`);
+  }
+});
+
 test('the dev server hands its own http server to Vite for HMR', () => {
   // Without this Vite runs its WebSocket on a second port, the browser refuses
   // that socket as cross-origin, and every edit needs a manual reload. The file

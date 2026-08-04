@@ -19,7 +19,7 @@ import {
   runAction,
   withEnvelope,
 } from '../src/document.js';
-import { clientEntryUrl, pageModuleId } from '../src/plugin.js';
+import transclude, { clientEntryUrl, pageModuleId } from '../src/plugin.js';
 import { resolveRoutesDir, scanRoutes } from '../src/routes.js';
 import { baseApp, endpointMethods, runEndpoint, SERVER_FILE } from '../src/server.js';
 import { randomBytes } from 'node:crypto';
@@ -71,6 +71,11 @@ const server = http.createServer();
 const vite = await createViteServer({
   root,
   appType: 'custom',
+  // Passed here rather than left to the project's own `vite.config.js`, which is
+  // where dev used to get it. A project needs no Vite config at all, and the one
+  // built here is the one `loadProject` filled in, so dev compiles against the
+  // same config the build does. `configResolved` ignores a second registration.
+  plugins: [transclude(config)],
   server: { middlewareMode: true, hmr: { server } },
   // Vite would serve these itself, ahead of Hono, and production would serve
   // them a different way, which is how dev and production come to disagree. One

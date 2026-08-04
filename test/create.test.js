@@ -1,6 +1,6 @@
 // Starting a project.
 //
-// `@transclude/create` is its own package: scaffolding six files should not
+// `@transclude/create` is its own package: scaffolding five files should not
 // download a compiler. Its tests live here because `npm test` runs here, and
 // because the templates they check have to keep building against this checkout.
 //

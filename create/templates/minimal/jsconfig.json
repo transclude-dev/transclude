@@ -4,8 +4,10 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "lib": ["esnext", "dom", "dom.iterable"],
-    "checkJs": false,
+    "checkJs": true,
+    "maxNodeModuleJsDepth": 0,
     "noEmit": true
   },
-  "include": ["app", "transclude.config.js"]
+  "include": ["app", "transclude.config.js"],
+  "exclude": ["app/public"]
 }

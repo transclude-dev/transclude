@@ -22,13 +22,12 @@ npm run dev`, 'shell'],
         'js',
       ],
       vite: [
-        `import { defineConfig } from 'vite';
-import transclude from '@transclude/core';
-import config from './transclude.config.js';
+        `// vite.config.js, only if you want one
+import { defineConfig } from 'vite';
+import tailwind from '@tailwindcss/vite';
 
 export default defineConfig({
-  appType: 'custom',
-  plugins: [transclude(config)],
+  plugins: [tailwind()],
 });`,
         'js',
       ],
@@ -93,9 +92,8 @@ export default defineConfig({
 
   <p>
     Vite and TypeScript come with it. On pnpm or Yarn, add Vite to your own
-    <code>package.json</code> as well. Your <code>vite.config.js</code> imports
-    it directly, and those two do not hoist a peer dependency the way npm
-    does.
+    <code>package.json</code> as well. Neither one hoists a peer dependency the
+    way npm does.
   </p>
 
   <p>
@@ -103,7 +101,15 @@ export default defineConfig({
     where everything lives.
   </p>
 
-  ${html(s.config)} ${html(s.vite)}
+  ${html(s.config)}
+
+  <p>
+    There is no <code>vite.config.js</code>. The commands above build one, so a
+    project needs none of its own. Write one to add another Vite plugin, and put
+    only that in it.
+  </p>
+
+  ${html(s.vite)}
 
   <h2>A page</h2>
 

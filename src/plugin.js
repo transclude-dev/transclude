@@ -168,7 +168,15 @@ export default function transclude({
     for (const w of warnings ?? []) console.warn(`[transclude] ${label}: ${w}`);
   };
 
-  return {
+  // The bins pass this plugin to Vite themselves, and Vite merges a project's
+  // own `vite.config.js` rather than deduping, so a project that registers it
+  // again gets two: the second scans the app a second time and adds a second
+  // dev watcher, which reloads the browser twice for one edit. `api` is the one
+  // thing Vite keeps by reference when it copies a plugin, so it is how an
+  // instance recognizes itself in the resolved list.
+  let duplicate = false;
+
+  const plugin = {
     name: 'transclude',
     enforce: 'pre',
 
@@ -211,6 +219,9 @@ export default function transclude({
     },
 
     configResolved(config) {
+      duplicate = config.plugins.find((p) => p.name === 'transclude')?.api !== plugin.api;
+      if (duplicate) return;
+
       root = config.root;
       app = path.resolve(root, appDir);
       runtime = '/' + path.relative(root, RUNTIME_FILE).split(path.sep).join('/');
@@ -218,6 +229,7 @@ export default function transclude({
     },
 
     resolveId(id, importer) {
+      if (duplicate) return null;
       if (id === SERVER_ENTRY || id === ELEMENTS_ENTRY) return '\0' + id;
       if (
         id.startsWith(P_COMPONENT) ||
@@ -237,6 +249,7 @@ export default function transclude({
     },
 
     load(id) {
+      if (duplicate) return null;
       if (!id.startsWith('\0virtual:transclude-')) return null;
       const virt = id.slice(1);
 
@@ -350,6 +363,8 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
     },
 
     configureServer(server) {
+      if (duplicate) return;
+
       server.watcher.on('all', (_event, file) => {
         if (!file.endsWith('.html')) return;
         if (!file.startsWith(app)) return;
@@ -363,6 +378,8 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
       });
     },
   };
+
+  return plugin;
 }
 
 /**

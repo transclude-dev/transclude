@@ -22,7 +22,6 @@ signs with a random per-process value and says so. Production refuses.
 transclude.config.js   where the app is. The whole interface to the framework
 worker.js              the workerd entry, wiring transclude/worker
 wrangler.jsonc         points at worker.js
-vite.config.js         the framework's plugin, nothing else
 test/                  the build output, the worker entry, the config
 
 app/

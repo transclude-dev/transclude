@@ -518,6 +518,18 @@ export function methodsOf(page) {
   return ['GET', ...ACTION_METHODS.filter((method) => typeof page?.[method] === 'function')];
 }
 
+/**
+ * The whole document, from the innermost page outward.
+ *
+ * `chain` is the layouts and then the page; `datas` is what each one's loader
+ * returned, in the same order. Both are walked from the end, because a level
+ * renders into the slot map of the one above it.
+ *
+ * @param {object[]} chain the compiled modules, outermost first
+ * @param {object[]} datas one per level, in the same order
+ * @param {{ clientEntry?: string|null, stylesheet?: string|null, lang?: string }} [options]
+ * @returns {string} the document, starting at `<!doctype html>`
+ */
 export function renderDocument(
   chain,
   datas,

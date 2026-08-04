@@ -40,11 +40,6 @@ export class CompileError extends Error {
 }
 
 /**
- * @param {object[]} nodes
- * @param {object} [opts]
- * @returns {object} the render body, the regions, the slots, the includes and the warnings
- */
-/**
  * An attribute name is emitted exactly as written, so `${…}` in one reaches the
  * page as those characters rather than as a value. Nothing downstream reads it,
  * which made this the one interpolation mistake that rendered instead of
@@ -66,6 +61,11 @@ function assertStaticAttrNames(el) {
   }
 }
 
+/**
+ * @param {object[]} nodes
+ * @param {object} [opts]
+ * @returns {object} the render body, the regions, the slots, the includes and the warnings
+ */
 export function compileFragment(nodes, opts = {}) {
   const gen = new Codegen(opts);
   gen.emitChildren(nodes, gen.body, gen.rootScope, true);

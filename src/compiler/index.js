@@ -367,6 +367,21 @@ const MARK = {
   title: '/*@transclude:title*/',
 };
 
+/**
+ * A page: the `<script server>` block, the markup, and whatever layouts wrap it.
+ *
+ * `filename` is what an error message says, which is the short route id.
+ * `sourcePath` is what the source map names, which is a path an editor opens.
+ *
+ * @param {string} source
+ * @param {{ components?: Map<string, string>, shadowTags?: Set<string>,
+ *   runtime: string, filename?: string, sourcePath?: string|null,
+ *   layouts?: string[],
+ *   client?: { tags: string[], hasScript: boolean, needed: boolean } }} options
+ * @returns {{ code: string, map: object|null, warnings: string[],
+ *   components: string[] }} the module, a line-level map or null when there is
+ *   no markup to map, whatever the template warned about, and the tags it used
+ */
 export function compilePage(
   source,
   {

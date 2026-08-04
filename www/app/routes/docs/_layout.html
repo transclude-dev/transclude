@@ -3,6 +3,9 @@
   // one line. `route.path` marks the current link.
   export default async ({ route, absolute }) => {
     const data = {
+    // Read here rather than in the markup: a template expression has no `new`.
+    // Every page is written to a file, so this is the year the build ran.
+    year: new Date().getFullYear(),
     path: route.path,
     canonical: absolute(route.path),
     sections: [
@@ -279,7 +282,7 @@
 
     <footer>
       <a href="https://github.com/transclude-dev/transclude/blob/main/LICENSE">MIT</a>
-      &middot; &copy; 2026 Atelier Dakroub
+      &middot; &copy; ${year} Atelier Dakroub
     </footer>
   </main>
 

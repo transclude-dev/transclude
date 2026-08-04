@@ -1,0 +1,84 @@
+# Everything a push runs, in one workflow and in order.
+#
+# Test and deploy used to be two workflows on the same trigger, so every push
+# started both at once and the Actions page showed two runs per commit. They
+# also repeated three steps.
+#
+# The duplication was the smaller half. Nothing made the deploy wait, so a
+# commit that broke the framework suite still shipped: the deploy job never ran
+# that suite, only the site's own. `needs: test` is the fix, and one workflow is
+# what makes it possible.
+#
+# Publishing to npm is a tag, in publish.yml. A merge does not publish.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # Three packages, three installs. `npm ci` reads one manifest, and the
+      # demo and the site are separate projects that depend on this one by path.
+      - run: npm ci
+      - run: npm ci --prefix examples/showcase
+      - run: npm ci --prefix www
+
+      - run: npm test
+      - run: npm run test:examples
+
+      # The site is built before it is tested: two of those tests read what the
+      # build wrote, and skip when there is nothing to read.
+      - run: npm run check --prefix www
+      - run: npm run build --prefix www
+      - run: npm test --prefix www
+
+  deploy:
+    needs: test
+    # A pull request from a fork must not reach the Cloudflare secrets, and a
+    # pull request has nothing to deploy anyway.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # wrangler and what the worker imports. The site is built again rather
+      # than carried over from the test job: a build from one commit is the same
+      # bytes every time, and passing a directory between jobs is a failure mode
+      # worth more than the ten seconds it saves.
+      - run: npm ci
+      - run: npm ci --prefix www
+      - run: npm run build --prefix www
+
+      - name: Deploy to Cloudflare
+        run: npx wrangler deploy
+        working-directory: www
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

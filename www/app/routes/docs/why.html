@@ -32,16 +32,14 @@
 
   <p>
     A page here is an <code>.html</code> file. The server renders it, and what
-    arrives is markup a browser already knows how to display. Nothing has to run
-    for the page to be correct.
+    arrives is markup a browser already knows how to display.
   </p>
 
   ${html(s.page)}
 
   <p>
-    That file is the whole page. There is no component tree to reconcile, no
-    hydration step, and no build output the browser has to execute before the
-    text appears. View source shows what you wrote.
+    That file is the whole page. View source shows what you wrote, and the
+    text is on screen before any script runs.
   </p>
 
   <h2>One file, one concern</h2>

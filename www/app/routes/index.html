@@ -9,6 +9,9 @@
     if (fragment) return {};
 
     return {
+      // See the docs layout: a template expression has no `new`, and every page
+      // here is a file, so this is the year the build ran.
+      year: new Date().getFullYear(),
       s: await all({
         start: [
           `npm create @transclude my-app
@@ -359,9 +362,9 @@ npm run dev`,
 
   <p>
     The server can put that element in a second place instead.
-    <code>&lt;transclude src="#list"&gt;</code> renders it somewhere else
-    on the page, and <code>src="/notes#list"</code> reaches into another route.
-    Showing the same content in more than one place is what the word
+    <code>&lt;transclude src="#list"&gt;</code> renders it somewhere else on the
+    page, and <code>src="/notes#list"</code> reaches into another route. Showing
+    the same content in more than one place is what the word
     <em>transclusion</em> means, and it is where the name comes from.
     <a href="/docs/includes">Includes</a> covers it.
   </p>
@@ -387,13 +390,12 @@ npm run dev`,
 
   <p>
     There is no client application, so nothing holds a second copy of the state
-    and nothing has to run before the text appears. When a page is wrong, there
-    is one place it can be wrong.
+    and nothing has to run before the text appears.
   </p>
 
   <p>
-    Save the file and refresh. That is the loop. Hot reload is here and it is a
-    convenience: the page is correct without it.
+    Save the file and refresh. That is the loop. Hot reload does the refreshing
+    for you.
   </p>
 
   <p class="why-more">
@@ -408,8 +410,8 @@ npm run dev`,
     <div class="cell">
       <h3>No JavaScript by default</h3>
       <p>
-        A page ships JavaScript only for the custom elements it renders, and only
-        when one of them has behavior. This site ships none.
+        A page ships JavaScript only for the custom elements it renders, and
+        only when one of them has behavior. This site ships none.
       </p>
     </div>
     <div class="cell">
@@ -423,16 +425,16 @@ npm run dev`,
     <div class="cell">
       <h3>Types without TypeScript</h3>
       <p>
-        A misspelled field, an unknown prop and a wrong-typed one are caught from
-        the shapes your loaders already return.
+        A misspelled field, an unknown prop and a wrong-typed one are caught
+        from the shapes your loaders already return.
       </p>
     </div>
     <div class="cell">
       <h3>Prerendered where it can be</h3>
       <p>
         A page that does not read the request is written to a file, compressed
-        once at rest, with a strong ETag per encoding. Everything else is rendered
-        by the server, on the same routes. This site is both.
+        once at rest, with a strong ETag per encoding. Everything else is
+        rendered by the server, on the same routes. This site is both.
       </p>
     </div>
   </div>
@@ -453,7 +455,7 @@ npm run dev`,
 
 <footer>
   <div class="inner">
-    <span>&copy; 2026 Atelier Dakroub</span>
+    <span>&copy; ${year} Atelier Dakroub</span>
     <a href="https://github.com/transclude-dev/transclude/blob/main/LICENSE"
       >MIT</a
     >

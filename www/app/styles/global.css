@@ -249,5 +249,5 @@ th {
    UA keyframes stay; only the duration changes. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 140ms;
+  animation-duration: 300ms;
 }

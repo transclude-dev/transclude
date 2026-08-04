@@ -224,16 +224,16 @@
   <h2>Reading a document that marks nothing</h2>
 
   <p>
-    Your own pages say what a fragment is. A page somebody else wrote does not, so
-    the rest of this is how a piece of one is found and made safe to show.
+    Your own pages say what a fragment is. A page somebody else wrote does not.
+    The rest of this is how a piece of one is found and made safe to show.
   </p>
 
   <doc-note label="Someone else's words are still theirs" tone="warn">
     This copies. Your server reads the document and serves the piece from your
-    origin as part of your page, and a prerendered page carries it in a file that
-    ships with your build. Name a host when you have the right to republish what
-    it holds, and read its license and its terms: a share-alike license can put
-    conditions on the page you put the fragment in.
+    origin, as part of your page. A prerendered page carries it in a file that
+    ships with your build. Name a host only when you have the right to republish
+    what it holds. Read its license and its terms first: a share-alike license
+    can put conditions on the page you put the fragment in.
   </doc-note>
 
   <p>
@@ -244,8 +244,8 @@
   ${html(s.credit)}
 
   <p>
-    A license decides what that line has to say, and a document does not carry
-    its author or its license anywhere a program can read them. So this is yours
+    A license decides what that line has to say. A document does not carry its
+    author or its license anywhere a program can read them. So this one is yours
     to write.
   </p>
 
@@ -338,7 +338,7 @@
   ${html(s.tuning)}
 
   <p>
-    Redirects are followed one at a time and every hop is checked again: the
+    Redirects are followed one at a time, and every hop is checked again. The
     check that passed on the URL you configured says nothing about where the
     third redirect landed. Addresses on the private ranges are refused, including
     the cloud metadata endpoint and IPv4 addresses written in IPv6 form.
@@ -372,8 +372,8 @@
   ${html(s.outline)}
 
   <p>
-    It answers with the fragment, sanitized and rewritten, and it is same-origin,
-    which the default <a href="/docs/security">policy</a> requires: that policy names
-    <code>'self'</code> and refuses a cross-origin fetch.
+    It answers with the fragment, sanitized and rewritten. It is same-origin,
+    which the default <a href="/docs/security">policy</a> requires. That policy
+    names <code>'self'</code> and refuses a cross-origin fetch.
   </p>
 </doc-page>

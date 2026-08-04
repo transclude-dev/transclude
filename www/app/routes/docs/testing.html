@@ -98,8 +98,8 @@ assert.ok(whole.includes(markup.trim()));`,
   <h2>The server's environment is not the test's</h2>
 
   <p>
-    <code>npm start</code> passes <code>--env-file-if-exists=.env</code> and
-    <code>node --test</code> does not, so a secret the config reads is missing
+    <code>npm start</code> passes <code>--env-file-if-exists=.env</code>.
+    <code>node --test</code> does not, so a secret the config reads is missing,
     and the first page that touches a signed cookie answers 500. Either add the
     flag to the test script, or set the value before the first import.
   </p>

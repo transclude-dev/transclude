@@ -120,11 +120,11 @@
 
   <p>
     They differ in what can reach them. <code>:scope</code> rules are hoisted
-    into <code>&lt;head&gt;</code> and lose to page CSS of equal specificity, so
-    a page can override a light element it did not write.
-    <code>:host</code> lives inside the shadow root and page CSS cannot reach it
-    at all, though <code>:host</code> itself has very low specificity, so a rule
-    inside the element beats it.
+    into <code>&lt;head&gt;</code>. They lose to page CSS of equal specificity,
+    so a page can override a light element it did not write.
+    <code>:host</code> lives inside the shadow root, and page CSS cannot reach it
+    at all. <code>:host</code> has very low specificity, so a rule inside the
+    element beats it.
   </p>
 
   <h2>View transitions</h2>

@@ -56,16 +56,16 @@
     <strong><code>false</code>, <code>null</code> and <code>undefined</code> drop
     an attribute</strong> rather than becoming a string, so nothing renders
     <code>class="false"</code>. <code>true</code> writes the name bare. An object
-    or an array serializes as JSON, which is what lets the browser read a prop
+    or an array serializes as JSON. That is what lets the browser read a prop
     back off the element and render from the same data the server had.
   </p>
 
   ${html(s.drop)}
 
   <p>
-    <strong><code>else</code> binds across whitespace and comments</strong>, and
-    an <code>else</code> with no <code>if</code> is a compile error with a line
-    number rather than an element that quietly never appears.
+    <strong><code>else</code> binds across whitespace and comments.</strong> An
+    <code>else</code> with no <code>if</code> is a compile error with a line
+    number, rather than an element that quietly never appears.
   </p>
 
   <p>
@@ -80,8 +80,8 @@
     <strong>Conditions are expressions, not strings.</strong> <code>if="0"</code>
     is false. The grammar is small on purpose: no assignment, no arrow functions,
     no object literals. That keeps a template declarative rather than a second
-    place to write code, and it is what makes it possible to collect the names a
-    template reads at all, which is where the type checking comes from.
+    place to write code. It is also what makes it possible to collect the names a
+    template reads, which is where the type checking comes from.
   </p>
 
   <p>

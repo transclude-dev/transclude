@@ -217,11 +217,10 @@
   </div>
 
   <p>
-    Stay light unless you need one. A light element is cheaper, your CSS reaches
-    it, and it renders the same way whether the browser asked for a whole page
-    or one fragment of it. Reach for a shadow root when you want the element's
-    styles and DOM sealed off from the page, or when it has to re-render on its
-    own.
+    Stay light unless you need one. A light element is cheaper, and your CSS
+    reaches it. It renders the same way whether the browser asked for a whole
+    page or one fragment of it. Reach for a shadow root when the element has to seal
+    its styles and DOM off from the page, or re-render on its own.
   </p>
 
   <h3>What each can re-render</h3>
@@ -254,16 +253,16 @@
   </p>
 
   <p>
-    In a shadow element the slot is real. The children stay in the light DOM and
-    the browser projects them through it, which is what makes
+    In a shadow element the slot is real. The children stay in the light DOM, and
+    the browser projects them through it. That is what makes
     <code>slotchange</code> and <code>assignedNodes()</code> mean something, and
     what lets content added later find its place.
   </p>
 
   <doc-note label="A shadow root in a fragment paints on connect" tone="warn">
-    A declarative shadow root is built when a browser parses a document, so a
-    shadow element arrives bare in a fragment and paints itself on connect. A
-    light element arrives whole.
+    A declarative shadow root is built when a browser parses a document. Nothing
+    that swaps HTML parses one, so a shadow element arrives bare in a fragment and
+    paints itself on connect. A light element arrives whole.
   </doc-note>
 
   <h2>Giving it behavior</h2>

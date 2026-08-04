@@ -33,14 +33,21 @@ runs the framework's own tests and needs no app. `npm run test:examples` runs th
 Comments: one to three sentences. Add one only when it says something the code
 cannot. Leave it out otherwise.
 
-Words: short and plain. No jargon. No em dashes. Write so that someone reading
-English as a second language gets it on the first pass. This applies to comments,
-commit messages, the README, and anything else written here. `hypermedia`,
-`element` and `fragment` are the exceptions: they name things this framework is
-about, so use them and say what they mean the first time.
+Words: short and plain. No jargon. No em dashes. American spelling. Write so that
+someone reading English as a second language gets it on the first pass. This
+applies to comments, commit messages, the README, and anything else written here.
+`hypermedia`, `element` and `fragment` are the exceptions: they name things this
+framework is about, so use them and say what they mean the first time.
 
 Tone: declarative. State what is true and stop. Do not sell the design, and do not
 call a decision clever or important.
+
+Docs: `design/voice.md` is the full rule, and a page follows one shape. What the
+thing is, then the smallest example that runs, then what the reader gets, then the
+options, then the edges as notes. Show before you qualify: a caveat in the opening
+paragraph costs every reader and matters to few of them. The docs serve a
+first-week reader and a tenth-year one, so the main path is for the first and the
+reasoning goes in a note, in `/docs/decisions` or here.
 
 Branches: one per feature. Commit as often as helps. Do not merge. The user decides
 when to merge.

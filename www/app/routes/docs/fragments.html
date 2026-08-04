@@ -1,18 +1,31 @@
 <script server>
-  import { all } from '../../lib/code.js';
+  import { all } from "../../lib/code.js";
 
   export default async () => ({
     s: await all({
-      markup: `<div id="matches" fragment>
-  <p>\${matches.length} of \${people.length} match.</p>
-  <ul>
-    <li each="person of matches">\${person.name}</li>
-  </ul>
-</div>`,
+      page: `<script server>
+  import { people } from '../data/people.js';
+
+  export default async ({ url }) => {
+    const q = url.searchParams.get('q') ?? '';
+    return { q, matches: people.filter((p) => p.name.includes(q)) };
+  };
+<\/script>
+
+<h1>People</h1>
+
+<input name="q" value="\${q}" />
+
+<ul id="matches" fragment>
+  <li each="person of matches">\${person.name}</li>
+</ul>`,
+      response: `<ul id="matches">
+  <li>Ada Lovelace</li>
+</ul>`,
       fetch: [
         `const res = await fetch('/?q=ada&fragment=matches');
 document.getElementById('matches').setHTMLUnsafe(await res.text());`,
-        'js',
+        "js",
       ],
       htmx: `<input
   name="q"
@@ -20,37 +33,37 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
   hx-target="#matches"
   hx-trigger="input changed delay:200ms"
 />`,
-      header: [`fragmentHeader: 'HX-Target',`, 'js'],
-      htmz: `<iframe hidden name="htmz"></iframe>
-
-<a href="/?fragment=matches#matches" target="htmz">Refresh</a>`,
-      trampoline: [
-        `document.querySelector('iframe[name=htmz]').onload = function () {
-  setTimeout(() =>
-    document
-      .querySelector(this.contentWindow.location.hash || null)
-      ?.replaceWith(...this.contentDocument.body.childNodes));
-};`,
-        'js',
-      ],
+      header: [`fragmentHeader: 'HX-Target',`, "js"],
     }),
   });
 </script>
 
 <title>Fragments · transclude</title>
-<meta name="description" content="Mark an element `fragment` and it can be asked for on its own URL." />
+<meta
+  name="description"
+  content="A fragment is a region of a page with its own URL."
+/>
 
 <doc-page
   heading="Fragments"
-  lede="Mark an element and you can fetch just that piece from its own URL. It comes from the same compiled markup as the full page."
+  lede="A fragment is a region of a page that has its own URL. Ask for that URL and you get the region on its own, from the same compiled markup that renders it in the page."
 >
   <p>
-    Add an id and a <code>fragment</code> attribute. The element renders in the
-    page as usual, and the same path with <code>?fragment=</code> and that id
-    returns just that element.
+    Use one for anything that changes while the rest of the page stays put.
+    Search results as you type. A list after something is added to it. The next
+    page of a table. Fetch the region and replace the copy in the page, instead
+    of loading the whole document again.
   </p>
 
-  ${html(s.markup)}
+  <h2>Mark a region</h2>
+
+  <p>
+    Give the element an <code>id</code> and a <code>fragment</code> attribute.
+  </p>
+
+  ${html(s.page)}
+
+  <p>That page answers three URLs.</p>
 
   <div class="scroller">
     <table>
@@ -67,7 +80,7 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
         </tr>
         <tr>
           <td><code>GET /?q=ada&amp;fragment=matches</code></td>
-          <td>the <code>&lt;div&gt;</code> and its contents</td>
+          <td>the <code>&lt;ul&gt;</code> and nothing else</td>
         </tr>
         <tr>
           <td><code>GET /?fragment=nope</code></td>
@@ -77,140 +90,91 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
     </table>
   </div>
 
-  <p>
-    The id is the name. The URL asks for <code>matches</code> and a swap targets
-    <code>#matches</code>.
-  </p>
+  <p>The second one returns this:</p>
 
-  <h2>What they are for</h2>
+  ${html(s.response)}
 
   <p>
-    Anything on a page that changes while the rest stays put: search results as
-    you type, a list after something is added to it, the next page of a table.
-    Fetch that one element and replace the copy in the page with it, instead of
-    loading the whole document again.
+    The <code>id</code> is the name. The URL asks for <code>matches</code>, and
+    a swap targets <code>#matches</code>. The page and the fragment come from
+    one template, so the two always agree.
   </p>
 
-  <p>
-    The page and the fragment come from one compiled template, so the two always
-    agree.
-  </p>
-
-  <h2>Asking for one</h2>
+  <h2>Ask for one</h2>
 
   <p>A fragment is an ordinary URL. Anything that fetches HTML can use it.</p>
 
   ${html(s.fetch)}
 
+  <doc-note label="setHTMLUnsafe, not innerHTML">
+    <a
+      href="https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTMLUnsafe"
+      >setHTMLUnsafe()</a
+    >
+    builds shadow roots from the markup it is given. A shadow element arriving
+    in a fragment needs it to start up.
+  </doc-note>
+
   <p>
     <a href="https://htmx.org">htmx</a> does the same with attributes.
     <a href="https://turbo.hotwired.dev">Turbo</a> and
-    <a href="https://leanrada.com/htmz/">htmz</a> are other options.
+    <a href="https://leanrada.com/htmz/">htmz</a> are other options. This
+    framework ships none of them, and nothing here depends on one.
   </p>
 
   ${html(s.htmx)}
 
   <p>
     htmx sends the target's id in an <code>HX-Target</code> header. Name that
-    header in the config and the query parameter becomes optional.
+    header in the config and <code>?fragment=</code> becomes optional.
   </p>
 
   ${html(s.header)}
 
-  <h2>htmz</h2>
-
-  <p>
-    <a href="https://leanrada.com/htmz/">htmz</a> swaps with no fetch. A hidden
-    iframe loads the URL and one line of script moves what came back into the
-    page. A URL hash is never sent to a server, so it is free for the client to
-    use, and htmz reads it as the destination.
-  </p>
-
-  ${html(s.htmz)}
-
-  <p>
-    The query asks this app for a fragment. The hash says where it goes. Neither
-    half knows about the other, so nothing here is a framework feature.
-  </p>
-
-  <doc-note label="Name both ends the same" tone="warn">
-    htmz replaces the destination element, and a fragment arrives carrying its own
-    id. Send <code>matches</code> to <code>#results</code> and the page ends up
-    with <code>#matches</code> where <code>#results</code> was, so the next click
-    finds nothing and does nothing. Point the hash at the fragment's own name.
-  </doc-note>
-
-  <p>
-    The published snippet puts its handler in an <code>onload</code> attribute.
-    Turn on the <a href="/docs/security">policy</a> and that handler is refused: it
-    hashes script blocks, and a hash never covers an attribute. The swap then
-    never happens and nothing on the page says why. Assign the handler in a
-    script block instead and it is hashed like any other.
-  </p>
-
-  ${html(s.trampoline)}
-
-  <p>
-    With no JavaScript a link that targets the frame loads into it and the
-    visitor sees nothing. Add <code>target</code> from a script if the page has
-    to work without one.
-  </p>
-
-  <p>
-    <a href="/docs/includes">Includes</a> put a fragment in a second place on the
-    server.
-  </p>
-
-  <doc-note label="setHTMLUnsafe, not innerHTML" tone="warn">
-    <a
-      href="https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTMLUnsafe"
-      >setHTMLUnsafe()</a
-    >
-    builds shadow roots from the markup it is given. A shadow element in a
-    fragment needs it to start up.
-  </doc-note>
-
-  <h2>Swapped-in markup styles itself</h2>
-
-  <p>
-    A fragment can land on a page that never rendered the elements inside it.
-    Those elements have no definition there and no styles. Set
-    <code>watchElements</code> and every page carries a small script that notices
-    a new tag, loads its definition and adds its styles once.
-  </p>
-
-  <p>
-    It is off by default, because it puts that script on every page and only
-    earns it when swaps really do bring in elements the page did not already
-    render. This site does not turn it on.
-  </p>
-
-  <h2>The parameter is strict, the header is not</h2>
+  <h2>Strict parameter, loose header</h2>
 
   <p>
     <code>?fragment=nope</code> is a 404. Someone wrote that name into a URL, so
-    getting it wrong should say so.
+    getting it wrong says so.
   </p>
 
   <p>
     A header naming a fragment is a hint, and an unknown name is ignored. Client
     libraries send these headers on every request, including ones that want a
-    whole document. <code>HX-Target</code> from htmx works this way.
-  </p>
-
-  <p>
-    Naming a header in <code>fragmentHeader</code> adds it to <code>Vary</code>.
+    whole document. <code>HX-Target</code> from htmx works this way. Naming a
+    header in <code>fragmentHeader</code> adds it to <code>Vary</code>.
   </p>
 
   <h2>Actions</h2>
 
   <p>
     <code>POST /?fragment=nope</code> changes nothing and returns 404. The
-    fragment is checked before the action runs.
+    region is checked before the action runs.
   </p>
 
   <p>
     <code>ctx.fragment</code> tells a form submission from a fetch. The first
     wants a redirect, the second wants markup.
+  </p>
+
+  <h2>Styles for swapped-in markup</h2>
+
+  <p>
+    A fragment can land on a page that never rendered the elements inside it.
+    Those elements have no definition there and no styles. Set
+    <code>watchElements</code> in the config. Every page then carries a small
+    script that notices a new tag, loads its definition and adds its styles
+    once.
+  </p>
+
+  <p>
+    It is off by default. It puts that script on every page, and it earns its
+    place only when swaps bring in elements the page did not already render.
+    This site leaves it off.
+  </p>
+
+  <p>
+    <a href="/docs/includes">Includes</a> put a fragment in a second place on
+    the server.
   </p>
 </doc-page>

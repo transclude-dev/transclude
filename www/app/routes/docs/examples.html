@@ -124,6 +124,12 @@ npm run elements   # http://localhost:1969`,
     file for it.
   </p>
 
+  <p>
+    It also turns <code>precache</code> on, so the build writes
+    <code>/precache.json</code>. That is the list a service worker caches from,
+    and this is the app it is easiest to see the shape on.
+  </p>
+
   <doc-note label="Two files, two sources">
     <code>/sitemap.xml</code> is built from the route table, which already knows
     every URL. <code>/feed.xml</code> cannot be. A route table holds paths, and

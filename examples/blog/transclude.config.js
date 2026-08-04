@@ -11,6 +11,11 @@ export default {
   stylesheet: 'app/styles/global.css',
   csp: true,
 
+  // Writes /precache.json: every page, asset and public file this build
+  // produced, with what tells a cache that it changed. Nothing here reads it.
+  // A service worker would, and `/docs/production` shows one.
+  precache: true,
+
   // What `ctx.absolute()` resolves against, for a canonical URL and an og:image.
   metadataBase: SITE,
 

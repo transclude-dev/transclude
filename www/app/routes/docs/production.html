@@ -12,6 +12,68 @@ npm start        # serves dist/ on 1960`,
 
       revalidate: [`export const revalidate = 3600;`, 'js'],
 
+      precacheOn: [`// transclude.config.js
+export default {
+  precache: true,
+};`, 'js'],
+
+      precacheOut: [
+        `{
+  "version": "W7iCxtYtqwA1rs8Km1_Q",
+  "precache": [
+    { "url": "/", "revision": "\\"SW31_otlz89gCCAy9nsG\\"" },
+    { "url": "/about", "revision": "\\"rJtbpeVmJUvYVX743pJQ\\"" },
+    { "url": "/assets/__global-D-s_wVdY.css", "revision": null },
+    { "url": "/posts/written-once", "revision": "\\"lR9y0x_Sq3LhIC5Sq-yW\\"" }
+  ]
+}`,
+        'json',
+      ],
+
+      worker: [
+        `// app/public/sw.js
+const manifest = fetch('/precache.json').then((res) => res.json());
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    manifest.then(async ({ version, precache }) => {
+      const cache = await caches.open(version);
+      await cache.addAll(precache.map((entry) => entry.url));
+      await self.skipWaiting();
+    }),
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    manifest.then(async ({ version }) => {
+      // The cache is named after the version, so last build's is the one to
+      // drop. No comparing of lists, and nothing left holding a stale page.
+      for (const name of await caches.keys()) {
+        if (name !== version) await caches.delete(name);
+      }
+      await self.clients.claim();
+    }),
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  event.respondWith(
+    caches.match(event.request).then((hit) => hit ?? fetch(event.request)),
+  );
+});`,
+        'js',
+      ],
+
+      register: [
+        `<script type="module">
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+<\/script>`,
+        'html',
+      ],
+
       tagged: [
         `// app/routes/notes.html
 export const revalidate = { seconds: 3600, tags: ['notes'] };
@@ -122,6 +184,50 @@ export const POST = async ({ request, revalidateTag }) => {
     in the config anything with the same four methods to put the store
     somewhere they all share.
   </p>
+
+  <h2>A list of what to cache</h2>
+
+  <p>
+    Turn <code>precache</code> on and the build writes
+    <code>/precache.json</code>: everything it produced, with what tells a cache
+    that it changed.
+  </p>
+
+  ${html(s.precacheOn)}
+  ${html(s.precacheOut)}
+
+  <p>
+    A prerendered page and a public file keep the same URL between builds and
+    different bytes, so each carries its ETag. A hashed asset carries
+    <code>revision: null</code>, because its name is its version and the bytes
+    behind it never change.
+  </p>
+
+  <p>
+    <code>version</code> changes when any entry does. Name a cache after it and
+    the previous one is the one to drop, with no list to compare.
+  </p>
+
+  <doc-note label="Nothing reads it for you">
+    This framework ships no service worker. The build states what it produced,
+    and something else decides what to do about it. That is the same agreement
+    <a href="/docs/fragments">fragments</a> have.
+  </doc-note>
+
+  <p>
+    <a href="https://developer.chrome.com/docs/workbox">Workbox</a> reads this
+    shape directly. So does a service worker you write, which for a site that
+    only needs to work offline is about thirty lines.
+  </p>
+
+  ${html(s.worker)}
+
+  <p>
+    It goes in <code>app/public/</code>, so it is served from the root and its
+    scope is the whole site. Register it from a page or a layout.
+  </p>
+
+  ${html(s.register)}
 
   <h2>Caching</h2>
 

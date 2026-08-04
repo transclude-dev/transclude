@@ -1,0 +1,63 @@
+<script server>
+  import { signIn } from '../data/users.js';
+
+  // The form is the whole story, so nothing is prerendered here either: the page
+  // renders differently once you have a session.
+  export const prerender = false;
+
+  export default async ({ action, url }) => ({
+    error: action?.error ?? null,
+    next: new URL(url).searchParams.get('next') ?? '/admin',
+  });
+
+  export const POST = async ({ request, url, cookies }) => {
+    const form = await request.formData();
+    const user = await signIn(String(form.get('email') ?? ''), String(form.get('password') ?? ''));
+
+    // One message for both. Saying which half was wrong tells someone whether
+    // an address has an account here.
+    if (!user) return { error: 'Those do not match an account.' };
+
+    // Signed, so the browser can read the id and cannot invent one. What is in
+    // the cookie is an id; everything else stays on the server.
+    await cookies.signed.set('session', String(user.id), {
+      httpOnly: true,
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    const next = String(form.get('next') ?? '/admin');
+
+    // A path from the form, not a URL. `new URL(next, url)` on an attacker's
+    // value would send someone to another origin with your redirect.
+    return Response.redirect(new URL(next.startsWith('/') ? next : '/admin', url), 303);
+  };
+</script>
+
+<title>Sign in</title>
+<meta name="description" content="Sign in." />
+
+<h1>Sign in</h1>
+
+<p class="hint">ada@example.com, and the password is <code>correct horse</code>.</p>
+
+<p class="error" if="error">${error}</p>
+
+<form method="post" class="signin">
+  <input type="hidden" name="next" value="${next}" />
+
+  <label for="email">Email</label>
+  <input id="email" name="email" type="email" autocomplete="username" required />
+
+  <label for="password">Password</label>
+  <input
+    id="password"
+    name="password"
+    type="password"
+    autocomplete="current-password"
+    required
+  />
+
+  <button type="submit">Sign in</button>
+</form>

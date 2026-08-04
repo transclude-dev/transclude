@@ -465,10 +465,16 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
     return;
   }
 
+  // A loader answering with a Response answers the request, and the template
+  // never renders. So the data a template reads is the loader's return with
+  // Response taken out of it. Without this, the documented way to write a login
+  // guard, `return Response.redirect(...)` from a layout, makes every name in
+  // that layout's own markup an error about a union it can never see.
+  // `ctx.action` has excluded Response since it was written, for the same reason.
   out.add(
     contextType
-      ? `/** @typedef {__Shape<Awaited<ReturnType<typeof ${binding}>>>} ${name} */\n\n`
-      : `/** @typedef {__Shape<typeof ${binding}>} ${name} */\n\n`,
+      ? `/** @typedef {__Shape<Exclude<Awaited<ReturnType<typeof ${binding}>>, Response>>} ${name} */\n\n`
+      : `/** @typedef {__Shape<Exclude<typeof ${binding}, Response>>} ${name} */\n\n`,
   );
 }
 

@@ -1,0 +1,43 @@
+:root {
+  --ink:#18181b; --muted:#5f5f6a; --rule:#e3e3e8; --ground:#fcfcfd;
+  --link:#0000ee; --surface:#f4f4f7; --bad:#b4232c;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --ink:#e9e9ec; --muted:#9a9aa4; --rule:#2b2b31; --ground:#121215; --link:#9db8ff; --surface:#1a1a1f; --bad:#ff8a8a; }
+}
+*,*::before,*::after { box-sizing: border-box; }
+body {
+  margin:0; background:var(--ground); color:var(--ink);
+  font:16px/1.6 system-ui, sans-serif;
+}
+.masthead, main {
+  max-width:34rem; margin:0 auto; padding:0 1.25rem;
+}
+.masthead {
+  display:flex; gap:1rem; align-items:center; justify-content:space-between;
+  padding-top:2rem; padding-bottom:1.25rem; border-bottom:1px solid var(--rule);
+  margin-bottom:2rem;
+}
+.masthead nav { display:flex; gap:1rem; align-items:center; }
+.masthead form { margin:0; }
+.wordmark { font-weight:700; text-decoration:none; color:inherit; }
+.who { color:var(--muted); font-size:.9rem; }
+h1 { font-size:1.7rem; letter-spacing:-.02em; margin:0 0 1rem; }
+a { color:var(--link); }
+button {
+  padding:.5rem .9rem; border:1px solid var(--rule); border-radius:6px;
+  background:var(--surface); color:inherit; font:inherit; cursor:pointer;
+}
+.signin { display:grid; gap:.5rem; max-width:20rem; }
+.signin label { font-size:.85rem; color:var(--muted); }
+.signin input {
+  padding:.55rem .7rem; border:1px solid var(--rule); border-radius:6px;
+  background:var(--ground); color:inherit; font:inherit;
+}
+.signin button { margin-top:.5rem; }
+.hint, .badge { color:var(--muted); font-size:.9rem; }
+.error { color:var(--bad); }
+.badge {
+  background:var(--surface); border:1px solid var(--rule);
+  border-radius:6px; padding:.4rem .7rem; display:inline-block; margin:0 0 1.25rem;
+}

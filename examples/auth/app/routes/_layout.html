@@ -1,0 +1,32 @@
+<script server>
+  import { find } from '../data/users.js';
+
+  // Every page below reads this, so the session is looked up once. Reading a
+  // cookie is what makes a page personal: the cache refuses to hold it and the
+  // build refuses to write it to a file, both without being told.
+  export default async ({ cookies }) => {
+    const id = await cookies.signed.get('session');
+
+    return { user: id ? find(id) : null };
+  };
+</script>
+
+<html lang="en" />
+
+<header class="masthead">
+  <a class="wordmark" href="/">auth</a>
+
+  <nav if="user">
+    <a href="/admin">Admin</a>
+    <span class="who">${user.name}</span>
+    <form method="post" action="/sign-out">
+      <button>Sign out</button>
+    </form>
+  </nav>
+
+  <nav else>
+    <a href="/login">Sign in</a>
+  </nav>
+</header>
+
+<main><slot></slot></main>

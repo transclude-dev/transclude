@@ -12,6 +12,7 @@ npm run blog       # http://localhost:1964
 npm run search     # http://localhost:1965
 npm run htmx       # http://localhost:1966
 npm run includes   # http://localhost:1967
+npm run auth       # http://localhost:1968
 npm run showcase   # http://localhost:1961`,
         'shell',
       ],
@@ -150,6 +151,33 @@ npm run showcase   # http://localhost:1961`,
     document. A cross-route include keeps it, because that content came from
     another document and there is one of it here.
   </p>
+
+  <h2>Auth</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/auth"
+      >examples/auth</a
+    >
+    is a signed-cookie session and one layout that guards everything below it.
+    The guard returns a <code>Response</code>, so nothing under it runs. Not the
+    layout's own markup, and not the page's loader. Pages in
+    <code>admin/</code> check nothing, and forgetting to check is not something
+    you can do.
+  </p>
+
+  <p>
+    Signing is what makes the cookie a session. The browser can read the id and
+    cannot invent one: send <code>session=1</code> by hand and the guard turns
+    you away.
+  </p>
+
+  <doc-note label="A cookie in the root layout costs the whole site" tone="warn">
+    That layout reads the session to decide what the header says. So every page
+    under it has an answer per visitor, and none can be a file. The build names
+    the page, exits non-zero and writes nothing, rather than shipping a
+    signed-out copy of your home page. Read the cookie in a narrower layout and
+    only that section pays.
+  </doc-note>
 
   <h2>Showcase</h2>
 

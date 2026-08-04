@@ -10,7 +10,7 @@ and a `fragment` attribute.
   import { people } from '../data/people.js';
 
   export default async ({ url }) => {
-    const q = url.searchParams.get('q') ?? '';
+    const q = new URL(url).searchParams.get('q') ?? '';
     return { q, matches: people.filter((p) => p.name.includes(q)) };
   };
 </script>

@@ -154,6 +154,35 @@ test('attribute values are escaped', () => {
   assert.equal(render('<a title="${t}"></a>', { t: '"><script>' }), '<a title="&quot;&gt;&lt;script&gt;"></a>');
 });
 
+// An attribute name is emitted as written, so this was the one interpolation
+// mistake that rendered the characters `${…}` into the page instead of failing.
+// Four paths reach an attribute, and the two that read the name are covered:
+// every element goes through `emitElement`, and `<html>` never does.
+test('an interpolation in an attribute name is refused', () => {
+  const cases = [
+    ['a plain element', '<div ${name}="x"></div>'],
+    ['a spread, which parses as a name', '<div ${...attrs}></div>'],
+    ['a component', '<user-card ${k}="v"></user-card>'],
+    ['inside an each', '<ul><li each="n of ns" ${k}="v">x</li></ul>'],
+    ['<html>, read by a second parse', '<html ${a}="b"><p>x</p>'],
+  ];
+
+  for (const [what, source] of cases) {
+    assert.throws(
+      () => compilePage(source, { runtime: '/rt.js' }),
+      /interpolates an attribute name/,
+      what,
+    );
+  }
+});
+
+test('an interpolated attribute value is still fine', () => {
+  assert.equal(
+    render('<a href="/n/${id}" data-x="${id}" style="--n: ${id}"></a>', { id: 7 }),
+    '<a href="/n/7" data-x="7" style="--n: 7"></a>',
+  );
+});
+
 test('objects and arrays serialize as JSON so the client can read them back', () => {
   assert.equal(render('<x-y tags="${tags}"></x-y>', { tags: ['a', 'b'] }), '<x-y tags="[&quot;a&quot;,&quot;b&quot;]"></x-y>');
 });

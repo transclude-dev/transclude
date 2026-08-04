@@ -49,7 +49,7 @@ transclude.config.js
   import { notes } from '../data/notes.js';
 
   export default async ({ url }) => {
-    const q = url.searchParams.get('q') ?? '';
+    const q = new URL(url).searchParams.get('q') ?? '';
     return { q, notes: notes.filter((n) => n.text.includes(q)) };
   };
 </script>

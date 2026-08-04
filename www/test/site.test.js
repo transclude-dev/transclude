@@ -132,3 +132,20 @@ test('the docs name the package that exists', () => {
 
   assert.deepEqual(wrong, [], `pages naming a package that does not exist: ${wrong.join(', ')}`);
 });
+
+test('the docs content comes before the nav in the document', () => {
+  const layout = fs.readFileSync(path.join(docs, '_layout.html'), 'utf8');
+  const content = layout.indexOf('<main>');
+  const nav = layout.indexOf('<nav class="sidebar"');
+
+  assert.ok(content > 0 && nav > 0, 'the layout has both a main and a sidebar');
+  assert.ok(
+    content < nav,
+    'the sidebar has to follow the content, or a narrow screen and a screen reader both get the link list first',
+  );
+
+  // Source order is only half of it. The wide layout puts the sidebar back on
+  // the left, which needs placement rather than flow.
+  assert.match(layout, /\.sidebar\s*\{[^}]*grid-area:\s*1\s*\/\s*1/);
+  assert.match(layout, /main\s*\{[^}]*grid-area:\s*1\s*\/\s*2/);
+});

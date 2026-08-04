@@ -104,6 +104,7 @@ npm run search        # search over a fragment on http://localhost:1965
 npm run htmx          # the same, driven by htmx, on http://localhost:1966
 npm run includes      # transclusion on http://localhost:1967
 npm run auth          # a guarded section on http://localhost:1968
+npm run live          # server-sent events on http://localhost:1969
 npm run check:src     # type-check the framework itself
 ```
 
@@ -112,8 +113,8 @@ would be. `todomvc` is TodoMVC with forms and no client JavaScript, `blog` is a
 prerendered site with a sitemap and a feed, `search` swaps a fragment into a
 page that works without it, `htmx` does the same with htmx and the
 `HX-Target` header, `includes` shows transclusion from three sources,
-`auth` guards a section with a layout and a signed cookie, and `showcase`
-uses every feature and is where the
+`auth` guards a section with a layout and a signed cookie, `live` pushes
+updates over server-sent events, and `showcase` uses every feature and is where the
 browser checks live, because those need an app to run against. `www/` is the site at transclude.dev: a landing page, the
 documentation under `/docs`, and itself built with the framework.
 

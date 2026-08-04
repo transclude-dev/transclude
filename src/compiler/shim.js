@@ -2,7 +2,7 @@
 // check it.
 //
 // JavaScript rather than TypeScript, on purpose. A JSDoc `@type` in the
-// author's own `<script props>` is honoured in a .js file and silently ignored
+// author's own `<script props>` is honored in a .js file and silently ignored
 // in a .ts one. The job is to check what the author wrote, so the shim speaks the
 // same language they do. The scaffolding uses JSDoc too.
 //
@@ -187,7 +187,7 @@ export function buildEndpointShim(source, { contextType }) {
     // Anything not spelled like a method is a helper and gets no signature.
     if (declared?.type === 'VariableDeclaration') {
       const name = declared.declarations[0]?.id?.name;
-      // `@satisfies` on the initialiser: it contextually types the handler's own
+      // `@satisfies` on the initializer: it contextually types the handler's own
       // `ctx` *and* holds the return type, which an annotation would flatten.
       if (isVerb(name)) edits.push({ at: node.start, insert: `/** @satisfies {${signature}} */\n` });
       continue;

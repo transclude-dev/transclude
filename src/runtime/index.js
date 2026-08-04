@@ -940,7 +940,7 @@ export function watch(loaders, root = globalThis.document) {
  */
 /**
  * A light element has no shadow root to repaint, and repainting would destroy
- * the children the page put inside it. So it upgrades for behaviour only: the
+ * the children the page put inside it. So it upgrades for behavior only: the
  * markup it was served is the markup it keeps.
  *
  * @param {object} def
@@ -949,17 +949,17 @@ export function watch(loaders, root = globalThis.document) {
  */
 export function defineLight(def, init) {
   // Before every other exit below: styles are the half of this that an element
-  // with no behaviour still has, and the half a swapped-in one arrives without.
+  // with no behavior still has, and the half a swapped-in one arrives without.
   adoptStyles(def);
 
   if (typeof customElements === 'undefined') return;
   if (customElements.get(def.tag)) return;
-  // No behaviour to attach means nothing to register. A light element with no
+  // No behavior to attach means nothing to register. A light element with no
   // <script> is markup that was already rendered, and it ships no JavaScript at
   // all, accessors included. That is the trade the
   // zero-JS default makes.
   //
-  // Being a form control counts as behaviour: a shadow root is not required to be
+  // Being a form control counts as behavior: a shadow root is not required to be
   // one, and an element that submits a value has to exist to do it.
   if (!init && !hasMembers(def) && !def.formAssociated && !hasState(def)) return;
 
@@ -1253,7 +1253,7 @@ export function defineComponent(def, init) {
         this.#adopt();
       }
       // Runs on every connect, not just the first: moving an element in the DOM
-      // disconnects and reconnects it, and behaviour that was torn down on the
+      // disconnects and reconnects it, and behavior that was torn down on the
       // way out has to come back on the way in.
       this.#ready = true;
       this.#abort = new AbortController();

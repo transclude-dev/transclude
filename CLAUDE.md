@@ -428,7 +428,7 @@ against.
   fails closed. Nothing reads it to turn `Secure` off.
 - **`nosniff` is sent always; `X-Frame-Options` and HSTS are not.** Nothing
   legitimate depends on a browser second-guessing a declared Content-Type, so
-  that header has no judgement in it and is on for every response including a
+  that header has no judgment in it and is on for every response including a
   404 and a public file. The other two refuse something an app may actually
   want, one being embedded and one being reachable over HTTP at all, so they
   stay the author's to set.
@@ -466,7 +466,7 @@ against.
   modules are `\0`-prefixed virtual ids, which is the standard convention and the
   likeliest reason they are skipped: there is no file behind them.
   `sourcemap: true` on the SSR build is therefore *worse* than off, because a
-  page frame then resolves to whichever neighbouring module's range covers it and
+  page frame then resolves to whichever neighboring module's range covers it and
   a throw in `colophon.html` reported `app/lib/code.js:81` with full confidence.
   It stays off. Dev is verified and is where a template is written.
 - **A preload hint is set on the way out, never on `ctx.response`.** A header on
@@ -515,7 +515,7 @@ against.
 - **`create/templates/` is what a new project is, and `_gitignore` is why.** A real
   `.gitignore` inside a template is applied to the template itself by everything
   that reads one, npm included when the package is packed, so the file is stored
-  under a name nothing recognises and renamed on the way out. The tests assert
+  under a name nothing recognizes and renamed on the way out. The tests assert
   the files rather than the copying: neither template ships a fragment, an
   include or an element, because those are decisions a project makes and the
   showcase already demonstrates.
@@ -560,7 +560,7 @@ against.
   page under it request-dependent and nothing says so. The prerendered ones are
   written with no request and quietly render whatever the default is. A theme
   read from a cookie in the root layout is the case that shows it: half the site
-  honours the cookie and half serves a file, and both look fine on their own.
+  honors the cookie and half serves a file, and both look fine on their own.
 - **The CSP is hashes, not a nonce, because a prerendered page is a file.** A
   nonce has to be fresh per request, so a page carrying one cannot be written
   once and compressed once, and every prerendered page here is exactly that.

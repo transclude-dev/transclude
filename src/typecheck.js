@@ -6,7 +6,7 @@
 // and rewriting is where source mapping breaks down.
 //
 // JavaScript rather than TypeScript because a JSDoc `@type` in the author's own
-// `<script props>` is honoured in a .js file and silently ignored in a .ts one.
+// `<script props>` is honored in a .js file and silently ignored in a .ts one.
 //
 // Shims are self-contained: route contexts and component props are inlined as
 // type literals rather than imported. transclude-env.d.ts is written *from* the shims,

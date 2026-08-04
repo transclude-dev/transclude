@@ -205,7 +205,7 @@
     return 'host.addEventListener from <script> in user-card.html';
   });
 
-  await check('a light element upgrades for behaviour, with no shadow root', () => {
+  await check('a light element upgrades for behavior, with no shadow root', () => {
     ok(customElements.get('site-note'), 'site-note was never defined');
     ok(document.getElementById('note').shadowRoot === null, 'a light element grew a shadow root');
     return 'defineLight: <script> with an exported prototype, no rendering';

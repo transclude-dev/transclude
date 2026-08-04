@@ -376,7 +376,7 @@ test('structure no longer forces a repaint, it is a block of its own', async () 
   assert.deepEqual(mod.volatile, []);
 });
 
-test('only the block that changed is touched, not its neighbours', async () => {
+test('only the block that changed is touched, not its neighbors', async () => {
   const mod = await load(
     `${props({ a: false, b: false })}<p if="a">A</p><p if="b">B</p>`,
   );

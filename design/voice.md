@@ -1,8 +1,8 @@
 # Voice
 
 How the docs, the README, the site and anything else written here are
-written. Code comments have their own rule in `CLAUDE.md`. The same economy
-applies to them.
+written. Code comments follow the same economy: one to three sentences, and
+only where they say something the code cannot.
 
 ## The shape of a page
 
@@ -71,8 +71,8 @@ and what broke.
 
 The docs serve a first-week reader and a tenth-year one. The main path is for
 the first. The reasoning behind a decision goes in a note, in
-`/docs/decisions`, or in `CLAUDE.md`, where the second reader will look for
-it and the first will not trip over it.
+`/docs/decisions`, or in `design/internals.md`, where the second reader will
+look for it and the first will not trip over it.
 
 ## Before and after
 

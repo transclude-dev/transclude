@@ -13,5 +13,7 @@ dist/
 .env.*
 !.env.example
 
-# Claude Code's working directory.
+# Editor and agent working files. The engineering record they used to hold is in
+# `design/internals.md`, which is where a contributor looks for it.
 .claude/
+CLAUDE.md

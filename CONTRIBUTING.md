@@ -34,8 +34,8 @@ package reaches into either one, and a test says so. That boundary is the
 reason both exist: if the framework can only be used the way an installed
 package is used, it works installed.
 
-`CLAUDE.md` holds the layout in detail and a long list of gotchas. Read the
-gotcha that covers the area you are changing. Most of them were written after
+`design/internals.md` holds the layout in detail and a long list of gotchas. Read
+the gotcha that covers the area you are changing. Most of them were written after
 something broke quietly.
 
 ## Running things
@@ -95,7 +95,8 @@ One branch per change. Say what broke or what was missing, and how you
 checked. If you changed compiler output, say which test would have caught the
 old behavior.
 
-A change to a gotcha in `CLAUDE.md` is part of the change, not a follow-up.
+A change to a gotcha in `design/internals.md` is part of the change, not a
+follow-up.
 
 ## Reporting a bug
 

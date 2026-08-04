@@ -16,4 +16,4 @@
 ---
 
 - [ ] `npm test` passes
-- [ ] A gotcha in `CLAUDE.md` covering this area is updated, or none applies
+- [ ] A gotcha in `design/internals.md` covering this area is updated, or none applies

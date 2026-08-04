@@ -219,7 +219,7 @@ test('nothing is sold and nothing is hedged', () => {
 
 test('the word is fragment, never region', () => {
   // `design/voice.md` spends its jargon on three words: hypermedia, element and
-  // fragment. `region` is what the compiler and CLAUDE.md call the same thing,
+  // fragment. `region` is what the compiler calls the same thing internally,
   // and it reads naturally enough while writing that it kept arriving in prose.
   // Code keeps its own names; only what a reader sees is checked.
   const found = [];

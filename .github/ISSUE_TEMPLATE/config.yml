@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security problem
+    url: https://github.com/transclude-dev/transclude/security/advisories/new
+    about: Report it privately. Please do not open a public issue for one.
+  - name: Documentation
+    url: https://transclude.dev/docs
+    about: The docs, including recipes and whole example apps.

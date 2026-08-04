@@ -1,0 +1,19 @@
+name: Documentation
+description: Something on transclude.dev is wrong, missing, or hard to follow.
+labels: [documentation]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Which page
+      placeholder: https://transclude.dev/docs/fragments
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What it says, and what is true
+      description: A page stating something false is the most useful kind of report here.
+    validations:
+      required: true

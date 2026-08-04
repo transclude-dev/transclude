@@ -111,3 +111,24 @@ describe('the pager points at the page the nav puts next', () => {
   assert.ok(next, 'no next link');
   assert.equal(next[1] ?? next[2], links[3]);
 });
+
+test('the docs name the package that exists', () => {
+  // `create-transclude` unscoped was never published: the package is
+  // `@transclude/create`, and `npm create @transclude` is npm's own rule for
+  // reaching it. The getting-started page told people to run the other one for
+  // a while, which fails, and would run a stranger's code if anyone ever claimed
+  // the name.
+  const wrong = [];
+
+  for (const dir of [routes, docs]) {
+    for (const name of fs.readdirSync(dir)) {
+      if (!name.endsWith('.html')) continue;
+      const source = fs.readFileSync(path.join(dir, name), 'utf8');
+
+      if (/npx\s+create-transclude/.test(source)) wrong.push(`${name}: npx create-transclude`);
+      if (/npm\s+create\s+transclude/.test(source)) wrong.push(`${name}: unscoped npm create`);
+    }
+  }
+
+  assert.deepEqual(wrong, [], `pages naming a package that does not exist: ${wrong.join(', ')}`);
+});

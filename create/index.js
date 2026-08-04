@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Starts a project. `npm create transclude my-app`, or `npx create-transclude`.
+// Starts a project. `npm create @transclude my-app`.
 //
 // It copies a template and rewrites three things: the package name, the
 // dependency on this framework, and the title on the page. Nothing else is

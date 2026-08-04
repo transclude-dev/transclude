@@ -10,5 +10,15 @@
 
   // The build output is imported by `worker.js`, so wrangler bundles it. Nothing
   // is uploaded as a separate asset.
-  "keep_vars": true
+  "keep_vars": true,
+
+  // Both hostnames answer, and `app/server.js` sends www to the apex, which is
+  // what every page's <link rel="canonical"> already names. Declaring them here
+  // rather than clicking them into the dashboard means the deploy creates the
+  // DNS records and the certificates, and the next person can read what the
+  // site's addresses are without logging in.
+  "routes": [
+    { "pattern": "transclude.dev", "custom_domain": true },
+    { "pattern": "www.transclude.dev", "custom_domain": true }
+  ]
 }

@@ -21,6 +21,7 @@ export { CompileError, ScriptError };
 const PAGE_EXPORTS = new Set([
   'css', 'load', 'render', 'renderHead', 'renderTitle', 'renderHtmlAttrs',
   'layouts', 'client', 'elements', 'headScript', 'hasTitle', 'includes',
+  'renderBodyAttrs',
 ]);
 const COMPONENT_EXPORTS = new Set([
   'tag', 'light', 'css', 'elements', 'propDefs', 'propAttrs', 'stateDefs', 'members', 'render',
@@ -113,10 +114,17 @@ export function splitBlocks(source) {
   // away with its attributes. In document mode it is the element it names, and a
   // `<html>` inside a script block or a comment is still not one, because this
   // is the real parser rather than a search for a string.
-  const html =
-    parse(source, { sourceCodeLocationInfo: true }).childNodes.find((n) => n.nodeName === 'html') ??
-    null;
-  const out = { server: null, properties: null, state: null, client: [], head: [], styles: [], nodes: [], html };
+  const document = parse(source, { sourceCodeLocationInfo: true });
+  const html = document.childNodes.find((n) => n.nodeName === 'html') ?? null;
+
+  // `<body>` is dropped by the fragment parser for the same reason `<html>` is,
+  // and was silently going missing: writing `<body class="admin">` in a page
+  // produced no attribute and no error. In document mode it is a real element.
+  // parse5's ChildNode union does not carry `childNodes`; in document mode this
+  // one is the html element and does.
+  const parent = /** @type {{ childNodes?: Array<{ nodeName: string }> }|null} */ (html);
+  const body = parent?.childNodes?.find((n) => n.nodeName === 'body') ?? null;
+  const out = { server: null, properties: null, state: null, client: [], head: [], styles: [], nodes: [], html, body };
 
   for (const node of doc.childNodes) {
     if (node.nodeName === 'script') {
@@ -407,7 +415,13 @@ export function compilePage(
   assertNoCollisions(server.declared ?? [], PAGE_EXPORTS, where, 'declares');
   assertNoActionsObject(server.exports, where);
 
-  const template = compileFragment(blocks.nodes, { components, shadowTags, page: true, html: blocks.html });
+  const template = compileFragment(blocks.nodes, {
+    components,
+    shadowTags,
+    page: true,
+    html: blocks.html,
+    body: blocks.body,
+  });
   assertIncludesResolve(template.regionIncludes, template.regions);
 
   const code = `
@@ -439,6 +453,10 @@ ${indent(template.title)}
 
 export function renderHtmlAttrs(__d) {
   return ${template.htmlAttrs ?? '{}'};
+}
+
+export function renderBodyAttrs(__d) {
+  return ${template.bodyAttrs ?? '{}'};
 }
 
 export function renderHead(__d) {
@@ -524,6 +542,7 @@ export function compileLayout(source, { id, components = new Map(), shadowTags =
     page: true,
     layout: true,
     html: blocks.html,
+    body: blocks.body,
   });
 
   const warnings = [...template.warnings];
@@ -556,6 +575,10 @@ export function renderHtmlAttrs(__d) {
   return ${template.htmlAttrs ?? '{}'};
 }
 
+export function renderBodyAttrs(__d) {
+  return ${template.bodyAttrs ?? '{}'};
+}
+
 export function renderHead(__d) {
   let __o = '';
 ${indent(template.head)}
@@ -568,7 +591,7 @@ ${slotBodies(template)}
   return __out;
 }
 
-export default { css, headScript, elements, hasTitle, load, renderTitle, renderHead, renderHtmlAttrs, render };
+export default { css, headScript, elements, hasTitle, load, renderTitle, renderHead, renderHtmlAttrs, renderBodyAttrs, render };
 `;
 
   return { code, warnings, components: template.components.map((c) => c.tag) };

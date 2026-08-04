@@ -192,29 +192,36 @@ const escapeAttr = (value) => String(value).replace(/[&<>"]/g, (c) => ESCAPES[c]
  * as one tag, because two `data-theme` attributes would leave the parser taking
  * the first, which is the outermost, which is backwards.
  */
-function htmlAttrsOf(chain, datas) {
+function attrsOf(chain, datas, render) {
   const merged = { __proto__: null };
   for (let i = 0; i < chain.length; i++) {
-    Object.assign(merged, chain[i].renderHtmlAttrs?.(datas[i]));
+    Object.assign(merged, chain[i][render]?.(datas[i]));
   }
   return merged;
 }
 
-function htmlOpenTag(lang, attrs) {
+/**
+ * `<html …>` or `<body …>`, from a merged attribute object.
+ *
+ * @param {string} tag
+ * @param {object} attrs
+ * @returns {string} the open tag
+ */
+function openTag(tag, attrs) {
   const parts = [];
 
-  for (const [name, value] of Object.entries({ lang, ...attrs })) {
+  for (const [name, value] of Object.entries(attrs)) {
     if (value === false || value === null || value === undefined) continue;
     if (!ATTR_NAME.test(name)) {
       throw new Error(
-        `[transclude] \`${name}\` cannot be an attribute on <html>. ` +
+        `[transclude] \`${name}\` cannot be an attribute on <${tag}>. ` +
           `Use lowercase letters, digits and dashes.`,
       );
     }
     parts.push(value === true ? name : `${name}="${escapeAttr(value)}"`);
   }
 
-  return `<html ${parts.join(' ')}>`;
+  return parts.length ? `<${tag} ${parts.join(' ')}>` : `<${tag}>`;
 }
 
 /**
@@ -597,7 +604,7 @@ export function renderDocument(
   ];
 
   return `<!doctype html>
-${htmlOpenTag(lang, htmlAttrsOf(chain, datas))}
+${openTag('html', { lang, ...attrsOf(chain, datas, 'renderHtmlAttrs') })}
 <head>
 <meta charset="utf-8">
 ${defaults}
@@ -607,7 +614,7 @@ ${stylesheet ? `<link rel="stylesheet" href="${stylesheet}">` : ''}
 ${head.join('\n')}
 ${css.join('\n')}
 </head>
-<body>
+${openTag('body', attrsOf(chain, datas, 'renderBodyAttrs'))}
 ${body}
 ${clientEntry ? `<script type="module" src="${clientEntry}"></script>` : ''}
 </body>

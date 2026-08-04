@@ -291,9 +291,9 @@ npm run dev`,
   <h1>HTML is the product.</h1>
 
   <p class="lede">
-    A page is an <code>.html</code> file. The directory tree is the route table.
-    The server renders the page and sends markup a browser already knows how to
-    display, so nothing has to run in the browser for the page to be correct.
+    A page is one <code>.html</code> file: the markup, and the server code that
+    loads its data. The directory tree is the route table. Any part of a page
+    can be asked for on a URL of its own, and the server sends HTML either way.
   </p>
 
   <div class="actions">
@@ -307,7 +307,7 @@ npm run dev`,
   <div class="inner">
     <h2>One file is one route</h2>
     <p>
-      <code>app/routes/notes.html</code> answers <code>/notes</code>. The
+      <code>app/routes/notes.html</code> responds to <code>/notes</code>. The
       <code>&lt;script server&gt;</code> block is the loader: it runs on the
       server and returns the data the markup reads.
       <code>export const POST</code>
@@ -394,8 +394,8 @@ npm run dev`,
   </p>
 
   <p>
-    Save the file and refresh. That is the loop. Hot reload does the refreshing
-    for you.
+    Save the file and hot reload does the refresh. That is the loop:
+    Command-R programming, without the Command-R.
   </p>
 
   <p class="why-more">

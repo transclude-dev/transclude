@@ -31,6 +31,25 @@ The query parameter still works and still wins. The two differ on purpose:
 Naming a header adds it to `Vary`, which is why this is off by default. Widening
 a cache key is a real cost for a feature an app may not use.
 
+## A GET uses the header, a POST names it
+
+The header is a convenience for reading. A request that *changes* something says
+what it wants back:
+
+```html
+hx-post="/?fragment=people"
+```
+
+The two differ in how they fail, and that is the reason. An unknown name in the
+query is a 404. An unknown name in the header is ignored, and the page answers
+with a whole document, which htmx would then swap into the list.
+
+## Everything that changes lives inside the fragment
+
+A swap replaces one element. A count sitting outside it keeps whatever the last
+whole-page render left there, so the list says four and the sentence above it
+says three. The count in this app is the last row of the list for that reason.
+
 ## One handler, two callers
 
 `ctx.fragment` is how the `POST` serves both. htmx asked for a fragment, so it

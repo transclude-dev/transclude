@@ -1,0 +1,66 @@
+<script server>
+  import { all, add, listening } from '../data/board.js';
+
+  export const prerender = false;
+
+  export default async () => ({ notes: all(), listeners: listening() });
+
+  export const POST = async ({ request, url, fragment }) => {
+    const form = await request.formData();
+    const text = String(form.get('text') ?? '').trim();
+    if (text) add(text);
+
+    // Everyone else finds out through the stream. This caller gets the same
+    // answer it would have got anyway.
+    if (fragment) return undefined;
+
+    return Response.redirect(new URL(url), 303);
+  };
+</script>
+
+<title>Live</title>
+<meta name="description" content="A page that updates itself over server-sent events." />
+
+<h1>Board</h1>
+
+<p class="lede">
+  Open this in a second window and type in one of them. The other keeps up
+  without polling, and without JavaScript the form still works.
+</p>
+
+<form method="post" action="/?fragment=feed">
+  <label for="text">Note</label>
+  <input id="text" name="text" placeholder="Say something" required autocomplete="off" />
+  <button type="submit">Add</button>
+</form>
+
+<ul id="feed" fragment>
+  <li each="note of notes">${note.text}</li>
+  <li class="count">${listeners} window${listeners === 1 ? '' : 's'} listening.</li>
+</ul>
+
+<script type="module">
+  // The whole client. It listens for a nudge and asks for the fragment; the
+  // stream carries no markup, because the list already has a URL.
+  const feed = document.querySelector('#feed');
+  const form = document.querySelector('form');
+
+  async function refresh() {
+    const res = await fetch('/?fragment=feed');
+    document.querySelector('#feed').setHTMLUnsafe(await res.text());
+  }
+
+  const events = new EventSource('/events');
+  events.addEventListener('notes', refresh);
+
+  // Submitting asks for the fragment back, so nothing navigates. Everyone else
+  // is told by the stream.
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const body = new FormData(form);
+    await fetch('/?fragment=feed', { method: 'POST', body });
+    form.reset();
+    await refresh();
+  });
+</script>

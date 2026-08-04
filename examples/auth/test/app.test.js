@@ -134,3 +134,16 @@ describe('no page under a cookie-reading layout was written to a file', () => {
 
   assert.ok(!files.includes('index.html'), 'the home page is rendered per request');
 });
+
+describe('the 404 page is a file, and does not read a session to be one', async () => {
+  // An error page has to be bytes: one that renders when a request has already
+  // failed can fail too. So it is written at build time whatever it says about
+  // `prerender`, and at build time there is no request and no visitor. A layout
+  // reading a signed cookie there throws on any build with no secret, which is
+  // every CI run.
+  assert.ok(fs.existsSync(path.join(root, 'dist', 'static', '404.html')));
+
+  const res = await get('/no-such-page');
+  assert.equal(res.status, 404);
+  assert.doesNotMatch(await res.text(), /Sign out/, 'a file cannot know who is asking');
+});

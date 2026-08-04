@@ -1,0 +1,24 @@
+<script server>
+  // The guard, written once for everything below it.
+  //
+  // A layout loader returning a Response answers the request, and nothing under
+  // it runs: not this layout's markup, and not the page's loader. So a page in
+  // here never has to remember to check.
+  // The layout above returns the session, and a layout's data reaches the one
+  // below it as `ctx.layout` rather than being spread into the context. The type
+  // checker says so if you forget, which is how this was written.
+  export default async ({ layout, url }) => {
+    if (!layout.user) {
+      const next = new URL(url).pathname;
+      return Response.redirect(new URL(`/login?next=${encodeURIComponent(next)}`, url), 303);
+    }
+
+    // Handed on again, so this layout's own markup can read it.
+    return { user: layout.user };
+  };
+</script>
+
+<div class="admin">
+  <p class="badge">Signed in as ${user.name}</p>
+  <slot></slot>
+</div>

@@ -40,7 +40,10 @@ test('the loader keeps its inferred return type while its parameter is typed', (
   // The context is inlined rather than imported: transclude-env.d.ts is generated *from*
   // these shims, so it cannot also be an input to them.
   assert.match(code, /@satisfies \{\(ctx: \{ params: \{ name: string \}/);
-  assert.match(code, /@typedef \{__Shape<Awaited<ReturnType<typeof __default>>>\} __Data/);
+  assert.match(
+    code,
+    /@typedef \{__Shape<Exclude<Awaited<ReturnType<typeof __default>>, Response>>\} __Data/,
+  );
 });
 
 test('imports and named exports of a block stay put', () => {
@@ -61,7 +64,7 @@ test('a props block is a module body too, not an expression', () => {
     contextType: null,
   });
   assert.match(code, /const __props = \(\{ a: 1 \}\)/);
-  assert.match(code, /@typedef \{__Shape<typeof __props>\} __Props/);
+  assert.match(code, /@typedef \{__Shape<Exclude<typeof __props, Response>>\} __Props/);
   assert.match(code, /@typedef \{__Props & __State\} __Data/);
 });
 
@@ -507,4 +510,18 @@ test("an endpoint's request is never null, because prerendering never runs one",
     ).map((d) => d.message),
     [],
   );
+});
+
+test('a loader that can answer with a Response still types its own template', () => {
+  // A layout guarding a section returns `Response.redirect(...)`, which is the
+  // documented way to write one. Its own markup only renders on the other
+  // branch, so the data a template reads is the return with Response taken out.
+  // Without that, every name in the layout's markup was an error about a union
+  // it can never be handed. `ctx.action` has excluded Response all along.
+  const { code } = shim(
+    `<script server>export default ({ url }) =>
+       url ? Response.redirect('/login', 303) : ({ user: 'ada' });</script><p>\${user}</p>`,
+  );
+
+  assert.match(code, /Exclude<Awaited<ReturnType<typeof __default>>, Response>/);
 });

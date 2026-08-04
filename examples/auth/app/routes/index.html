@@ -1,0 +1,23 @@
+<script server>
+  // The layout above reads a cookie, so every page under it is different for
+  // each visitor and none of them can be a file. The build refuses to write one
+  // and says which page and why, rather than shipping a signed-out copy.
+  export const prerender = false;
+
+  // A page sees its own data. The session comes from the layout, so it is read
+  // out of `ctx.layout` and returned.
+  export default async ({ layout }) => ({ user: layout.user });
+</script>
+
+<title>auth</title>
+<meta name="description" content="A signed-cookie session and a guarded section." />
+
+<h1>Public</h1>
+
+<p>
+  Anyone can read this page. <a href="/admin">Admin</a> is behind a layout that
+  turns anyone without a session away before its pages render.
+</p>
+
+<p if="user">You are signed in as <strong>${user.name}</strong>.</p>
+<p else>You are not signed in. <a href="/login">Sign in</a> to see the rest.</p>

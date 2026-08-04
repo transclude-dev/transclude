@@ -149,3 +149,70 @@ test('the docs content comes before the nav in the document', () => {
   assert.match(layout, /\.sidebar\s*\{[^}]*grid-area:\s*1\s*\/\s*1/);
   assert.match(layout, /main\s*\{[^}]*grid-area:\s*1\s*\/\s*2/);
 });
+
+// The voice, in `design/voice.md`. Two of its rules are mechanical, so they are
+// checked rather than remembered. The prose of a page is its paragraphs, its
+// notes and its lede; a table cell and a code sample are not prose.
+function prose(source) {
+  // A file with no doc-page has no prose to read. `slice(-1)` would hand back
+  // its last character and quietly find nothing.
+  const start = source.indexOf('<doc-page');
+  const body = start === -1 ? '' : source.slice(start);
+  const found = [...body.matchAll(/<(?:p|doc-note[^>]*)>([\s\S]*?)<\/(?:p|doc-note)>/g)].map(
+    ([, text]) => text,
+  );
+  const lede = source.match(/lede="([^"]*)"/)?.[1];
+  if (lede) found.push(lede);
+
+  return found.map((text) =>
+    text
+      .replace(/<[^>]+>/g, '')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/\s+/g, ' ')
+      .trim(),
+  );
+}
+
+/** Every page of the site, docs and landing alike. */
+function pages() {
+  const found = [];
+  for (const dir of [routes, docs]) {
+    for (const name of fs.readdirSync(dir)) {
+      if (name.endsWith('.html')) found.push([name, fs.readFileSync(path.join(dir, name), 'utf8')]);
+    }
+  }
+  return found;
+}
+
+test('one idea per sentence', () => {
+  const long = [];
+  for (const [name, source] of pages()) {
+    for (const paragraph of prose(source)) {
+      for (const sentence of paragraph.split(/(?<=[.!?])\s+/)) {
+        const words = sentence.split(/\s+/).length;
+        if (words >= 25) long.push(`${name}: ${words} words: ${sentence.slice(0, 60)}…`);
+      }
+    }
+  }
+
+  assert.deepEqual(long, [], `sentences joining two ideas, split them:\n${long.join('\n')}`);
+});
+
+test('nothing is sold and nothing is hedged', () => {
+  // Every one of these is either selling or filler. `just` and `only` are left
+  // out on purpose: both have an ordinary meaning this would not be able to
+  // tell apart.
+  const banned =
+    /\b(simply|easily|easy|powerful|seamless|blazing|effortless|feel free|basically|essentially|in order to|needless to say|of course)\b/gi;
+
+  const found = [];
+  for (const [name, source] of pages()) {
+    for (const paragraph of prose(source)) {
+      for (const [word] of paragraph.matchAll(banned)) found.push(`${name}: ${word}`);
+    }
+  }
+
+  assert.deepEqual(found, [], `words design/voice.md rules out: ${found.join(', ')}`);
+});

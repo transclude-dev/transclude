@@ -86,10 +86,9 @@ export default {
   ${html(s.trusted)}
 
   <doc-note label="It trusts, it does not clean" tone="warn">
-    <code>html()</code> sanitizes nothing. Wrapping anything a visitor typed is
-    how a page runs somebody else's script, and no
-    Content-Security-Policy below will save you: the script came from your own
-    origin, in your own document.
+    <code>html()</code> sanitizes nothing. Wrap anything a visitor typed and the
+    page runs somebody else's script. No Content-Security-Policy below will save
+    you. The script came from your own origin, in your own document.
   </doc-note>
 
   <p>
@@ -105,9 +104,9 @@ export default {
 
   <p>
     Text in a <code>&lt;script&gt;</code> or a <code>&lt;style&gt;</code> reaches
-    the page as written, because escaping it would change what the browser reads:
+    the page as written. Escaping it would change what the browser reads:
     <code>&amp;amp;</code> is an ampersand in prose and four characters in
-    JavaScript. So a value there lands in code, and both of these are compile
+    JavaScript. So a value there lands in code. Both of these are compile
     errors.
   </p>
 
@@ -115,16 +114,16 @@ export default {
 
   <p>
     No escape fixes the first one. A value that closes the string it was written
-    into runs whatever follows it, and that is a fact about JavaScript rather
-    than about markup.
+    into runs whatever follows it. That is a fact about JavaScript, not about
+    markup.
   </p>
 
   <p>
-    Data is a narrower question and has an answer. <code>json()</code> is JSON
-    with the characters that could end the element written as
-    <code>&#92;uXXXX</code>, and one of those, alone, is what a script may carry. For
-    a style, read the value through a custom property, which is an attribute and
-    is escaped.
+    Data is a narrower question, and it has an answer. <code>json()</code> is
+    JSON with the characters that could end the element written as
+    <code>&#92;uXXXX</code>. One <code>json()</code> call, alone, is what a script
+    may carry. For a style, read the value through a custom property. A custom
+    property is an attribute, so it is escaped.
   </p>
 
   ${html(s.jsonOk)}
@@ -132,9 +131,9 @@ export default {
   <h2>Hashes, not a nonce</h2>
 
   <p>
-    A policy has to name each inline script it allows. There are two ways to name
-    one: a nonce, which is a random value the server puts on both the tag and the
-    policy, or a hash of the script's own text.
+    A policy has to name each inline script it allows. There are two ways to do
+    that. A nonce is a random value the server puts on both the tag and the
+    policy. A hash is a digest of the script's own text.
   </p>
 
   <p>
@@ -200,9 +199,9 @@ export default {
   ${html(s.custom)}
 
   <p>
-    A directive left with no sources is dropped rather than written empty, since
-    an empty list means <code>'none'</code> and saying that by accident breaks
-    the page rather than protecting it.
+    A directive left with no sources is dropped rather than written empty. An
+    empty list means <code>'none'</code>. Saying that by accident breaks the page
+    rather than protecting it.
   </p>
 
   <h2>Report before you enforce</h2>

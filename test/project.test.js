@@ -60,3 +60,53 @@ test('both old keys are named at once, not one at a time', async () => {
   const dir = project("{ partialsDir: 'p', componentsDir: 'c' }");
   await assert.rejects(() => loadProject(dir), /partialsDir and componentsDir/);
 });
+
+test('a config that names only what it changes gets the documented defaults', async () => {
+  // These were written in the docs as defaults and applied nowhere. A config
+  // leaving `outDir` out reached `path.join(root, undefined)` and threw
+  // ERR_INVALID_ARG_TYPE, naming neither the key nor the file. Every starter
+  // template sets all of them, which is why nothing here caught it.
+  const { config } = await loadProject(project('{ port: 1234 }'));
+
+  assert.deepEqual(
+    {
+      appDir: config.appDir,
+      routesDir: config.routesDir,
+      elementsDir: config.elementsDir,
+      publicDir: config.publicDir,
+      outDir: config.outDir,
+      typesFile: config.typesFile,
+      stylesheet: config.stylesheet,
+      lang: config.lang,
+      fragmentParam: config.fragmentParam,
+      trailingSlash: config.trailingSlash,
+      strict: config.strict,
+      csrf: config.csrf,
+      csp: config.csp,
+    },
+    {
+      appDir: 'app',
+      routesDir: 'routes',
+      elementsDir: 'elements',
+      publicDir: 'public',
+      outDir: 'dist',
+      typesFile: 'app/transclude-env.d.ts',
+      stylesheet: null,
+      lang: 'en',
+      fragmentParam: 'fragment',
+      trailingSlash: 'never',
+      strict: false,
+      csrf: true,
+      csp: false,
+    },
+  );
+
+  assert.equal(config.port, 1234, 'what the file said still wins');
+});
+
+test('a default never overwrites a falsy value the config chose', async () => {
+  const { config } = await loadProject(project('{ csrf: false, fragmentParam: null }'));
+
+  assert.equal(config.csrf, false);
+  assert.equal(config.fragmentParam, null);
+});

@@ -1,0 +1,414 @@
+<script server>
+  import { all } from '../../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      load: `<!-- app/routes/notes.html -->
+<script server>
+  import { notes } from '../data/notes.js';
+
+  export default async () => ({ notes: notes.all() });
+<\/script>
+
+<ul>
+  <li each="note of notes">\${note.text}</li>
+</ul>`,
+
+      dynamic: `<!-- app/routes/people/[name].html  ->  /people/:name -->
+<script server>
+  import { people } from '../../data/people.js';
+
+  export default async ({ params }) => ({
+    person: people.find((p) => p.slug === params.name),
+  });
+<\/script>
+
+<h1>\${person.name}</h1>`,
+
+      fetch: [
+        `export default async () => {
+  const res = await fetch('https://api.example.com/rates');
+  return { rates: await res.json() };
+};`,
+        'js',
+      ],
+
+      notFound: [
+        `export default async ({ params, response }) => {
+  const person = find(params.name);
+  if (!person) response.status = 404;
+
+  return { person };
+};`,
+        'js',
+      ],
+
+      redirect: [
+        `export default async ({ url }) => Response.redirect(new URL('/notes', url), 308);`,
+        'js',
+      ],
+
+      form: `<!-- app/routes/notes.html -->
+<script server>
+  import { notes } from '../data/notes.js';
+
+  export default async () => ({ notes: notes.all() });
+
+  export const POST = async ({ request, url }) => {
+    const form = await request.formData();
+    notes.add(String(form.get('text') ?? '').trim());
+
+    // Post, redirect, get. A reload must not add it twice.
+    return Response.redirect(new URL(url), 303);
+  };
+<\/script>
+
+<form method="post">
+  <input name="text" required />
+  <button>Add</button>
+</form>`,
+
+      invalid: `<script server>
+  export default async ({ action }) => ({
+    notes: notes.all(),
+    // Whatever the handler said, or null on a plain GET.
+    error: action?.error ?? null,
+  });
+
+  export const POST = async ({ request, url }) => {
+    const text = String((await request.formData()).get('text') ?? '').trim();
+
+    // Nothing changed, so answer with the page rather than a redirect.
+    if (!text) return { error: 'a note needs some text' };
+
+    notes.add(text);
+    return Response.redirect(new URL(url), 303);
+  };
+<\/script>
+
+<p class="error" if="error">\${error}</p>`,
+
+      intent: `<form method="post">
+  <input type="hidden" name="id" value="\${note.id}" />
+  <button name="intent" value="archive">Archive</button>
+  <button name="intent" value="delete">Delete</button>
+</form>`,
+
+      endpoint: `// app/routes/api/people.js  ->  /api/people
+import { people } from '../../data/people.js';
+
+export const GET = () => Response.json(people);
+
+export const POST = async ({ request }) => {
+  const body = await request.json();
+  people.push(body);
+  return Response.json(body, { status: 201 });
+};`,
+
+      cookie: [
+        `export default async ({ cookies }) => ({
+  theme: cookies.get('theme') ?? 'auto',
+});
+
+export const POST = async ({ cookies, request, url }) => {
+  const form = await request.formData();
+  cookies.set('theme', String(form.get('theme')), { maxAge: 31536000 });
+
+  return Response.redirect(new URL(url), 303);
+};`,
+        'js',
+      ],
+
+      session: [
+        `// Signed, so the browser can read the id but cannot invent one.
+export const POST = async ({ cookies, request, url }) => {
+  const form = await request.formData();
+  const user = await signIn(form.get('email'), form.get('password'));
+  if (!user) return { error: 'no' };
+
+  await cookies.signed.set('session', String(user.id), {
+    httpOnly: true,
+    maxAge: 60 * 60 * 24 * 7,
+  });
+  return Response.redirect(new URL('/', url), 303);
+};`,
+        'js',
+      ],
+
+      guard: `<!-- app/routes/admin/_layout.html -->
+<script server>
+  export default async ({ cookies, url }) => {
+    const session = await cookies.signed.get('session');
+    if (!session) return Response.redirect(new URL('/login', url), 303);
+
+    return { user: await load(session) };
+  };
+<\/script>
+
+<slot></slot>`,
+
+      header: [
+        `export default async ({ response }) => {
+  response.headers.set('x-served-by', 'transclude');
+  return {};
+};`,
+        'js',
+      ],
+
+      middleware: [
+        `// app/server.js
+export default (app) => {
+  app.use('/admin/*', async (c, next) => {
+    await next();
+    c.res.headers.set('x-robots-tag', 'noindex');
+  });
+};`,
+        'js',
+      ],
+
+      fragment: `<ul id="list" fragment>
+  <li each="note of notes">\${note.text}</li>
+</ul>`,
+
+      include: `<div id="pricing" fragment>
+  <p>Two pounds.</p>
+</div>
+
+<aside>
+  <transclude src="#pricing"></transclude>
+</aside>`,
+
+      element: `<!-- app/elements/note-card.html -->
+<script properties>
+  export default { title: '', tone: 'plain' };
+<\/script>
+
+<style>
+  :scope { display: block; border-left: 3px solid var(--rule); }
+  :scope[tone='warn'] { border-color: #b4232c; }
+</style>
+
+<h3>\${title}</h3>
+<p><slot></slot></p>`,
+
+      live: [`export const prerender = false;`, 'js'],
+
+      revalidate: [`export const revalidate = 3600;`, 'js'],
+
+      feed: [
+        `// transclude.config.js
+export default {
+  sitemap: { hostname: 'https://example.com' },
+  feed: {
+    hostname: 'https://example.com',
+    title: 'Notes',
+    items: () => notes.all().map((note) => ({
+      title: note.title,
+      path: \`/notes/\${note.slug}\`,
+      date: note.written,
+    })),
+  },
+};`,
+        'js',
+      ],
+
+      testing: [
+        `import test from 'node:test';
+import assert from 'node:assert/strict';
+import { app } from '@transclude/core/production';
+
+test('the notes page lists notes', async () => {
+  const res = await app.request('http://localhost/notes');
+
+  assert.equal(res.status, 200);
+  assert.match(await res.text(), /<li/);
+});`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
+<title>Recipes · transclude</title>
+<meta name="description" content="Short answers to the things most apps need." />
+
+<doc-page
+  heading="Recipes"
+  lede="Short answers to the things most apps need. Copy one and change the names. For whole apps, read the examples."
+>
+  <h2>Pages and data</h2>
+
+  <h3>Load data for a page</h3>
+
+  <p>The <code>&lt;script server&gt;</code> default export runs on the server.</p>
+
+  ${html(s.load)}
+
+  <h3>A dynamic route</h3>
+
+  <p>
+    A bracketed segment is a parameter, and the file name is the URL. It arrives
+    in <code>ctx.params</code>.
+  </p>
+
+  ${html(s.dynamic)}
+
+  <h3>Read an external API</h3>
+
+  <p>A loader is a plain async function. Fetch, query a database, read a file.</p>
+
+  ${html(s.fetch)}
+
+  <h3>Answer 404</h3>
+
+  <p>
+    Write to <code>ctx.response</code>. The page still renders, so it can say
+    what was missing.
+  </p>
+
+  ${html(s.notFound)}
+
+  <h3>Redirect instead of rendering</h3>
+
+  <p>A loader returning a <code>Response</code> answers the request.</p>
+
+  ${html(s.redirect)}
+
+  <h2>Forms</h2>
+
+  <h3>Handle a submission</h3>
+
+  <p>
+    <code>POST</code> is an export beside the loader. It runs, then the loader
+    renders what it left behind.
+  </p>
+
+  ${html(s.form)}
+
+  <h3>Reject one without losing the page</h3>
+
+  <p>
+    Return a value rather than a redirect. It arrives as
+    <code>ctx.action</code> on the render that follows.
+  </p>
+
+  ${html(s.invalid)}
+
+  <h3>Two buttons, one form</h3>
+
+  <p>
+    A submit button sends its name and value only when it is the one that
+    submitted.
+  </p>
+
+  ${html(s.intent)}
+
+  <h2>The server</h2>
+
+  <h3>A JSON endpoint</h3>
+
+  <p>
+    A <code>.js</code> file in <code>routes/</code> returns a
+    <code>Response</code>. See <a href="/docs/endpoints">endpoints</a>.
+  </p>
+
+  ${html(s.endpoint)}
+
+  <h3>Read and write a cookie</h3>
+
+  ${html(s.cookie)}
+
+  <h3>Keep a session</h3>
+
+  <p>
+    A signed cookie can be read by the client and not forged. Put an id in it
+    and keep the rest on the server.
+  </p>
+
+  ${html(s.session)}
+
+  <h3>Guard a whole section</h3>
+
+  <p>
+    A layout loader returning a <code>Response</code> stops everything below it,
+    so the redirect is written once.
+  </p>
+
+  ${html(s.guard)}
+
+  <h3>Set a response header</h3>
+
+  ${html(s.header)}
+
+  <h3>Middleware for a path</h3>
+
+  <p>
+    <code>app/server.js</code> gets the Hono app before any route.
+  </p>
+
+  ${html(s.middleware)}
+
+  <h2>The page</h2>
+
+  <h3>Give a region its own URL</h3>
+
+  <p>
+    <code>/notes?fragment=list</code> then returns the
+    <code>&lt;ul&gt;</code> alone. See <a href="/docs/fragments">fragments</a>.
+  </p>
+
+  ${html(s.fragment)}
+
+  <h3>Show the same content twice</h3>
+
+  <p>
+    Resolved on the server, so nothing ships. See
+    <a href="/docs/includes">includes</a>.
+  </p>
+
+  ${html(s.include)}
+
+  <h3>A reusable element</h3>
+
+  <p>
+    Light DOM, so page CSS reaches it and no JavaScript is sent. See
+    <a href="/docs/elements">elements</a>.
+  </p>
+
+  ${html(s.element)}
+
+  <h2>Build and serve</h2>
+
+  <h3>Render on every request</h3>
+
+  <p>A page that reads the request cannot be a file.</p>
+
+  ${html(s.live)}
+
+  <h3>Hold a render for a while</h3>
+
+  <p>
+    Between a file and a render each time. Within the window the loader does not
+    run.
+  </p>
+
+  ${html(s.revalidate)}
+
+  <h3>A sitemap and a feed</h3>
+
+  <p>
+    Both are served by the app and written into the build. The items are yours
+    to supply. See <a href="/docs/feeds">sitemap and feeds</a>.
+  </p>
+
+  ${html(s.feed)}
+
+  <h3>Test a route</h3>
+
+  <p>
+    The app is a function from a request to a response, with nothing stubbed.
+    See <a href="/docs/testing">testing</a>.
+  </p>
+
+  ${html(s.testing)}
+</doc-page>

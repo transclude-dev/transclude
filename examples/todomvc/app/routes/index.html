@@ -1,0 +1,158 @@
+<script server>
+  // TodoMVC, with forms and nothing else. Every button below is a submit button
+  // in its own form, so the whole app works with JavaScript turned off. There is
+  // none to turn off: this page ships zero bytes of it.
+  import * as todos from '../data/todos.js';
+
+  // The list changes, so a file written once at build time would be a lie.
+  export const prerender = false;
+
+  const FILTERS = ['all', 'active', 'completed'];
+
+  /**
+   * The URL to come back to after a change, keeping the filter and dropping the
+   * row being edited. Post/redirect/get: a reload must not repeat the change.
+   *
+   * @param {string} url
+   * @returns {string}
+   */
+  function back(url) {
+    const here = new URL(url);
+    const show = here.searchParams.get('show');
+
+    here.search = show && show !== 'all' ? `?show=${show}` : '';
+    return here.toString();
+  }
+
+  export default async ({ url }) => {
+    const params = new URL(url).searchParams;
+    const show = FILTERS.includes(params.get('show') ?? '') ? params.get('show') : 'all';
+
+    const items = todos.all();
+    const left = items.filter((todo) => !todo.done).length;
+
+    return {
+      show,
+      // The filter decides what this render shows. The store is never filtered.
+      items:
+        show === 'active'
+          ? items.filter((todo) => !todo.done)
+          : show === 'completed'
+            ? items.filter((todo) => todo.done)
+            : items,
+      left,
+      hasDone: left < items.length,
+      any: items.length > 0,
+      allDone: items.length > 0 && left === 0,
+      // Which row is a text field instead of a label. A link sets it, so editing
+      // needs no script and survives a reload.
+      editing: Number(params.get('editing') ?? 0),
+    };
+  };
+
+  export const POST = async ({ request, url }) => {
+    const form = await request.formData();
+
+    // Which button was pressed. A submit button's name and value are sent only
+    // when it is the one that submitted, which is how a page has seven actions
+    // and no router for them.
+    const intent = String(form.get('intent') ?? '');
+    const id = Number(form.get('id') ?? 0);
+    const text = String(form.get('text') ?? '').trim();
+
+    if (intent === 'add' && text) todos.add(text);
+    if (intent === 'toggle') todos.toggle(id);
+    if (intent === 'remove') todos.remove(id);
+    if (intent === 'mark-all') todos.markAll(form.get('done') === '1');
+    if (intent === 'clear') todos.clearDone();
+
+    // An empty edit deletes the todo, which is what TodoMVC has always done.
+    if (intent === 'rename') {
+      if (text) todos.rename(id, text);
+      else todos.remove(id);
+    }
+
+    return Response.redirect(back(url), 303);
+  };
+</script>
+
+<title>transclude • TodoMVC</title>
+<meta name="description" content="TodoMVC built with forms and no client JavaScript." />
+
+<section class="todoapp">
+  <header class="header">
+    <h1>todos</h1>
+
+    <form method="post">
+      <input type="hidden" name="intent" value="add" />
+      <input
+        class="new-todo"
+        name="text"
+        placeholder="What needs to be done?"
+        aria-label="What needs to be done?"
+        autofocus
+        required
+      />
+    </form>
+  </header>
+
+  <main class="main" if="any">
+    <form method="post" class="toggle-all-form">
+      <input type="hidden" name="intent" value="mark-all" />
+      <input type="hidden" name="done" value="${allDone ? '0' : '1'}" />
+      <button class="toggle-all" type="submit">
+        ${allDone ? 'Mark all as active' : 'Mark all as complete'}
+      </button>
+    </form>
+
+    <ul class="todo-list">
+      <li each="todo of items" class="${todo.done ? 'completed' : ''}">
+        <form method="post" class="edit-form" if="todo.id === editing">
+          <input type="hidden" name="intent" value="rename" />
+          <input type="hidden" name="id" value="${todo.id}" />
+          <input class="edit" name="text" value="${todo.text}" aria-label="Edit todo" autofocus />
+        </form>
+
+        <div class="view" else>
+          <form method="post" class="toggle-form">
+            <input type="hidden" name="intent" value="toggle" />
+            <input type="hidden" name="id" value="${todo.id}" />
+            <button
+              class="toggle"
+              type="submit"
+              aria-pressed="${todo.done}"
+              aria-label="${todo.done ? 'Mark as active' : 'Mark as complete'}"
+            >
+              ${todo.done ? '✓' : ''}
+            </button>
+          </form>
+
+          <a class="label" href="?show=${show}&editing=${todo.id}">${todo.text}</a>
+
+          <form method="post" class="destroy-form">
+            <input type="hidden" name="intent" value="remove" />
+            <input type="hidden" name="id" value="${todo.id}" />
+            <button class="destroy" type="submit" aria-label="Delete ${todo.text}">×</button>
+          </form>
+        </div>
+      </li>
+    </ul>
+  </main>
+
+  <footer class="footer" if="any">
+    <span class="todo-count"> <strong>${left}</strong> ${left === 1 ? 'item' : 'items'} left </span>
+
+    <ul class="filters">
+      <li><a href="/" class="${show === 'all' ? 'selected' : ''}">All</a></li>
+      <li><a href="?show=active" class="${show === 'active' ? 'selected' : ''}">Active</a></li>
+      <li>
+        <a href="?show=completed" class="${show === 'completed' ? 'selected' : ''}">Completed</a>
+      </li>
+    </ul>
+
+    <form method="post" if="hasDone">
+      <input type="hidden" name="intent" value="clear" />
+      <button class="clear-completed" type="submit">Clear completed</button>
+    </form>
+  </footer>
+</section>

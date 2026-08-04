@@ -36,13 +36,20 @@ jobs:
         with:
           node-version: 22
 
-      # Three packages, three installs. `npm ci` reads one manifest, and the
-      # demo and the site are separate projects that depend on this one by path.
+      # Four packages, four installs. `npm ci` reads one manifest, and the two
+      # examples and the site are separate projects that depend on this one by
+      # path.
       - run: npm ci
       - run: npm ci --prefix examples/showcase
+      - run: npm ci --prefix examples/todomvc
       - run: npm ci --prefix www
 
       - run: npm test
+
+      # The examples are built before they are tested: their tests ask the built
+      # app for URLs, and skip when there is nothing to ask.
+      - run: npm run build --prefix examples/showcase
+      - run: npm run build --prefix examples/todomvc
       - run: npm run test:examples
 
       # The site is built before it is tested: two of those tests read what the

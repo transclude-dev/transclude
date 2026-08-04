@@ -88,11 +88,17 @@
 
   ${html(s.guard)}
 
-  <doc-note label="Middleware does not run during the build" tone="warn">
-    A page behind a guard needs
-    <code>export const prerender = false</code>. Otherwise the build writes a
-    logged-out copy to a file.
+  <doc-note label="A page behind a guard is not a file" tone="warn">
+    Give it <code>export const prerender = false</code>. A guard reads a cookie,
+    and a page that reads one has an answer per visitor, so the build refuses to
+    write it. It names the page, says why, and exits non-zero, rather than
+    shipping a signed-out copy.
   </doc-note>
+
+  <p>
+    Middleware in <a href="/docs/middleware">app/server.js</a> does not run
+    during the build. Nothing there can stand in for a guard in a layout.
+  </p>
 
   <h2>Attributes on &lt;html&gt;</h2>
 

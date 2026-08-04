@@ -107,6 +107,31 @@ export const POST = async ({ request }) => {
 };`,
         'js',
       ],
+      stream: [
+        `// app/routes/events.js
+export const GET = ({ request }) => {
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    start(controller) {
+      const send = (line) => controller.enqueue(encoder.encode(line));
+      send(': connected\\n\\n');
+
+      const stop = onChange(() => send('event: notes\\ndata: changed\\n\\n'));
+      request.signal.addEventListener('abort', () => {
+        stop();
+        controller.close();
+      });
+    },
+  });
+
+  return new Response(stream, {
+    headers: { 'content-type': 'text/event-stream', 'cache-control': 'no-store' },
+  });
+};`,
+        'js',
+      ],
+
       cors: [
         `// app/server.js
 import { cors } from 'hono/cors';
@@ -259,6 +284,26 @@ export default (app) => {
     A sender that posts a form body is refused, and the 403 says nothing about
     why. Give it an origin the guard accepts, or narrow
     <a href="/docs/config">csrf</a> to the paths that serve your own forms.
+  </doc-note>
+
+  <h2>A stream</h2>
+
+  <p>
+    A <code>Response</code> takes a
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream"
+      >ReadableStream</a
+    >, so an endpoint can answer with one that stays open. Server-sent events
+    are the plain use.
+  </p>
+
+  ${html(s.stream)}
+
+  <doc-note label="A stream ends two ways" tone="warn">
+    The socket closing fires <code>abort</code> on
+    <code>request.signal</code>. A consumer letting go of the reader runs the
+    stream's own <code>cancel()</code>. Unsubscribe in both, or you leak a
+    listener holding a dead connection, or close a controller that is already
+    closed. <a href="/docs/examples">examples/live</a> does both.
   </doc-note>
 
   <h2>Calling it from another origin</h2>

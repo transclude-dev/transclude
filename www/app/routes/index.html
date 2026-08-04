@@ -3,14 +3,20 @@
 
   // `fragment` names the region this request wants, or null for the document.
   // Asking for `demo` needs none of the highlighting below, and skipping it is
-  // not only faster: the highlighter compiles WebAssembly, which Cloudflare
-  // Workers refuses at runtime, so the page renders there because of this line.
+  // not only faster: the highlighter compiles WebAssembly, which workerd
+  // refuses at runtime, so the page renders there because of this line.
   export default async ({ fragment }) => {
     if (fragment) return {};
 
     return {
       s: await all({
-        start: ["npm create @transclude my-app", "shell"],
+        start: [
+          `npm create @transclude my-app
+cd my-app
+npm install
+npm run dev`,
+          "shell",
+        ],
         page: `<script server>
   import { notes } from '../data/notes.js';
 
@@ -136,6 +142,13 @@
     color: var(--muted);
     margin: 0 0 1.75rem;
     max-width: 40em;
+  }
+
+  /* Answers the question the sample above it raises, so it reads as a note on
+     the code rather than as the next thing to say. */
+  .band .aside {
+    margin: 1.75rem 0 0;
+    font-size: 0.95rem;
   }
 
   .regions {
@@ -277,10 +290,18 @@
     <p>
       <code>app/routes/notes.html</code> answers <code>/notes</code>. The
       <code>&lt;script server&gt;</code> block is the loader: it runs on the
-      server and returns the data the markup reads. <code>export const POST</code>
+      server and returns the data the markup reads.
+      <code>export const POST</code>
       answers the form. No client JavaScript is involved.
     </p>
     ${html(s.page)}
+
+    <p class="aside">
+      The loader and the markup that reads it change together, so they are one
+      file to open and one file to review. Splitting them would split by
+      technology rather than by concern. The block is compiled into the route
+      and never appears in the page, so none of it reaches the browser.
+    </p>
   </div>
 </div>
 
@@ -365,16 +386,16 @@
   <div>
     <h3>No client runtime</h3>
     <p>
-      A page ships JavaScript only for the elements it renders, and only when
-      one of them has behavior. This site ships none.
+      A page ships JavaScript only for the custom elements it renders, and only
+      when one of them has behavior. This site ships none.
     </p>
   </div>
   <div>
     <h3>Four runtimes, one app</h3>
     <p>
-      Node, Bun, Deno and workerd. The core imports nothing from
-      <code>node:</code> and touches no Node-only global, both of which are
-      tested. This site runs on workerd.
+      Node, Bun, Deno and <code>workerd</code>, the runtime behind Cloudflare
+      Workers. The core imports nothing from <code>node:</code> and touches no
+      Node-only global, both of which are tested. This site runs on it.
     </p>
   </div>
   <div>
@@ -396,10 +417,12 @@
 
 <div class="band">
   <div class="inner">
-    <h2>Start one</h2>
+    <h2>Start a project</h2>
     <p>
-      A layout, two pages, a 404 and a stylesheet.
-      <code>--template blank</code> writes one page.
+      Four commands and you have a site running on
+      <code>localhost:1960</code>. It writes a layout, two pages, a 404 and a
+      stylesheet, and nothing you have to delete.
+      <code>--template blank</code> writes one page instead.
     </p>
     ${html(s.start)}
   </div>

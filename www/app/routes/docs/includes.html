@@ -353,7 +353,7 @@
 
   <doc-note label="What the allowlist is holding up" tone="warn">
     On Node and Deno a hostname is resolved and every address it answers with is
-    checked. Cloudflare Workers has no resolver, so there that check does not run
+    checked. <code>workerd</code> has no resolver, so there that check does not run
     and the allowlist is the whole defense. Name hosts you trust, and treat a
     wildcard as trust in everything under it.
   </doc-note>

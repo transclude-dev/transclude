@@ -5,9 +5,9 @@ an ordinary app that happens to sit in the framework's repository.
 
 ```sh
 npm install
-npm run dev       # http://localhost:1969
+npm run dev       # http://localhost:1980
 npm run check     # tsc over every route
-npm run preview   # build, then serve dist/ on 1969
+npm run preview   # build, then serve dist/ on 1980
 ```
 
 Every page is one `.html` file in `app/routes/`. The nav is one array in

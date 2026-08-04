@@ -1,0 +1,65 @@
+<script properties>
+  export default {
+    name: '',
+    role: '',
+    tags: [],
+  };
+
+  // The boundary. Everything below is sealed off from the page, and this element
+  // rebuilds itself when a prop changes rather than writing into what it has.
+  export const shadow = true;
+</script>
+
+<style>
+  /* No `:scope` here, and no prefixing. These rules cannot leave the element and
+     page CSS cannot reach in, so `h3` means this element's h3 and nothing else. */
+  :host {
+    display: block;
+    border: 1px solid #d8d8de;
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+    background: #fff;
+    color: #17171a;
+  }
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+  .role {
+    color: #61616a;
+    font-size: 0.85rem;
+  }
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    list-style: none;
+    margin: 0.6rem 0 0;
+    padding: 0;
+  }
+  li {
+    font-size: 0.72rem;
+    border: 1px solid #d8d8de;
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+  }
+  .empty {
+    color: #61616a;
+    font-size: 0.8rem;
+    margin: 0.6rem 0 0;
+  }
+</style>
+
+<h3>${name}</h3>
+<span class="role">${role}</span>
+
+<!-- This is the line a light element cannot have. `tags` changes, and an `each`
+     over something that changes is a compile error without the boundary,
+     because a light element does not own its children and will not replace
+     them. Here the list is rebuilt. -->
+<ul if="tags.length">
+  <li each="tag of tags">${tag}</li>
+</ul>
+<p class="empty" else>No tags.</p>
+
+<slot></slot>

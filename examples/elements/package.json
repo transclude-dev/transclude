@@ -1,0 +1,21 @@
+{
+  "name": "transclude-example-elements",
+  "private": true,
+  "type": "module",
+  "description": "Light and shadow custom elements, side by side, and when to reach for each.",
+  "scripts": {
+    "dev": "transclude-dev",
+    "build": "transclude-build",
+    "start": "transclude-serve",
+    "check": "transclude-check",
+    "test": "node --test \"test/**/*.test.js\"",
+    "preview": "npm run build && npm start"
+  },
+  "dependencies": {
+    "@transclude/core": "file:../.."
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5"
+  }
+}

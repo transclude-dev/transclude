@@ -14,7 +14,8 @@ npm run search     # http://localhost:1964
 npm run htmx       # http://localhost:1965
 npm run includes   # http://localhost:1966
 npm run auth       # http://localhost:1967
-npm run live       # http://localhost:1968`,
+npm run live       # http://localhost:1968
+npm run elements   # http://localhost:1969`,
         'shell',
       ],
     }),
@@ -79,6 +80,30 @@ npm run live       # http://localhost:1968`,
     app sees the same todos. That is wrong for a real app and useful for a demo
     you open in two windows. Swap that one file for a database and nothing above
     it changes.
+  </doc-note>
+
+  <h2>Elements</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/elements"
+      >examples/elements</a
+    >
+    puts a light element and a shadow one on the same page, so the difference is
+    visible rather than described. See
+    <a href="/docs/elements">elements</a> for the reference.
+  </p>
+
+  <p>
+    Three of them. One light with no behavior, which registers nothing in the
+    browser. One light <em>and</em> interactive, which writes a new number into
+    the text node it rendered. One with a boundary, which rebuilds a list from a
+    prop, and that is the line the light ones cannot have.
+  </p>
+
+  <doc-note label="Two things to check in a browser">
+    The stylesheet carries a rule for each. The one aimed at the light element
+    lands; the one aimed inside the shadow element does not. Nothing in Node
+    models a boundary, so that pair is the demonstration.
   </doc-note>
 
   <h2>Blog</h2>

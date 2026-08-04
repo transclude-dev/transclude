@@ -1,0 +1,61 @@
+<script properties>
+  export default {
+    label: 'clicks',
+  };
+</script>
+
+<script state>
+  export default {
+    n: 0,
+  };
+</script>
+
+<style>
+  :scope {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  output {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+  .label {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+</style>
+
+<output>${n}</output>
+<span class="label">${label}</span>
+
+<script>
+  // A light element with behavior. It writes into the DOM it already rendered:
+  // `${n}` is a text node the compiler bound, and setting `n` rewrites that node
+  // rather than replacing any children. Nothing here is rebuilt.
+  export const prototype = {
+    bump(by = 1) {
+      this.n += by;
+    },
+  };
+
+  // `host` is the element. A listener on it is collected with it, so this one
+  // needs no signal; one on `document` would.
+  host.addEventListener('click', () => host.bump());
+
+  host.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      host.bump();
+    }
+  });
+
+  host.tabIndex = 0;
+  host.setAttribute('role', 'button');
+</script>

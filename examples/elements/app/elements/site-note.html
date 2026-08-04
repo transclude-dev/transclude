@@ -1,0 +1,34 @@
+<script properties>
+  export default {
+    tone: 'neutral',
+    label: 'Note',
+  };
+</script>
+
+<style>
+  /* `:scope` is this element. These rules are hoisted into <head> and lose to
+     page CSS of equal specificity, which is right for content and is the first
+     reason to reach for a shadow root when it is not. */
+  :scope {
+    display: block;
+    border-left: 3px solid var(--rule);
+    padding: 0.6rem 0.9rem;
+    margin: 0 0 1rem;
+    background: var(--surface);
+  }
+  :scope[tone='warn'] {
+    border-color: var(--warn);
+  }
+  .label {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  p {
+    margin: 0.2rem 0 0;
+  }
+</style>
+
+<span class="label">${label}</span>
+<p><slot>Nothing to say.</slot></p>

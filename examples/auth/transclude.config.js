@@ -2,7 +2,7 @@
 
 export default {
   appDir: 'app',
-  port: 1968,
+  port: 1967,
   stylesheet: 'app/styles/global.css',
   csp: true,
 

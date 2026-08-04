@@ -2,7 +2,7 @@
 
 export default {
   appDir: 'app',
-  port: 1966,
+  port: 1965,
   stylesheet: 'app/styles/global.css',
 
   // htmx sends the id of the element it is about to swap in `HX-Target`. Naming

@@ -4,7 +4,7 @@ export default {
   appDir: 'app',
 
   // Dev and production both listen here, so this app has one port.
-  port: 1962,
+  port: 1969,
 
   routesDir: 'routes',
   // One directory for every element. A shadow root is opt-in per file.

@@ -6,7 +6,7 @@ in what arrives.
 
 ```sh
 npm install
-npm run dev     # http://localhost:1967
+npm run dev     # http://localhost:1966
 ```
 
 ## Three sources, one tag

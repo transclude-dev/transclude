@@ -5,7 +5,7 @@ export default {
   appDir: 'app',
 
   // Its own port, so it can run beside the showcase and the site.
-  port: 1963,
+  port: 1962,
 
   stylesheet: 'app/styles/global.css',
 

@@ -7,7 +7,7 @@ const SITE = 'https://blog.example';
 
 export default {
   appDir: 'app',
-  port: 1964,
+  port: 1963,
   stylesheet: 'app/styles/global.css',
   csp: true,
 

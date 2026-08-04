@@ -230,23 +230,33 @@ npm run dev`,
     max-width: 46rem;
     margin: 0 auto;
     padding: 3.5rem 1.25rem;
-    display: grid;
-    gap: 2rem;
   }
-  @media (min-width: 40rem) {
-    .points {
-      grid-template-columns: 1fr 1fr;
-    }
+  /* The dividers are the 1px grid gap showing the rule colour through, with
+     each cell painting its own background over it. */
+  .points .grid {
+    display: grid;
+    gap: 1px;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .points .cell {
+    background: var(--ground);
+    padding: 1.1rem 1.2rem;
   }
   .points h3 {
     font-size: 0.95rem;
     margin: 0 0 0.4rem;
+    letter-spacing: -0.008em;
   }
   .points p {
     color: var(--muted);
     margin: 0;
-    font-size: 0.95rem;
-    line-height: 1.6;
+    font-family: var(--serif);
+    font-size: 0.94rem;
+    line-height: 1.55;
   }
 
   footer {
@@ -392,35 +402,37 @@ npm run dev`,
 </div>
 
 <div class="points">
-  <div>
-    <h3>No client runtime</h3>
-    <p>
-      A page ships JavaScript only for the custom elements it renders, and only
-      when one of them has behavior. This site ships none.
-    </p>
-  </div>
-  <div>
-    <h3>Four runtimes, one app</h3>
-    <p>
-      Node, Bun, Deno and <code>workerd</code>, the runtime behind Cloudflare
-      Workers. The core imports nothing from <code>node:</code> and touches no
-      Node-only global, both of which are tested. This site runs on it.
-    </p>
-  </div>
-  <div>
-    <h3>Types without TypeScript</h3>
-    <p>
-      A misspelled field, an unknown prop and a wrong-typed one are caught from
-      the shapes your loaders already return.
-    </p>
-  </div>
-  <div>
-    <h3>Prerendered where it can be</h3>
-    <p>
-      A page that does not read the request is written to a file, compressed
-      once at rest, with a strong ETag per encoding. Everything else is rendered
-      by the server, on the same routes. This site is both.
-    </p>
+  <div class="grid">
+    <div class="cell">
+      <h3>No JavaScript by default</h3>
+      <p>
+        A page ships JavaScript only for the custom elements it renders, and only
+        when one of them has behavior. This site ships none.
+      </p>
+    </div>
+    <div class="cell">
+      <h3>Four runtimes, one app</h3>
+      <p>
+        Node, Bun, Deno and <code>workerd</code>, the runtime behind Cloudflare
+        Workers. The core imports nothing from <code>node:</code> and touches no
+        Node-only global, both of which are tested. This site runs on it.
+      </p>
+    </div>
+    <div class="cell">
+      <h3>Types without TypeScript</h3>
+      <p>
+        A misspelled field, an unknown prop and a wrong-typed one are caught from
+        the shapes your loaders already return.
+      </p>
+    </div>
+    <div class="cell">
+      <h3>Prerendered where it can be</h3>
+      <p>
+        A page that does not read the request is written to a file, compressed
+        once at rest, with a strong ETag per encoding. Everything else is rendered
+        by the server, on the same routes. This site is both.
+      </p>
+    </div>
   </div>
 </div>
 

@@ -231,3 +231,23 @@ th {
   margin: 0 0 1.4em;
   max-width: 74ch;
 }
+
+/* Cross-document view transitions, which are CSS and nothing else. Both
+   documents have to carry the rule, and this stylesheet is on every page.
+   A browser without them navigates the way it always did. */
+@view-transition {
+  navigation: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+}
+
+/* Shorter than the default cross-fade, so a click still feels immediate. The
+   UA keyframes stay; only the duration changes. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 140ms;
+}

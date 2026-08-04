@@ -25,17 +25,12 @@
 />
 
 <style>
-  /* The wordmark is the heading here. A class, so it beats the bare `h1` rule
-     in the site stylesheet whatever order they land in. */
-  .wordmark {
-    font-family: var(--mono);
-    font-weight: 700;
-    font-size: clamp(2.1rem, 6.5vw, 3.4rem);
-    line-height: 1.05;
-    letter-spacing: -0.035em;
-  }
-  .wordmark .hash {
-    color: var(--link);
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 6vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0;
   }
 
   .pitch {
@@ -93,16 +88,18 @@
   }
 </style>
 
-<h1 class="wordmark"><span class="hash">#</span>transclude</h1>
+<h1>Overview</h1>
 
-<p class="pitch">HTML is the product.</p>
+<p class="pitch">
+  An HTML-first server framework. A page is one file, and the directory tree is
+  the route table.
+</p>
 
 <div class="body">
   <p>
-    transclude is a server-side framework. A page is one <code>.html</code> file
-    holding both halves: a <code>&lt;script server&gt;</code> block that loads
-    its data, and the markup that reads it. The server runs them together and
-    sends the result.
+    A page holds both halves: a <code>&lt;script server&gt;</code> block that
+    loads its data, and the markup that reads it. The server runs them together
+    and sends the result.
   </p>
 </div>
 
@@ -132,7 +129,7 @@ ${html(s.page)}
 
   <p>
     This site is built with it. Every page you are reading is one
-    <code>.html</code> file in <code>docs/app/routes/</code>.
+    <code>.html</code> file in <code>www/app/routes/</code>.
   </p>
 </div>
 

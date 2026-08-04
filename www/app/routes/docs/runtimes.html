@@ -5,9 +5,9 @@
     s: await all({
       run: [
         `npm start                                              # Node
-bun node_modules/transclude/bin/serve.bun.js           # Bun
-deno run -A node_modules/transclude/bin/serve.deno.js  # Deno
-wrangler dev                                           # Cloudflare Workers`,
+bun node_modules/@transclude/core/bin/serve.bun.js           # Bun
+deno run -A node_modules/@transclude/core/bin/serve.deno.js  # Deno
+wrangler dev                                                 # Cloudflare`,
         'shell',
       ],
     }),
@@ -15,22 +15,23 @@ wrangler dev                                           # Cloudflare Workers`,
 </script>
 
 <title>Runtimes · transclude</title>
-<meta name="description" content="The same app on Node, Bun, Deno and Cloudflare Workers." />
+<meta name="description" content="The same app on Node, Bun, Deno and workerd." />
 
 <doc-page
   heading="Runtimes"
-  lede="The same app runs on Node, Bun, Deno and Cloudflare Workers."
+  lede="The same app runs on Node, Bun, Deno and workerd."
 >
   ${html(s.run)}
 
   <p>
-    Cloudflare Workers is named because it is where most people meet it. What is
-    actually targeted is <code>workerd</code>, the runtime underneath, so
-    anywhere that runs it runs this.
+    <code>workerd</code> is the runtime Cloudflare Workers runs on, and it is
+    what is targeted here. Cloudflare is where most people meet it, and
+    <code>wrangler</code> is how you deploy there. Anywhere else that runs
+    <code>workerd</code> runs this.
   </p>
 
   <doc-note label="A loader runs wherever the page does" tone="warn">
-    Workers refuses to compile WebAssembly at runtime. A loader that reaches
+    <code>workerd</code> refuses to compile WebAssembly at runtime. A loader that reaches
     something built on it fails there and nowhere else. This site hit exactly
     that. Its syntax highlighter compiles Wasm, so every prerendered page was
     fine and the one URL that renders live returned 500. A prerendered page never
@@ -53,7 +54,7 @@ wrangler dev                                           # Cloudflare Workers`,
         <tr>
           <th></th>
           <th>Node</th>
-          <th>Cloudflare</th>
+          <th>workerd</th>
         </tr>
       </thead>
       <tbody>
@@ -82,7 +83,7 @@ wrangler dev                                           # Cloudflare Workers`,
   </div>
 
   <doc-note label="A worker reads its config on the first request" tone="warn">
-    There is no <code>process.env</code> on Workers, so the app is built when the
+    There is no <code>process.env</code> on <code>workerd</code>, so the app is built when the
     first request comes in and takes its config from <code>env</code>. Reading a
     secret at import time gives <code>undefined</code>.
   </doc-note>

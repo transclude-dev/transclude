@@ -360,7 +360,7 @@ against.
   share none with a second instance, and a 500 naming `cookieSecret` is better than
   finding that out later.
 - **A prerendered page hides what its loader needs.** The www site highlights its
-  code samples with shiki, which compiles WebAssembly, and Cloudflare Workers
+  code samples with shiki, which compiles WebAssembly, and workerd
   refuses that at runtime. Every page still answered, because a prerendered page
   is bytes and never runs its loader in production. The one URL that renders
   live, `/?fragment=demo`, returned 500. So "it works on workerd" is a claim

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { splitBlocks, compileComponent, compilePage } from '../src/compiler/index.js';
+import { splitBlocks, compileComponent, compileLayout, compilePage } from '../src/compiler/index.js';
 import { compileFragment, CompileError } from '../src/compiler/codegen.js';
 import * as rt from '../src/runtime/index.js';
 
@@ -448,4 +448,46 @@ test('state a light element only writes is allowed, and is bound', () => {
 
   assert.match(code, /export const light = true;/);
   assert.match(code, /__b\[0\] = __textAt\(/, 'the text was not bound');
+});
+
+// ---- reserved names -------------------------------------------------------
+
+test('a server block cannot bind a name the generated module defines', () => {
+  // The export check was already here. An import binds a name and exports
+  // nothing, so it went straight past and broke inside rolldown instead, with
+  // an error naming `virtual:transclude-page/index` rather than anyone's file.
+  const shapes = [
+    ['an import', 'import { elements } from "./x.js";'],
+    ['a const', 'const includes = 1;'],
+    ['a function', 'function render() {}'],
+    ['a class', 'class client {}'],
+    ['a destructured const', 'const { hasTitle } = {};'],
+  ];
+
+  for (const [what, statement] of shapes) {
+    assert.throws(
+      () => compilePage(`<script server>${statement}</script><p>x</p>`, { runtime: '/rt.js' }),
+      /declares "[a-zA-Z]+", which the generated module already defines/,
+      what,
+    );
+  }
+});
+
+test('a layout is held to the same names', () => {
+  assert.throws(
+    () =>
+      compileLayout('<script server>import { layouts } from "./x.js";</script><slot></slot>', {
+        id: 'root',
+        runtime: '/rt.js',
+      }),
+    /declares "layouts"/,
+  );
+});
+
+test('an alias and an ordinary name are left alone', () => {
+  const source =
+    '<script server>import { elements as tags } from "./x.js";\nconst total = 1;\n' +
+    'export const paths = () => [];\nexport default async () => ({});</script><p>x</p>';
+
+  assert.doesNotThrow(() => compilePage(source, { runtime: '/rt.js' }));
 });

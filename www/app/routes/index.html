@@ -341,6 +341,15 @@ npm run dev`,
     <code>fetch</code> does that, and this framework ships none of them.
   </p>
 
+  <p>
+    The server can put a region in a second place instead.
+    <code>&lt;transclude src="#list"&gt;</code> renders this one somewhere else
+    on the page, and <code>src="/notes#list"</code> reaches into another route.
+    Showing the same content in more than one place is what the word
+    <em>transclusion</em> means, and it is where the name comes from.
+    <a href="/docs/includes">Includes</a> covers it.
+  </p>
+
   <div id="demo" fragment class="demo">
     <p><strong>You are reading a fragment.</strong></p>
     <p class="demo-note">

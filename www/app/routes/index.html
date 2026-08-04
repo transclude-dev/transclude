@@ -29,7 +29,10 @@
   <button>Add</button>
 </form>
 
-<ul id="list" fragment>
+<ul id="list">
+  <li each="note of notes">\${note.text}</li>
+</ul>`,
+        region: `<ul id="list" fragment>
   <li each="note of notes">\${note.text}</li>
 </ul>`,
       }),
@@ -135,6 +138,42 @@
     max-width: 40em;
   }
 
+  .regions {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 3.5rem 1.25rem 1rem;
+  }
+  .regions h2 {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    margin: 0 0 0.75rem;
+  }
+  .regions p {
+    color: var(--muted);
+    margin: 0 0 1.5rem;
+    max-width: 40em;
+  }
+
+  .urls {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.95rem;
+  }
+  .urls td {
+    border-top: 1px solid var(--rule);
+    padding: 0.55rem 1rem 0.55rem 0;
+    vertical-align: top;
+    white-space: nowrap;
+  }
+  .urls tr:last-child td {
+    border-bottom: 1px solid var(--rule);
+  }
+  .urls td:last-child {
+    color: var(--muted);
+    white-space: normal;
+    width: 100%;
+  }
+
   .demo {
     border: 1px solid var(--note-rule);
     background: var(--note-bg);
@@ -220,10 +259,9 @@
   <h1>HTML is the product.</h1>
 
   <p class="lede">
-    A page is an <code>.html</code> file, the directory tree is the route table,
-    and any fragment of a page is a URL of its own. The server renders it and
-    sends markup a browser already knows how to display. Nothing has to run in
-    the browser for the page to be correct.
+    A page is an <code>.html</code> file. The directory tree is the route table.
+    The server renders the page and sends markup a browser already knows how to
+    display, so nothing has to run in the browser for the page to be correct.
   </p>
 
   <div class="actions">
@@ -237,26 +275,59 @@
   <div class="inner">
     <h2>One file is one route</h2>
     <p>
-      The server block answers GET. Its verb exports answer everything else, so
-      a plain form works. Mark an element <code>fragment</code> and it has its
-      own URL, from the same compiled markup.
+      <code>app/routes/notes.html</code> answers <code>/notes</code>. The
+      <code>&lt;script server&gt;</code> block is the loader: it runs on the
+      server and returns the data the markup reads. <code>export const POST</code>
+      answers the form. No client JavaScript is involved.
     </p>
     ${html(s.page)}
+  </div>
+</div>
 
-    <div id="demo" fragment class="demo">
-      <p>
-        <strong>This box is a fragment.</strong> It is part of this page, and it
-        is also a URL:
-        <a href="/?fragment=demo"><code>/?fragment=demo</code></a>
-        answers with this markup and nothing else. No layout, no
-        <code>&lt;head&gt;</code>, no second template that could drift from this
-        one.
-      </p>
-      <p class="demo-note">
-        <a href="/?fragment=demo">Open it</a> and what comes back is what you
-        are reading, because there is only one compiled copy of it.
-      </p>
-    </div>
+<div class="regions">
+  <h2>Any region can be a URL</h2>
+
+  <p>Add <code>fragment</code> to an element and it gets a URL of its own.</p>
+
+  ${html(s.region)}
+
+  <p>That one word makes the page answer two requests.</p>
+
+  <div class="scroller">
+    <table class="urls">
+      <tbody>
+        <tr>
+          <td><code>GET /notes</code></td>
+          <td>the whole document</td>
+        </tr>
+        <tr>
+          <td><code>GET /notes?fragment=list</code></td>
+          <td>the <code>&lt;ul&gt;</code> and nothing else</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Both come from the same compiled markup, so the page and the piece cannot
+    drift apart. That is the whole agreement: a region is a resource with a
+    plain HTTP URL.
+  </p>
+
+  <p>
+    Nothing here swaps one into a page. <a href="https://htmx.org">htmx</a>,
+    <a href="https://turbo.hotwired.dev">Turbo</a> or a few lines of
+    <code>fetch</code> does that, and this framework ships none of them.
+  </p>
+
+  <div id="demo" fragment class="demo">
+    <p><strong>You are reading a fragment.</strong></p>
+    <p class="demo-note">
+      This box is part of the page you loaded, and it is also its own URL.
+      <a href="/?fragment=demo"><code>/?fragment=demo</code></a> returns the
+      markup of this box and nothing else. No <code>&lt;head&gt;</code>, no
+      layout, no second template. Open it and compare.
+    </p>
   </div>
 </div>
 
@@ -301,8 +372,9 @@
   <div>
     <h3>Four runtimes, one app</h3>
     <p>
-      Node, Bun, Deno and Cloudflare Workers answer identically, and a test says
-      so across ten routes.
+      Node, Bun, Deno and workerd. The core imports nothing from
+      <code>node:</code> and touches no Node-only global, both of which are
+      tested. This site runs on workerd.
     </p>
   </div>
   <div>
@@ -326,8 +398,8 @@
   <div class="inner">
     <h2>Start one</h2>
     <p>
-      A layout, two pages and a stylesheet. <code>--template blank</code> is
-      less.
+      A layout, two pages, a 404 and a stylesheet.
+      <code>--template blank</code> writes one page.
     </p>
     ${html(s.start)}
   </div>

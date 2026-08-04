@@ -10,8 +10,8 @@
     "check": "transclude-check",
     "test": "node --test \"test/**/*.test.js\"",
     "preview": "npm run build && npm start",
-    "start:bun": "bun node_modules/transclude/bin/serve.bun.js",
-    "start:deno": "deno run -A --env-file node_modules/transclude/bin/serve.deno.js",
+    "start:bun": "bun node_modules/@transclude/core/bin/serve.bun.js",
+    "start:deno": "deno run -A --env-file node_modules/@transclude/core/bin/serve.deno.js",
     "start:worker": "wrangler dev"
   },
   "dependencies": {

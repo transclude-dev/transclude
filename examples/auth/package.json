@@ -1,0 +1,21 @@
+{
+  "name": "transclude-example-auth",
+  "private": true,
+  "type": "module",
+  "description": "A signed-cookie session, and a layout that guards everything below it.",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env node_modules/.bin/transclude-dev",
+    "build": "node --env-file-if-exists=.env node_modules/.bin/transclude-build",
+    "start": "node --env-file-if-exists=.env node_modules/.bin/transclude-serve",
+    "check": "transclude-check",
+    "test": "node --test --env-file-if-exists=.env \"test/**/*.test.js\"",
+    "preview": "npm run build && npm start"
+  },
+  "dependencies": {
+    "@transclude/core": "file:../.."
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5"
+  }
+}

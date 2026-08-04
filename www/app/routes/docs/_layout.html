@@ -129,7 +129,12 @@
     align-items: start;
   }
 
+  /* Both children are placed rather than flowed, because the sidebar comes
+     after the content in the document. Placement is what lets the wide layout
+     keep the links on the left while the narrow one, which has no second
+     column to place into, falls back to source order and puts them last. */
   .sidebar {
+    grid-area: 1 / 1;
     position: sticky;
     top: 6.75rem;
     display: flex;
@@ -175,6 +180,7 @@
   }
 
   main {
+    grid-area: 1 / 2;
     min-width: 0;
   }
 
@@ -236,8 +242,14 @@
       grid-template-columns: minmax(0, 1fr);
       gap: 2rem;
     }
+    .sidebar,
+    main {
+      grid-area: auto;
+    }
     .sidebar {
       position: static;
+      padding-top: 2rem;
+      border-top: 1px solid var(--rule);
     }
   }
 </style>
@@ -250,18 +262,6 @@
 </header>
 
 <div class="shell">
-  <nav class="sidebar" aria-label="Documentation">
-    <div class="group" each="section of sections">
-      <h2>${section.title}</h2>
-      <a
-        each="link of section.links"
-        href="${link.href}"
-        aria-current="${link.href === path ? 'page' : false}"
-        >${link.label}</a
-      >
-    </div>
-  </nav>
-
   <main>
     <slot></slot>
 
@@ -281,4 +281,19 @@
       &middot; &copy; 2026 Joe Dakroub
     </footer>
   </main>
+
+  <!-- After the content on purpose. A narrow screen shows the page before the
+       link list, and so does a screen reader, which reads the document rather
+       than the grid. -->
+  <nav class="sidebar" aria-label="Documentation">
+    <div class="group" each="section of sections">
+      <h2>${section.title}</h2>
+      <a
+        each="link of section.links"
+        href="${link.href}"
+        aria-current="${link.href === path ? 'page' : false}"
+        >${link.label}</a
+      >
+    </div>
+  </nav>
 </div>

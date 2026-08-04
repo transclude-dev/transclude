@@ -45,7 +45,7 @@ npm test              # the framework's own
 npm run test:examples # the showcase, against a build
 npm run test:www      # the site
 npm run showcase      # the demo on http://localhost:1961
-npm run www           # the site on http://localhost:1962
+npm run www           # the site on http://localhost:1969
 npm run check:src     # type-check the framework itself
 ```
 

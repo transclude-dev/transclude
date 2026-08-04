@@ -2,7 +2,7 @@
 
 export default {
   appDir: 'app',
-  port: 1967,
+  port: 1966,
   stylesheet: 'app/styles/global.css',
 
   // Documents this app may read. Default deny: with no host named here there is

@@ -5,7 +5,7 @@ sitemap and a feed beside them.
 
 ```sh
 npm install
-npm run dev     # http://localhost:1964
+npm run dev     # http://localhost:1963
 npm run build   # writes dist/, then look at what is in it
 ```
 
@@ -29,7 +29,7 @@ interpolated normally and escaped.
 `/feed.xml` cannot be: a route table holds paths, and a feed needs titles and
 dates, so `transclude.config.js` supplies the items.
 
-**Nothing ships.** `curl localhost:1964 | grep script` finds nothing, and a
+**Nothing ships.** `curl localhost:1963 | grep script` finds nothing, and a
 test asserts it.
 
 ## Tests

@@ -280,3 +280,34 @@ test('the documented defaults are the defaults', () => {
 
   assert.deepEqual(wrong, []);
 });
+
+test('the ports the examples page lists are the ports they run on', () => {
+  // Each example has its own port so they can run at once, and the page is
+  // where anyone reads which. A config moving and the page not is silent: the
+  // command works and the URL under it is wrong.
+  const page = fs.readFileSync(path.join(docs, 'examples.html'), 'utf8');
+  const listed = [...page.matchAll(/npm run (\w+)\s+# http:\/\/localhost:(\d+)/g)].map(
+    ([, name, port]) => [name, Number(port)],
+  );
+  assert.notEqual(listed.length, 0, 'the page lists some');
+
+  const wrong = [];
+  for (const [name, port] of listed) {
+    const config = path.join(root, '..', '..', 'examples', name, 'transclude.config.js');
+    if (!fs.existsSync(config)) {
+      wrong.push(`${name}: no such example`);
+      continue;
+    }
+
+    const real = Number(fs.readFileSync(config, 'utf8').match(/port:\s*(\d+)/)?.[1]);
+    if (real !== port) wrong.push(`${name}: page says ${port}, config says ${real}`);
+  }
+
+  // 1960 is what a new project gets. An example there would collide with the
+  // first thing anyone makes after reading the docs.
+  const ports = listed.map(([, port]) => port);
+  assert.ok(!ports.includes(1960), '1960 is left free for a new project');
+  assert.equal(new Set(ports).size, ports.length, 'two examples cannot share a port');
+
+  assert.deepEqual(wrong, []);
+});

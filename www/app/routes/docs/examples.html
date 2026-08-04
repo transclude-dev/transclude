@@ -8,13 +8,13 @@
 cd transclude && npm install
 
 npm run showcase   # http://localhost:1961
-npm run todomvc    # http://localhost:1963
-npm run blog       # http://localhost:1964
-npm run search     # http://localhost:1965
-npm run htmx       # http://localhost:1966
-npm run includes   # http://localhost:1967
-npm run auth       # http://localhost:1968
-npm run live       # http://localhost:1969`,
+npm run todomvc    # http://localhost:1962
+npm run blog       # http://localhost:1963
+npm run search     # http://localhost:1964
+npm run htmx       # http://localhost:1965
+npm run includes   # http://localhost:1966
+npm run auth       # http://localhost:1967
+npm run live       # http://localhost:1968`,
         'shell',
       ],
     }),
@@ -29,6 +29,13 @@ npm run live       # http://localhost:1969`,
   lede="Whole apps, not snippets. Each one is a directory in the repository that depends on the package by name, the same way your project does."
 >
   ${html(s.run)}
+
+  <p>
+    Each one has a port of its own, so they run beside each other.
+    <code>1960</code> is left free on purpose. It is what
+    <a href="/docs/getting-started">a new project</a> gets, and an example
+    sitting there would collide with the first thing you make.
+  </p>
 
   <h2>Showcase</h2>
 

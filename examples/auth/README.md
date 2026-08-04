@@ -4,7 +4,7 @@ A signed-cookie session, and one layout that guards everything below it.
 
 ```sh
 npm install
-npm run dev     # http://localhost:1968
+npm run dev     # http://localhost:1967
 ```
 
 Sign in as `ada@example.com` with the password `correct horse`.

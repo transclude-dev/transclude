@@ -5,7 +5,7 @@ type in one.
 
 ```sh
 npm install
-npm run dev     # http://localhost:1969
+npm run dev     # http://localhost:1968
 ```
 
 ## The stream carries a nudge, not the markup

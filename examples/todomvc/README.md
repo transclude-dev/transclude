@@ -6,7 +6,7 @@ JavaScript.
 
 ```sh
 npm install
-npm run dev     # http://localhost:1963
+npm run dev     # http://localhost:1962
 ```
 
 ## What to look at
@@ -39,7 +39,7 @@ process holds one list. Everybody looking at the running app sees the same
 todos, which is wrong for a real app and useful for a demo you open in two
 windows. Swap that file for a database and nothing above it changes.
 
-No client JavaScript, which is the point. `curl localhost:1963 | grep script`
+No client JavaScript, which is the point. `curl localhost:1962 | grep script`
 finds nothing. A test asserts it.
 
 ## Tests

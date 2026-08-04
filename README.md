@@ -99,13 +99,13 @@ npm install
 npm test              # the framework's own, and they need no app
 npm run test:examples # the examples', against a build
 npm run showcase      # the showcase on http://localhost:1961
-npm run todomvc       # TodoMVC on http://localhost:1963
-npm run blog          # a prerendered blog on http://localhost:1964
-npm run search        # search over a fragment on http://localhost:1965
-npm run htmx          # the same, driven by htmx, on http://localhost:1966
-npm run includes      # transclusion on http://localhost:1967
-npm run auth          # a guarded section on http://localhost:1968
-npm run live          # server-sent events on http://localhost:1969
+npm run todomvc       # TodoMVC on http://localhost:1962
+npm run blog          # a prerendered blog on http://localhost:1963
+npm run search        # search over a fragment on http://localhost:1964
+npm run htmx          # the same, driven by htmx, on http://localhost:1965
+npm run includes      # transclusion on http://localhost:1966
+npm run auth          # a guarded section on http://localhost:1967
+npm run live          # server-sent events on http://localhost:1968
 npm run check:src     # type-check the framework itself
 ```
 

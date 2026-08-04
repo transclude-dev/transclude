@@ -5,7 +5,7 @@ of a `fetch`. It exists to show one config key.
 
 ```sh
 npm install
-npm run dev     # http://localhost:1966
+npm run dev     # http://localhost:1965
 ```
 
 ## `fragmentHeader`

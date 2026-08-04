@@ -5,7 +5,7 @@ and a swap, and the page works with the script turned off.
 
 ```sh
 npm install
-npm run dev     # http://localhost:1965
+npm run dev     # http://localhost:1964
 ```
 
 ## What to look at

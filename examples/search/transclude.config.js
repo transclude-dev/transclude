@@ -3,7 +3,7 @@
 
 export default {
   appDir: 'app',
-  port: 1965,
+  port: 1964,
   stylesheet: 'app/styles/global.css',
 
   // The one script this app ships is a block in the page, and the policy hashes

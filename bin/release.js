@@ -85,15 +85,30 @@ function setVersion(version) {
 
 /** Everything, in the order that fails cheapest first. */
 function verify() {
+  // Read rather than listed, so an example added to the repository is covered by
+  // the next release without anyone remembering this file.
+  const examples = fs
+    .readdirSync(path.join(root, 'examples'), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(root, 'examples', entry.name, 'package.json')))
+    .map((entry) => entry.name)
+    .sort();
+
   const steps = [
     // `check:src` is not here. It exits non-zero on any diagnostic, and most of
     // what it reports is a pattern TypeScript cannot model rather than a defect.
     // The part that is a gate is a test, and `npm test` runs it.
     ['the framework', 'npm', ['test']],
-    ['the demo', 'npm', ['run', 'test:examples']],
-    ['the docs', 'npm', ['test', '--prefix', 'www']],
+
+    // Built before tested, and that order is the gate rather than a nicety:
+    // every example's tests ask the built app for URLs and skip when there is
+    // nothing to ask. Without this a release could pass with all of them
+    // skipped, which is a green tick over nothing.
+    ...examples.map((name) => [`${name}, built`, 'npm', ['run', 'build', '--prefix', `examples/${name}`]]),
+    ['the examples', 'npm', ['run', 'test:examples']],
+
     ['the docs types', 'npm', ['run', 'check', '--prefix', 'www']],
     ['the docs build', 'npm', ['run', 'build', '--prefix', 'www']],
+    ['the docs', 'npm', ['test', '--prefix', 'www']],
   ];
 
   for (const [what, command, args] of steps) {

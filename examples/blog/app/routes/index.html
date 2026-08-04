@@ -1,0 +1,18 @@
+<script server>
+  import { byDate } from '../data/posts.js';
+
+  export default async () => ({ posts: byDate() });
+</script>
+
+<title>A transclude blog</title>
+<meta name="description" content="Posts about building with HTML." />
+
+<h1>Posts</h1>
+
+<ul class="posts">
+  <li each="post of posts">
+    <a class="title" href="/posts/${post.slug}">${post.title}</a>
+    <time datetime="${post.date.toISOString()}">${post.date.toDateString()}</time>
+    <p>${post.summary}</p>
+  </li>
+</ul>

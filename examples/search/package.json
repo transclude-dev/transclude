@@ -1,0 +1,21 @@
+{
+  "name": "transclude-example-search",
+  "private": true,
+  "type": "module",
+  "description": "Search as you type, over a fragment. Works with the script turned off.",
+  "scripts": {
+    "dev": "transclude-dev",
+    "build": "transclude-build",
+    "start": "transclude-serve",
+    "check": "transclude-check",
+    "test": "node --test \"test/**/*.test.js\"",
+    "preview": "npm run build && npm start"
+  },
+  "dependencies": {
+    "@transclude/core": "file:../.."
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5"
+  }
+}

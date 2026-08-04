@@ -1,0 +1,112 @@
+<script server>
+  // One page, two ways of asking for it.
+  //
+  // With no script, the form submits and the browser loads the whole document.
+  // With the script below, the same URL is fetched with `?fragment=results` and
+  // only the list comes back. Both render from the markup at the bottom of this
+  // file, so they cannot disagree.
+  import { search, total } from '../data/elements.js';
+
+  // The results depend on the query string, so a file written once at build
+  // time would answer every search with the same list.
+  export const prerender = false;
+
+  export default async ({ url }) => {
+    const q = new URL(url).searchParams.get('q') ?? '';
+    const matches = search(q);
+
+    return {
+      q,
+      matches,
+      asked: q.trim().length > 0,
+      count: matches.length,
+      total,
+    };
+  };
+</script>
+
+<title>Search the elements</title>
+<meta name="description" content="Search as you type, over a fragment." />
+
+<h1>Elements</h1>
+
+<p class="lede">
+  ${total} of them, searched on the server. Turn JavaScript off and this page
+  still works: the form submits and the whole document comes back.
+</p>
+
+<search>
+  <form id="search" method="get" action="/" role="search">
+    <label for="q">Search</label>
+    <input
+      id="q"
+      name="q"
+      type="search"
+      value="${q}"
+      placeholder="forms, dialog, caption…"
+      autocomplete="off"
+      autofocus
+    />
+    <button type="submit">Search</button>
+  </form>
+</search>
+
+<!-- The region. `/?q=form&fragment=results` returns this element and nothing
+     else, from this same markup. -->
+<div id="results" fragment aria-live="polite">
+  <p class="count" if="asked">
+    ${count} ${count === 1 ? 'match' : 'matches'} for <strong>${q}</strong>
+  </p>
+  <p class="count" else>Type to search.</p>
+
+  <ul class="hits" if="count">
+    <li each="item of matches">
+      <code>&lt;${item.tag}&gt;</code>
+      <span class="kind">${item.kind}</span>
+      <p>${item.summary}</p>
+    </li>
+  </ul>
+
+  <p class="empty" else-if="asked">Nothing matched. Try <code>form</code>.</p>
+</div>
+
+<script type="module">
+  // The whole client. It asks for the region instead of the document and puts
+  // what comes back where the region already is.
+  //
+  // This framework ships nothing that does this. htmx and Turbo are the same
+  // idea with more of it written for you; twenty lines is the other end.
+  const form = document.querySelector('#search');
+  const input = document.querySelector('#q');
+  let latest = 0;
+
+  async function run() {
+    const query = new URLSearchParams({ q: input.value });
+    const mine = ++latest;
+
+    const res = await fetch(`/?${query}&fragment=results`);
+    const markup = await res.text();
+
+    // A slow earlier request must not land on top of a newer answer.
+    if (mine !== latest) return;
+
+    // setHTMLUnsafe, not innerHTML: it is the one that builds shadow roots for
+    // any element that arrives inside the markup.
+    document.querySelector('#results').setHTMLUnsafe(markup);
+
+    // The URL is the state, so a reload and a shared link both still work.
+    history.replaceState(null, '', input.value ? `/?${query}` : '/');
+  }
+
+  let timer;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(run, 150);
+  });
+
+  // The form still submits without this file. With it, nothing navigates.
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    run();
+  });
+</script>

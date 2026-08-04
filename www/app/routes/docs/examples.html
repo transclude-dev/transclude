@@ -8,6 +8,8 @@
 cd transclude && npm install
 
 npm run todomvc    # http://localhost:1963
+npm run blog       # http://localhost:1964
+npm run search     # http://localhost:1965
 npm run showcase   # http://localhost:1961`,
         'shell',
       ],
@@ -50,6 +52,52 @@ npm run showcase   # http://localhost:1961`,
     you open in two windows. Swap that one file for a database and nothing above
     it changes.
   </doc-note>
+
+  <h2>Blog</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/blog"
+      >examples/blog</a
+    >
+    is the other half. Nothing on it changes, so every page is written to a
+    file by the build. A sitemap and a feed are written beside them.
+  </p>
+
+  <p>
+    Read it for what a parameter route needs before it can be prerendered.
+    <code>posts/[slug].html</code> exports <code>paths()</code>, and each name
+    in that list becomes a file and a sitemap entry. A slug that is not a post
+    sets <code>response.status = 404</code>, and the build refuses to write a
+    file for it.
+  </p>
+
+  <doc-note label="Two files, two sources">
+    <code>/sitemap.xml</code> is built from the route table, which already knows
+    every URL. <code>/feed.xml</code> cannot be. A route table holds paths, and
+    a feed needs titles and dates, so the config supplies the items.
+  </doc-note>
+
+  <h2>Search</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/search"
+      >examples/search</a
+    >
+    is a fragment doing real work. The results are a region, so
+    <code>/?q=form&amp;fragment=results</code> returns the list alone.
+  </p>
+
+  <p>
+    With no JavaScript the form submits and the whole page comes back. With it,
+    twenty lines fetch the region and swap it in. A test asserts the fragment is
+    a substring of the document, which is what keeps the two from drifting.
+  </p>
+
+  <p>
+    The two details worth stealing are in those twenty lines. A counter drops a
+    slow answer that arrives after a newer one, and
+    <code>history.replaceState</code> keeps the URL in step so a reload works.
+  </p>
 
   <h2>Showcase</h2>
 

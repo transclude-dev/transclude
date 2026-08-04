@@ -24,10 +24,10 @@
       if (name) add(name, String(form.get('role') ?? '').trim());
     }
 
-    // `ctx.fragment` is how one handler serves both callers. htmx asked for a
-    // region, so answer with the region: a redirect would make it swap a whole
-    // document into a list. A form submission with no script gets the redirect,
-    // which is what stops a reload from repeating the change.
+    // `ctx.fragment` is how one handler serves both callers. htmx named a
+    // fragment, so answer with that fragment: a redirect would make it swap a
+    // whole document into a list. A form submission with no script named none,
+    // and gets the redirect, which is what stops a reload repeating the change.
     if (fragment) return undefined;
 
     return Response.redirect(new URL(url), 303);
@@ -42,10 +42,13 @@
 <h1>People</h1>
 
 <p class="lede">
-  ${total} of them. The list below is a fragment, and htmx asks for it by name.
-  Turn JavaScript off and every control here still works.
+  The list below is a fragment, and htmx asks for it by name. Turn JavaScript
+  off and every control here still works.
 </p>
 
+<!-- `submit` is in the trigger list because naming any trigger replaces the
+     default, and for a form the default is submit. Leave it out and the Search
+     button falls back to a whole-page navigation while everything else swaps. -->
 <form
   class="search"
   method="get"
@@ -54,7 +57,7 @@
   hx-get="/"
   hx-target="#people"
   hx-swap="outerHTML"
-  hx-trigger="input changed delay:200ms, search"
+  hx-trigger="input changed delay:200ms, search, submit"
   hx-push-url="true"
 >
   <label for="q">Search</label>
@@ -62,7 +65,7 @@
   <button type="submit">Search</button>
 </form>
 
-<form id="add" class="add" method="post" hx-post="/" hx-target="#people" hx-swap="outerHTML">
+<form id="add" class="add" method="post" hx-post="/?fragment=people" hx-target="#people" hx-swap="outerHTML">
   <label for="name">Name</label>
   <input id="name" name="name" placeholder="Name" required />
   <label for="role">Role</label>
@@ -70,9 +73,14 @@
   <button type="submit">Add</button>
 </form>
 
-<!-- The fragment. `hx-target="#people"` above puts its id in the `HX-Target`
-     header, and `fragmentHeader` in the config is what reads it, so none of
-     these URLs carry `?fragment=`.
+<!-- The fragment. The GET above carries no `?fragment=`: `hx-target="#people"`
+     puts that id in the `HX-Target` header, and `fragmentHeader` in the config
+     is what reads it.
+
+     The three POSTs name it in the URL instead. Both mechanisms work, and the
+     query parameter is the strict one: a name it does not know is a 404, so a
+     request that changes data cannot quietly fall back to answering with a
+     whole document.
 
      `hx-swap="outerHTML"` on every call, because a fragment arrives carrying
      its own id. htmx swaps `innerHTML` by default, which would put this
@@ -83,7 +91,7 @@
     <strong>${person.name}</strong>
     <span class="role">${person.role}</span>
 
-    <form method="post" hx-post="/" hx-target="#people" hx-swap="outerHTML">
+    <form method="post" hx-post="/?fragment=people" hx-target="#people" hx-swap="outerHTML">
       <input type="hidden" name="intent" value="remove" />
       <input type="hidden" name="id" value="${person.id}" />
       <button class="destroy" type="submit" aria-label="Remove ${person.name}">×</button>
@@ -91,6 +99,11 @@
   </li>
 
   <li class="empty" if="!people.length">Nobody matched.</li>
+
+  <!-- The count is inside the fragment, because it changes. Anything that
+       changes and sits outside keeps whatever the last whole-page render left
+       there: the list would say four and the sentence above it three. -->
+  <li class="count">${total} people, ${people.length} shown.</li>
 </ul>
 
 <script>

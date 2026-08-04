@@ -13,6 +13,7 @@ npm run search     # http://localhost:1965
 npm run htmx       # http://localhost:1966
 npm run includes   # http://localhost:1967
 npm run auth       # http://localhost:1968
+npm run live       # http://localhost:1969
 npm run showcase   # http://localhost:1961`,
         'shell',
       ],
@@ -177,6 +178,32 @@ npm run showcase   # http://localhost:1961`,
     the page, exits non-zero and writes nothing, rather than shipping a
     signed-out copy of your home page. Read the cookie in a narrower layout and
     only that section pays.
+  </doc-note>
+
+  <h2>Live</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/live"
+      >examples/live</a
+    >
+    pushes updates over server-sent events. An
+    <a href="/docs/endpoints">endpoint</a> answers with a stream and never
+    closes it, so an endpoint is not only for JSON.
+  </p>
+
+  <p>
+    What the stream carries is a nudge, not markup. The list already has a URL,
+    so the client hears one line and asks for
+    <code>/?fragment=feed</code>. Sending rendered HTML down the stream would be
+    a second way to render the same thing.
+  </p>
+
+  <doc-note label="A stream ends two ways" tone="warn">
+    The socket closing fires <code>abort</code> on
+    <code>request.signal</code>. The consumer letting go of the reader runs the
+    stream's own <code>cancel()</code>. Handle one and not the other and you
+    either leak a listener holding a dead connection, or close a controller that
+    is already closed. Both happened while this was written.
   </doc-note>
 
   <h2>Showcase</h2>

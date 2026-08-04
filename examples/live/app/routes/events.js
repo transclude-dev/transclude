@@ -10,23 +10,45 @@ import { onChange } from '../data/board.js';
 export const GET = ({ request }) => {
   const encoder = new TextEncoder();
 
+  // A stream ends two ways, and both have to unsubscribe. The socket closing
+  // fires `abort` on the request signal; the consumer letting go of the reader
+  // calls `cancel` on the stream. Handle one and not the other and you either
+  // leak a listener or close a controller that is already closed.
+  let open = true;
+  let unsubscribe = () => {};
+
+  const done = () => {
+    if (!open) return;
+    open = false;
+    unsubscribe();
+  };
+
   const stream = new ReadableStream({
     start(controller) {
-      const send = (event) => controller.enqueue(encoder.encode(event));
+      // Guarded, because a change can arrive in the moment between the socket
+      // going and this hearing about it.
+      const send = (event) => {
+        if (open) controller.enqueue(encoder.encode(event));
+      };
 
-      // A first line straight away. Without it a proxy may hold the response
-      // open with nothing in it, and the browser has no idea it connected.
+      // Something straight away. Without it a proxy may hold the response open
+      // with nothing in it, and the browser cannot tell it connected.
       send(': connected\n\n');
 
-      const stop = onChange(() => send('event: notes\ndata: changed\n\n'));
+      unsubscribe = onChange(() => send('event: notes\ndata: changed\n\n'));
 
-      // The client going away is the only way this ends. Node fires abort when
-      // the socket closes; without this the listener outlives the connection
-      // and holds it forever.
       request.signal.addEventListener('abort', () => {
-        stop();
-        controller.close();
+        done();
+        // The consumer may have closed it already, in which case this throws.
+        try {
+          controller.close();
+        } catch {}
       });
+    },
+
+    cancel() {
+      // The consumer went away. Nothing to close: it is closing.
+      done();
     },
   });
 

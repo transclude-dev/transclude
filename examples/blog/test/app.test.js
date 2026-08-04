@@ -67,3 +67,27 @@ describe('the site ships no JavaScript', async () => {
   assert.doesNotMatch(await text('/'), /<script/);
   assert.doesNotMatch(await text('/posts/written-once'), /<script/);
 });
+
+describe('the build writes a precache manifest', async () => {
+  // A list of what this build produced, for a service worker to cache. Nothing
+  // in this app reads it; the point is that the shape is right and stays right.
+  const manifest = JSON.parse(await text('/precache.json'));
+
+  assert.ok(manifest.version, 'a version to name a cache after');
+  assert.ok(manifest.precache.length >= 5, 'the pages, the stylesheet and the feeds');
+
+  const bySlug = Object.fromEntries(manifest.precache.map((e) => [e.url, e.revision]));
+
+  // A page keeps its URL and changes its bytes, so it carries an ETag.
+  assert.match(bySlug['/posts/written-once'] ?? '', /^"/);
+
+  // A hashed asset's name is its version, so it carries none. Backwards here is
+  // how a service worker holds last week's page and cannot be talked out of it.
+  const hashed = manifest.precache.filter((e) => e.url.startsWith('/assets/'));
+  assert.ok(hashed.length > 0);
+  for (const entry of hashed) assert.equal(entry.revision, null);
+
+  // Sorted, so two builds of the same site produce the same file.
+  const urls = manifest.precache.map((e) => e.url);
+  assert.deepEqual(urls, [...urls].sort());
+});

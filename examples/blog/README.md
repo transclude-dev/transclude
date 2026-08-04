@@ -32,6 +32,12 @@ dates, so `transclude.config.js` supplies the items.
 **Nothing ships.** `curl localhost:1963 | grep script` finds nothing, and a
 test asserts it.
 
+**`/precache.json` lists what the build produced**, because `precache: true` is
+in the config. A page carries its ETag, a hashed asset carries `revision: null`
+because its name is its version, and `version` changes when any entry does.
+Nothing in this app reads it: a service worker would, and
+[the production docs](https://transclude.dev/docs/production) show one.
+
 ## Tests
 
 ```sh

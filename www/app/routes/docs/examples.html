@@ -7,14 +7,14 @@
         `git clone https://github.com/transclude-dev/transclude.git
 cd transclude && npm install
 
+npm run showcase   # http://localhost:1961
 npm run todomvc    # http://localhost:1963
 npm run blog       # http://localhost:1964
 npm run search     # http://localhost:1965
 npm run htmx       # http://localhost:1966
 npm run includes   # http://localhost:1967
 npm run auth       # http://localhost:1968
-npm run live       # http://localhost:1969
-npm run showcase   # http://localhost:1961`,
+npm run live       # http://localhost:1969`,
         'shell',
       ],
     }),
@@ -29,6 +29,23 @@ npm run showcase   # http://localhost:1961`,
   lede="Whole apps, not snippets. Each one is a directory in the repository that depends on the package by name, the same way your project does."
 >
   ${html(s.run)}
+
+  <h2>Showcase</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/showcase"
+      >examples/showcase</a
+    >
+    is the opposite of a small example: it uses every feature, and it is what the
+    framework is tested against. Fragments, includes, light and shadow elements,
+    endpoints, cookies, a feed and a proxy.
+  </p>
+
+  <p>
+    The browser checks live there too, at <code>/check</code>. A real form, a
+    shadow root and a <code>dataset</code> are things no test in Node can
+    model.
+  </p>
 
   <h2>TodoMVC</h2>
 
@@ -206,30 +223,20 @@ npm run showcase   # http://localhost:1961`,
     is already closed. Both happened while this was written.
   </doc-note>
 
-  <h2>Showcase</h2>
+  <h2>Reading one</h2>
 
   <p>
-    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/showcase"
-      >examples/showcase</a
-    >
-    is the opposite of a small example: it uses every feature, and it is what the
-    framework is tested against. Fragments, includes, light and shadow elements,
-    endpoints, cookies, a feed and a proxy.
+    Each is an ordinary project. It has its own
+    <code>transclude.config.js</code>, its own <code>package.json</code> and its
+    own tests, and it depends on <code>@transclude/core</code> the way yours
+    does. Copy a directory out of the repository, change the dependency to a
+    version number, and it runs.
   </p>
 
   <p>
-    The browser checks live there too, at <code>/check</code>. A real form, a
-    shadow root and a <code>dataset</code> are things no test in Node can
-    model.
-  </p>
-
-  <h2>What they have in common</h2>
-
-  <p>
-    Both install the framework from <code>file:../..</code>, which is what any
-    other project does with a version number instead. Nothing in the package
-    reaches into either of them, and a test says so. If the framework can only be
-    used the way an installed package is used, it works installed.
+    Nothing is shared between them, so a file you are reading is the whole
+    answer. Every one is built and tested on each commit, so what is written
+    here is what runs.
   </p>
 
   <p>

@@ -75,6 +75,18 @@
           </td>
         </tr>
         <tr>
+          <td><code>cache</code></td>
+          <td>—</td>
+          <td>
+            Where a page held by
+            <a href="/docs/production">revalidate</a> is kept. The default is a
+            bounded map in this process. Anything with the same
+            <code>get</code>, <code>set</code>, <code>delete</code> and
+            <code>deleteByTag</code> works, which is how more than one server
+            shares one.
+          </td>
+        </tr>
+        <tr>
           <td><code>csrf</code></td>
           <td><code>true</code></td>
           <td>

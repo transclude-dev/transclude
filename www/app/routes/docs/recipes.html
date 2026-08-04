@@ -195,6 +195,24 @@ export default (app) => {
 
       revalidate: [`export const revalidate = 3600;`, 'js'],
 
+      tagged: [
+        `// The page says which tag it belongs to.
+export const revalidate = { seconds: 3600, tags: ['notes'] };`,
+        'js',
+      ],
+
+      dropTag: [
+        `// Whatever changed the data says so, and every held page with that tag
+// is dropped.
+export const POST = async ({ request, revalidateTag }) => {
+  await notes.add(await request.json());
+  revalidateTag('notes');
+
+  return new Response(null, { status: 204 });
+};`,
+        'js',
+      ],
+
       feed: [
         `// transclude.config.js
 export default {
@@ -393,6 +411,15 @@ test('the notes page lists notes', async () => {
   </p>
 
   ${html(s.revalidate)}
+
+  <h3>Drop a held page when the data changes</h3>
+
+  <p>
+    Seconds say when a page may be stale. A tag says when it is. See
+    <a href="/docs/production">the production build</a>.
+  </p>
+
+  ${html(s.tagged)} ${html(s.dropTag)}
 
   <h3>A sitemap and a feed</h3>
 

@@ -116,6 +116,60 @@
     moved off a JavaScript client.
   </p>
 
+  <h2>Does it scale?</h2>
+
+  <p>
+    The question is usually about the server doing work a client could have
+    done. Three things about this shape answer most of it, and one thing does
+    not.
+  </p>
+
+  <p>
+    <strong>A render holds nothing.</strong> A request comes in, a loader reads
+    it, and bytes go out. Nothing is kept between two requests, so a second
+    machine is a copy rather than a coordination problem. That is the constraint
+    Roy Fielding called statelessness, and it is the reason the web scales at
+    all.
+  </p>
+
+  <p>
+    <strong>Most pages are not rendered.</strong> A page that does not read the
+    request is written to a file at build time. It is compressed once, with a
+    strong ETag for each encoding, so serving it is reading bytes off a shelf.
+    The <a href="/docs/production">middle case</a> is a page held for a while.
+    Inside the window the loader does not run. Past it, a stale copy goes out
+    immediately while a fresh one is built behind it.
+  </p>
+
+  <p>
+    <strong>Nothing grows on the client.</strong> A page ships JavaScript only
+    for the elements it renders, and only when one of them has behavior. The
+    fiftieth feature does not make the first page slower, because there is no
+    bundle for it to land in. This site ships none at all.
+  </p>
+
+  <doc-note label="What it does not answer" tone="warn">
+    A page render costs more than returning JSON. It is usually a small cost
+    against a database query, and it is a real one. Measure before assuming
+    either way.
+  </doc-note>
+
+  <p>
+    The honest limit is not throughput, it is the kind of interface. A map, a
+    spreadsheet, a drawing canvas. Anything answering a stream of events in
+    milliseconds wants its state in the browser, and a round trip per event is
+    the wrong shape. Nothing here stops you writing that with the platform, and
+    nothing here helps.
+  </p>
+
+  <p class="why-more">
+    Carson Gross makes the longer version of this argument in
+    <a href="https://four.htmx.org/essays/does-hypermedia-scale"
+      >Does Hypermedia Scale?</a
+    >, including the part nobody has evidence for yet: whether it scales with
+    the size of a team.
+  </p>
+
   <h2>Foundations</h2>
 
   <p>

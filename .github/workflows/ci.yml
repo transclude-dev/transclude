@@ -36,7 +36,7 @@ jobs:
         with:
           node-version: 22
 
-      # Ten packages, ten installs. `npm ci` reads one manifest, and the eight
+      # Eleven packages, eleven installs. `npm ci` reads one manifest, and the nine
       # examples and the site are separate projects that depend on this one by
       # path.
       - run: npm ci
@@ -48,6 +48,7 @@ jobs:
       - run: npm ci --prefix examples/includes
       - run: npm ci --prefix examples/auth
       - run: npm ci --prefix examples/live
+      - run: npm ci --prefix examples/elements
       - run: npm ci --prefix www
 
       - run: npm test
@@ -62,6 +63,7 @@ jobs:
       - run: npm run build --prefix examples/includes
       - run: npm run build --prefix examples/auth
       - run: npm run build --prefix examples/live
+      - run: npm run build --prefix examples/elements
       - run: npm run test:examples
 
       # The site is built before it is tested: two of those tests read what the

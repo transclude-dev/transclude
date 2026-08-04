@@ -1,0 +1,100 @@
+<script server>
+  import { people } from '../data/people.js';
+
+  export default async () => ({ people });
+</script>
+
+<title>Elements</title>
+<meta name="description" content="Light and shadow custom elements, and when to reach for each." />
+
+<h1>Elements</h1>
+
+<p class="lede">
+  An <code>.html</code> file in <code>app/elements/</code> is a custom element.
+  It renders into the page's own DOM unless it asks for a shadow root, and the
+  file says which.
+</p>
+
+<h2>Light, and shipping nothing</h2>
+
+<p>
+  <code>site-note</code> has styles, a slot and no behavior. It is rendered on
+  the server and defines no class in the browser, so it costs a visitor nothing.
+</p>
+
+<site-note label="Note">Page CSS reaches this, which is what makes it content.</site-note>
+<site-note tone="warn" label="Careful">The same element, one attribute apart.</site-note>
+
+<h2>Light, and interactive</h2>
+
+<p>
+  <code>tally-box</code> has state and behavior, and is still light. Clicking it
+  writes a new number into the text node the compiler bound. Nothing is
+  replaced, which is exactly what a light element is allowed to do.
+</p>
+
+<tally-box label="clicks"></tally-box>
+<tally-box label="also clicks"></tally-box>
+
+<p class="aside">
+  Both boxes count separately. State belongs to an element, not to the tag.
+</p>
+
+<h2>Shadow, and rebuilding</h2>
+
+<p>
+  <code>person-card</code> asks for a boundary. Its styles cannot leave and page
+  CSS cannot reach in, so its rules name <code>h3</code> and mean it. It also
+  renders a list from a prop that can change.
+</p>
+
+<div class="cards">
+  <person-card
+    each="person of people"
+    name="${person.name}"
+    role="${person.role}"
+    tags="${person.tags}"
+  >
+  </person-card>
+</div>
+
+<h2>Which one</h2>
+
+<p>Stay light. Reach for the boundary when one of these is true.</p>
+
+<div class="scroller">
+  <table>
+    <thead>
+      <tr>
+        <th>Light</th>
+        <th>Shadow</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Page CSS styles it, which is right for content</td>
+        <td>Styles are sealed, which is right for a widget</td>
+      </tr>
+      <tr>
+        <td><code>&lt;label for&gt;</code> and a form find it</td>
+        <td>A form needs <code>formAssociated</code></td>
+      </tr>
+      <tr>
+        <td>Writes into what it rendered</td>
+        <td>Rebuilds, so <code>if</code> and <code>each</code> over changing data work</td>
+      </tr>
+      <tr>
+        <td>Arrives whole in a fragment</td>
+        <td>Arrives bare in a fragment, and paints on connect</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<site-note tone="warn" label="The error you will meet">
+  An <code>if</code> or an <code>each</code> over a value that changes is a
+  compile error in a light element, and the message names
+  <code>shadow</code>. It is not a limitation being enforced for tidiness: a
+  light element does not own its children, and the page's markup and scripts are
+  sitting among them.
+</site-note>

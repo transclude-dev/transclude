@@ -1,0 +1,25 @@
+:root {
+  --ink:#17171a; --muted:#61616a; --rule:#e0e0e6; --ground:#fcfcfd;
+  --link:#0000ee; --surface:#f5f5f8; --warn:#b4232c;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --ink:#e9e9ec; --muted:#9a9aa4; --rule:#2b2b31; --ground:#121215; --link:#9db8ff; --surface:#1a1a1f; --warn:#ff8a8a; }
+}
+*,*::before,*::after { box-sizing:border-box; }
+body { margin:0 auto; padding:3rem 1.25rem 5rem; max-width:40rem; background:var(--ground); color:var(--ink); font:16px/1.6 system-ui,sans-serif; }
+h1 { font-size:1.8rem; letter-spacing:-.02em; margin:0 0 .5rem; }
+h2 { font-size:1.1rem; margin:2.5rem 0 .5rem; }
+.lede { color:var(--muted); margin:0 0 1rem; }
+.aside { color:var(--muted); font-size:.9rem; }
+a { color:var(--link); }
+code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9em; }
+.cards { display:grid; gap:.75rem; grid-template-columns:repeat(auto-fit,minmax(14rem,1fr)); margin:1rem 0; }
+.scroller { overflow-x:auto; margin:1rem 0; }
+table { border-collapse:collapse; width:100%; font-size:.9rem; }
+th,td { text-align:left; padding:.5rem .7rem; border-bottom:1px solid var(--rule); vertical-align:top; }
+th { font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+
+/* Proof that page CSS reaches a light element and not a shadow one. Both
+   selectors are here; only the first one lands. */
+site-note p { font-style:italic; }
+person-card h3 { text-decoration:line-through; }

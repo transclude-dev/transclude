@@ -1,4 +1,21 @@
-# transclude
+<h1 align="center">transclude</h1>
+
+<p align="center">An HTML-first server-side web framework.</p>
+
+<p align="center">
+  <a href="https://github.com/transclude-dev/transclude/actions/workflows/ci.yml"
+    ><img alt="CI" src="https://github.com/transclude-dev/transclude/actions/workflows/ci.yml/badge.svg"
+  /></a>
+  <a href="https://www.npmjs.com/package/@transclude/core"
+    ><img alt="npm" src="https://img.shields.io/npm/v/%40transclude%2Fcore?color=0b7285"
+  /></a>
+  <a href="https://transclude.dev/docs/runtimes"
+    ><img alt="node" src="https://img.shields.io/node/v/%40transclude%2Fcore?color=0b7285"
+  /></a>
+  <a href="https://github.com/transclude-dev/transclude/blob/main/LICENSE"
+    ><img alt="MIT" src="https://img.shields.io/npm/l/%40transclude%2Fcore?color=0b7285"
+  /></a>
+</p>
 
 HTML is the product. A page is an `.html` file, the directory tree is the route
 table, and any fragment of a page is a URL of its own. Nothing has to run in the

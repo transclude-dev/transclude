@@ -59,7 +59,7 @@
        it ends up containing is in this page's element closure. -->
   <div id="swap"></div>
 
-  <!-- htmz. A link targets the named frame, the frame loads the region, and the
+  <!-- htmz. A link targets the named frame, the frame loads the fragment, and the
        handler moves what arrived into #htmz-dest. Nothing fetches. -->
   <iframe hidden name="htmz" id="htmz"></iframe>
   <div id="htmz-dest"></div>
@@ -304,7 +304,7 @@
     return 'the focused node was never destroyed';
   });
 
-  await check('a structural change rebuilds its own region and nothing else', async () => {
+  await check('a structural change rebuilds its own fragment and nothing else', async () => {
     const card = document.getElementById('solo');
     const heading = card.shadowRoot.querySelector('h3');
 
@@ -618,7 +618,7 @@
     return 'the block takes the row as an argument, so the row survives';
   });
 
-  await check('a multi-node item is moved as a region, keeping its field', async () => {
+  await check('a multi-node item is moved as a fragment, keeping its field', async () => {
     const rows = [
       { id: 1, label: 'a', flagged: false },
       { id: 2, label: 'b', flagged: false },
@@ -643,7 +643,7 @@
     );
     ok(after[1] === first, 'the row was rebuilt rather than moved');
     ok(survived(first, 'in a template each'), 'value, focus or caret was lost');
-    return 'per-item anchors: the whole region moves together';
+    return 'per-item anchors: the whole fragment moves together';
   });
 
   /** Runs `fn` as a browser without moveBefore would. */
@@ -792,10 +792,10 @@
   // ---- htmz -----------------------------------------------------------------
   //
   // A hidden frame is a swap target, and the URL hash is free because a server
-  // never receives one. So the query asks us for a region and the hash says
+  // never receives one. So the query asks us for a fragment and the hash says
   // where it goes, and neither half needs the other to know about it.
 
-  await check('an htmz swap works: query for the region, hash for the destination', async () => {
+  await check('an htmz swap works: query for the fragment, hash for the destination', async () => {
     const frame = document.getElementById('htmz');
 
     const swapped = new Promise((resolve) => {
@@ -817,13 +817,13 @@
     await swapped;
     link.remove();
 
-    ok(document.querySelector('data-table'), 'the region never arrived');
+    ok(document.querySelector('data-table'), 'the fragment never arrived');
     return 'a hidden frame parsed it, and nothing fetched anything';
   });
 
-  await check('the region lands under its own id, not the name it was sent to', () => {
+  await check('the fragment lands under its own id, not the name it was sent to', () => {
     ok(!document.getElementById('htmz-dest'), 'the destination survived, so nothing was replaced');
-    ok(document.getElementById('matches'), 'the region did not bring its id');
+    ok(document.getElementById('matches'), 'the fragment did not bring its id');
     return 'so a second swap has to aim at #matches: name both ends the same';
   });
 

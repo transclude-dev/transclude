@@ -11,6 +11,7 @@ npm run todomvc    # http://localhost:1963
 npm run blog       # http://localhost:1964
 npm run search     # http://localhost:1965
 npm run htmx       # http://localhost:1966
+npm run includes   # http://localhost:1967
 npm run showcase   # http://localhost:1961`,
         'shell',
       ],
@@ -84,13 +85,13 @@ npm run showcase   # http://localhost:1961`,
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/search"
       >examples/search</a
     >
-    is a fragment doing real work. The results are a region, so
+    is a fragment doing real work. The results are a fragment, so
     <code>/?q=form&amp;fragment=results</code> returns the list alone.
   </p>
 
   <p>
     With no JavaScript the form submits and the whole page comes back. With it,
-    twenty lines fetch the region and swap it in. A test asserts the fragment is
+    twenty lines fetch the fragment and swap it in. A test asserts the fragment is
     a substring of the document, which is what keeps the two from drifting.
   </p>
 
@@ -113,10 +114,18 @@ npm run showcase   # http://localhost:1961`,
 
   <p>
     htmx puts the id it is about to swap in an <code>HX-Target</code> header.
-    Naming that header in the config means the header alone asks for a region,
+    Naming that header in the config means the header alone asks for a fragment,
     so <code>hx-get="/"</code> with <code>hx-target="#people"</code> carries no
     <code>?fragment=</code>. Nothing in the page file mentions htmx.
   </p>
+
+  <doc-note label="A fragment arrives carrying its own id" tone="warn">
+    So every call in that file sets <code>hx-swap="outerHTML"</code>. htmx swaps
+    <code>innerHTML</code> by default, which puts the returned
+    <code>&lt;ul id="people"&gt;</code> inside the one already on the page, and
+    again on the next keystroke. The htmz note on
+    <a href="/docs/fragments">fragments</a> is the same trap in its other form.
+  </doc-note>
 
   <doc-note label="Not from a CDN" tone="warn">
     <code>csp: true</code> gives <code>script-src 'self'</code>, so a script
@@ -124,6 +133,23 @@ npm run showcase   # http://localhost:1961`,
     explain it. htmx is copied out of <code>node_modules</code> into
     <code>app/public/</code> before the build.
   </doc-note>
+
+  <h2>Includes</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/includes"
+      >examples/includes</a
+    >
+    is the feature this framework is named after, from all three sources: the
+    same page, another route, and another site through the proxy.
+  </p>
+
+  <p>
+    It is worth reading for one asymmetry. A same-page include drops the
+    <code>id</code> from its copy, because that is always a second copy in one
+    document. A cross-route include keeps it, because that content came from
+    another document and there is one of it here.
+  </p>
 
   <h2>Showcase</h2>
 

@@ -41,17 +41,17 @@ describe('a page answers with its own markup', async () => {
   assert.match(await res.text(), /<h1/);
 });
 
-describe('a region is the same path with the query on it', async () => {
+describe('a fragment is the same path with the query on it', async () => {
   const whole = await (await get('/')).text();
-  const region = await get('/?fragment=matches');
+  const fragment = await get('/?fragment=matches');
 
-  assert.equal(region.status, 200);
-  const markup = await region.text();
+  assert.equal(fragment.status, 200);
+  const markup = await fragment.text();
   assert.doesNotMatch(markup, /<!doctype/i, 'the whole document came back');
-  assert.ok(whole.includes(markup.trim()), 'the region is not what the page renders');
+  assert.ok(whole.includes(markup.trim()), 'the fragment is not what the page renders');
 });
 
-describe('a region nobody declared is a 404, because someone typed it', async () => {
+describe('a fragment nobody declared is a 404, because someone typed it', async () => {
   assert.equal((await get('/?fragment=nope')).status, 404);
 });
 

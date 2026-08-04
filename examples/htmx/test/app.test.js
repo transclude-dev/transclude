@@ -30,7 +30,7 @@ const post = (fields, headers = {}) =>
     redirect: 'manual',
   });
 
-describe('the header alone asks for a region, with no query parameter', async () => {
+describe('the header alone asks for a fragment, with no query parameter', async () => {
   const res = await get('/?q=ada', { 'HX-Target': 'people' });
   const markup = await res.text();
 
@@ -56,7 +56,7 @@ describe('naming a header adds it to Vary', async () => {
   assert.match(res.headers.get('vary') ?? '', /HX-Target/);
 });
 
-describe('an action answers a region with the region', async () => {
+describe('an action answers a fragment with the fragment', async () => {
   const res = await post({ name: 'Barbara Liskov', role: 'Professor' }, { 'HX-Target': 'people' });
 
   assert.equal(res.status, 200, 'a redirect would swap a document into a list');

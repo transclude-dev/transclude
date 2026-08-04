@@ -52,7 +52,7 @@ const serverRender = (id, url) => {
     {
       clientEntry: route.client,
       stylesheet,
-      // The home page transcludes a section of MDN and a region of /notes.
+      // The home page transcludes a section of MDN and a fragment of /notes.
       // These tests are about this app's own markup, so both are stubbed: the
       // first would need the network, and the second would need the route table
       // that only the running server has.
@@ -156,7 +156,7 @@ describe('no dev-server plumbing leaks into built output', () => {
 
 describe('the server bundle runs without vite', () => {
   const entry = read('server/entry.js');
-  // Virtual ids may survive in rollup's region comments; what matters is that
+  // Virtual ids may survive in rollup's fragment comments; what matters is that
   // nothing still tries to *import* one, since nothing would resolve it.
   assert.doesNotMatch(entry, /from\s*['"]virtual:transclude-/, 'a virtual id is still imported');
   assert.doesNotMatch(entry, /from\s*['"]vite/, 'vite is still imported');

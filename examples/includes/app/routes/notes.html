@@ -1,0 +1,19 @@
+<script server>
+  import { notes } from '../data/notes.js';
+
+  export default async () => ({ notes });
+</script>
+
+<title>Notes</title>
+
+<h1>Notes</h1>
+
+<p>
+  The list below is a fragment. It has its own URL, and
+  <a href="/summary">another page</a> includes it.
+</p>
+
+<!-- `fragment` gives it a URL. An include is what puts it somewhere else. -->
+<ul id="list" fragment>
+  <li each="note of notes">${note.text}</li>
+</ul>

@@ -10,7 +10,7 @@ npm run dev     # http://localhost:1965
 
 ## What to look at
 
-**The results are a region.** `<div id="results" fragment>` gives that element
+**The results are a fragment.** `<div id="results" fragment>` gives that element
 a URL of its own, so `/?q=form&fragment=results` returns the list and nothing
 else: no `<head>`, no layout, no second template.
 
@@ -22,7 +22,7 @@ apart.
 URL and the browser loads the page. That is the whole app, working, before any
 script runs.
 
-**With JavaScript, twenty lines swap the region.** `app/routes/index.html` ends
+**With JavaScript, twenty lines swap the fragment.** `app/routes/index.html` ends
 with a `<script type="module">` block that fetches the fragment and calls
 `setHTMLUnsafe`. This framework ships nothing that does this on your behalf;
 htmx and Turbo are the same idea with more written for you.

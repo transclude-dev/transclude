@@ -1,0 +1,30 @@
+<script server>
+  export default async () => ({});
+</script>
+
+<title>Summary</title>
+
+<h1>Summary</h1>
+
+<p>
+  Everything under this heading is rendered by <code>/notes</code>. It is called,
+  not fetched: the same process, in the middle of this render, with no HTTP
+  request and no URL this server has to be able to reach.
+</p>
+
+<section class="borrowed">
+  <transclude src="/notes#list">
+    <p>The notes could not be read.</p>
+  </transclude>
+</section>
+
+<p>
+  The children above are the fallback, and they render when the include cannot
+  be resolved.
+</p>
+
+<p>
+  The list keeps its <code>id</code> here. A same-page include gives it up,
+  because that one is always a second copy in one document. This is content from
+  another document, so there is one of it on this page.
+</p>

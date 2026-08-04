@@ -1,0 +1,41 @@
+<script server>
+  // Reading someone else's page happens over the network, so this one is
+  // rendered per request rather than written to a file at build time.
+  export const prerender = false;
+
+  export default async () => ({});
+</script>
+
+<title>Elsewhere</title>
+
+<h1>Elsewhere</h1>
+
+<p>
+  The section below is part of a page on another host. This app names that host
+  in <code>proxy.allow</code>; with no host named there is no proxy route at all
+  and this include cannot resolve.
+</p>
+
+<section class="borrowed">
+  <transclude src="https://developer.mozilla.org/en-US/docs/Web/HTML#reference">
+    <p>The reference could not be read just now.</p>
+  </transclude>
+</section>
+
+<!-- Nothing is attributed for you. A license decides what this line has to say,
+     and a document does not carry its author or its license anywhere a program
+     can read them, so this one is written by hand. -->
+<p class="credit">
+  From
+  <a href="https://developer.mozilla.org/en-US/docs/Web/HTML"
+    >HTML: HyperText Markup Language</a
+  >
+  on MDN, <a href="https://creativecommons.org/licenses/by-sa/2.5/">CC BY-SA 2.5</a>.
+</p>
+
+<p>
+  This copies. Your server reads the document and serves the piece from your
+  origin, as part of your page. Name a host only when you have the right to
+  republish what it holds, and read its license first. A share-alike license can
+  put conditions on the page you put the fragment in.
+</p>

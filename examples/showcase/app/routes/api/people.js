@@ -1,6 +1,6 @@
 // An endpoint: a `.js` file in the pages tree. Same filename conventions as a
 // page, so this one is `/api/people`, but with no template, no layout and no
-// regions. It answers with a Response of its own.
+// fragments. It answers with a Response of its own.
 //
 // Handlers are named for the method the way HTTP spells it. Uppercase is doing
 // real work: `export const delete` is a syntax error, `export const DELETE` is

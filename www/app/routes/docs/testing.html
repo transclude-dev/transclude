@@ -45,8 +45,8 @@ assert.equal(res.status, 303);`,
         'js',
       ],
       region: [
-        `const region = await app.request('http://localhost/?fragment=matches');
-const markup = await region.text();
+        `const fragment = await app.request('http://localhost/?fragment=matches');
+const markup = await fragment.text();
 
 assert.doesNotMatch(markup, /<!doctype/i);
 assert.ok(whole.includes(markup.trim()));`,

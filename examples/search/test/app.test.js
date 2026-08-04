@@ -1,4 +1,4 @@
-// The page and its region, asked for over real requests.
+// The page and its fragment, asked for over real requests.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,35 +21,35 @@ describe('a search with no script returns the whole document', async () => {
   assert.ok(markup.includes('<code>&lt;form&gt;</code>'));
 });
 
-describe('the same search as a region returns the region alone', async () => {
-  const region = await text('/?q=form&fragment=results');
+describe('the same search as a fragment returns the fragment alone', async () => {
+  const fragment = await text('/?q=form&fragment=results');
 
-  assert.doesNotMatch(region, /<!doctype/i, 'no document, no head, no layout');
-  assert.match(region, /^<div id="results"/);
+  assert.doesNotMatch(fragment, /<!doctype/i, 'no document, no head, no layout');
+  assert.match(fragment, /^<div id="results"/);
 });
 
-describe('the region is exactly what the document already held', async () => {
+describe('the fragment is exactly what the document already held', async () => {
   // The point of a fragment: one compiled template, so the two cannot drift.
   const whole = await text('/?q=form');
-  const region = (await text('/?q=form&fragment=results')).trim();
+  const fragment = (await text('/?q=form&fragment=results')).trim();
 
-  assert.ok(whole.includes(region));
+  assert.ok(whole.includes(fragment));
 });
 
 describe('an empty query asks for nothing rather than everything', async () => {
-  const region = await text('/?fragment=results');
+  const fragment = await text('/?fragment=results');
 
-  assert.match(region, /Type to search/);
-  assert.doesNotMatch(region, /<li/);
+  assert.match(fragment, /Type to search/);
+  assert.doesNotMatch(fragment, /<li/);
 });
 
 describe('a query that matches nothing says so', async () => {
-  const region = await text('/?q=zzzz&fragment=results');
+  const fragment = await text('/?q=zzzz&fragment=results');
 
-  assert.match(region, /Nothing matched/);
+  assert.match(fragment, /Nothing matched/);
 });
 
-describe('a region that does not exist is a 404', async () => {
+describe('a fragment that does not exist is a 404', async () => {
   assert.equal((await get('/?fragment=nope')).status, 404);
 });
 

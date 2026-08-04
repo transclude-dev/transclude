@@ -34,7 +34,7 @@ const PARSE_OPTIONS = {
  * @param {{ flags?: string[] }} [options]
  * @returns {{ code: string, exports: string[],
  *   imports: Array<{ source: string, specifiers: string }>,
- *   defaultNode: object|null, flags: object }}
+ *   declared: string[], defaultNode: object|null, flags: object }}
  */
 export function bindDefaultExport(block, name, label, { flags = [] } = {}) {
   const { code: source, line = 1 } = block;
@@ -56,9 +56,10 @@ export function bindDefaultExport(block, name, label, { flags = [] } = {}) {
   const node = ast.body.find((s) => s.type === 'ExportDefaultDeclaration') ?? null;
   const exports = namedExportsOf(ast, source, line, label).filter((n) => !flags.includes(n));
   const imports = importsOf(ast);
+  const declared = topLevelNames(ast);
 
   if (!node) {
-    return { code: `${code}\nconst ${name} = null;`, exports, imports, defaultNode: null, flags: found };
+    return { code: `${code}\nconst ${name} = null;`, exports, imports, declared, defaultNode: null, flags: found };
   }
 
   // Slicing the *declaration* rather than the statement means
@@ -71,7 +72,7 @@ export function bindDefaultExport(block, name, label, { flags = [] } = {}) {
     ';' +
     code.slice(node.end);
 
-  return { code: rewritten, exports, imports, defaultNode: node.declaration, flags: found };
+  return { code: rewritten, exports, imports, declared, defaultNode: node.declaration, flags: found };
 }
 
 /**
@@ -506,19 +507,20 @@ function importsOf(ast) {
 }
 
 /**
- * Guards against a block exporting a name the generated module already uses.
+ * Guards against a block using a name the generated module already defines.
  *
- * @param {string[]} exports
+ * @param {string[]} names
  * @param {Set<string>} reserved
  * @param {string} label
+ * @param {string} [verb] how the block used it, for the message
  * @returns {void}
  * @throws naming the first collision
  */
-export function assertNoCollisions(exports, reserved, label) {
-  for (const name of exports) {
+export function assertNoCollisions(names, reserved, label, verb = 'exports') {
+  for (const name of names) {
     if (reserved.has(name)) {
       throw new ScriptError(
-        `${label}: exports "${name}", which the generated module already defines. ` +
+        `${label}: ${verb} "${name}", which the generated module already defines. ` +
           `Reserved: ${[...reserved].join(', ')}.`,
       );
     }
@@ -584,6 +586,26 @@ function namedExportsOf(ast, code, lineOffset, label) {
   }
 
   return names;
+}
+
+/**
+ * Every name a block binds at the top level, imports included.
+ *
+ * The generated module puts this block's code beside its own `export const`
+ * statements, so any of these can collide, not only the exported ones. An
+ * import was the case that got through: `import { elements } from './x.js'`
+ * binds `elements` and exports nothing, so the export check never saw it and
+ * the build failed inside rolldown, pointing at a virtual module.
+ *
+ * @param {object} ast
+ * @returns {string[]}
+ */
+function topLevelNames(ast) {
+  return ast.body.flatMap((statement) =>
+    statement.type === 'ImportDeclaration'
+      ? statement.specifiers.map((spec) => spec.local.name)
+      : declaredNames(statement),
+  );
 }
 
 function patternNames(node) {

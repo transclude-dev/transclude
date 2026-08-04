@@ -15,7 +15,13 @@ import {
 
 export { CompileError, ScriptError };
 
-const PAGE_EXPORTS = new Set(['css', 'load', 'render', 'renderHead', 'renderTitle', 'renderHtmlAttrs', 'layouts', 'client', 'elements', 'headScript']);
+// Everything the generated page and layout modules define at the top level. A
+// block naming one of these is checked whether it exports it or merely declares
+// it, because both land in the same scope.
+const PAGE_EXPORTS = new Set([
+  'css', 'load', 'render', 'renderHead', 'renderTitle', 'renderHtmlAttrs',
+  'layouts', 'client', 'elements', 'headScript', 'hasTitle', 'includes',
+]);
 const COMPONENT_EXPORTS = new Set([
   'tag', 'light', 'css', 'elements', 'propDefs', 'propAttrs', 'stateDefs', 'members', 'render',
   'coerce', 'def', 'init', 'define', 'default', 'bind', 'update', 'volatile', 'formAssociated',
@@ -375,8 +381,9 @@ export function compilePage(
 
   const server = blocks.server
     ? bindDefaultExport(blocks.server, '__load', where)
-    : { code: 'const __load = null;', exports: [], imports: [], defaultNode: null };
+    : { code: 'const __load = null;', exports: [], imports: [], declared: [], defaultNode: null };
   assertNoCollisions(server.exports, PAGE_EXPORTS, where);
+  assertNoCollisions(server.declared ?? [], PAGE_EXPORTS, where, 'declares');
   assertNoActionsObject(server.exports, where);
 
   const template = compileFragment(blocks.nodes, { components, shadowTags, page: true, html: blocks.html });
@@ -485,8 +492,9 @@ export function compileLayout(source, { id, components = new Map(), shadowTags =
 
   const server = blocks.server
     ? bindDefaultExport(blocks.server, '__load', where)
-    : { code: 'const __load = null;', exports: [], imports: [], defaultNode: null };
+    : { code: 'const __load = null;', exports: [], imports: [], declared: [], defaultNode: null };
   assertNoCollisions(server.exports, PAGE_EXPORTS, where);
+  assertNoCollisions(server.declared ?? [], PAGE_EXPORTS, where, 'declares');
   assertNoActionsObject(server.exports, where);
 
   const template = compileFragment(blocks.nodes, {

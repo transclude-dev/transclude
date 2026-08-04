@@ -77,3 +77,25 @@ describe('htmx is served from this origin, which the policy requires', async () 
   assert.match(page, /<script src="\/htmx\.min\.js"/, 'the tag survives compiling');
   assert.match(page, /script-src 'self'/, 'which is why a CDN would not work here');
 });
+
+test('every call that targets the fragment replaces it rather than filling it', () => {
+  // htmx swaps innerHTML by default, and a fragment arrives carrying its own
+  // id, so the returned `<ul id="people">` lands inside the one already on the
+  // page, and again on the next keystroke.
+  const page = fs.readFileSync(path.join(root, 'app', 'routes', 'index.html'), 'utf8');
+  const targets = [...page.matchAll(/hx-target="#people"/g)].length;
+  const swaps = [...page.matchAll(/hx-swap="outerHTML"/g)].length;
+
+  assert.notEqual(targets, 0);
+  assert.equal(swaps, targets, 'every hx-target on the fragment needs the outerHTML swap');
+});
+
+test('the search form still submits through htmx', () => {
+  // Naming any trigger replaces the default, and for a form the default is
+  // submit. Leave it out and the Search button navigates the whole page while
+  // every other control swaps.
+  const page = fs.readFileSync(path.join(root, 'app', 'routes', 'index.html'), 'utf8');
+  const trigger = page.match(/hx-trigger="([^"]*)"/)?.[1] ?? '';
+
+  assert.match(trigger, /\bsubmit\b/);
+});

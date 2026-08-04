@@ -1,0 +1,42 @@
+<script server>
+  import { find, byDate } from '../../data/posts.js';
+
+  /**
+   * Every URL this route answers, for the build. Without it a parameter route
+   * stays a server render, because nothing can guess what `:slug` may be. With
+   * it, each one is written to a file and listed in the sitemap.
+   */
+  export const paths = () => byDate().map((post) => ({ slug: post.slug }));
+
+  export default async ({ params, response }) => {
+    const post = find(params.slug);
+
+    // The build refuses to write a file for a URL whose loader set a status
+    // other than 200, so a slug that is not a post never becomes a page.
+    if (!post) response.status = 404;
+
+    return { post };
+  };
+</script>
+
+<title>${post ? post.title : 'Not found'}</title>
+<meta name="description" content="${post ? post.summary : 'No such post.'}" />
+
+<article if="post">
+  <h1>${post.title}</h1>
+
+  <time class="dateline" datetime="${post.date.toISOString()}">
+    ${post.date.toDateString()}
+  </time>
+
+  <!-- The body is markup this site wrote, so it is rendered rather than
+       escaped. `html()` vouches for a value; it does not clean one. -->
+  ${html(post.body)}
+
+  <p class="back"><a href="/">All posts</a></p>
+</article>
+
+<div else>
+  <h1>404</h1>
+  <p>No post with that name. <a href="/">All posts</a>.</p>
+</div>

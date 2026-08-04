@@ -99,13 +99,16 @@ npm test              # the framework's own, and they need no app
 npm run test:examples # the examples', against a build
 npm run showcase      # the showcase on http://localhost:1961
 npm run todomvc       # TodoMVC on http://localhost:1963
+npm run blog          # a prerendered blog on http://localhost:1964
+npm run search        # search over a fragment on http://localhost:1965
 npm run check:src     # type-check the framework itself
 ```
 
 `examples/` holds apps built against this package the same way any other project
-would be. `todomvc` is TodoMVC with forms and no client JavaScript; `showcase`
-uses every feature and is where the browser checks live, because those need an
-app to run against. `www/` is the site at transclude.dev: a landing page, the
+would be. `todomvc` is TodoMVC with forms and no client JavaScript, `blog` is a
+prerendered site with a sitemap and a feed, `search` swaps a fragment into a
+page that works without it, and `showcase` uses every feature and is where the
+browser checks live, because those need an app to run against. `www/` is the site at transclude.dev: a landing page, the
 documentation under `/docs`, and itself built with the framework.
 
 ### Trying the CLI against this checkout

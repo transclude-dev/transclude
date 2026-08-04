@@ -1,0 +1,9 @@
+node_modules/
+
+# `npm run build` output. All reproducible from source.
+dist/
+
+.claude/
+.env
+.env.*
+!.env.example

@@ -1,0 +1,152 @@
+/* One stylesheet, and nothing else ships. */
+
+:root {
+  --ink: #1a1a1a;
+  --muted: #5d5d5d;
+  --rule: #e2e2e2;
+  --ground: #fdfdfc;
+  --link: #0000ee;
+  --measure: 34rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8e8e6;
+    --muted: #a0a09c;
+    --rule: #2c2c2c;
+    --ground: #121212;
+    --link: #9db8ff;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+a {
+  color: var(--link);
+}
+
+.masthead,
+main,
+.colophon {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: 2.5rem;
+  padding-bottom: 1.5rem;
+}
+
+.wordmark {
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.masthead nav {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  font-family: system-ui, sans-serif;
+}
+
+h1 {
+  font-size: 1.9rem;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.75rem;
+  text-wrap: balance;
+}
+
+time,
+.dateline {
+  display: block;
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.posts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.posts li {
+  padding: 1.4rem 0;
+  border-top: 1px solid var(--rule);
+}
+
+.posts li:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.posts .title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: inherit;
+}
+
+.posts .title:hover {
+  color: var(--link);
+}
+
+.posts p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+
+article p {
+  margin: 0 0 1.1em;
+}
+
+article code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88em;
+  background: color-mix(in oklab, var(--rule) 55%, transparent);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+
+.dateline {
+  margin-bottom: 1.75rem;
+}
+
+.back {
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+  font-family: system-ui, sans-serif;
+  font-size: 0.9rem;
+}
+
+.colophon {
+  margin-top: 4rem;
+  padding-top: 1.25rem;
+  padding-bottom: 3rem;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+}

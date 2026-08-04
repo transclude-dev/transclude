@@ -1,0 +1,28 @@
+<script server>
+  // The chrome every page shares, and the canonical URL, which needs the route
+  // and so cannot be written in a static tag.
+  export default async ({ route, absolute }) => ({
+    canonical: absolute(route.path),
+    year: new Date().getFullYear(),
+  });
+</script>
+
+<html lang="en" />
+
+<link rel="canonical" href="${canonical}" />
+<link rel="alternate" type="application/rss+xml" title="A transclude blog" href="/feed.xml" />
+
+<header class="masthead">
+  <a class="wordmark" href="/">A transclude blog</a>
+  <nav>
+    <a href="/">Posts</a>
+    <a href="/about">About</a>
+    <a href="/feed.xml">Feed</a>
+  </nav>
+</header>
+
+<main><slot></slot></main>
+
+<footer class="colophon">
+  <p>&copy; ${year}. Every page here is a file, written by the build.</p>
+</footer>

@@ -326,12 +326,12 @@ test('a partial defines through defineLight, a component through defineComponent
 
 test('a head block is its own kind, not client code', () => {
   const blocks = splitBlocks(
-    '<script head>theme();</script><script>behaviour();</script><p>x</p>',
+    '<script head>theme();</script><script>behavior();</script><p>x</p>',
   );
   assert.equal(blocks.head.length, 1);
   assert.match(blocks.head[0].code, /theme\(\)/);
   assert.equal(blocks.client.length, 1);
-  assert.match(blocks.client[0].code, /behaviour\(\)/);
+  assert.match(blocks.client[0].code, /behavior\(\)/);
 });
 
 test('the document puts head scripts before the stylesheet', () => {
@@ -372,7 +372,7 @@ test('a mapped attribute is not also passed through as a stray key', () => {
   assert.deepEqual(Object.keys(out), ['pageSize']);
 });
 
-test('writing a property serialises the way coercion expects to read it', () => {
+test('writing a property serializes the way coercion expects to read it', () => {
   const defs = { tags: [], count: 0, open: false, label: '' };
   const el = {
     attrs: new Map(),

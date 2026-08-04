@@ -257,7 +257,7 @@ test("proxy.styles: 'strip' takes the attributes too", async () => {
   assert.match(body, /<p>one<\/p>/);
 });
 
-test('a styles value nobody recognises throws rather than quietly keeping them', async () => {
+test('a styles value nobody recognizes throws rather than quietly keeping them', async () => {
   const { fetch } = fakeFetch({ 'https://source.example/x': html('<h2 id="a">A</h2>') });
 
   await assert.rejects(

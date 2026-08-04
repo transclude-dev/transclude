@@ -489,7 +489,7 @@ test('the summary is shared, so three adapters cannot disagree about it', () => 
 });
 
 test('every response says not to sniff its type', async () => {
-  // The one security header with no judgement in it: nothing legitimate depends
+  // The one security header with no judgment in it: nothing legitimate depends
   // on a browser second-guessing a declared Content-Type. `X-Frame-Options` and
   // HSTS both refuse something an app may want, so they stay the author's.
   const app = baseApp({ csrf: false });

@@ -41,7 +41,7 @@ const TYPES = {
  * @property {number} onDisk left on disk because the budget ran out
  * @property {number} encoded how many have a precompressed variant
  * @property {Map<string, Entry|{ file: string }>} entries for the build, which
- *   serialises these for a runtime with no filesystem
+ *   serializes these for a runtime with no filesystem
  * @property {(pathname: string) => Entry|null} get
  */
 
@@ -94,7 +94,7 @@ function load(dir, urlFor, { maxBytes = DEFAULT_MAX_BYTES } = {}) {
     count: entries.size,
     bytes,
     onDisk,
-    /** For the build, which serialises these for runtimes with no filesystem. */
+    /** For the build, which serializes these for runtimes with no filesystem. */
     entries,
     encoded: [...entries.values()].filter((e) => e.encodings?.size).length,
 

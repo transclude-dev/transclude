@@ -35,3 +35,11 @@ updates:
       # entry out when it is done.
       - dependency-name: typescript
         update-types: [version-update:semver-major]
+
+      # `@types/node` majors track Node majors, so this is a description of the
+      # runtime rather than a dependency, and nothing checks that the
+      # description is true. Ahead of `engines.node` it green-lights an API that
+      # does not exist at run time: it type-checks and then throws. Raise it in
+      # the same commit as `engines`, the CI `node-version`, and not otherwise.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]

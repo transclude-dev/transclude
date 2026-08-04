@@ -1,0 +1,206 @@
+# Elements
+
+An `.html` file in `app/elements/` becomes a custom element. The file name is
+the tag name and it needs a dash.
+
+## Light DOM, the default
+
+No shadow root, no boundary. Page CSS reaches it, `<label for>` works, and no
+JavaScript is shipped.
+
+```html
+<!-- app/elements/site-note.html -->
+<script properties>
+  export default {
+    tone: 'neutral',
+  };
+</script>
+
+<style>
+  :scope {
+    display: block;
+    border-left: 3px solid var(--rule);
+    padding: 0.5rem 0.9rem;
+  }
+  :scope[tone='warn'] {
+    border-color: #b4232c;
+  }
+</style>
+
+<p><slot>Nothing to say.</slot></p>
+```
+
+```html
+<site-note tone="warn">Rendered into the page's own DOM.</site-note>
+```
+
+`:scope` styles the element itself. Those rules are hoisted into `<head>` and
+lose to page CSS of equal specificity, so a page can override an element it did
+not write.
+
+## Shadow root, opt-in
+
+```html
+<!-- app/elements/user-card.html -->
+<script properties>
+  export default {
+    name: '',
+    tags: [],
+  };
+  export const shadow = true;
+</script>
+
+<style>
+  h3 {
+    margin: 0;
+  }
+</style>
+
+<h3>${name}</h3>
+<ul>
+  <li each="tag of tags">${tag}</li>
+</ul>
+<slot></slot>
+```
+
+Reach for a shadow root when the element has to seal its styles and DOM off from
+the page, or re-render on its own. Otherwise stay light: it is cheaper, and it
+renders the same way whether the browser asked for a whole page or one fragment.
+
+## Props
+
+`<script properties>` declares them, with defaults that set the type. An
+attribute is the value.
+
+```html
+<user-card name="Ada Lovelace" tags='["math", "engines"]'></user-card>
+```
+
+An object or an array serializes as JSON, so the browser reads the same data
+back off the element that the server had.
+
+`false`, `null` and `undefined` drop an attribute rather than writing
+`class="false"`. `true` writes the name bare.
+
+## State
+
+`<script state>` is data the element owns. Nothing observes it: assigning to it
+schedules the render, the way an attribute change does for a prop.
+
+```html
+<!-- app/elements/tally-box.html -->
+<script properties>
+  export default {
+    label: 'tally',
+  };
+</script>
+
+<script state>
+  export default {
+    n: 0,
+  };
+</script>
+
+<output>${n}</output>
+<span>${label}</span>
+
+<script>
+  export const prototype = {
+    bump(by = 1) {
+      this.n += by;
+    },
+  };
+
+  host.addEventListener('click', () => host.bump(), { signal });
+</script>
+```
+
+```html
+<tally-box label="clicks"></tally-box>
+<script type="module">
+  const box = document.querySelector('tally-box');
+  box.n = 10; // schedules a re-render
+  box.bump(); // 11
+  await box.updateComplete;
+</script>
+```
+
+## Behavior
+
+A plain `<script>` block is the element's own code. `host` is the element,
+`shadow` is its shadow root when it has one, `signal` is an `AbortSignal` that
+fires when the element disconnects, and `internals` is its `ElementInternals`.
+
+`export const prototype` puts members on the class prototype, shared by every
+instance. The rest of the block is per-element setup and runs once each.
+
+```js
+export const prototype = {
+  dismiss() {
+    this.hidden = true;
+    this.dispatchEvent(new CustomEvent('dismiss', { bubbles: true }));
+  },
+};
+```
+
+A prototype member cannot read `host`, `shadow`, `signal` or `internals`. Those
+are per-element, and reaching one from a shared member is a compile error.
+
+**Always pass `{ signal }` to a listener on `document`, `window` or
+`globalThis`.** One on `host` is collected with the element. One on `document`
+holds its closure forever, and every element after it adds another.
+
+```js
+document.addEventListener(
+  'keydown',
+  (event) => {
+    if (event.key === 'Escape') host.dismiss();
+  },
+  { signal },
+);
+```
+
+## Form association
+
+```html
+<!-- app/elements/tag-picker.html -->
+<script properties>
+  export default {
+    name: '',
+    value: '',
+  };
+  export const formAssociated = true;
+</script>
+
+<button type="button">${value || 'Pick tags'}</button>
+```
+
+```html
+<form method="post">
+  <input name="text" />
+  <tag-picker name="tags"></tag-picker>
+  <button type="submit">Add</button>
+</form>
+```
+
+The element is then a real form field: it submits, resets and validates with the
+rest of them.
+
+## Traps
+
+**A light element cannot `if` or `each` over a value that changes.** It does not
+own its children, so it writes into the DOM it already rendered rather than
+replacing it. That is a compile error naming `shadow`. A shadow element compiles
+the same `each` to a block with anchors and rebuilds it.
+
+**A shadow element in a fragment paints on connect.** A declarative shadow root
+is built when a browser parses a document, and nothing that swaps HTML parses
+one. A light element arrives whole.
+
+**An element with `<script state>` and no `<script>` still gets registered.**
+State is behavior. Without the definition, `el.n = 1` sets a value no node hears
+about.
+
+**`setHTMLUnsafe()`, never `innerHTML`,** when inserting markup that holds an
+element. `innerHTML` leaves a nested declarative shadow root as a dead
+`<template>`.

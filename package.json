@@ -52,6 +52,7 @@
     "LICENSE",
     "bin",
     "editor",
+    "skills",
     "src"
   ],
   "scripts": {

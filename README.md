@@ -110,12 +110,31 @@ itself built with the framework.
 ### Trying the CLI against this checkout
 
 ```sh
-npm link                                  # once, puts create-transclude on PATH
+cd create && npm link && cd ..            # once, puts create-transclude on PATH
 create-transclude my-app --template blank --link
 ```
 
 `--link` points the new project at this checkout rather than the registry, which
 is what you want while changing the framework: an edit here is an edit there.
+
+## Working with an AI agent
+
+`skills/transclude/` is an [Agent Skill](https://agentskills.io): the framework's
+conventions, its API and the mistakes it refuses, in the format Claude Code,
+Cursor, Copilot and others read. It ships with the package, so an installed
+project has it at `node_modules/@transclude/core/skills/transclude/`.
+
+Every HTML example in it is compiled by the real compiler in `npm test`. A skill
+is documentation an agent acts on without a human reading it first, so an
+example that stops compiling is worse than a missing one.
+
+## Contributing
+
+[CONTRIBUTING.md](CONTRIBUTING.md) covers the layout, the tests and the writing
+style. Everyone taking part agrees to the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+Security problems go to admin@dakroub.co, not to a public issue.
 
 ## License
 

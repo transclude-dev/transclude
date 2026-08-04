@@ -1,0 +1,80 @@
+<script server>
+  import { all } from '../../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      setup: [
+        `git clone https://github.com/transclude-dev/transclude.git
+cd transclude
+npm install
+npm test`,
+        'shell',
+      ],
+    }),
+  });
+</script>
+
+<title>Contributing · transclude</title>
+<meta name="description" content="How to report a bug, propose a change, and run the tests." />
+
+<doc-page
+  heading="Contributing"
+  lede="Report a bug with the smallest file that shows it. Ask before writing anything large. This is a small project and a question costs less than a rewrite."
+>
+  <h2>Reporting a bug</h2>
+
+  <p>
+    Open an
+    <a href="https://github.com/transclude-dev/transclude/issues">issue</a> with
+    the smallest page, element or config that shows the problem. Say which
+    runtime you saw it on. A <code>.html</code> file that reproduces is worth
+    more than a description of one.
+  </p>
+
+  <doc-note label="Security goes to a mailbox, not an issue" tone="warn">
+    Mail <a href="mailto:admin@dakroub.co">admin@dakroub.co</a> instead. Say what
+    an attacker can do and how you got there.
+  </doc-note>
+
+  <h2>Running it</h2>
+
+  ${html(s.setup)}
+
+  <p>
+    The tests need no app. <code>npm run showcase</code> starts the demo, which
+    is where the browser checks live, and <code>npm run www</code> starts this
+    site.
+  </p>
+
+  <h2>Before you send a change</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/blob/main/CONTRIBUTING.md"
+      >CONTRIBUTING.md</a
+    >
+    has the layout, the test rules and the writing style. Two things in it catch
+    most first pull requests.
+  </p>
+
+  <p>
+    <strong>Falsify before trusting.</strong> Break the mechanism on purpose and
+    confirm its own test fails. A test that passes both ways is not a test.
+  </p>
+
+  <p>
+    <strong>The package does not reach into the apps.</strong>
+    <code>examples/showcase</code> and <code>www</code> depend on it by name,
+    the way any project would. A test says so.
+  </p>
+
+  <h2>Code of conduct</h2>
+
+  <p>
+    Everyone taking part agrees to the
+    <a href="https://github.com/transclude-dev/transclude/blob/main/CODE_OF_CONDUCT.md"
+      >Code of Conduct</a
+    >. Be kind, talk about the work rather than the person, and take new people
+    seriously. Reports go to
+    <a href="mailto:admin@dakroub.co">admin@dakroub.co</a> and stay private.
+  </p>
+</doc-page>

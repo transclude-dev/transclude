@@ -9,6 +9,30 @@ npm start        # serves dist/ on 1960`,
         'shell',
       ],
       prerender: ['export const prerender = false;', 'js'],
+
+      revalidate: [`export const revalidate = 3600;`, 'js'],
+
+      tagged: [
+        `// app/routes/notes.html
+export const revalidate = { seconds: 3600, tags: ['notes'] };
+
+export default async () => ({ notes: await notes.all() });`,
+        'js',
+      ],
+
+      drop: [
+        `// app/routes/api/notes.js
+export const POST = async ({ request, revalidateTag }) => {
+  await notes.add(await request.json());
+
+  // Every held page carrying this tag is dropped. The next request for one
+  // renders it again.
+  revalidateTag('notes');
+
+  return new Response(null, { status: 204 });
+};`,
+        'js',
+      ],
     }),
   });
 </script>
@@ -42,6 +66,62 @@ npm start        # serves dist/ on 1960`,
     says which of those it did, and exits non-zero. It does not write a file
     that would be wrong for every visitor after the first.
   </doc-note>
+
+  <h2>Holding a render</h2>
+
+  <p>
+    Between a file written once and a render on every request, there is a page
+    held for a while.
+  </p>
+
+  ${html(s.revalidate)}
+
+  <p>
+    Inside that window a request is answered from the store and the loader does
+    not run. Past it, the page already held goes out
+    <strong>immediately</strong> and a fresh one is rendered behind the
+    response, so nobody waits for a re-render. One render happens at a time per
+    URL, however many requests arrive together.
+  </p>
+
+  <p>
+    The key is the path and the query, because a page reading
+    <code>?q=</code> renders differently for each one.
+  </p>
+
+  <h3>Tags</h3>
+
+  <p>
+    Seconds say when a page may be out of date. A tag says when it
+    <em>is</em>, so something that changed the data can drop it rather than
+    waiting.
+  </p>
+
+  ${html(s.tagged)}
+
+  <p>
+    <code>ctx.revalidateTag</code> drops every held page carrying that tag. It
+    is on the context of a page action or an endpoint, so whatever wrote the
+    change is what says the change happened.
+  </p>
+
+  ${html(s.drop)}
+
+  <doc-note label="What is never held">
+    A page that read a cookie, set a header, answered with a
+    <code>Response</code>, or has a status outside 2xx. A shared cache holding
+    any of those hands one visitor's page, or one visitor's
+    <code>Set-Cookie</code>, to the next. It is the same rule the build uses to
+    decide a route can be a file.
+  </doc-note>
+
+  <p>
+    The default store is a bounded map in the process. That is right for one
+    server and wrong for several: each holds its own copy, and
+    <code>revalidateTag</code> reaches only one of them. Give <code>cache</code>
+    in the config anything with the same four methods to put the store
+    somewhere they all share.
+  </p>
 
   <h2>Caching</h2>
 

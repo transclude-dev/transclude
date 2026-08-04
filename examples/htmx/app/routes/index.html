@@ -46,6 +46,9 @@
   Turn JavaScript off and every control here still works.
 </p>
 
+<!-- `submit` is in the trigger list because naming any trigger replaces the
+     default, and for a form the default is submit. Leave it out and the Search
+     button falls back to a whole-page navigation while everything else swaps. -->
 <form
   class="search"
   method="get"
@@ -54,7 +57,7 @@
   hx-get="/"
   hx-target="#people"
   hx-swap="outerHTML"
-  hx-trigger="input changed delay:200ms, search"
+  hx-trigger="input changed delay:200ms, search, submit"
   hx-push-url="true"
 >
   <label for="q">Search</label>

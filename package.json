@@ -57,9 +57,10 @@
   ],
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
-    "test:examples": "npm test --prefix examples/showcase",
+    "test:examples": "npm test --prefix examples/showcase && npm test --prefix examples/todomvc",
     "test:www": "npm test --prefix www",
     "showcase": "npm run dev --prefix examples/showcase",
+    "todomvc": "npm run dev --prefix examples/todomvc",
     "www": "npm run dev --prefix www",
     "check:src": "tsc -p tsconfig.src.json",
     "release": "node bin/release.js"

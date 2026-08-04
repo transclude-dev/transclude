@@ -70,6 +70,34 @@ export function findRoot(from = process.cwd()) {
 }
 
 /**
+ * What a config means when it says nothing.
+ *
+ * These were documented as defaults and were not applied anywhere: `loadProject`
+ * handed the object back as written, so a config that left `outDir` out reached
+ * `path.join(root, undefined)` and threw `ERR_INVALID_ARG_TYPE`, which names
+ * neither the key nor the file. The starter templates set every one of them,
+ * which is why nothing caught it.
+ *
+ * `port` is not here. `portOf` already answers it, and it reads the environment
+ * first, which a plain default cannot do.
+ */
+const DEFAULTS = {
+  appDir: 'app',
+  routesDir: 'routes',
+  elementsDir: 'elements',
+  publicDir: 'public',
+  outDir: 'dist',
+  typesFile: 'app/transclude-env.d.ts',
+  stylesheet: null,
+  lang: 'en',
+  fragmentParam: 'fragment',
+  trailingSlash: 'never',
+  strict: false,
+  csrf: true,
+  csp: false,
+};
+
+/**
  * The root and its config together, because nothing needs one without the other.
  *
  * Imported by URL rather than by path: a space in the project path stays
@@ -87,7 +115,7 @@ export async function loadProject(from = process.cwd()) {
     throw new Error(`[transclude] ${CONFIG_FILE} must export a config object as its default`);
   }
   assertNoSplitDirs(config, file);
-  return { root, config, configFile: file };
+  return { root, config: { ...DEFAULTS, ...config }, configFile: file };
 }
 
 /**

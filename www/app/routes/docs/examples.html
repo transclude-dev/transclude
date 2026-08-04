@@ -1,0 +1,84 @@
+<script server>
+  import { all } from '../../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      run: [
+        `git clone https://github.com/transclude-dev/transclude.git
+cd transclude && npm install
+
+npm run todomvc    # http://localhost:1963
+npm run showcase   # http://localhost:1961`,
+        'shell',
+      ],
+    }),
+  });
+</script>
+
+<title>Examples · transclude</title>
+<meta name="description" content="Whole apps built with transclude, in the repository." />
+
+<doc-page
+  heading="Examples"
+  lede="Whole apps, not snippets. Each one is a directory in the repository that depends on the package by name, the same way your project does."
+>
+  ${html(s.run)}
+
+  <h2>TodoMVC</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/todomvc"
+      >examples/todomvc</a
+    >
+    is <a href="https://todomvc.com">TodoMVC</a> with forms and nothing else. Add,
+    edit, toggle, delete, filter and clear, in one <code>.html</code> file,
+    shipping zero bytes of JavaScript.
+  </p>
+
+  <p>
+    Read it for the shape of a page that changes things. Every control is a
+    submit button in its own form, carrying a hidden <code>intent</code>, so one
+    <code>POST</code> handler covers seven actions. Editing is a link to
+    <code>?editing=3</code>, which means it survives a reload. Every change ends in a 303 back to the
+    same URL. Adding a todo twice takes two submissions, not one and a
+    refresh.
+  </p>
+
+  <doc-note label="One list, one process">
+    The store is a module holding an array, so everyone looking at the running
+    app sees the same todos. That is wrong for a real app and useful for a demo
+    you open in two windows. Swap that one file for a database and nothing above
+    it changes.
+  </doc-note>
+
+  <h2>Showcase</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/showcase"
+      >examples/showcase</a
+    >
+    is the opposite of a small example: it uses every feature, and it is what the
+    framework is tested against. Fragments, includes, light and shadow elements,
+    endpoints, cookies, a feed and a proxy.
+  </p>
+
+  <p>
+    The browser checks live there too, at <code>/check</code>. A real form, a
+    shadow root and a <code>dataset</code> are things no test in Node can
+    model.
+  </p>
+
+  <h2>What they have in common</h2>
+
+  <p>
+    Both install the framework from <code>file:../..</code>, which is what any
+    other project does with a version number instead. Nothing in the package
+    reaches into either of them, and a test says so. If the framework can only be
+    used the way an installed package is used, it works installed.
+  </p>
+
+  <p>
+    <a href="/docs/recipes">Recipes</a> are the short version: one answer at a
+    time, to drop into a project you already have.
+  </p>
+</doc-page>

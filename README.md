@@ -96,16 +96,17 @@ so a swap cannot drift from the page it replaces part of.
 ```sh
 npm install
 npm test              # the framework's own, and they need no app
-npm run test:examples # the demo's, against a build
-npm run showcase      # the demo on http://localhost:1961
+npm run test:examples # the examples', against a build
+npm run showcase      # the showcase on http://localhost:1961
+npm run todomvc       # TodoMVC on http://localhost:1963
 npm run check:src     # type-check the framework itself
 ```
 
-`examples/showcase` is an app built against this package the same way any other
-project would be. It is where the browser checks live, because those need an app
-to run against, and it is what the four runtimes are checked with. `www/` is the
-site at transclude.dev: a landing page, the documentation under `/docs`, and
-itself built with the framework.
+`examples/` holds apps built against this package the same way any other project
+would be. `todomvc` is TodoMVC with forms and no client JavaScript; `showcase`
+uses every feature and is where the browser checks live, because those need an
+app to run against. `www/` is the site at transclude.dev: a landing page, the
+documentation under `/docs`, and itself built with the framework.
 
 ### Trying the CLI against this checkout
 

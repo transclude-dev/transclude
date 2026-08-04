@@ -10,6 +10,7 @@ cd transclude && npm install
 npm run todomvc    # http://localhost:1963
 npm run blog       # http://localhost:1964
 npm run search     # http://localhost:1965
+npm run htmx       # http://localhost:1966
 npm run showcase   # http://localhost:1961`,
         'shell',
       ],
@@ -98,6 +99,31 @@ npm run showcase   # http://localhost:1961`,
     slow answer that arrives after a newer one, and
     <code>history.replaceState</code> keeps the URL in step so a reload works.
   </p>
+
+  <h2>htmx</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/htmx"
+      >examples/htmx</a
+    >
+    does the same job as <code>search</code> with
+    <a href="https://htmx.org">htmx</a> instead of a <code>fetch</code>. It is
+    the only app here that sets <code>fragmentHeader</code>.
+  </p>
+
+  <p>
+    htmx puts the id it is about to swap in an <code>HX-Target</code> header.
+    Naming that header in the config means the header alone asks for a region,
+    so <code>hx-get="/"</code> with <code>hx-target="#people"</code> carries no
+    <code>?fragment=</code>. Nothing in the page file mentions htmx.
+  </p>
+
+  <doc-note label="Not from a CDN" tone="warn">
+    <code>csp: true</code> gives <code>script-src 'self'</code>, so a script
+    from anywhere else is refused by the browser with nothing on the page to
+    explain it. htmx is copied out of <code>node_modules</code> into
+    <code>app/public/</code> before the build.
+  </doc-note>
 
   <h2>Showcase</h2>
 

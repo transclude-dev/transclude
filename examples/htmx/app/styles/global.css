@@ -1,0 +1,52 @@
+:root {
+  --ink: #17171a; --muted: #61616a; --rule: #e4e4e8;
+  --ground: #fcfcfd; --link: #0000ee; --surface: #f4f4f7;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e9e9ec; --muted: #9a9aa4; --rule: #2b2b31;
+    --ground: #121215; --link: #9db8ff; --surface: #1a1a1f;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0 auto; padding: 3rem 1.25rem 5rem; max-width: 38rem;
+  background: var(--ground); color: var(--ink);
+  font: 16px/1.6 system-ui, sans-serif;
+}
+h1 { font-size: 1.8rem; letter-spacing: -0.02em; margin: 0 0 0.5rem; }
+.lede { color: var(--muted); margin: 0 0 2rem; }
+
+form { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
+form.add { margin-bottom: 2rem; }
+label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+input[type='search'], input[type='text'], input:not([type]) {
+  flex: 1; padding: 0.55rem 0.75rem; border: 1px solid var(--rule);
+  border-radius: 6px; background: var(--ground); color: inherit; font: inherit;
+}
+button {
+  padding: 0.55rem 0.9rem; border: 1px solid var(--rule); border-radius: 6px;
+  background: var(--surface); color: inherit; font: inherit; cursor: pointer;
+}
+
+ul { list-style: none; margin: 0; padding: 0; }
+li {
+  display: flex; gap: 0.75rem; align-items: center;
+  padding: 0.75rem 0; border-top: 1px solid var(--rule);
+}
+li:last-child { border-bottom: 1px solid var(--rule); }
+li form { margin: 0 0 0 auto; }
+.role { color: var(--muted); font-size: 0.85rem; }
+.empty { color: var(--muted); }
+.destroy {
+  border: 0; background: none; color: var(--muted);
+  font-size: 1.3rem; line-height: 1; padding: 0 0.4rem;
+}
+.destroy:hover { color: #b4232c; }
+
+/* htmx marks an element while a request for it is in flight. */
+#people.htmx-request { opacity: 0.55; transition: opacity 120ms; }
+
+a { color: var(--link); }

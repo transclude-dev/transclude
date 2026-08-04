@@ -1,0 +1,10 @@
+node_modules/
+dist/
+
+# Copied out of node_modules by `npm run vendor`, which prebuild and predev run.
+app/public/htmx.min.js
+
+.claude/
+.env
+.env.*
+!.env.example

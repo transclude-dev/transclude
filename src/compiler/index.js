@@ -147,6 +147,12 @@ export function splitBlocks(source) {
       // before first paint, or a `pagereveal` listener, which fires too early for
       // any script in the body to see.
       else if (attrs.has('head')) out.head.push({ ...block, attrs: node.attrs ?? [] });
+      // A `src` means there is no code here to compile, so this is markup: an
+      // ordinary external script the page wants in its body. Read as a client
+      // block it became an empty one and the tag was dropped, `src` and all,
+      // with nothing said. A nested `<script src>` was always markup; only a
+      // top-level one went missing.
+      else if (attrs.has('src')) out.nodes.push(node);
       else out.client.push(block);
       continue;
     }

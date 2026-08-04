@@ -491,3 +491,27 @@ test('an alias and an ordinary name are left alone', () => {
 
   assert.doesNotThrow(() => compilePage(source, { runtime: '/rt.js' }));
 });
+
+test('a top-level script with a src is markup, not a client block', () => {
+  // Read as a client block it became an empty one, and the tag was dropped from
+  // the page with its `src`. Nothing said so: the page rendered, and the script
+  // it asked for was simply not there. A nested one was always markup.
+  const source = '<title>x</title>\n<script src="/htmx.min.js" defer></script>\n<p>hi</p>';
+  const blocks = splitBlocks(source);
+
+  assert.equal(blocks.client.length, 0, 'there is no code here to compile');
+  assert.ok(
+    blocks.nodes.some((node) => node.tagName === 'script'),
+    'it stays in the markup',
+  );
+
+  const { code } = compilePage(source, { runtime: '/rt.js' });
+  assert.match(code, /htmx\.min\.js/, 'and reaches the page');
+});
+
+test('a top-level script with code is still a client block', () => {
+  const blocks = splitBlocks('<p>hi</p>\n<script>document.title = "x";</script>');
+
+  assert.equal(blocks.client.length, 1);
+  assert.ok(!blocks.nodes.some((node) => node.tagName === 'script'));
+});

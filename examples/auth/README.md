@@ -54,9 +54,29 @@ The build says so and stops:
 
 It exits non-zero and writes nothing, rather than shipping a signed-out copy of
 your home page. That is why every page here carries `export const prerender =
-false`, the 404 included.
+false`.
 
 Read a cookie in a *narrower* layout and only that section pays for it.
+
+### Except the 404
+
+An error page has to be bytes. One that renders when a request has already
+failed can fail too, so it is written at build time whatever it says about
+`prerender`. At build time there is no request, and `ctx.request` is `null` —
+the only time it ever is.
+
+So the layout checks:
+
+```js
+export default async ({ cookies, request }) => {
+  if (!request) return { user: null };
+  ...
+};
+```
+
+Without that, the build reads a signed cookie with no visitor and no secret, and
+fails with `reading a signed cookie needs a secret`. That is exactly what
+happened in CI, where there is no `.env`.
 
 ## Small things worth copying
 

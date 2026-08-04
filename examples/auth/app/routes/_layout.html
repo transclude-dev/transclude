@@ -4,7 +4,14 @@
   // Every page below reads this, so the session is looked up once. Reading a
   // cookie is what makes a page personal: the cache refuses to hold it and the
   // build refuses to write it to a file, both without being told.
-  export default async ({ cookies }) => {
+  export default async ({ cookies, request }) => {
+    // `ctx.request` is null while prerendering, and that is the only time it is.
+    // The 404 page is always written to a file, whatever it says about
+    // `prerender`, because an error page that has to render when a request has
+    // already failed can fail too. A file has no visitor, so there is no session
+    // to read, and reading one here would throw on a build with no secret.
+    if (!request) return { user: null };
+
     const id = await cookies.signed.get('session');
 
     return { user: id ? find(id) : null };

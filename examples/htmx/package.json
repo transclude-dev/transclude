@@ -1,0 +1,25 @@
+{
+  "name": "transclude-example-htmx",
+  "private": true,
+  "type": "module",
+  "description": "The same fragments, driven by htmx instead of a fetch. Shows fragmentHeader.",
+  "scripts": {
+    "vendor": "node bin/vendor.js",
+    "predev": "npm run vendor",
+    "prebuild": "npm run vendor",
+    "dev": "transclude-dev",
+    "build": "transclude-build",
+    "start": "transclude-serve",
+    "check": "transclude-check",
+    "test": "node --test \"test/**/*.test.js\"",
+    "preview": "npm run build && npm start"
+  },
+  "dependencies": {
+    "@transclude/core": "file:../.."
+  },
+  "devDependencies": {
+    "htmx.org": "^2.0.10",
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5"
+  }
+}

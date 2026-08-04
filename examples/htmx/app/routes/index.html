@@ -1,0 +1,88 @@
+<script server>
+  // The same job as the `search` example, driven by htmx instead of a fetch.
+  //
+  // Nothing in this file mentions htmx. The region below is a region; the
+  // attributes that ask for it are markup. Swap htmx for Turbo, or for the
+  // twenty lines in `examples/search`, and the server side does not change.
+  import { search, add, remove, all } from '../data/people.js';
+
+  export const prerender = false;
+
+  export default async ({ url }) => {
+    const q = new URL(url).searchParams.get('q') ?? '';
+
+    return { q, people: search(q), total: all().length };
+  };
+
+  export const POST = async ({ request, url, fragment }) => {
+    const form = await request.formData();
+
+    if (form.get('intent') === 'remove') {
+      remove(Number(form.get('id')));
+    } else {
+      const name = String(form.get('name') ?? '').trim();
+      if (name) add(name, String(form.get('role') ?? '').trim());
+    }
+
+    // `ctx.fragment` is how one handler serves both callers. htmx asked for a
+    // region, so answer with the region: a redirect would make it swap a whole
+    // document into a list. A form submission with no script gets the redirect,
+    // which is what stops a reload from repeating the change.
+    if (fragment) return undefined;
+
+    return Response.redirect(new URL(url), 303);
+  };
+</script>
+
+<title>People, with htmx</title>
+<meta name="description" content="Fragments driven by htmx, using the HX-Target header." />
+
+<script src="/htmx.min.js" defer></script>
+
+<h1>People</h1>
+
+<p class="lede">
+  ${total} of them. The list below is a region, and htmx asks for it by name.
+  Turn JavaScript off and every control here still works.
+</p>
+
+<form
+  class="search"
+  method="get"
+  action="/"
+  role="search"
+  hx-get="/"
+  hx-target="#people"
+  hx-trigger="input changed delay:200ms, search"
+  hx-push-url="true"
+>
+  <label for="q">Search</label>
+  <input id="q" name="q" type="search" value="${q}" placeholder="ada, admiral…" autocomplete="off" />
+  <button type="submit">Search</button>
+</form>
+
+<form class="add" method="post" hx-post="/" hx-target="#people">
+  <label for="name">Name</label>
+  <input id="name" name="name" placeholder="Name" required />
+  <label for="role">Role</label>
+  <input id="role" name="role" placeholder="Role" />
+  <button type="submit">Add</button>
+</form>
+
+<!-- The region. `hx-target="#people"` above puts its id in the `HX-Target`
+     header, and `fragmentHeader` in the config is what reads it, so none of
+     these URLs carry `?fragment=`. -->
+<ul id="people" fragment>
+  <li each="person of people">
+    <strong>${person.name}</strong>
+    <span class="role">${person.role}</span>
+
+    <form method="post" hx-post="/" hx-target="#people">
+      <input type="hidden" name="intent" value="remove" />
+      <input type="hidden" name="id" value="${person.id}" />
+      <button class="destroy" type="submit" aria-label="Remove ${person.name}">×</button>
+    </form>
+  </li>
+
+  <li class="empty" if="!people.length">Nobody matched.</li>
+</ul>

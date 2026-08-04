@@ -321,7 +321,7 @@ npm run dev`,
 </div>
 
 <div class="regions">
-  <h2>Any region can be a URL</h2>
+  <h2>Any element can be a URL</h2>
 
   <p>Add <code>fragment</code> to an element and it gets a URL of its own.</p>
 
@@ -346,7 +346,7 @@ npm run dev`,
 
   <p>
     Both come from the same compiled markup, so the page and the piece cannot
-    drift apart. That is the whole agreement: a region is a resource with a
+    drift apart. That is the whole agreement: a fragment is a resource with a
     plain HTTP URL.
   </p>
 
@@ -357,8 +357,8 @@ npm run dev`,
   </p>
 
   <p>
-    The server can put a region in a second place instead.
-    <code>&lt;transclude src="#list"&gt;</code> renders this one somewhere else
+    The server can put that element in a second place instead.
+    <code>&lt;transclude src="#list"&gt;</code> renders it somewhere else
     on the page, and <code>src="/notes#list"</code> reaches into another route.
     Showing the same content in more than one place is what the word
     <em>transclusion</em> means, and it is where the name comes from.

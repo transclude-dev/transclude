@@ -14,6 +14,7 @@
 // came from.
 
 import { parse, parseExpressionAt } from 'acorn';
+import { ambientJsdoc } from './ambient.js';
 import { childrenOf } from './codegen.js';
 import { splitInterpolations } from './interp.js';
 import { splitBlocks } from './index.js';
@@ -46,23 +47,7 @@ const PASS_THROUGH = /^(?:data|aria|hx)-/;
  * it type-checked happily and caught nothing. The endpoint shim
  * did exactly that.
  */
-const COOKIES_TYPEDEF =
-  '/**\n' +
-  ' * @typedef {{ path?: string; domain?: string; maxAge?: number; expires?: Date;\n' +
-  ' *   httpOnly?: boolean; secure?: boolean; sameSite?: "Strict" | "Lax" | "None" }} __CookieOptions\n' +
-  ' */\n' +
-  '/**\n' +
-  ' * @typedef {{\n' +
-  ' *   get(name: string): string | undefined;\n' +
-  ' *   all(): Record<string, string>;\n' +
-  ' *   set(name: string, value: string, options?: __CookieOptions): void;\n' +
-  ' *   delete(name: string, options?: __CookieOptions): void;\n' +
-  ' *   signed: {\n' +
-  ' *     get(name: string): Promise<string | undefined>;\n' +
-  ' *     all(): Promise<Record<string, string>>;\n' +
-  ' *     set(name: string, value: string, options?: __CookieOptions): Promise<void>;\n' +
-  ' *   };\n' +
-  ' * }} __Cookies\n */\n\n';
+const COOKIES_TYPEDEF = `${ambientJsdoc(['__CookieOptions', '__Cookies'])}\n`;
 
 class Builder {
   constructor() {
@@ -278,20 +263,9 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
   // types its own.
   out.add('export {};\n');
 
-  // Two jobs, both about letting the author write plain JS.
-  //
-  // The mapping is what keeps `${user.nmae}` an error. TypeScript treats a type
-  // that came straight from an object literal in a .js file as open for expando
-  // properties, so reading an undeclared one is allowed. Remapping the keys gives
-  // an ordinary object type, where it is not.
-  //
-  // The conditional widens a bare `[]`, which otherwise infers `never[]` and
-  // turns "no annotation" from "less checking" into a page of errors about a
-  // type nobody wrote.
-  out.add(
-    '/**\n * @template T\n' +
-      ' * @typedef {{ [K in keyof T]: T[K] extends never[] ? any[] : T[K] }} __Shape\n */\n',
-  );
+  // Both jobs `__Shape` does are about letting the author write plain JS, and
+  // both are written out in `ambient.js`.
+  out.add(ambientJsdoc(['__Shape']));
 
   out.add(COOKIES_TYPEDEF);
 

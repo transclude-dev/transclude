@@ -4,6 +4,28 @@
 
 export {};
 
+// Declared by the compiler. Every context type below names these.
+type __Cookies = {
+  get(name: string): string | undefined;
+  all(): Record<string, string>;
+  set(name: string, value: string, options?: __CookieOptions): void;
+  delete(name: string, options?: __CookieOptions): void;
+  signed: {
+    get(name: string): Promise<string | undefined>;
+    all(): Promise<Record<string, string>>;
+    set(name: string, value: string, options?: __CookieOptions): Promise<void>
+  }
+};
+type __CookieOptions = {
+  path?: string;
+  domain?: string;
+  maxAge?: number;
+  expires?: Date;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: 'Strict' | 'Lax' | 'None'
+};
+
 /** The `ctx` argument of `root/_layout.html`'s loader. */
 export type RootLayoutContext = {
   url: string;
@@ -70,7 +92,7 @@ export type AdminLayoutContext = {
 };
 
 /** Data returned by `admin/_layout.html`. */
-export type AdminLayoutData = __Shape<Response> | __Shape<{
+export type AdminLayoutData = {
   user: {
     id: number;
     email: string;
@@ -78,7 +100,7 @@ export type AdminLayoutData = __Shape<Response> | __Shape<{
     salt: string;
     hash: string;
   };
-}>;
+};
 
 /** The `ctx` argument of `admin-settings`'s <script server> loader. */
 export type AdminSettingsContext = {
@@ -97,7 +119,7 @@ export type AdminSettingsContext = {
       salt: string;
       hash: string;
     } | null;
-  }, keyof __Shape<Response> | __Shape<{
+  }, keyof {
     user: {
       id: number;
       email: string;
@@ -105,7 +127,7 @@ export type AdminSettingsContext = {
       salt: string;
       hash: string;
     };
-  }>> & __Shape<Response> | __Shape<{
+  }> & {
     user: {
       id: number;
       email: string;
@@ -113,7 +135,7 @@ export type AdminSettingsContext = {
       salt: string;
       hash: string;
     };
-  }>;
+  };
   request: Request | null;
   fragment: string | null;
   action: unknown;
@@ -147,7 +169,7 @@ export type AdminIndexContext = {
       salt: string;
       hash: string;
     } | null;
-  }, keyof __Shape<Response> | __Shape<{
+  }, keyof {
     user: {
       id: number;
       email: string;
@@ -155,7 +177,7 @@ export type AdminIndexContext = {
       salt: string;
       hash: string;
     };
-  }>> & __Shape<Response> | __Shape<{
+  }> & {
     user: {
       id: number;
       email: string;
@@ -163,7 +185,7 @@ export type AdminIndexContext = {
       salt: string;
       hash: string;
     };
-  }>;
+  };
   request: Request | null;
   fragment: string | null;
   action: unknown;

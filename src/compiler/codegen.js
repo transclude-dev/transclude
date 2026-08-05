@@ -820,6 +820,8 @@ class Codegen {
    * Date crosses as an ISO string rather than as JSON.
    */
   emitAttrs(el, out, scope, ref = null) {
+    if (this.loops.length) assertUniqueTransitionName(el);
+
     for (const attr of el.attrs) {
       if (DIRECTIVES.has(attr.name)) continue;
 
@@ -1000,6 +1002,45 @@ export function gatherChain(nodes, i) {
  * @param {object} node
  * @returns {object[]} a template's live under `.content`, so walking `childNodes` finds nothing
  */
+/**
+ * A repeated element may not carry a `view-transition-name` written out.
+ *
+ * The name has to be unique in the document. Every copy of a repeated element
+ * would carry the same one, and the browser's answer to that is to run no
+ * transition at all: nothing throws, nothing is logged, the page just stops
+ * animating. That is the whole reason this is a compile error.
+ *
+ * `none` is allowed, because it is the one value that means "not part of a
+ * transition" and is safe to repeat.
+ *
+ * Only the `style` attribute is checked. A name applied through a class is in a
+ * stylesheet this compiler does not read, so this catches the spelling everyone
+ * writes rather than every spelling there is.
+ */
+function assertUniqueTransitionName(el) {
+  const style = el.attrs?.find((a) => a.name === 'style')?.value;
+  if (!style) return;
+
+  const at = style.indexOf('view-transition-name');
+  if (at === -1) return;
+
+  // Just this declaration, so `${}` elsewhere in the attribute does not excuse
+  // a name that is still written out.
+  const end = style.indexOf(';', at);
+  const declaration = end === -1 ? style.slice(at) : style.slice(at, end);
+
+  if (declaration.includes('${')) return;
+  if (/:\s*none\s*$/.test(declaration)) return;
+
+  throw new CompileError(
+    `<${el.tagName}> is repeated and writes out a view-transition-name, so every ` +
+      `copy would carry the same one. A name has to be unique in the document, and ` +
+      `a browser that finds two runs no transition at all rather than saying so. ` +
+      `Derive it from the loop, as in "view-transition-name: card-\${item.id}".`,
+    el,
+  );
+}
+
 export function childrenOf(node) {
   if (node.tagName === 'template' && node.content) return node.content.childNodes ?? [];
   return node.childNodes ?? [];

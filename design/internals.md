@@ -397,6 +397,15 @@ against.
   and a shallow checkout of a tag gives the commit without it. The notes come
   back empty and the release page is blank, which looks like the notes were never
   written. `fetch-depth: 0` and `fetch-tags` in `publish.yml` are load-bearing.
+- **A repeated `view-transition-name` is a compile error, because the browser's
+  answer is silence.** The name has to be unique in the document, and a browser
+  that finds two runs no transition rather than reporting one. `emitAttrs` checks
+  it whenever `this.loops` is non-empty, which covers the element carrying `each`
+  and everything inside it, because `emitEach` pushes the loop before emitting
+  the element. Only the `style` attribute: a name from a class lives in a
+  stylesheet this compiler never reads, so the check is the spelling everyone
+  writes rather than every spelling there is. `none` is allowed, being the one
+  value two elements can share.
 - **A template file whose name starts with `_` becomes a dot on scaffold.**
   `_gitignore` and `_vscode/` are both spelled that way because a tool that
   finds the real name acts on it: git and npm apply a `.gitignore` wherever they

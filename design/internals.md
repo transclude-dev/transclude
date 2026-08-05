@@ -53,6 +53,11 @@ than into the next reader's evening.
   and `bin/serve.deno.js` are adapters that only listen.
 - `src/project.js`. Finds the project root and loads its config. The one place
   that answers where the app is.
+- `src/prerender.js`. What a page may be if it is going to be a file, and the
+  `ctx` the build hands it. Split out of `bin/build.js` because nothing can
+  import that: it runs a build the moment it is loaded, so anything left in it
+  is testable by hand only. Put logic worth checking here, and keep that file
+  to wiring.
 - `test/`. They need no app, and a change that makes them need one is
   the boundary breaking.
 - `examples/showcase/`. An app, on the far side of the boundary. It depends on the
@@ -112,6 +117,21 @@ against.
   paints itself on connect. `__fragment` threads through both `emitShadow` and
   `emitLight`. Drop it from the second one and a shadow element inside a light one emits
   a shadow root nobody will process.
+- **The build's context refuses rather than omits.** `revalidateTag` and `after`
+  are on the prerender context as functions that throw. Leaving them off is what
+  it did before, and a loader calling one failed with `revalidateTag is not a
+  function`, which names neither what the page did nor how to stop. Both are in
+  the generated type either way, because the checker cannot know which pages
+  become files. All six refusals live in `src/prerender.js` rather than in
+  `bin/build.js`, for the reason below.
+- **`ctx.after` catches the rejection before `waitUntil` sees it.** Nothing awaits
+  the work, so an unhandled rejection ends the process on Node. `after.js` hands
+  `waitUntil` the already-caught promise, not the original, or workerd logs the
+  same failure a second time on its own. The `try` in `executionCtxOf` covers
+  Hono's getter and nothing else: it throws when the runtime has no
+  ExecutionContext rather than answering undefined, and widening the `try` over
+  the `waitUntil` call would swallow a real failure. A test asserts each of those
+  three separately, because any one of them passes while the other two are wrong.
 - **`contextFor` names no runtime, and that is why it has no `env`.** A loader is
   handed `ctx` from `app.js`, which the no-`node:` test keeps portable. Hono has
   `c.env` right there and it is tempting to forward: do not. It is the bindings on

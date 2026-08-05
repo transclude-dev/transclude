@@ -16,7 +16,8 @@ import { pathToFileURL } from 'node:url';
 import { build } from 'vite';
 import transclude from '../src/plugin.js';
 import { loadProject } from '../src/project.js';
-import { absoluteFrom, renderRoute, responseOf, urlFor } from '../src/document.js';
+import { renderRoute, urlFor } from '../src/document.js';
+import { prerenderContext, refusePrerender } from '../src/prerender.js';
 import { feed, feedPath } from '../src/feed.js';
 import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
@@ -25,7 +26,6 @@ import { etagOf, loadAssets, loadStatic } from '../src/static-cache.js';
 import { buildSprite, readLibraries, refuseSpriteClash, spritePath } from '../src/icons.js';
 import { PRECACHE_PATH, precacheDocument, precacheList } from '../src/precache.js';
 import { speculateSettings, speculationRules } from '../src/speculate.js';
-import { cookiesOf } from '../src/cookies.js';
 import { pool } from '../src/pool.js';
 import { precompress } from '../src/compress.js';
 
@@ -148,24 +148,19 @@ async function urlsFor(route) {
 }
 
 /**
- * A prerendered file has no status and no headers. It is a file. So a loader
- * that answered with a Response, or set a status other than 200, is saying this
- * URL is not a page you can write down, and the build says so rather than
- * writing a file that lies about it.
+ * One page, rendered to the markup that gets written.
+ *
+ * What it is allowed to be, and the `ctx` it is given, are both in
+ * `src/prerender.js`, where they can be tested. Nothing imports this file.
  */
 async function render(route, { url, params }) {
-  const response = responseOf();
-  const ctx = {
-    url: `http://localhost${url}`,
+  const ctx = prerenderContext({
+    route,
+    url,
     params,
-    route: { id: route.id, pattern: route.pattern ?? '', path: url },
-    request: null,
-    fragment: null,
-    action: null,
-    response,
-    cookies: cookiesOf(null, response, config.cookieSecret),
-    absolute: absoluteFrom(config.metadataBase, null),
-  };
+    cookieSecret: config.cookieSecret,
+    metadataBase: config.metadataBase,
+  });
 
   const html = await renderRoute(pages[route.id], ctx, {
     clientEntry: assets.get(route.id) ?? null,
@@ -176,30 +171,7 @@ async function render(route, { url, params }) {
     include,
   });
 
-  if (html instanceof Response) {
-    throw new Error(`answered with ${html.status} instead of markup, so it cannot be prerendered`);
-  }
-  if (ctx.response.status !== 200) {
-    throw new Error(`answered ${ctx.response.status}, which no file can carry`);
-  }
-  // A file carries no headers either. A Set-Cookie or a Cache-Control written here
-  // would be thrown away, which is worse than being told.
-  const [header] = [...ctx.response.headers.keys()];
-  if (header) {
-    throw new Error(`set a ${header} header, which no file can carry`);
-  }
-  // Reading a cookie is what makes a page personal, and there is no request
-  // here to read one from. Whatever this file says about the reader is what a
-  // reader with no cookies would have seen, and every visitor gets that copy.
-  // A layout or an included route can do this without the page mentioning it,
-  // which is what makes it worth saying out loud.
-  if (ctx.cookies.personal) {
-    throw new Error(
-      `read a cookie, so it is different for each visitor and cannot be one file. ` +
-        `Give it \`export const prerender = false\`, or stop reading the cookie ` +
-        `here or in what it includes`,
-    );
-  }
+  refusePrerender(ctx, html);
   return html;
 }
 

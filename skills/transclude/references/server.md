@@ -186,7 +186,30 @@ whichever arrived last.
 **A page that reads a binding needs `prerender = false`.** The build runs on
 Node, where nothing calls `hold`, so the build runs that loader and throws.
 
-There is no `waitUntil`. Work has to finish before the response does.
+### ctx.after
+
+`after(work)` takes a promise the reader does not wait for.
+
+```js
+export const prerender = false;
+
+export default async ({ after, url }) => {
+  after(recordView(url));
+  return { notes: await notes.all() };
+};
+```
+
+On workerd this is `waitUntil`, which keeps the isolate up past the response.
+Node, Bun and Deno keep running anyway, so it changes nothing there.
+
+It takes the promise, not a function returning one. A function is refused, since
+wrapping one would resolve to the function and run nothing.
+
+A rejection goes to `onError` with the request that started it. Nothing awaits
+this work, so leaving it would end the process on Node.
+
+Calling it from a prerendered page stops the build: a file has no response to
+outlive. `prerender = false` is the fix, as it is for a binding.
 
 ## Testing
 

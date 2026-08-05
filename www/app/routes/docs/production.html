@@ -221,7 +221,8 @@ export const POST = async ({ request, revalidateTag }) => {
   <p>
     <code>ctx.revalidateTag</code> drops every held page carrying that tag. It
     is on the context of a page action or an endpoint, so whatever wrote the
-    change is what says the change happened.
+    change is what says the change happened. A prerendered page loader that
+    calls it stops the build, since a build holds nothing yet to drop.
   </p>
 
   ${html(s.drop)}

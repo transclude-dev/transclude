@@ -29,6 +29,7 @@ import {
 import { pickEncoding } from './negotiate.js';
 import { baseApp, endpointMethods, runEndpoint } from './server.js';
 import { cookiesOf } from './cookies.js';
+import { afterFor } from './after.js';
 
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 const REVALIDATE = 'public, max-age=0, must-revalidate';
@@ -210,6 +211,9 @@ export function createApp({
       cookies: cookiesOf(c.req.raw, response, config.cookieSecret),
       absolute: absoluteFrom(config.metadataBase, c.req.url),
       revalidateTag: cache.revalidateTag,
+      // Reported through `report`, so work that fails after the reader is gone
+      // is not quieter than work that fails in front of them.
+      after: afterFor(c, (error) => report(error, c)),
       ...extra,
     };
   };

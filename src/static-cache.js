@@ -139,7 +139,10 @@ function read(file) {
  * @returns {string} a quoted ETag
  */
 export function etagOf(body) {
-  return `"${createHash('sha1').update(body).digest('base64url').slice(0, 20)}"`;
+  const digest = createHash('sha1').update(body).digest('base64url');
+  // Twenty characters of base64url is 120 bits, which is far more than a cache
+  // key needs and short enough to read in a header.
+  return `"${digest.slice(0, 20)}"`;
 }
 
 function variantSize(file) {

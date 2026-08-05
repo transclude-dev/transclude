@@ -263,10 +263,14 @@ export function absolutize(root, base) {
         if (!holdsUrl || !attr.value.trim()) continue;
         if (/^(data|blob|mailto:|tel:|javascript:)/i.test(attr.value.trim())) continue;
 
-        attr.value =
-          attr.name === 'ping'
-            ? attr.value.split(/\s+/).filter(Boolean).map((u) => absolute(u, base)).join(' ')
-            : absolute(attr.value, base);
+        // `ping` is the one attribute here holding a list rather than a URL.
+        if (attr.name !== 'ping') {
+          attr.value = absolute(attr.value, base);
+          continue;
+        }
+
+        const urls = attr.value.split(/\s+/).filter(Boolean);
+        attr.value = urls.map((url) => absolute(url, base)).join(' ');
       }
 
       if (child.tagName === 'style') {

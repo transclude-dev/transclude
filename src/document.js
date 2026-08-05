@@ -408,9 +408,15 @@ export async function renderFragment(page, ctx, { region = null, ...options } = 
     data = { ...data, __included: await resolveIncludes(last.includes, ctx, request) };
   }
 
+  // `true` is `__named`: the fragment keeps the id it was declared with, because
+  // that is what a swap is matched against. An include of the same region passes
+  // false, since two copies of one id in a document is the bug that rule exists
+  // to stop.
+  const named = true;
+
   // No region named: the page's whole body, still without its layouts.
-  if (!target) return page.render(data, {}, true).default ?? '';
-  return target(data, {}, true);
+  if (!target) return page.render(data, {}, named).default ?? '';
+  return target(data, {}, named);
 }
 
 /**

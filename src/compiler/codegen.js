@@ -68,7 +68,7 @@ function assertStaticAttrNames(el) {
  */
 export function compileFragment(nodes, opts = {}) {
   const gen = new Codegen(opts);
-  gen.emitChildren(nodes, gen.body, gen.rootScope, true);
+  gen.emitChildren(nodes, gen.body, gen.rootScope, { topLevel: true });
 
   // `<html>` is read separately, because the fragment parser drops it: a nested
   // html start tag is not something that can appear in a body, so parse5 throws
@@ -256,7 +256,7 @@ class Codegen {
 
   // ---- traversal ----------------------------------------------------------
 
-  emitChildren(nodes, out, scope, topLevel = false) {
+  emitChildren(nodes, out, scope, { topLevel = false } = {}) {
     let i = 0;
     while (i < nodes.length) {
       const node = nodes[i];
@@ -268,7 +268,7 @@ class Codegen {
         if (slot) {
           const target = this.slots.get(slot) ?? [];
           this.slots.set(slot, target);
-          this.emitChildren(childrenOf(node), target, scope, false);
+          this.emitChildren(childrenOf(node), target, scope);
           i++;
           continue;
         }
@@ -362,7 +362,7 @@ class Codegen {
 
   emitNodeAt(node, out, scope, topLevel) {
     if (node.nodeName === '#text') {
-      this.emitText(node.value ?? '', out, scope, node, false);
+      this.emitText(node.value ?? '', out, scope, node);
       return;
     }
     // Authoring comments are stripped. They still count as "insignificant" when
@@ -595,14 +595,14 @@ class Codegen {
         return;
       }
       this.c(out, `if (${filled}) { __o += ${filled}; } else {`);
-      this.emitChildren(fallback, out, scope, false);
+      this.emitChildren(fallback, out, scope);
       this.c(out, `}`);
       return;
     }
 
     // A <template> carrying a directive is structural: consumed, children emitted.
     if (tag === 'template' && directivesOf(el).size > 0) {
-      this.emitChildren(childrenOf(el), out, scope, false);
+      this.emitChildren(childrenOf(el), out, scope);
       return;
     }
 
@@ -632,11 +632,11 @@ class Codegen {
       for (const child of childrenOf(el)) {
         if (child.nodeName === '#text') {
           assertRawTextSafe(tag, child.value ?? '', el);
-          this.emitText(child.value ?? '', target, scope, child, true);
+          this.emitText(child.value ?? '', target, scope, child, { raw: true });
         }
       }
     } else {
-      this.emitChildren(childrenOf(el), target, scope, false);
+      this.emitChildren(childrenOf(el), target, scope);
     }
 
     this.s(target, `</${tag}>`);
@@ -659,7 +659,7 @@ class Codegen {
     this.c(out, `__o += __sh(${ref}, {${props}}${this.fragments ? ', __fragment' : ''});`);
 
     // Light DOM children fill <slot>.
-    this.emitChildren(childrenOf(el), out, scope, false);
+    this.emitChildren(childrenOf(el), out, scope);
 
     this.s(out, `</${tag}>`);
   }
@@ -777,7 +777,7 @@ class Codegen {
     const uid = ++this.uid;
     if (children.length) {
       this.c(out, `const __fb${uid} = (() => { let __o = '';`);
-      this.emitChildren(children, out, scope, false);
+      this.emitChildren(children, out, scope);
       this.c(out, `return __o; })();`);
     }
 
@@ -799,7 +799,7 @@ class Codegen {
     const children = childrenOf(el);
     if (children.length) {
       this.c(out, `const __sl${id} = (() => { let __o = '';`);
-      this.emitChildren(children, out, scope, false);
+      this.emitChildren(children, out, scope);
       this.c(out, `return __o; })();`);
     }
 
@@ -889,7 +889,7 @@ class Codegen {
       .join(' + ');
   }
 
-  emitText(value, out, scope, node, raw) {
+  emitText(value, out, scope, node, { raw = false } = {}) {
     const start = node?.sourceCodeLocation?.startLine ?? this.at;
     let line = start;
 

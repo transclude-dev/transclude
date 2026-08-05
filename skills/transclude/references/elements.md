@@ -188,9 +188,10 @@ rest of them.
 
 ## An icon element
 
-The framework compiles `app/icons/` into one `/icons.svg` and ships no element
-for it. This is the one most apps write, and it is worth copying rather than
-inventing.
+The framework compiles `app/icons/` into one `/icons.svg` and defines no element
+for it. `npm create @transclude` writes this file into a new project, so it is
+already there and it belongs to the project. Reproduced here for a project that
+predates it, or one that deleted it.
 
 ```html
 <script properties>

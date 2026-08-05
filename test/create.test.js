@@ -52,8 +52,9 @@ test('the minimal template has a layout, a second page and a 404', () => {
 });
 
 test('neither template ships the demo of things a starter should not decide', () => {
-  // Fragments, includes and elements are what the showcase is for. A project
-  // starts without an opinion about them.
+  // Fragments and includes are what the showcase is for. A project starts
+  // without an opinion about them, and without an opinion about its own markup:
+  // `svg-icon` ships as a file, and no page here uses it.
   for (const template of ['blank', 'minimal']) {
     make(['--template', template], (dir) => {
       const all = fs
@@ -63,6 +64,34 @@ test('neither template ships the demo of things a starter should not decide', ()
 
       assert.doesNotMatch(all, /<transclude/, `${template} includes something`);
       assert.doesNotMatch(all, /\bfragment\b/, `${template} declares a region`);
+      assert.doesNotMatch(all, /<svg-icon/, `${template} decides where an icon goes`);
+    });
+  }
+});
+
+test('both templates ship the icon element, and it is the only one', () => {
+  // The framework ships no elements. This one is scaffolded instead, so it is
+  // the project's file to edit rather than an API to keep compatible, and
+  // nobody hand-writes the two aria spellings from memory.
+  for (const template of ['blank', 'minimal']) {
+    make(['--template', template], (dir) => {
+      const files = fs.readdirSync(path.join(dir, 'app', 'elements'));
+      assert.deepEqual(files, ['svg-icon.html'], `${template} has other elements`);
+
+      const source = read(dir, 'app/elements/svg-icon.html');
+
+      // The trap it exists to close, tested as the trap rather than as a
+      // spelling: an icon that is hidden and labelled at once announces
+      // nothing, and an icon that is neither announces its file name.
+      const labelled = source.match(/<svg if="label"[^>]*>/)?.[0] ?? '';
+      const decorative = source.match(/<svg else[^>]*>/)?.[0] ?? '';
+
+      assert.match(labelled, /aria-label/, `${template}: the labelled icon has no label`);
+      assert.doesNotMatch(labelled, /aria-hidden/, `${template}: a labelled icon is also hidden`);
+      assert.match(decorative, /aria-hidden="true"/, `${template}: the plain icon is announced`);
+      assert.doesNotMatch(decorative, /aria-label/, `${template}: a hidden icon carries a label`);
+
+      assert.match(source, /href="\/\$\{library\}\.svg#\$\{name\}"/);
     });
   }
 });

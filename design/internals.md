@@ -112,6 +112,15 @@ against.
   paints itself on connect. `__fragment` threads through both `emitShadow` and
   `emitLight`. Drop it from the second one and a shadow element inside a light one emits
   a shadow root nobody will process.
+- **`contextFor` names no runtime, and that is why it has no `env`.** A loader is
+  handed `ctx` from `app.js`, which the no-`node:` test keeps portable. Hono has
+  `c.env` right there and it is tempting to forward: do not. It is the bindings on
+  workerd, `{ incoming, outgoing }` under `@hono/node-server`, and the server
+  object on Bun. One property, four meanings, and a loader written against it
+  typechecks everywhere and runs in one place. An app reaching a binding holds
+  `env` in its own module from its own `worker.js`, which also types it properly,
+  because the app knows what is in there and the framework does not. Documented on
+  `/docs/runtimes`.
 - **The form value is reported before the render, not after.** A form can be
   submitted between an attribute changing and the microtask that repaints, and what
   it sends has to match what the attribute already says, so `reportFormValue` runs

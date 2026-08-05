@@ -154,6 +154,40 @@ something built on Wasm fails there and nowhere else. A prerendered page never
 runs its loader in production, so this stays hidden until something asks for a
 fragment.
 
+### Bindings
+
+`ctx` has no `env`. It carries nothing that names one runtime, and `env` names
+one: the other three fill that slot with something else. A KV namespace, a D1
+database or a secret reaches a loader through the app instead.
+
+`worker.js` belongs to the app and does get `env`. Hold it in a module and
+import that.
+
+```js
+// app/lib/bindings.js — no `node:` imports, this ends up in the worker bundle
+/** @type {Env|null} */
+let current = null;
+
+export const hold = (env) => (current = env);
+
+export const bindings = () => {
+  if (!current) throw new Error('No bindings: this app is running off workerd.');
+  return current;
+};
+```
+
+`worker.js` calls `hold(env)` inside `appFor`, before the `app ??=` line. A
+loader then imports `bindings` and reads `bindings().DB`.
+
+Module scope is safe here because `env` is one object for the life of the
+isolate. Holding a `Request` the same way is not, since two visitors would share
+whichever arrived last.
+
+**A page that reads a binding needs `prerender = false`.** The build runs on
+Node, where nothing calls `hold`, so the build runs that loader and throws.
+
+There is no `waitUntil`. Work has to finish before the response does.
+
 ## Testing
 
 The app is a function from a request to a response.

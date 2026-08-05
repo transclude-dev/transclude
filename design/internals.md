@@ -234,6 +234,16 @@ against.
   server and the build both read `client.needed`. They each had their own copy of
   that condition once, and only one got updated, so dev served a page with no entry
   while the build gave it one.
+- **The two element classes are duplicated on purpose, and a test holds them
+  together.** `defineLight` and `defineComponent` each carry their own
+  `schedule`, `updateComplete`, `reportFormValue`, `#data`, `#snapshot` and the
+  rest: nine methods that are identical today. A shared base class would put
+  indirection into the one file that ships to a browser, so the copies stay and
+  a test compares them instead. Only `connectedCallback` and `#apply` may
+  differ, and those two *are* the difference between the halves: a light element
+  writes into nodes that are already there, a shadow one may rebuild. Changing
+  one half's `schedule` and not the other fails that test even when the change
+  behaves identically.
 - **A test that loops over the thing it checks proves nothing.** The list of void
   elements moved into `html.js`, and a test walked `VOID` asserting each one
   emits without a closing tag. Deleting `br` from the set passed: the loop just

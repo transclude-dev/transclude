@@ -369,6 +369,9 @@ function scopedNames(statements) {
   return (statements ?? []).flatMap(declaredNames);
 }
 
+/** Keys acorn puts on every node. They hold positions, never child nodes. */
+const NODE_BOOKKEEPING = new Set(['type', 'start', 'end', 'loc', 'range']);
+
 /**
  * Identifiers a subtree reads from outside itself.
  *
@@ -463,7 +466,7 @@ function freeNames(node, bound, out) {
 
     default:
       for (const key of Object.keys(node)) {
-        if (key === 'type' || key === 'start' || key === 'end' || key === 'loc' || key === 'range') continue;
+        if (NODE_BOOKKEEPING.has(key)) continue;
         freeNames(node[key], bound, out);
       }
       return out;

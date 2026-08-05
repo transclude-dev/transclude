@@ -954,14 +954,17 @@ export function defineLight(def, init) {
 
   if (typeof customElements === 'undefined') return;
   if (customElements.get(def.tag)) return;
+
   // No behavior to attach means nothing to register. A light element with no
   // <script> is markup that was already rendered, and it ships no JavaScript at
-  // all, accessors included. That is the trade the
-  // zero-JS default makes.
+  // all, accessors included. That is the trade the zero-JS default makes.
   //
-  // Being a form control counts as behavior: a shadow root is not required to be
-  // one, and an element that submits a value has to exist to do it.
-  if (!init && !hasMembers(def) && !def.formAssociated && !hasState(def)) return;
+  // Being a form control counts: a shadow root is not required to be one, and an
+  // element that submits a value has to exist to do it. So does state, because
+  // its accessor is what schedules the write.
+  const hasBehavior =
+    Boolean(init) || hasMembers(def) || def.formAssociated === true || hasState(def);
+  if (!hasBehavior) return;
 
   class Light extends HTMLElement {
     // Every declared prop, so a change reaches the template. A light element

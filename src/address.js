@@ -69,8 +69,15 @@ export function parseV6(text) {
   const halves = body.split('::');
   if (halves.length > 2) return null;
 
-  const read = (part) =>
-    part === '' ? [] : part.split(':').map((g) => (/^[0-9a-f]{1,4}$/i.test(g) ? parseInt(g, 16) : NaN));
+  // Each half of a `::` is groups of up to four hex digits. A group that is not
+  // becomes NaN, which the caller checks for rather than throwing here.
+  const read = (part) => {
+    if (part === '') return [];
+    return part.split(':').map((group) => {
+      if (!/^[0-9a-f]{1,4}$/i.test(group)) return NaN;
+      return parseInt(group, 16);
+    });
+  };
 
   const head = read(halves[0]);
   const rest = halves.length === 2 ? read(halves[1]) : [];

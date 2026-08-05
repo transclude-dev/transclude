@@ -167,6 +167,9 @@ const absolute = (value, base) => {
   }
 };
 
+/** What HTML counts as whitespace between srcset candidates. */
+const SRCSET_SPACE = new Set([' ', '\t', '\n', '\r', '\f']);
+
 /**
  * A `srcset`, as a list of candidates.
  *
@@ -180,7 +183,7 @@ const absolute = (value, base) => {
  */
 export function parseSrcset(value) {
   const out = [];
-  const ws = (c) => c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f';
+  const ws = (c) => SRCSET_SPACE.has(c);
   let i = 0;
 
   while (i < value.length) {

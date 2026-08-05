@@ -20,6 +20,13 @@
  * @typedef {{ url: string, revision: string|null }} Entry
  */
 
+/** Orders two entries by URL. */
+function byUrl(a, b) {
+  if (a.url < b.url) return -1;
+  if (a.url > b.url) return 1;
+  return 0;
+}
+
 /**
  * @param {object} sources
  * @param {Iterable<[string, object]>} sources.pages prerendered documents
@@ -46,7 +53,10 @@ export function precacheList({ pages, assets, files = [] }) {
     }
   }
 
-  entries.sort((a, b) => (a.url < b.url ? -1 : a.url > b.url ? 1 : 0));
+  // Sorted by URL so two builds of the same site write the same file. Compared
+  // as code units rather than with `localeCompare`, which is locale-dependent
+  // and would order the list differently on different machines.
+  entries.sort(byUrl);
   return entries;
 }
 

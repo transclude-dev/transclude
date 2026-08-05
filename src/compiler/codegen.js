@@ -945,7 +945,9 @@ function assertRawTextSafe(tag, text, el) {
 function isJsonCall(source) {
   try {
     const node = parseExpr(source);
-    return node.type === 'CallExpression' && node.callee?.type === 'Identifier' && node.callee.name === 'json';
+    if (node.type !== 'CallExpression') return false;
+    if (node.callee?.type !== 'Identifier') return false;
+    return node.callee.name === 'json';
   } catch {
     return false;
   }

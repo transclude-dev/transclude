@@ -176,6 +176,14 @@ export function chainOf(node, scope, computed = []) {
 }
 
 /**
+ * Every jsep node key that can hold another node. Anything else on a node is a
+ * name, a value or a flag, and walking into one finds nothing.
+ */
+const CHILD_KEYS = [
+  'argument', 'left', 'right', 'test', 'consequent', 'alternate', 'object', 'property',
+];
+
+/**
  * Every data or loop-variable path an expression reads.
  *
  * This is what decides which bindings are volatile, and so whether a light
@@ -212,9 +220,10 @@ export function collectRefs(node, scope, out = []) {
       return out;
 
     default:
-      for (const key of ['argument', 'left', 'right', 'test', 'consequent', 'alternate', 'object', 'property']) {
+      for (const key of CHILD_KEYS) {
         if (node[key]) collectRefs(node[key], scope, out);
       }
+
       for (const element of node.elements ?? []) collectRefs(element, scope, out);
       return out;
   }

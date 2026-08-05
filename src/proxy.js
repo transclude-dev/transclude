@@ -163,6 +163,11 @@ export function documentStore(max = DEFAULTS.cache) {
   };
 }
 
+/** The entries with a value, so an empty one is left out rather than sent blank. */
+function present(headers) {
+  return Object.fromEntries(Object.entries(headers).filter(([, value]) => value));
+}
+
 /**
  * A foreign document, fetched, cleaned and indexed.
  *
@@ -183,6 +188,9 @@ export async function readForeign(url, options = {}, deps = {}) {
   const held = store?.get(url) ?? null;
   if (held && now() - held.at < config.maxAge) return held;
 
+  // A held copy with no ETag and no Last-Modified gives nothing to revalidate
+  // against, and sending the headers empty would ask the origin to compare
+  // against nothing. `present` drops them.
   const revalidate = held
     ? { 'if-none-match': held.etag ?? '', 'if-modified-since': held.lastModified ?? '' }
     : {};
@@ -192,7 +200,7 @@ export async function readForeign(url, options = {}, deps = {}) {
     ? (at, init) =>
         get(at, {
           ...init,
-          headers: { ...init.headers, ...Object.fromEntries(Object.entries(revalidate).filter(([, v]) => v)) },
+          headers: { ...init.headers, ...present(revalidate) },
         })
     : get;
 

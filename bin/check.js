@@ -78,16 +78,23 @@ for (const file of files) {
     const text = lines[line - 1] ?? '';
     const trimmed = text.replace(/^\s+/, '');
     const shift = text.length - trimmed.length;
+    // The caret line is drawn under the trimmed source, so the column moves left
+    // by however much indentation was cut. A run is capped so one long span does
+    // not wrap the terminal.
+    const pad = ' '.repeat(Math.max(0, column - shift));
+    const run = '~'.repeat(Math.max(1, Math.min(diagnostic.length, 60)));
+
     console.log(`\n    ${trimmed}`);
-    console.log(`    ${' '.repeat(Math.max(0, column - shift))}${'~'.repeat(Math.max(1, Math.min(diagnostic.length, 60)))}`);
+    console.log(`    ${pad}${run}`);
   }
 }
 
-const total = errors + warnings;
-console.log(
-  total
-    ? `\n${errors} error${errors === 1 ? '' : 's'}, ${warnings} warning${warnings === 1 ? '' : 's'} in ${files.length} files`
-    : `\nNo type errors in ${files.length} files.`,
-);
+const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+
+if (errors + warnings) {
+  console.log(`\n${plural(errors, 'error')}, ${plural(warnings, 'warning')} in ${files.length} files`);
+} else {
+  console.log(`\nNo type errors in ${files.length} files.`);
+}
 
 process.exitCode = errors ? 1 : 0;

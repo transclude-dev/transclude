@@ -409,8 +409,12 @@ function freeNames(node, bound, out) {
     case 'ArrowFunctionExpression': {
       const inner = new Set(bound);
       if (node.id) inner.add(node.id.name);
-      for (const param of node.params) for (const name of patternNames(param)) inner.add(name);
-      if (node.body.type === 'BlockStatement') for (const name of scopedNames(node.body.body)) inner.add(name);
+      for (const param of node.params) {
+        for (const name of patternNames(param)) inner.add(name);
+      }
+      if (node.body.type === 'BlockStatement') {
+        for (const name of scopedNames(node.body.body)) inner.add(name);
+      }
       // A default is evaluated in the function's own scope, so it sees the params.
       for (const param of node.params) freeNames(param, inner, out);
       freeNames(node.body, inner, out);

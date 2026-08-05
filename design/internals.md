@@ -234,6 +234,19 @@ against.
   server and the build both read `client.needed`. They each had their own copy of
   that condition once, and only one got updated, so dev served a page with no entry
   while the build gave it one.
+- **A test that loops over the thing it checks proves nothing.** The list of void
+  elements moved into `html.js`, and a test walked `VOID` asserting each one
+  emits without a closing tag. Deleting `br` from the set passed: the loop just
+  had one fewer thing to check. The tags are written out in the test now and a
+  second test says the two lists match, so removing one from either side fails.
+  The same shape caught it the first time: before any of this, only `input` and
+  `meta` were covered, and only because other tests happened to use them.
+- **The compiler leaves `>` in an attribute and escapes it in text.** Both are
+  correct, and the difference is why `mergeHead` has to be quote-aware. The
+  runtime escapes it in both, so an interpolated value and a static one are
+  spelled differently and parse the same. That is deliberate: the runtime ships
+  to a browser and must not import from the compiler. `escapeAttr` and
+  `escapeText` live in `compiler/html.js`; the runtime's are its own.
 - **An action runs after the region is known to exist.** `POST ?fragment=nope`
   used to change data and then 404. Anything that can refuse a request has to
   refuse it before `runAction`, not after. `hasRegion` is that check, in both

@@ -7,6 +7,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { getRequestListener } from '@hono/node-server';
 import { publicFiles as publicHandler } from '../src/public-files.js';
+import { buildSprite, readIcons, refuseSpriteClash, SPRITE_PATH } from '../src/icons.js';
 import { createServer as createViteServer } from 'vite';
 import {
   ACTION_METHODS,
@@ -61,6 +62,26 @@ const publicFiles =
   publicRoot && fs.existsSync(publicRoot)
     ? publicHandler(path.relative(process.cwd(), publicRoot) || '.')
     : null;
+
+const iconsRoot = config.iconsDir ? path.join(root, config.appDir, config.iconsDir) : null;
+
+/**
+ * The sprite the build writes, built per request instead.
+ *
+ * Reading a directory of small files on every request is what the rest of dev
+ * already does, and it is what makes adding an icon show up on reload. A refusal
+ * from `buildSprite` is returned as text rather than thrown, so a missing
+ * viewBox reads the same here as the message that would stop the build.
+ */
+function sprite() {
+  try {
+    const icons = readIcons(iconsRoot, root);
+    refuseSpriteClash(publicRoot);
+    return { status: 200, type: 'image/svg+xml; charset=utf-8', body: buildSprite(icons) };
+  } catch (error) {
+    return { status: 500, type: 'text/plain; charset=utf-8', body: error.message };
+  }
+}
 
 // Built before Vite, because Vite needs it: in middleware mode with no `hmr`
 // option Vite starts its own WebSocket server on another port, the browser
@@ -259,6 +280,15 @@ async function buildApp() {
     publicFiles,
     middleware: await loadMiddleware(),
   });
+
+  // A public file at this URL is refused rather than raced, so registering after
+  // `baseApp` costs nothing: the public handler can only fall through to here.
+  if (iconsRoot) {
+    app.get(SPRITE_PATH, (c) => {
+      const { status, type, body } = sprite();
+      return c.body(body, status, { 'content-type': type });
+    });
+  }
 
   // Already ordered most-specific first, so registration order is deterministic
   // rather than something to reason about per-router.

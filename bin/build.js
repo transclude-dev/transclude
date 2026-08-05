@@ -165,10 +165,17 @@ async function render(route, { url, params }) {
     response,
     cookies: cookiesOf(null, response, config.cookieSecret),
     absolute: absoluteFrom(config.metadataBase, null),
-    // Refused rather than left undefined. A file is written once and read by
-    // everyone, so there is no response for the work to outlive and no request
-    // that asked for it. Dropping it quietly would be the worse answer: the
-    // build would pass and the work would never run in production either.
+    // Both of these are refusals rather than absences. Left off the object they
+    // are `undefined`, and the loader fails with `x is not a function`, which
+    // names neither what it was doing nor how to stop. The type says both are
+    // here, because the checker cannot know which pages become files.
+    revalidateTag: () => {
+      throw new Error(
+        `called \`ctx.revalidateTag\`, and a build holds no rendered pages to drop. ` +
+          `Give it \`export const prerender = false\`, or move the call to the action ` +
+          `or endpoint that changes the data`,
+      );
+    },
     after: () => {
       throw new Error(
         `called \`ctx.after\`, and a file has no response for that work to outlive. ` +

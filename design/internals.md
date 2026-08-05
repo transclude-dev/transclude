@@ -112,6 +112,13 @@ against.
   paints itself on connect. `__fragment` threads through both `emitShadow` and
   `emitLight`. Drop it from the second one and a shadow element inside a light one emits
   a shadow root nobody will process.
+- **The build's context refuses rather than omits.** `revalidateTag` and `after`
+  are on the prerender context in `bin/build.js` as functions that throw. Leaving
+  them off is what it did before, and a loader calling one failed with
+  `revalidateTag is not a function`, which names neither what the page did nor
+  how to stop. Both are in the generated type either way, because the checker
+  cannot know which pages become files. Note that nothing imports `bin/build.js`,
+  so these two refusals and the four around them are checked by hand.
 - **`ctx.after` catches the rejection before `waitUntil` sees it.** Nothing awaits
   the work, so an unhandled rejection ends the process on Node. `after.js` hands
   `waitUntil` the already-caught promise, not the original, or workerd logs the

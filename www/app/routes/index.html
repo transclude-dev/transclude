@@ -1,5 +1,6 @@
 <script server>
   import { all } from "../lib/code.js";
+  import { versionHref, versionLabel } from "../lib/version.js";
 
   // `fragment` names the fragment this request wants, or null for the document.
   // Asking for `demo` needs none of the highlighting below, and skipping it is
@@ -12,6 +13,9 @@
       // See the docs layout: a template expression has no `new`, and every page
       // here is a file, so this is the year the build ran.
       year: new Date().getFullYear(),
+      // What this site is documentation of, worked out by the build.
+      versionHref,
+      versionLabel,
       s: await all({
         start: [
           `npm create @transclude my-app
@@ -456,6 +460,7 @@ npm run dev`,
 <footer>
   <div class="inner">
     <span>&copy; ${year} Atelier Dakroub</span>
+    <a href="${versionHref}">${versionLabel}</a>
     <a href="https://github.com/transclude-dev/transclude/blob/main/LICENSE"
       >MIT</a
     >

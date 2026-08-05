@@ -10,6 +10,50 @@ deno run -A node_modules/@transclude/core/bin/serve.deno.js  # Deno
 wrangler dev                                                 # Cloudflare`,
         'shell',
       ],
+
+      bindings: [
+        `// app/lib/bindings.js
+//
+// Nothing from \`node:\` here. A loader importing this puts it in the bundle
+// workerd loads, and that runtime has none of it.
+
+/** @type {Env|null} */
+let current = null;
+
+export const hold = (env) => (current = env);
+
+export const bindings = () => {
+  // Named rather than left to fail on a property of null, which reads like a
+  // missing binding instead of a missing runtime.
+  if (!current) throw new Error('No bindings: this app is running off workerd.');
+  return current;
+};`,
+        'js',
+      ],
+
+      hold: [
+        `// worker.js
+import { hold } from './app/lib/bindings.js';
+
+function appFor(env) {
+  // Outside the \`??=\`, because that runs once and this is free to repeat.
+  hold(env);
+  app ??= createApp({ /* … */ });
+  return app;
+}`,
+        'js',
+      ],
+
+      use: [
+        `// app/routes/notes.html
+import { bindings } from '../lib/bindings.js';
+
+export default async () => {
+  const { results } = await bindings().DB.prepare('select id, title from notes').all();
+  return { notes: results };
+};`,
+        'js',
+      ],
     }),
   });
 </script>
@@ -86,5 +130,63 @@ wrangler dev                                                 # Cloudflare`,
     There is no <code>process.env</code> on <code>workerd</code>, so the app is built when the
     first request comes in and takes its config from <code>env</code>. Reading a
     secret at import time gives <code>undefined</code>.
+  </doc-note>
+
+  <h2>Bindings</h2>
+
+  <p>
+    A KV namespace, a D1 database and a secret all arrive the same way. They are
+    on <code>env</code>, which is the second argument to a worker's
+    <code>fetch</code>.
+  </p>
+
+  <p>
+    A loader is not handed that. <code>ctx</code> carries the request, the
+    params and the cookies, and nothing that names one runtime.
+    <code>env</code> names one. The other three fill that slot with something
+    else, so a loader reading it would work in a single place.
+  </p>
+
+  <p>
+    <code>worker.js</code> belongs to the app and does get <code>env</code>.
+    Hold it there and import it where a loader needs it.
+  </p>
+
+  ${html(s.bindings)}
+
+  ${html(s.hold)}
+
+  ${html(s.use)}
+
+  <p>
+    <code>Env</code> is the interface <code>wrangler types</code> writes.
+    Typing the module is what gives a loader autocomplete on a binding, and the
+    framework could not supply that.
+  </p>
+
+  <doc-note label="A page that reads a binding cannot be prerendered" tone="warn">
+    The build runs on Node, where nothing calls <code>hold</code>. A page whose
+    loader reads a binding needs <code>export const prerender = false</code>,
+    or the build runs that loader and throws.
+  </doc-note>
+
+  <doc-note label="A binding is per isolate, a request is not">
+    Holding <code>env</code> in a module is safe, because it is one object for
+    the life of the isolate. Every request served by that isolate gets the same
+    one. Holding a <code>Request</code> this way is not safe, because two
+    visitors would share whichever arrived last.
+  </doc-note>
+
+  <p>
+    Nothing calls <code>hold</code> on Node, Bun or Deno, so the throw above is
+    what a loader finds there. An app that runs in more than one place returns
+    its own fallback instead.
+  </p>
+
+  <doc-note label="Nothing outlives the response" tone="warn">
+    There is no <code>waitUntil</code> on <code>ctx</code>. Work that a loader
+    or an endpoint starts has to finish before the response does, or
+    <code>workerd</code> may cancel it. Anything that has to happen after the
+    reader is served belongs outside the app.
   </doc-note>
 </doc-page>

@@ -583,3 +583,68 @@ test('a top-level script with code is still a client block', () => {
   assert.equal(blocks.client.length, 1);
   assert.ok(!blocks.nodes.some((node) => node.tagName === 'script'));
 });
+
+// ---- view-transition-name ---------------------------------------------------
+//
+// A name has to be unique in the document. Repeated, every copy carries the
+// same one, and the browser's answer is to run no transition at all: nothing
+// throws and nothing is logged, so the page just stops animating. The showcase
+// carried this as a comment before it was a compile error.
+
+test('a repeated element may not write out a view-transition-name', () => {
+  assert.throws(
+    () =>
+      compilePage(
+        `<ul><li each="p of people" style="view-transition-name: card">\${p.name}</li></ul>`,
+        { runtime: '/rt.js' },
+      ),
+    /view-transition-name/,
+  );
+});
+
+test('a name derived from the loop is what it is asking for', () => {
+  assert.doesNotThrow(() =>
+    compilePage(
+      `<ul><li each="p of people" style="view-transition-name: card-\${p.slug}">\${p.name}</li></ul>`,
+      { runtime: '/rt.js' },
+    ),
+  );
+});
+
+test('the check reaches inside a repeated element, not only its root', () => {
+  assert.throws(
+    () =>
+      compilePage(
+        `<ul><li each="p of people"><h2 style="view-transition-name: title">\${p.name}</h2></li></ul>`,
+        { runtime: '/rt.js' },
+      ),
+    /<h2> is repeated/,
+  );
+});
+
+test('a name outside a loop is left alone, because it is unique already', () => {
+  assert.doesNotThrow(() =>
+    compilePage(`<h1 style="view-transition-name: heading">Title</h1>`, { runtime: '/rt.js' }),
+  );
+});
+
+test('none is allowed, because it is the one value safe to repeat', () => {
+  // Opting an element out of a transition is the reason to write it, and two
+  // elements opting out do not collide.
+  assert.doesNotThrow(() =>
+    compilePage(`<ul><li each="p of people" style="view-transition-name: none"></li></ul>`, {
+      runtime: '/rt.js',
+    }),
+  );
+});
+
+test('an interpolation elsewhere in the style does not excuse a written-out name', () => {
+  assert.throws(
+    () =>
+      compilePage(
+        `<ul><li each="p of people" style="color: \${p.color}; view-transition-name: card"></li></ul>`,
+        { runtime: '/rt.js' },
+      ),
+    /view-transition-name/,
+  );
+});

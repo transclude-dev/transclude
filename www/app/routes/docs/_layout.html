@@ -1,4 +1,6 @@
 <script server>
+  import { versionHref, versionLabel } from '../../lib/version.js';
+
   // The nav lives here rather than in each page, so a new page is one file and
   // one line. `route.path` marks the current link.
   export default async ({ route, absolute }) => {
@@ -6,6 +8,10 @@
     // Read here rather than in the markup: a template expression has no `new`.
     // Every page is written to a file, so this is the year the build ran.
     year: new Date().getFullYear(),
+    // What these pages are documentation of. `after v0.6.0` when the deploy is
+    // ahead of the release, which it is for most of the time between two.
+    versionHref,
+    versionLabel,
     path: route.path,
     canonical: absolute(route.path),
     sections: [
@@ -284,6 +290,8 @@
     </nav>
 
     <footer>
+      <a href="${versionHref}">${versionLabel}</a>
+      &middot;
       <a href="https://github.com/transclude-dev/transclude/blob/main/LICENSE">MIT</a>
       &middot; &copy; ${year} Atelier Dakroub
     </footer>

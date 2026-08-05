@@ -137,6 +137,22 @@
       <strong>Layout loaders run in order, not at once.</strong> Each one can
       read what the ones above it returned.
     </li>
+    <li>
+      <strong><code>&lt;transclude&gt;</code> does not import an SVG file.</strong>
+      It names a piece of a document, and a whole file is not one. Its
+      <code>src</code> is read at compile time, so it cannot be interpolated,
+      and an icon name usually is. Pointing at a shared symbol is also a
+      different claim from the one an
+      <a href="/docs/includes">include</a> makes, which is that the markup is
+      here. <a href="/docs/icons">Icons</a> answer that with
+      <code>&lt;use&gt;</code> instead.
+    </li>
+    <li>
+      <strong>No icon element ships with the framework.</strong> Elements come
+      from your <code>elements/</code> directory, and a starter arrives with none
+      so a project keeps that choice. The build makes the sprite; the six lines
+      that point at it are on the <a href="/docs/icons">icons</a> page to copy.
+    </li>
   </ul>
 
   <h3>By platform</h3>

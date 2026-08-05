@@ -356,6 +356,25 @@ describe('the home page carries the transcluded section, not the fallback', () =
   assert.doesNotMatch(home, /<transclude[\s>]/, 'the element was left in the output');
 });
 
+// ---- the sprite, for a runtime with no filesystem --------------------------
+
+describe('the icon sprite is in the bundle, not only on disk', async () => {
+  // The Node server reads `dist/public` off a disk and workerd cannot, so the
+  // same bytes are emitted as a module it imports. Verified once by hand against
+  // `wrangler dev`, and asserted here because CI runs no worker and a check
+  // nothing runs is a check that rots.
+  const { publicFiles } = await import(pathToFileURL(path.join(dist, 'server/assets.js')).href);
+
+  const entry = publicFiles['/icons.svg'];
+  assert.ok(entry, 'no /icons.svg in the asset module, so a worker would 404 it');
+  assert.match(entry.type, /^image\/svg\+xml/);
+
+  // The same bytes both ways. Two copies of one file is how a worker comes to
+  // serve last build's icons while Node serves this one's.
+  const onDisk = fs.readFileSync(path.join(dist, 'public/icons.svg'), 'utf8');
+  assert.equal(Buffer.from(entry.body, 'base64').toString('utf8'), onDisk);
+});
+
 // ---- what the build must not publish ---------------------------------------
 
 describe('an operating system leaving a file in public does not publish it', () => {

@@ -81,8 +81,13 @@
     color: var(--muted);
   }
 
+  /* inline-flex rather than inline-block, and the gap rather than a space. A
+     space between the text and the icon is a text node, so the underline runs
+     under it and stops at the icon, which reads as a typo. */
   .next {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
     font-size: 0.9rem;
     font-weight: 600;
   }
@@ -199,4 +204,6 @@ ${html(s.page)}
   </p>
 </div>
 
-<a class="next" href="/docs/getting-started">Getting started &rarr;</a>
+<a class="next" href="/docs/getting-started"
+  >Getting started<svg-icon name="arrow-right"></svg-icon
+></a>

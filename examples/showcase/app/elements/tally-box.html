@@ -13,9 +13,14 @@
 </script>
 
 <script state>
-  /** @type {{ n: number }} */
+  /** @type {{ n: number, hot: boolean }} */
   export default {
     n: 0,
+    // A boolean state field is reflected as a custom state, so CSS can select
+    // `:state(hot)`. Nothing is written to the document: the point of state is
+    // that the page cannot read it, and this keeps that true while letting a
+    // stylesheet react.
+    hot: false,
   };
 </script>
 
@@ -29,6 +34,11 @@
     font-size: 1.4rem;
     font-variant-numeric: tabular-nums;
   }
+  /* No attribute selector to write, and no class to add on the way past. */
+  :scope:state(hot) output {
+    color: #b4232c;
+    font-weight: 600;
+  }
 </style>
 
 <output>${n}</output>
@@ -38,6 +48,7 @@
   export const prototype = {
     bump(by = 1) {
       this.n += by;
+      this.hot = this.n >= 5;
     },
   };
 

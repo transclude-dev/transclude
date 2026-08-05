@@ -986,7 +986,10 @@ export function defineLight(def, init) {
 
     constructor() {
       super();
-      if (def.formAssociated) this.#internals = this.attachInternals();
+      // Also when a boolean state can be reflected. Narrow on purpose: internals
+      // is attached for the thing that needs it and not for every element that
+      // happens to hold a number.
+      if (def.formAssociated || hasCustomStates(def)) this.#internals = this.attachInternals();
     }
 
     get internals() {
@@ -1059,6 +1062,9 @@ export function defineLight(def, init) {
 
     #data(raw) {
       this.#was = { ...stateOf(this, def.stateDefs) };
+      // The one place both classes work out current state, so the one place a
+      // custom state can be kept true without a third copy of the rule.
+      reflectStates(this.#internals, def.stateDefs, this.#was);
       return { ...this.#was, ...def.coerce(raw) };
     }
 
@@ -1086,6 +1092,41 @@ export function defineLight(def, init) {
 
 function hasMembers(def) {
   return Object.keys(def.members ?? {}).length > 0;
+}
+
+/**
+ * A boolean state field, as a custom state CSS can select.
+ *
+ * `:state(open)` rather than an attribute, which is the whole reason state is
+ * not in the document: the page has no business reading it, and CSS still has
+ * to be able to react to it. Booleans only, because a custom state is a name
+ * and not a value.
+ *
+ * Nothing is reflected on the server. A state field always starts at its
+ * declared default, so the first paint is the default either way and there was
+ * never anything for the markup to say.
+ */
+function reflectStates(internals, defs, state) {
+  if (!internals?.states) return;
+
+  for (const name of Object.keys(defs ?? {})) {
+    const value = state[name];
+    if (typeof value !== 'boolean') continue;
+
+    if (value) internals.states.add(name);
+    else internals.states.delete(name);
+  }
+}
+
+/**
+ * Whether any state field is declared a boolean.
+ *
+ * The declared default decides, at define time. A custom state is a name and
+ * not a value, so a number or a string has nothing to reflect, and an element
+ * holding only those is left without internals it would never use.
+ */
+function hasCustomStates(def) {
+  return Object.values(def.stateDefs ?? {}).some((value) => typeof value === 'boolean');
 }
 
 /** State counts as behavior: its accessors are the only way to change it. */
@@ -1202,7 +1243,10 @@ export function defineComponent(def, init) {
       super();
       // In the constructor, which is where it belongs and where it can only
       // happen once. For a server-rendered element that is upgrade time.
-      if (def.formAssociated) this.#internals = this.attachInternals();
+      // Also when a boolean state can be reflected. Narrow on purpose: internals
+      // is attached for the thing that needs it and not for every element that
+      // happens to hold a number.
+      if (def.formAssociated || hasCustomStates(def)) this.#internals = this.attachInternals();
     }
 
     /** What this element would submit, if it is a control. */
@@ -1308,6 +1352,9 @@ export function defineComponent(def, init) {
      *  be hidden by one. The compiler rejects that clash anyway. */
     #data(raw) {
       this.#was = { ...stateOf(this, def.stateDefs) };
+      // The one place both classes work out current state, so the one place a
+      // custom state can be kept true without a third copy of the rule.
+      reflectStates(this.#internals, def.stateDefs, this.#was);
       return { ...this.#was, ...def.coerce(raw) };
     }
 

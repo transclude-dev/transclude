@@ -402,6 +402,16 @@ against.
   precompression each build themselves by walking that directory. Written earlier
   and the public copy overwrites it; written later and all three miss it, so Node
   serves `/icons.svg` off disk and a worker 404s it with nothing to say why.
+- **Internals are attached for a boolean state field, not for any state.** A
+  custom state is a name, so a number or a string has nothing to reflect.
+  Attaching for every stateful element gave `user-card` internals it never uses
+  and broke the check asserting an ordinary element has none, which is how the
+  narrow rule was found rather than reasoned to.
+- **A custom state lands with the render, not with the assignment.** It is
+  reflected from the one place both element classes work out current state, so
+  the state and the markup it styles change in the same frame. A check asserting
+  it synchronously after a setter fails, and it should: `updateComplete` is the
+  point at which either is true.
 - **A prerender runs the page; a prefetch does not.** That is the whole split in
   `speculate.js`. A URL the build wrote to a file has no loader left, so the
   browser may run it. Everything in `dynamic` is a server render whose loader may

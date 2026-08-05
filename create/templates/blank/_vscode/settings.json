@@ -1,0 +1,12 @@
+{
+  // A transclude `.html` file holds several script blocks that are separate
+  // modules: `<script properties>`, `<script state>`, `<script server>` and the
+  // element's own `<script>`. VS Code's built-in HTML support reads them as one
+  // JavaScript module, so two `export default` blocks are reported as "A module
+  // cannot have multiple default exports" in every element that declares props
+  // and state. The file is correct; the reader is wrong about what it is.
+  //
+  // `npm run check` and the language server in `editor/` do the real checking,
+  // and they read these files the way the compiler does.
+  "html.validate.scripts": false
+}

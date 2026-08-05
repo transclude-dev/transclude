@@ -121,6 +121,13 @@ export type SiteNoteMembers = {
   readonly dismissed: boolean;
 };
 
+/** Properties of `<svg-icon>`, from its <script properties> block. */
+export type SvgIconProps = {
+  library: string;
+  name: string;
+  label: string;
+};
+
 /** Properties of `<tally-box>`, from its <script properties> block. */
 export type TallyBoxProps = {
   label: string;
@@ -485,6 +492,7 @@ declare global {
     "data-table": HTMLElement;
     "live-count": HTMLElement & LiveCountProps & LiveCountMembers;
     "site-note": HTMLElement & SiteNoteProps & SiteNoteMembers;
+    "svg-icon": HTMLElement;
     "tally-box": HTMLElement & TallyBoxProps & TallyBoxState & TallyBoxMembers;
   }
 }

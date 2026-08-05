@@ -96,6 +96,30 @@ test('both templates ship the icon element, and it is the only one', () => {
   }
 });
 
+test('a leading underscore in a template becomes a dot', () => {
+  // Both of these would be read as belonging to the templates themselves if
+  // they were written with their real names: git and npm act on a `.gitignore`
+  // wherever they find one, and editor tooling treats a `.vscode` as a project.
+  make(['--template', 'minimal'], (dir) => {
+    assert.ok(fs.existsSync(path.join(dir, '.gitignore')), 'no .gitignore');
+    assert.ok(fs.existsSync(path.join(dir, '.vscode/settings.json')), 'no .vscode/settings.json');
+    assert.ok(!fs.existsSync(path.join(dir, '_vscode')), 'the template name was copied through');
+  });
+});
+
+test('both templates turn off the HTML validation that misreads an element', () => {
+  // A `.html` file here holds several script blocks that are separate modules.
+  // The built-in HTML support reads them as one, so `<script properties>` and
+  // `<script state>` are reported as two default exports of one module. The
+  // file is correct, and `npm run check` says so.
+  for (const template of ['blank', 'minimal']) {
+    make(['--template', template], (dir) => {
+      const settings = read(dir, '.vscode/settings.json');
+      assert.match(settings, /"html\.validate\.scripts":\s*false/, `${template}`);
+    });
+  }
+});
+
 test('the directory name becomes the package name and the heading', () => {
   make(['--template', 'blank'], (dir) => {
     assert.equal(JSON.parse(read(dir, 'package.json')).name, 'app-name');

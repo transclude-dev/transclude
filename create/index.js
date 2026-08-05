@@ -135,9 +135,13 @@ function copy(from, to, replacements) {
   const TEXT = new Set(['.json', '.js', '.html', '.css', '.md', '.txt']);
 
   for (const rel of walk(from)) {
-    // `.gitignore` in a template would be applied to the template itself by
-    // every tool that reads one, including npm when this is packed.
-    const target = path.join(to, rel === '_gitignore' ? '.gitignore' : rel);
+    // A leading underscore stands for a dot. `.gitignore` in a template would
+    // be applied to the template itself by every tool that reads one, including
+    // npm when this is packed, and a `.vscode` directory is the same shape of
+    // problem: tooling that finds it here would treat the templates as a
+    // project. Only the first segment, so a file named `_partial.html` inside a
+    // directory keeps its name.
+    const target = path.join(to, rel.replace(/^_/, '.'));
     fs.mkdirSync(path.dirname(target), { recursive: true });
 
     if (!TEXT.has(path.extname(rel))) {

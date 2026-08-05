@@ -397,6 +397,18 @@ against.
   and a shallow checkout of a tag gives the commit without it. The notes come
   back empty and the release page is blank, which looks like the notes were never
   written. `fetch-depth: 0` and `fetch-tags` in `publish.yml` are load-bearing.
+- **A template file whose name starts with `_` becomes a dot on scaffold.**
+  `_gitignore` and `_vscode/` are both spelled that way because a tool that
+  finds the real name acts on it: git and npm apply a `.gitignore` wherever they
+  see one, and editor tooling reads a `.vscode` as a project. Only the first
+  segment is rewritten, so a `_partial.html` inside a directory keeps its name.
+- **The editor's built-in HTML validation misreads every element with props and
+  state.** The script blocks in one `.html` file are separate modules and it
+  reads them as one, so two `export default` blocks become "A module cannot have
+  multiple default exports". The file is right. `html.validate.scripts: false`
+  is in this repository's `.vscode/settings.json` and is scaffolded into new
+  projects, because `transclude-check` and the language server in `editor/` are
+  the two things that read these files the way the compiler does.
 - **The sprite is written after the public copy and before anything that reads
   `dist/public`.** The asset module a worker imports, the precache list and
   precompression each build themselves by walking that directory. Written earlier

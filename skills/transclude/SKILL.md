@@ -10,8 +10,7 @@ metadata:
 # transclude
 
 HTML is the product. A page is an `.html` file, the server renders it, and what
-arrives is markup a browser already knows how to display. Nothing has to run in
-the browser for the page to be correct.
+arrives is markup a browser already knows how to display.
 
 The directory tree is the route table. The same app runs on Node, Bun, Deno and
 workerd.

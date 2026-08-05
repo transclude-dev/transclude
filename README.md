@@ -18,8 +18,7 @@
 </p>
 
 HTML is the product. A page is an `.html` file, the directory tree is the route
-table, and any fragment of a page is a URL of its own. Nothing has to run in the
-browser for the page to be correct.
+table, and any fragment of a page is a URL of its own.
 
 The same app runs on Node, Bun, Deno and workerd, the runtime behind
 Cloudflare Workers, and ships no client JavaScript by default.

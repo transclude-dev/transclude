@@ -119,8 +119,7 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
   <p>
     <a href="https://htmx.org">htmx</a> does the same with attributes.
     <a href="https://turbo.hotwired.dev">Turbo</a> and
-    <a href="https://leanrada.com/htmz/">htmz</a> are other options. This
-    framework ships none of them, and nothing here depends on one.
+    <a href="https://leanrada.com/htmz/">htmz</a> are other options.
   </p>
 
   ${html(s.htmx)}
@@ -134,8 +133,7 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
     A fragment arrives carrying its own id, and htmx fills the target rather
     than replacing it unless told otherwise. So the returned
     <code>&lt;ul id="list"&gt;</code> lands <em>inside</em> the one already on
-    the page, and again on the next request. This is the same trap as the htmz
-    one below, in the shape htmx gives it.
+    the page, and again on the next request.
   </doc-note>
 
   ${html(s.header)}

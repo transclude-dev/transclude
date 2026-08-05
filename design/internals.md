@@ -385,6 +385,18 @@ against.
   gets a strong ETag for each encoding. Public files belong to the author, can be
   large, and can be media. Media needs byte ranges, and the in-memory path answers
   200 where a 206 was asked for.
+- **A release tag is written `--cleanup=verbatim`, or markdown loses its
+  headings.** The notes live in the annotated tag and `publish.yml` makes the
+  release page out of them, so the tag is the only copy. git's default cleanup
+  treats a line beginning with `#` as a comment and drops it, which deletes every
+  markdown heading and leaves the paragraphs that were under them. Nothing
+  errors, the page is just missing its structure, and a tag is immutable by the
+  time anyone reads it. `test/release.test.js` runs the default against real git
+  first, so the day that stops being true the flag stops being justified.
+- **The publish checkout is not shallow.** `%(contents)` reads the tag object,
+  and a shallow checkout of a tag gives the commit without it. The notes come
+  back empty and the release page is blank, which looks like the notes were never
+  written. `fetch-depth: 0` and `fetch-tags` in `publish.yml` are load-bearing.
 - **The sprite is written after the public copy and before anything that reads
   `dist/public`.** The asset module a worker imports, the precache list and
   precompression each build themselves by walking that directory. Written earlier

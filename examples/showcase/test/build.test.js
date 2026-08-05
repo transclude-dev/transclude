@@ -358,21 +358,39 @@ describe('the home page carries the transcluded section, not the fallback', () =
 
 // ---- the sprite, for a runtime with no filesystem --------------------------
 
-describe('the icon sprite is in the bundle, not only on disk', async () => {
+describe('every icon sheet is in the bundle, not only on disk', async () => {
   // The Node server reads `dist/public` off a disk and workerd cannot, so the
   // same bytes are emitted as a module it imports. Verified once by hand against
   // `wrangler dev`, and asserted here because CI runs no worker and a check
   // nothing runs is a check that rots.
+  //
+  // Every sheet, because a library is a directory the author made: the build
+  // writes one file per library and missing the second one is the failure that
+  // would look like a single icon set quietly losing half of itself.
   const { publicFiles } = await import(pathToFileURL(path.join(dist, 'server/assets.js')).href);
 
-  const entry = publicFiles['/icons.svg'];
-  assert.ok(entry, 'no /icons.svg in the asset module, so a worker would 404 it');
-  assert.match(entry.type, /^image\/svg\+xml/);
+  for (const sheet of ['icons', 'glyphicons']) {
+    const url = `/${sheet}.svg`;
+    const entry = publicFiles[url];
+    assert.ok(entry, `no ${url} in the asset module, so a worker would 404 it`);
+    assert.match(entry.type, /^image\/svg\+xml/);
 
-  // The same bytes both ways. Two copies of one file is how a worker comes to
-  // serve last build's icons while Node serves this one's.
-  const onDisk = fs.readFileSync(path.join(dist, 'public/icons.svg'), 'utf8');
-  assert.equal(Buffer.from(entry.body, 'base64').toString('utf8'), onDisk);
+    // The same bytes both ways. Two copies of one file is how a worker comes to
+    // serve last build's icons while Node serves this one's.
+    const onDisk = fs.readFileSync(path.join(dist, `public/${sheet}.svg`), 'utf8');
+    assert.equal(Buffer.from(entry.body, 'base64').toString('utf8'), onDisk);
+  }
+});
+
+describe('one name in two libraries is two different icons', async () => {
+  // What the flat reading refused. `check` is in both, and each sheet holds its
+  // own drawing of it.
+  const icons = fs.readFileSync(path.join(dist, 'public/icons.svg'), 'utf8');
+  const glyphicons = fs.readFileSync(path.join(dist, 'public/glyphicons.svg'), 'utf8');
+
+  assert.match(icons, /<symbol id="check"/);
+  assert.match(glyphicons, /<symbol id="check"/);
+  assert.notEqual(icons, glyphicons, 'the two sheets are the same bytes');
 });
 
 // ---- what the build must not publish ---------------------------------------

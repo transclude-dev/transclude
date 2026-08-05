@@ -1,18 +1,24 @@
-// A directory of SVG files, as one sprite.
+// A directory of SVG files, as one sprite. A directory of those, as several.
 //
 // An icon stays a file the author manages: `app/icons/check.svg` is a whole SVG
 // document they can open, edit and diff. What a browser wants is the other
 // shape, one file of `<symbol>`s, so `<use href="/icons.svg#check">` costs one
 // cached request however many icons a page shows.
 //
+// A subdirectory is a library, and it is the case people arrive with: an icon
+// set is downloaded as a folder of files, and the way to use it should be to put
+// the folder here. `app/icons/lucide/check.svg` is `/lucide.svg#check`, and
+// nothing was renamed to get there. Loose files at the top are the `icons`
+// library, which is why the default sheet keeps the name it had.
+//
 // Build-time only, like `public-files.js` and outside the portable core: the
 // sprite is bytes on disk by the time any server answers for it. `buildSprite`
 // takes contents rather than a directory anyway, so the half that decides what
 // the markup is can be tested without fixtures.
 //
-// The dev server and the build both call `readIcons` then `buildSprite`. They
-// used to be the same two lines written twice, which is how `/icons.svg` served
-// in production and 404'd in dev.
+// The dev server and the build both call `readLibraries` then `buildSprite`.
+// They used to be the same two lines written twice, which is how `/icons.svg`
+// served in production and 404'd in dev.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,8 +26,23 @@ import { parse, serializeOuter } from 'parse5';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-/** Where the sprite is served. Fixed, because `<use href>` is written by hand. */
-export const SPRITE_PATH = '/icons.svg';
+/**
+ * What loose files at the top of `app/icons/` are called.
+ *
+ * It is the name the one sheet already had, so a project that never makes a
+ * subdirectory sees the URL it always saw.
+ */
+export const DEFAULT_LIBRARY = 'icons';
+
+/**
+ * Where a library is served. At the site root, beside the author's public files,
+ * because `<use href>` is written by hand and `/lucide.svg` is what someone
+ * guesses.
+ *
+ * @param {string} library
+ * @returns {string}
+ */
+export const spritePath = (library) => `/${library}.svg`;
 
 /**
  * Root attributes that must not survive into a `<symbol>`.
@@ -122,53 +143,101 @@ export function buildSprite(icons) {
 }
 
 /**
- * Refuses a hand-written public file at the sprite's URL.
+ * Refuses a hand-written public file at a library's URL.
  *
- * Two things would answer for `/icons.svg`, and the two servers pick different
+ * Two things would answer for `/lucide.svg`, and the two servers pick different
  * winners: the build copies the public directory first and writes the sprite
  * over it, while dev asks the public handler first and never reaches the sprite.
  * Rather than pick one, neither runs until the author has.
  *
+ * Every library is checked, not just the default one. A library is named by a
+ * directory the author made, so the set of URLs this claims grows with their
+ * tree rather than being one name written down here.
+ *
  * @param {string|null} publicDir the author's public directory, not the copy
- * @throws when a file already sits at the sprite's URL
+ * @param {Array<{ name: string }>} libraries
+ * @throws when a file already sits at a library's URL
  */
-export function refuseSpriteClash(publicDir) {
+export function refuseSpriteClash(publicDir, libraries) {
   if (!publicDir) return;
 
-  const clash = path.join(publicDir, path.basename(SPRITE_PATH));
-  if (!fs.existsSync(clash)) return;
+  for (const { name } of libraries) {
+    const url = spritePath(name);
+    const clash = path.join(publicDir, path.basename(url));
+    if (!fs.existsSync(clash)) continue;
 
-  throw new Error(
-    `[transclude] ${clash} and the icons directory both answer for ${SPRITE_PATH}. ` +
-      `The sprite is built from the icons, so rename the public file or delete it.`,
-  );
+    throw new Error(
+      `[transclude] ${clash} and the ${name} icons both answer for ${url}. ` +
+        `The sprite is built from the icons, so rename the public file or delete it.`,
+    );
+  }
+}
+
+/** The icon files directly inside `dir`, ignoring anything that is not an SVG. */
+function iconsIn(dir, root) {
+  const icons = [];
+
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory() || !entry.name.endsWith('.svg')) continue;
+
+    const full = path.join(dir, entry.name);
+    icons.push({
+      id: path.basename(entry.name, '.svg'),
+      file: path.relative(root, full),
+      svg: fs.readFileSync(full, 'utf8'),
+    });
+  }
+  return icons;
 }
 
 /**
- * Every `.svg` under `dir`, ready for `buildSprite`.
+ * Every library under `dir`, each ready for `buildSprite`.
  *
- * Nested directories are read, and an icon is still named by its file alone, so
- * `ui/check.svg` and `nav/check.svg` collide. `buildSprite` says so by name.
- * Sorting is left to it, so one directory reads the same on any filesystem.
+ * Loose files at the top are the default library. Each subdirectory is a library
+ * of its own, named by the directory, which is what makes dropping a downloaded
+ * icon set in here the whole of using it.
+ *
+ * One level. A directory inside a library is refused rather than flattened or
+ * skipped: flattening would give two files one id, and skipping loses icons
+ * without saying so. Sorted, so a build reads the same on any filesystem.
  *
  * @param {string} dir
  * @param {string} [root] what the reported file paths are relative to
- * @returns {Array<{ id: string, file: string, svg: string }>} empty if `dir` is absent
+ * @returns {Array<{ name: string, icons: Array<{ id: string, file: string, svg: string }> }>}
+ *   empty if `dir` is absent, and a library with no icons in it is not one
+ * @throws when a library holds a directory
  */
-export function readIcons(dir, root = dir) {
+export function readLibraries(dir, root = dir) {
   if (!fs.existsSync(dir)) return [];
 
-  const icons = [];
+  const libraries = [];
+
+  const loose = iconsIn(dir, root);
+  if (loose.length) libraries.push({ name: DEFAULT_LIBRARY, icons: loose });
+
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) icons.push(...readIcons(full, root));
-    else if (entry.name.endsWith('.svg')) {
-      icons.push({
-        id: path.basename(entry.name, '.svg'),
-        file: path.relative(root, full),
-        svg: fs.readFileSync(full, 'utf8'),
-      });
-    }
+    refuseNesting(full, root);
+
+    const icons = iconsIn(full, root);
+    if (icons.length) libraries.push({ name: entry.name, icons });
   }
-  return icons;
+
+  return libraries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+}
+
+/** A library is a flat directory. Anything deeper has no name to be served under. */
+function refuseNesting(dir, root) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+
+    const inner = path.relative(root, path.join(dir, entry.name));
+    throw new Error(
+      `[transclude] ${inner} is a directory inside a library, and a library is ` +
+        `one flat directory of icons. Move it up to be a library of its own, or ` +
+        `flatten it into the one it is in.`,
+    );
+  }
 }

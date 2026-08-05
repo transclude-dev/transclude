@@ -11,7 +11,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { buildSprite, readIcons, refuseSpriteClash, SPRITE_PATH } from '../src/icons.js';
+import {
+  buildSprite,
+  DEFAULT_LIBRARY,
+  readLibraries,
+  refuseSpriteClash,
+  spritePath,
+} from '../src/icons.js';
 
 /** A directory tree from `{ 'ui/check.svg': '<svg…>' }`. */
 function tree(files) {
@@ -37,8 +43,9 @@ test('a directory of files becomes one document of symbols', () => {
   assert.match(sprite, /<\/svg>$/);
 });
 
-test('the sprite is served at a fixed path, because <use href> is written by hand', () => {
-  assert.equal(SPRITE_PATH, '/icons.svg');
+test('a library is served at the root, under the name of its directory', () => {
+  assert.equal(spritePath(DEFAULT_LIBRARY), '/icons.svg');
+  assert.equal(spritePath('lucide'), '/lucide.svg');
 });
 
 test('viewBox is kept and width and height are dropped', () => {
@@ -156,47 +163,106 @@ test('no icons is an empty sprite rather than an error', () => {
   assert.equal(buildSprite([]), '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
 });
 
-// ---- reading the directory -------------------------------------------------
+// ---- libraries -------------------------------------------------------------
 
-test('every .svg is read, nested ones included, and nothing else is', () => {
-  const dir = tree({
-    'check.svg': CHECK,
-    'nav/chevron-down.svg': CHECK,
-    'README.md': '# icons',
-    '.DS_Store': 'junk',
-  });
+test('loose files at the top are the default library', () => {
+  const dir = tree({ 'check.svg': CHECK, 'chevron-down.svg': CHECK });
+  const libraries = readLibraries(dir);
 
-  const icons = readIcons(dir).map((icon) => icon.id).sort();
-  assert.deepEqual(icons, ['check', 'chevron-down']);
+  assert.deepEqual(libraries.map((l) => l.name), [DEFAULT_LIBRARY]);
+  assert.deepEqual(libraries[0].icons.map((i) => i.id).sort(), ['check', 'chevron-down']);
 });
 
-test('a missing directory reads as no icons rather than throwing', () => {
-  assert.deepEqual(readIcons(path.join(os.tmpdir(), 'tc-icons-does-not-exist')), []);
+test('a subdirectory is a library named after it', () => {
+  // The case people arrive with: an icon set downloaded as a folder, put here
+  // whole. Nothing was renamed to get `/lucide.svg#check`.
+  const dir = tree({ 'lucide/check.svg': CHECK, 'lucide/arrow-right.svg': CHECK });
+  const libraries = readLibraries(dir);
+
+  assert.deepEqual(libraries.map((l) => l.name), ['lucide']);
+  assert.equal(libraries[0].icons.length, 2);
+});
+
+test('loose files and libraries live together', () => {
+  const dir = tree({
+    'check.svg': CHECK,
+    'lucide/star.svg': CHECK,
+    'glyphicons/star.svg': CHECK,
+  });
+
+  assert.deepEqual(readLibraries(dir).map((l) => l.name), ['glyphicons', 'icons', 'lucide']);
+});
+
+test('one name in two libraries is two icons, not a collision', () => {
+  // What the flat reading could not do. Both are `#star`, in different sheets.
+  const dir = tree({ 'lucide/star.svg': CHECK, 'glyphicons/star.svg': CHECK });
+  const libraries = readLibraries(dir);
+
+  for (const library of libraries) {
+    assert.deepEqual(library.icons.map((i) => i.id), ['star']);
+  }
+});
+
+test('a directory inside a library is refused, and the message names it', () => {
+  // Flattening would give two files one id and skipping loses icons silently.
+  const dir = tree({ 'lucide/arrows/up.svg': CHECK });
+
+  assert.throws(() => readLibraries(dir), (error) => {
+    assert.match(error.message, /arrows/);
+    assert.match(error.message, /one flat directory/);
+    return true;
+  });
+});
+
+test('an empty directory is not a library', () => {
+  const dir = tree({ 'lucide/README.md': 'not an icon', 'check.svg': CHECK });
+
+  assert.deepEqual(readLibraries(dir).map((l) => l.name), [DEFAULT_LIBRARY]);
+});
+
+test('a missing directory reads as no libraries rather than throwing', () => {
+  assert.deepEqual(readLibraries(path.join(os.tmpdir(), 'tc-icons-does-not-exist')), []);
+});
+
+test('libraries come back sorted, so two builds of one tree agree', () => {
+  const dir = tree({ 'zeta/a.svg': CHECK, 'alpha/a.svg': CHECK, 'mid/a.svg': CHECK });
+
+  assert.deepEqual(readLibraries(dir).map((l) => l.name), ['alpha', 'mid', 'zeta']);
 });
 
 test('the reported file is relative to the root it was given', () => {
-  const dir = tree({ 'nav/check.svg': CHECK });
-  const [icon] = readIcons(path.join(dir, 'nav'), dir);
+  const dir = tree({ 'lucide/check.svg': CHECK });
+  const [library] = readLibraries(dir);
 
-  assert.equal(icon.file, path.join('nav', 'check.svg'));
+  assert.equal(library.icons[0].file, path.join('lucide', 'check.svg'));
 });
 
 // ---- one thing answers for one URL -----------------------------------------
 
-test('a public file at the sprite URL is refused, because the servers disagree', () => {
+test('a public file at a library URL is refused, because the servers disagree', () => {
   // The build copies the public directory and writes the sprite over it; dev
   // asks the public handler first and never reaches the sprite. Same two files,
   // opposite winners, so neither server picks.
-  const dir = tree({ 'icons.svg': '<svg></svg>' });
+  const dir = tree({ 'lucide.svg': '<svg></svg>' });
 
-  assert.throws(() => refuseSpriteClash(dir), (error) => {
-    assert.match(error.message, /icons\.svg/);
+  assert.throws(() => refuseSpriteClash(dir, [{ name: 'lucide' }]), (error) => {
+    assert.match(error.message, /lucide\.svg/);
     assert.match(error.message, /rename the public file/);
     return true;
   });
 });
 
+test('every library is checked, not only the default one', () => {
+  // The set of URLs this claims grows with the author's tree.
+  const dir = tree({ 'glyphicons.svg': '<svg></svg>' });
+
+  assert.throws(
+    () => refuseSpriteClash(dir, [{ name: 'icons' }, { name: 'glyphicons' }]),
+    /glyphicons/,
+  );
+});
+
 test('no public directory and no clashing file are both fine', () => {
-  assert.doesNotThrow(() => refuseSpriteClash(null));
-  assert.doesNotThrow(() => refuseSpriteClash(tree({ 'robots.txt': '' })));
+  assert.doesNotThrow(() => refuseSpriteClash(null, [{ name: 'icons' }]));
+  assert.doesNotThrow(() => refuseSpriteClash(tree({ 'robots.txt': '' }), [{ name: 'icons' }]));
 });

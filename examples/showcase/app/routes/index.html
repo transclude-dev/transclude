@@ -131,6 +131,9 @@
   One SVG file per icon in <code>app/icons/</code>, compiled into a single
   <code>/icons.svg</code>. Each icon below is a <code>&lt;use&gt;</code> pointing
   into that one file, so a page showing twenty of them still makes one request.
+  A subdirectory is a library of its own: <code>app/icons/glyphicons/</code>
+  becomes <code>/glyphicons.svg</code>, which is what dropping a downloaded icon
+  set in here amounts to.
 </p>
 
 <!-- The element ships no JavaScript, because there is no <script> block in
@@ -148,6 +151,15 @@
 <button type="button">
   <svg-icon name="check" label="Mark as done"></svg-icon>
 </button>
+
+<!-- The same id in a second library. `check` is in both, drawn differently, and
+     nothing had to be renamed for the two to coexist. -->
+<p class="icon-row">
+  <svg-icon name="check"></svg-icon>
+  <svg-icon library="glyphicons" name="check"></svg-icon>
+  <svg-icon library="glyphicons" name="star"></svg-icon>
+  one name, two libraries
+</p>
 
 <h2>Escaping</h2>
 <p>Untrusted: ${note}</p>

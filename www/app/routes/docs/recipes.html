@@ -178,6 +178,16 @@ export default (app) => {
   <transclude src="#pricing"></transclude>
 </aside>`,
 
+      accordion: `<details name="faq">
+  <summary>What does it cost?</summary>
+  <p>Nothing.</p>
+</details>
+
+<details name="faq">
+  <summary>Where does it run?</summary>
+  <p>Node, Bun, Deno and workerd.</p>
+</details>`,
+      untilFound: `<p hidden="until-found" id="answer">The part a search should still reach.</p>`,
       popover: `<button command="show-modal" commandfor="prefs">Preferences</button>
 
 <dialog id="prefs">
@@ -433,6 +443,31 @@ test('the notes page lists notes', async () => {
   </p>
 
   ${html(s.popoverCss)}
+
+  <h3>An accordion where one is open at a time</h3>
+
+  <p>
+    A shared <code>name</code> makes a group of <code>&lt;details&gt;</code>
+    exclusive, the way radio buttons are. Opening one closes the rest, and
+    nothing runs.
+  </p>
+
+  ${html(s.accordion)}
+
+  <h3>Collapsed content that a page search can still find</h3>
+
+  <p>
+    <code>hidden="until-found"</code> hides content but leaves it findable.
+    Ctrl+F reveals it, scrolls to it, and fires <code>beforematch</code> so a
+    <code>&lt;details&gt;</code> around it can open itself.
+  </p>
+
+  ${html(s.untilFound)}
+
+  <p>
+    Plain <code>hidden</code> takes the text out of the page entirely. A reader
+    searching for a word they know is there is told it is not.
+  </p>
 
   <h2>Build and serve</h2>
 

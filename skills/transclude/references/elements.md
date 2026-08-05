@@ -215,6 +215,31 @@ document.addEventListener(
 The element is then a real form field: it submits, resets and validates with the
 rest of them.
 
+### Saying it is invalid
+
+`host.internals` is the handle the platform hands out, so `setValidity` works the
+way it does on an input. `:invalid` matches, a submit is blocked, and the browser
+shows its own message.
+
+```html
+<script>
+  export const prototype = {
+    updated() {
+      const empty = !this.value;
+      this.internals.setValidity(
+        empty ? { valueMissing: true } : {},
+        empty ? 'Pick at least one tag.' : '',
+        this,
+      );
+    },
+  };
+</script>
+```
+
+Call it whenever the value changes, and pass no arguments to clear it. A field
+that cannot say it is wrong is not really a field, and this is the part most
+custom controls leave out.
+
 ## An icon element
 
 The framework compiles `app/icons/` into one `/icons.svg` and defines no element

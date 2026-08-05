@@ -121,6 +121,18 @@
 <\/script>
 
 <button type="button">\${value || 'Pick tags'}</button>`,
+      validity: `<script>
+  export const prototype = {
+    updated() {
+      const empty = !this.value;
+      this.internals.setValidity(
+        empty ? { valueMissing: true } : {},
+        empty ? 'Pick at least one tag.' : '',
+        this,
+      );
+    },
+  };
+<\/script>`,
       formUse: `<form method="post">
   <input name="text" />
   <tag-picker name="tags"></tag-picker>
@@ -409,6 +421,24 @@
   </p>
 
   ${html(s.formUse)}
+
+  <h3>Saying it is invalid</h3>
+
+  <p>
+    A field that cannot say it is wrong is not really a field.
+    <code>host.internals</code> is the handle the platform hands out, so
+    <code>setValidity</code> works the way it does on an input.
+    <code>:invalid</code> matches, a submit is blocked, and the browser shows its
+    own message.
+  </p>
+
+  ${html(s.validity)}
+
+  <p>
+    Call it whenever the value changes, and pass no arguments to clear it. The
+    second argument is the message the browser reads out, and the third is the
+    element the message points at.
+  </p>
 
   <doc-note label="Declare a flag in one block" tone="warn">
     <code>shadow</code> and <code>formAssociated</code> can go in

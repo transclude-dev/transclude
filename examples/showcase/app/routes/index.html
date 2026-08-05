@@ -64,6 +64,19 @@
       grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
     }
   }
+
+  /* Nothing here reaches inside an icon. A symbol draws with `currentColor` at
+     `1em`, so both rows take their size and their color from the paragraph. */
+  .icon-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem;
+  }
+  .icon-row.loud {
+    font-size: 1.5rem;
+    color: #3b3bb0;
+  }
 </style>
 
 <h1>${heading}</h1>
@@ -111,6 +124,30 @@
 
 <live-count count="0" label="clicks"></live-count>
 <tally-box label="tally"></tally-box>
+
+<h2>Icons</h2>
+
+<p class="lede">
+  One SVG file per icon in <code>app/icons/</code>, compiled into a single
+  <code>/icons.svg</code>. Each icon below is a <code>&lt;use&gt;</code> pointing
+  into that one file, so a page showing twenty of them still makes one request.
+</p>
+
+<!-- The element ships no JavaScript, because there is no <script> block in
+     svg-icon.html to ship. Same two icons, twice, taking their size and color
+     from the row they sit in. -->
+<p class="icon-row"><svg-icon name="check"></svg-icon> sized by the text</p>
+<p class="icon-row loud"><svg-icon name="check"></svg-icon> and colored by it</p>
+
+<!-- The other spelling. An icon beside its own label repeats it and is hidden
+     from a screen reader; an icon that is the only thing in a control has to
+     say what it is, so it takes a label instead. -->
+<button type="button">
+  Options <svg-icon name="chevron-down"></svg-icon>
+</button>
+<button type="button">
+  <svg-icon name="check" label="Mark as done"></svg-icon>
+</button>
 
 <h2>Escaping</h2>
 <p>Untrusted: ${note}</p>

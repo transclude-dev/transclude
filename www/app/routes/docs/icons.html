@@ -1,0 +1,176 @@
+<script server>
+  import { all, tree } from '../../lib/code.js';
+
+  export default async () => ({
+    dir: tree(`app/
+  icons/              one SVG file per icon
+    check.svg
+    chevron-down.svg`),
+    s: await all({
+      use: `<svg width="16" height="16"><use href="/icons.svg#check"></use></svg>`,
+      sprite: `<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="check" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <path d="M20 6 9 17l-5-5" />
+  </symbol>
+  <symbol id="chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <path d="m6 9 6 6 6-6" />
+  </symbol>
+</svg>`,
+      element: `<!-- app/elements/svg-icon.html -->
+<script properties>
+  export default {
+    name: '',
+    label: '',
+  };
+<\/script>
+
+<style>
+  :scope {
+    display: inline-flex;
+    vertical-align: -0.125em;
+  }
+  svg {
+    width: 1em;
+    height: 1em;
+  }
+</style>
+
+<svg if="label" role="img" aria-label="\${label}"><use href="/icons.svg#\${name}"></use></svg>
+<svg else aria-hidden="true"><use href="/icons.svg#\${name}"></use></svg>`,
+      usage: `<p><svg-icon name="check"></svg-icon> Saved</p>
+
+<button>
+  Options
+  <svg-icon name="chevron-down"></svg-icon>
+</button>
+
+<a href="/inbox"><svg-icon name="check" label="Inbox"></svg-icon></a>`,
+      output: `<p><svg-icon name="check"><svg aria-hidden="true"><use href="/icons.svg#check"></use></svg></svg-icon> Saved</p>`,
+      color: [
+        `button {
+  color: #3b3bb0;
+  font-size: 1.25rem;
+}`,
+        'css',
+      ],
+      config: [
+        `export default {
+  iconsDir: 'icons',
+};`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
+<title>Icons · transclude</title>
+<meta name="description" content="A directory of SVG files, compiled into one sprite." />
+
+<doc-page
+  heading="Icons"
+  lede="A directory of SVG files, compiled into one sprite the browser fetches once."
+>
+  <p>
+    <code>app/icons/</code> holds one SVG file per icon. Each is a whole SVG
+    document you can open, edit and diff.
+  </p>
+
+  ${html(s.dir)}
+
+  <p>
+    The build compiles the directory into <code>/icons.svg</code>, one document
+    of <code>&lt;symbol&gt;</code>s. Point a <code>&lt;use&gt;</code> at one by
+    file name:
+  </p>
+
+  ${html(s.use)}
+
+  <p>
+    That is the whole feature. One request serves every icon on the site, the
+    browser caches it, and the second page costs nothing.
+  </p>
+
+  <h2>What the build writes</h2>
+
+  <p>
+    <code>check.svg</code> becomes <code>#check</code>. The build reports the
+    count beside the pages it prerendered.
+  </p>
+
+  ${html(s.sprite)}
+
+  <p>
+    <code>viewBox</code> is carried over, and so is everything the file says
+    about paint. <code>width</code> and <code>height</code> are dropped, because
+    they would fight whatever CSS sizes the icon.
+  </p>
+
+  <h2>An element for it</h2>
+
+  <p>
+    <code>&lt;use&gt;</code> works on its own. Most sites want a name instead of
+    a URL, which is six lines in <code>app/elements/</code>:
+  </p>
+
+  ${html(s.element)}
+
+  ${html(s.usage)}
+
+  <p>
+    Light DOM, so no JavaScript is shipped and the page's own CSS reaches
+    inside. <code>GET /</code> returns the icon already drawn:
+  </p>
+
+  ${html(s.output)}
+
+  <h2>Size and color</h2>
+
+  <p>
+    The element above sizes an icon at <code>1em</code>, so it matches the text
+    beside it. Most icon sets draw with <code>stroke="currentColor"</code>, which
+    takes the color of the text too. Both follow from the surrounding rule:
+  </p>
+
+  ${html(s.color)}
+
+  <h2>Configuration</h2>
+
+  <p>
+    <code>iconsDir</code> names the directory, relative to <code>appDir</code>.
+    Set it to <code>null</code> for no icons.
+  </p>
+
+  ${html(s.config)}
+
+  <doc-note label="An icon needs a viewBox" tone="warn">
+    A symbol scales by its <code>viewBox</code>. A file without one is refused
+    by name rather than built, because the icon would render at some other size
+    and read as a CSS problem.
+  </doc-note>
+
+  <doc-note label="A file name is a name">
+    Subdirectories are read, and an icon is still named by its file alone, so
+    <code>ui/check.svg</code> and <code>nav/check.svg</code> ask for the same
+    <code>#check</code>. The build names both and stops.
+  </doc-note>
+
+  <doc-note label="Label an icon that says something">
+    An icon beside its own label repeats it, so the element hides it from a
+    screen reader. Pass <code>label</code> when the icon is the only thing
+    there, as in a button with no text.
+  </doc-note>
+
+  <doc-note label="One thing answers for /icons.svg">
+    A file you write at <code>app/public/icons.svg</code> asks for the same URL
+    as the sprite. Rather than pick a winner, the build and the dev server both
+    stop until one of them is renamed.
+  </doc-note>
+
+  <doc-note label="What a use element cannot do">
+    <code>&lt;use&gt;</code> draws the symbol in a tree of its own, so page CSS
+    reaches the whole icon and not one path inside it. An icon that needs two
+    colors under your control is one to paste into the markup by hand.
+    <code>&lt;use href&gt;</code> is also same-origin, so the sprite is served by
+    this app rather than a CDN.
+  </doc-note>
+</doc-page>

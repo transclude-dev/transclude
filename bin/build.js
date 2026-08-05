@@ -22,6 +22,7 @@ import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
 import { sitemap } from '../src/sitemap.js';
 import { etagOf, loadAssets, loadStatic } from '../src/static-cache.js';
+import { buildSprite, readIcons, refuseSpriteClash, SPRITE_PATH } from '../src/icons.js';
 import { PRECACHE_PATH, precacheDocument, precacheList } from '../src/precache.js';
 import { cookiesOf } from '../src/cookies.js';
 import { pool } from '../src/pool.js';
@@ -347,6 +348,30 @@ function countFiles(dir) {
   return total;
 }
 
+// ---- icons ----------------------------------------------------------------
+//
+// Written into `dist/public` after the author's own files are copied there, so
+// everything below that reads the directory picks the sprite up: the asset
+// module a runtime with no disk imports, the precache list, and precompression.
+// It is not counted as a public file, because the author did not write it.
+//
+// An icon named for a file the author can see is worth a stop: `buildSprite`
+// throws on a missing viewBox or two files claiming one name, and the build ends
+// there rather than shipping icons that render wrong.
+
+const iconsSrc = config.iconsDir ? path.join(root, config.appDir, config.iconsDir) : null;
+let iconCount = 0;
+
+if (iconsSrc) {
+  const icons = readIcons(iconsSrc, root);
+  if (icons.length) {
+    refuseSpriteClash(publicSrc);
+    fs.mkdirSync(publicOut, { recursive: true });
+    fs.writeFileSync(path.join(publicOut, path.basename(SPRITE_PATH)), buildSprite(icons));
+    iconCount = icons.length;
+  }
+}
+
 // ---- assets, for runtimes with no filesystem ------------------------------
 //
 // The Node server reads `dist` off a disk. A worker cannot, so the same bytes are
@@ -470,6 +495,7 @@ const summary = [
   `${dynamic.length} route${dynamic.length === 1 ? '' : 's'} left to the server`,
   `${assets.size} client entr${assets.size === 1 ? 'y' : 'ies'}`,
   ...(publicFiles ? [`${publicFiles} public file${publicFiles === 1 ? '' : 's'}`] : []),
+  ...(iconCount ? [`${iconCount} icon${iconCount === 1 ? '' : 's'}`] : []),
 ];
 console.log(`\n${summary.join(', ')}`);
 for (const url of prerendered) console.log(`  ${url}`);

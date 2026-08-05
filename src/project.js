@@ -86,6 +86,7 @@ const DEFAULTS = {
   routesDir: 'routes',
   elementsDir: 'elements',
   publicDir: 'public',
+  iconsDir: 'icons',
   outDir: 'dist',
   typesFile: 'app/transclude-env.d.ts',
   stylesheet: null,

@@ -61,7 +61,9 @@ than into the next reader's evening.
 
 `elements/` holds every custom element, and the file says which kind it is:
 `export const shadow = true` for a shadow root, nothing for light. In `routes/`,
-extension decides: `.html` is a page, `.js` is an endpoint.
+extension decides: `.html` is a page, `.js` is an endpoint. `icons/` holds one
+SVG file per icon, and `src/icons.js` compiles the directory into the single
+`/icons.svg` a `<use href>` points at.
 
 An app owns `transclude.config.js`, its `worker.js`, its own tests, and `app/`
 with the routes, elements and public files. The browser checks live
@@ -383,6 +385,29 @@ against.
   gets a strong ETag for each encoding. Public files belong to the author, can be
   large, and can be media. Media needs byte ranges, and the in-memory path answers
   200 where a 206 was asked for.
+- **The sprite is written after the public copy and before anything that reads
+  `dist/public`.** The asset module a worker imports, the precache list and
+  precompression each build themselves by walking that directory. Written earlier
+  and the public copy overwrites it; written later and all three miss it, so Node
+  serves `/icons.svg` off disk and a worker 404s it with nothing to say why.
+- **One thing answers for `/icons.svg`, and the two servers pick opposite
+  winners.** The build copies `app/public/` and then writes the sprite over it;
+  dev asks the public handler first and never reaches the sprite. Same two files,
+  different answer per server. `refuseSpriteClash` stops both rather than picking,
+  which is why it is called in `bin/build.js` and again in `bin/dev.js`.
+- **parse5 closes an SVG element by namespace, not by tag name.** The sprite is
+  served as `image/svg+xml`, so a browser parses it as XML, where nothing is void
+  and every tag closes. `<image>` or `<use>` serialized the HTML way would take
+  the whole document down and every icon with it, not just the one. `test/icons.test.js`
+  holds that claim, because it is one parse5 version away from changing.
+- **An icon with no `viewBox` is refused, not warned.** A symbol scales by its
+  viewBox. Without one the icon renders at some other size, which reads as a CSS
+  problem and is not one. Same for two files claiming one id: the second would
+  quietly never be reachable, so the build stops and names both.
+- **Dev builds the sprite per request; the build writes it once.** Both call
+  `readIcons` then `buildSprite`, and that is the point. Two copies of those two
+  lines is how `/icons.svg` comes to work in production and 404 in dev, which is
+  the same failure `include.js` was written to end.
 - **A `Response` that answers early still needs the envelope.** An action that sets
   a session cookie and then returns a redirect is an ordinary thing to write, and
   the cookie was dropped. The `Response` is returned directly and nothing looked at

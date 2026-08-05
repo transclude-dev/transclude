@@ -402,6 +402,21 @@ against.
   precompression each build themselves by walking that directory. Written earlier
   and the public copy overwrites it; written later and all three miss it, so Node
   serves `/icons.svg` off disk and a worker 404s it with nothing to say why.
+- **A prerender runs the page; a prefetch does not.** That is the whole split in
+  `speculate.js`. A URL the build wrote to a file has no loader left, so the
+  browser may run it. Everything in `dynamic` is a server render whose loader may
+  read a cookie or count a view, so it is prefetch only. Put a dynamic route in
+  the prerender list and a reader who merely hovered a link has visited it.
+- **The rules are computed before the render pass and carried in the manifest.**
+  Every page embeds the block, so it cannot be computed from what the render pass
+  produced, and `targets` already says which URLs will be files. Carried in
+  `routes.json` because the server renders the dynamic routes and has to send
+  what the files send. Computing it twice is two answers about what a browser may
+  run, and only one of them was ever checked.
+- **The speculation block is hashed by the CSP that already exists.**
+  `inlineSources` matches every `<script>`, so nothing was added for this and
+  nothing should be: a policy built from what the page inlines covers a block the
+  page inlines. Verified in Chrome with `csp: true`, no violation reported.
 - **A library is a directory, so the URLs the sprite claims are not a fixed
   list.** `app/icons/lucide/` is `/lucide.svg`, which is the point: a downloaded
   icon set is put here whole and nothing is renamed. `refuseSpriteClash` takes

@@ -96,6 +96,7 @@ const DEFAULTS = {
   strict: false,
   csrf: true,
   csp: false,
+  speculate: false,
 };
 
 /**

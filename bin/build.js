@@ -24,6 +24,7 @@ import { sitemap } from '../src/sitemap.js';
 import { etagOf, loadAssets, loadStatic } from '../src/static-cache.js';
 import { buildSprite, readLibraries, refuseSpriteClash, spritePath } from '../src/icons.js';
 import { PRECACHE_PATH, precacheDocument, precacheList } from '../src/precache.js';
+import { speculateSettings, speculationRules } from '../src/speculate.js';
 import { cookiesOf } from '../src/cookies.js';
 import { pool } from '../src/pool.js';
 import { precompress } from '../src/compress.js';
@@ -171,6 +172,7 @@ async function render(route, { url, params }) {
     stylesheet,
     csp: config.csp,
     lang: config.lang,
+    speculate: speculateRules,
     include,
   });
 
@@ -240,6 +242,32 @@ if (manifest.error) {
   });
 }
 
+// ---- speculation rules ------------------------------------------------------
+//
+// Before the render, because every page carries the block and the pages are
+// about to be rendered. The URLs are already known: `targets` is what will be
+// written and `dynamic` is what will not, and a target that then fails to render
+// fails the build rather than leaving a rule pointing at nothing.
+//
+// Computed once and carried in the manifest, so the server rendering the dynamic
+// routes sends the same block the files carry. Two computations is two answers
+// to what a browser may prerender, and only one of them was ever checked.
+//
+// The split is the whole point. A file has no loader left to run, so
+// prerendering it is free. A server render's loader may read a cookie or count a
+// view, so the browser may fetch that and not run it. The 404 and 500 pages
+// carry a `file` rather than a route URL, which is what keeps them out of both.
+const speculate = speculateSettings(config.speculate);
+const speculateRules = speculate
+  ? speculationRules(
+      {
+        prerendered: targets.filter((entry) => !entry.file).map((entry) => entry.target.url),
+        dynamic: dynamic.map((route) => route.pattern),
+      },
+      speculate,
+    )
+  : null;
+
 const CONCURRENCY = Number(process.env.TRANSCLUDE_BUILD_CONCURRENCY ?? 8);
 
 const outcomes = await pool(targets, CONCURRENCY, async ({ route, target, file, label }) => {
@@ -256,7 +284,6 @@ const outcomes = await pool(targets, CONCURRENCY, async ({ route, target, file, 
 
 const failures = outcomes.filter((outcome) => !outcome.ok);
 const prerendered = outcomes.filter((outcome) => outcome.ok).map((outcome) => outcome.url);
-
 // A file, like every other page. The served route answers the same document, but
 // `dist/static` is meant to be servable by a host that runs none of this, and a
 // site with no sitemap there would be missing one only on the host that needs it
@@ -309,6 +336,9 @@ fs.writeFileSync(
       notFound: manifest.notFound ? { id: manifest.notFound.id } : null,
       error: manifest.error ? { id: manifest.error.id } : null,
       stylesheet,
+      // Carried rather than recomputed. The server renders the routes that are
+      // not files, and those pages have to say what the files say.
+      speculate: speculateRules,
     },
     null,
     2,

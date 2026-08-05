@@ -94,6 +94,7 @@ Source is JavaScript with JSDoc. Do not convert it to TypeScript.
 | `strict` | `false` | Full TypeScript strictness. |
 | `csrf` | `true` | `false` to turn it off, or an object for `hono/csrf`. |
 | `csp` | `false` | `true`, or `{ directives, reportOnly }`. |
+| `speculate` | `false` | `true` emits speculation rules: prerender for pages that became files, prefetch for the rest. |
 | `cookieSecret` | `null` | Signs cookies. |
 | `fragmentParam` | `'fragment'` | The query parameter that asks for a fragment. |
 | `fragmentHeader` | `null` | A request header that may name one. Adds it to `Vary`. |

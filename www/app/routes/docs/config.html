@@ -215,6 +215,18 @@
           <td>Pages and endpoints. Relative to <code>appDir</code>.</td>
         </tr>
         <tr>
+          <td><code>speculate</code></td>
+          <td><code>false</code></td>
+          <td>
+            <code>true</code> writes
+            <code>&lt;script type="speculationrules"&gt;</code> into every page.
+            A prerendered URL may be prerendered, because no loader is left to
+            run. A server-rendered route may only be prefetched, because its
+            loader may read a cookie. <code>{ eagerness, exclude }</code> for the
+            rest.
+          </td>
+        </tr>
+        <tr>
           <td><code>sitemap</code></td>
           <td><code>false</code></td>
           <td>

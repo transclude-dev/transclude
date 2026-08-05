@@ -28,6 +28,11 @@ export default {
   // no server.
   csp: true,
 
+  // Every page here is a file, so the browser may run one early rather than
+  // only fetch it. The block is inline script, and `csp: true` hashes it with
+  // everything else the page inlines.
+  speculate: true,
+
   // GET /sitemap.xml, from the route table. Every page here is a concrete route,
   // so nothing has to be listed by hand.
   sitemap: { hostname: 'https://transclude.dev' },

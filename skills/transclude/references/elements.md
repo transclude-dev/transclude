@@ -125,6 +125,35 @@ schedules the render, the way an attribute change does for a prop.
 </script>
 ```
 
+## Styling on state
+
+A boolean state field is reflected as a custom state, so CSS can select it. No
+attribute is written and no class is added, which is the point: the document
+still cannot read the state, and a stylesheet still reacts to it.
+
+```html
+<script state>
+  export default {
+    hot: false,
+  };
+</script>
+
+<style>
+  :scope:state(hot) output {
+    color: #b4232c;
+  }
+</style>
+
+<output>${n}</output>
+```
+
+Booleans only. A custom state is a name and not a value, so a number or a string
+has nothing to select on. The state lands with the render rather than with the
+assignment, so `await element.updateComplete` before asserting on it.
+
+Nothing is reflected on the server. A state field starts at the default its
+block declares, so the first paint is that default either way.
+
 ## Behavior
 
 A plain `<script>` block is the element's own code. `host` is the element,

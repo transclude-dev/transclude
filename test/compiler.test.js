@@ -37,6 +37,23 @@ test('static text round-trips entities', () => {
   assert.equal(render('<p>a &amp; b &lt; c</p>'), '<p>a &amp; b &lt; c</p>');
 });
 
+test('static text escapes all three of & < >', () => {
+  // parse5 hands back decoded text, so anything static has to be re-encoded.
+  // Nothing covered this: dropping a `replace` from the escaper broke no test.
+  assert.equal(render('<p>a &amp; b</p>'), '<p>a &amp; b</p>');
+  assert.equal(render('<p>a &lt; b</p>'), '<p>a &lt; b</p>');
+  assert.equal(render('<p>a &gt; b</p>'), '<p>a &gt; b</p>');
+});
+
+test('a static attribute escapes & " < and leaves > alone', () => {
+  // `>` is legal inside a quoted value and a serializer leaves it, which is why
+  // `mergeHead` has to be quote-aware rather than stopping at the first one.
+  assert.equal(render('<p title="a &amp; b"></p>'), '<p title="a &amp; b"></p>');
+  assert.equal(render('<p title="a &quot; b"></p>'), '<p title="a &quot; b"></p>');
+  assert.equal(render('<p title="a &lt; b"></p>'), '<p title="a &lt; b"></p>');
+  assert.equal(render('<p title="a &gt; b"></p>'), '<p title="a > b"></p>');
+});
+
 // ---- each -----------------------------------------------------------------
 
 test('each iterates', () => {

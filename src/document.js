@@ -297,14 +297,40 @@ export const INCLUDE_DEPTH = 10;
  */
 export function paramsFor(route, pathname) {
   const names = [];
+
+  const catchAll = (_, name) => {
+    names.push(name);
+    return '/(.+)';
+  };
+  const segment = (_, name) => {
+    names.push(name);
+    return '([^/]+)';
+  };
+
   const source = route.pattern
-    .replace(/\/:([A-Za-z0-9_]+)\{\.\+\}/g, (_, name) => (names.push(name), '/(.+)'))
-    .replace(/:([A-Za-z0-9_]+)/g, (_, name) => (names.push(name), '([^/]+)'));
+    .replace(/\/:([A-Za-z0-9_]+)\{\.\+\}/g, catchAll)
+    .replace(/:([A-Za-z0-9_]+)/g, segment);
 
   const found = new RegExp(`^${source}$`).exec(pathname);
   if (!found) return null;
 
   return Object.fromEntries(names.map((name, at) => [name, decodeURIComponent(found[at + 1])]));
+}
+
+/**
+ * The URL a route and a set of params name. The other direction from
+ * `paramsFor`, and the two have to agree.
+ *
+ * The build writes a file at this URL and the sitemap advertises it. Each had
+ * its own copy of the substitution, so a pattern shape one handled and the other
+ * did not would have meant a sitemap listing URLs that were never written.
+ *
+ * @param {{ pattern: string }} route
+ * @param {Record<string, string>} params
+ * @returns {string} the pattern with every `:name` filled in
+ */
+export function urlFor(route, params) {
+  return route.pattern.replace(/:(\w+)(\{[^}]*\})?/g, (_, name) => String(params[name] ?? ''));
 }
 
 /**

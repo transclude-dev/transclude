@@ -2,6 +2,7 @@
 
 import { parse, parseFragment } from 'parse5';
 import { compileFragment, childrenOf, CompileError } from './codegen.js';
+import { escapeAttr } from './html.js';
 import { lineMap, sourceMap } from './sourcemap.js';
 import { compileBindings } from './bind.js';
 import {
@@ -896,8 +897,7 @@ function headScript(blocks, where) {
 /** A static attribute, escaped the way an HTML serializer must. */
 function serializeAttr({ name, value }) {
   if (value === '') return ` ${name}`;
-  const escaped = value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-  return ` ${name}="${escaped}"`;
+  return ` ${name}="${escapeAttr(value)}"`;
 }
 
 function elementsExport(used) {

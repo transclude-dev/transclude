@@ -6,6 +6,8 @@
 // else (a route with no `paths`, an endpoint, an error page) is not a page a
 // crawler can reach by guessing, so it is left out.
 
+import { urlFor } from './document.js';
+
 /** The protocol's cap for one file. Past it the response is an index of files. */
 const LIMIT = 50000;
 
@@ -56,9 +58,7 @@ export async function sitemapEntries(manifest, pages, { entries = [], exclude = 
     if (typeof page?.paths !== 'function') continue;
 
     for (const params of (await page.paths()) ?? []) {
-      found.push({
-        path: route.pattern.replace(/:(\w+)(\{[^}]*\})?/g, (_, name) => String(params[name] ?? '')),
-      });
+      found.push({ path: urlFor(route, params) });
     }
   }
 

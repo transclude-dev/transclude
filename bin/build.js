@@ -16,7 +16,7 @@ import { pathToFileURL } from 'node:url';
 import { build } from 'vite';
 import transclude from '../src/plugin.js';
 import { loadProject } from '../src/project.js';
-import { absoluteFrom, renderRoute, responseOf } from '../src/document.js';
+import { absoluteFrom, renderRoute, responseOf, urlFor } from '../src/document.js';
 import { feed, feedPath } from '../src/feed.js';
 import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
@@ -140,7 +140,7 @@ async function urlsFor(route) {
 
   const listed = (await paths()) ?? [];
   return listed.map((params) => ({
-    url: route.pattern.replace(/:(\w+)(\{[^}]*\})?/g, (_, name) => String(params[name] ?? '')),
+    url: urlFor(route, params),
     params,
   }));
 }

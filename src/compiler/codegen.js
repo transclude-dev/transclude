@@ -10,7 +10,7 @@
 import { Scope, collectRefs, emit, parseExpr } from './expr.js';
 import { splitInterpolations } from './interp.js';
 import { parseEach as readEach } from './directives.js';
-import { RAW_TEXT, VOID } from './html.js';
+import { escapeAttr, escapeText, RAW_TEXT, VOID } from './html.js';
 
 
 
@@ -1081,11 +1081,3 @@ function joinOut(entries) {
   return { code: lines.join('\n'), at };
 }
 
-// parse5 hands us decoded text, so static output has to be re-encoded.
-function escapeText(value) {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-function escapeAttr(value) {
-  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-}

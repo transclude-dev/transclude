@@ -39,6 +39,8 @@ app/
     note-card.html # <note-card>, the name needs a dash
   icons/           # one SVG file per icon, compiled to /icons.svg
     check.svg      # <use href="/icons.svg#check">
+    lucide/        # a subdirectory is a library: /lucide.svg
+      check.svg    # <use href="/lucide.svg#check">
   public/          # copied to the site root as-is
 transclude.config.js
 ```
@@ -168,8 +170,15 @@ shows. The file name is the id.
 <svg width="16" height="16"><use href="/icons.svg#check"></use></svg>
 ```
 
-Every icon file needs a `viewBox`, and two files cannot share a name. The build
-refuses either rather than shipping an icon that renders wrong.
+A subdirectory is a library of its own, served under its name. Put a downloaded
+icon set in whole and reference it by library and name:
+
+```html
+<svg width="16" height="16"><use href="/lucide.svg#check"></use></svg>
+```
+
+Every icon file needs a `viewBox`. A library is one flat directory, so a
+directory inside one is refused. Two libraries may each have a `check`.
 
 Most apps wrap this in a light element so a page names an icon instead of a URL.
 See [references/elements.md](references/elements.md).

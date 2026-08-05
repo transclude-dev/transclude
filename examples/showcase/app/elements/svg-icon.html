@@ -1,7 +1,10 @@
 <script properties>
   export default {
-    // A file in `app/icons/`, without the extension. `check` draws
-    // `app/icons/check.svg`.
+    // A directory in `app/icons/`, or `icons` for the files loose at the top.
+    // A downloaded icon set put in whole is a library named by its folder.
+    library: 'icons',
+    // A file in that library, without the extension. `check` in `lucide` draws
+    // `app/icons/lucide/check.svg`.
     name: '',
     // What a screen reader says. Empty means the icon repeats its neighbor,
     // which is most of them, so it is hidden instead.
@@ -27,5 +30,5 @@
 <!-- Written twice rather than folded into one tag with three conditional
      attributes. A labelled icon and a decorative one are different elements to
      a screen reader, and the pair says which is which in one pass. -->
-<svg if="label" role="img" aria-label="${label}"><use href="/icons.svg#${name}"></use></svg>
-<svg else aria-hidden="true"><use href="/icons.svg#${name}"></use></svg>
+<svg if="label" role="img" aria-label="${label}"><use href="/${library}.svg#${name}"></use></svg>
+<svg else aria-hidden="true"><use href="/${library}.svg#${name}"></use></svg>

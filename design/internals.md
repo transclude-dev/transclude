@@ -402,6 +402,18 @@ against.
   precompression each build themselves by walking that directory. Written earlier
   and the public copy overwrites it; written later and all three miss it, so Node
   serves `/icons.svg` off disk and a worker 404s it with nothing to say why.
+- **A library is a directory, so the URLs the sprite claims are not a fixed
+  list.** `app/icons/lucide/` is `/lucide.svg`, which is the point: a downloaded
+  icon set is put here whole and nothing is renamed. `refuseSpriteClash` takes
+  the libraries rather than one name, and dev answers `/:file{[^/]+\.svg}`
+  because it has no list until it reads the disk. That route is registered after
+  `baseApp`, so the author's own `public/favicon.svg` is answered by the public
+  handler first and never reaches it. Register it earlier and every public SVG
+  becomes an icon-sheet lookup. `check.html` holds that ordering.
+- **A directory inside a library is refused, not flattened or skipped.**
+  Flattening gave `lucide/arrows/up.svg` and `lucide/up.svg` one id, which is the
+  collision the flat reading used to stop the build over. Skipping loses icons
+  and says nothing. One level, and the message names the path.
 - **One thing answers for `/icons.svg`, and the two servers pick opposite
   winners.** The build copies `app/public/` and then writes the sprite over it;
   dev asks the public handler first and never reaches the sprite. Same two files,

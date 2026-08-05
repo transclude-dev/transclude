@@ -59,6 +59,7 @@
        Neither ships any JavaScript: there is no <script> block to ship. -->
   <svg-icon id="icon-plain" name="check"></svg-icon>
   <svg-icon id="icon-labelled" name="chevron-down" label="More"></svg-icon>
+  <svg-icon id="icon-library" library="glyphicons" name="check"></svg-icon>
 
   <!-- Where a fetched fragment gets swapped in. Empty in the markup, so nothing
        it ends up containing is in this page's element closure. -->
@@ -236,6 +237,32 @@
     ok(sprite.includes('id="check"'), 'the sprite has no #check in it');
     ok(sprite.includes('id="chevron-down"'), 'the sprite has no #chevron-down in it');
     return 'app/icons/*.svg compiled to one /icons.svg';
+  });
+
+  await check('a library is a sheet of its own, and one name can be in both', async () => {
+    // A downloaded icon set is a directory in app/icons/. Nothing is renamed,
+    // and `check` existing in two libraries is two icons rather than a clash.
+    const scoped = document.getElementById('icon-library');
+    ok(scoped.querySelector('use').getAttribute('href') === '/glyphicons.svg#check');
+
+    const [icons, glyphicons] = await Promise.all(
+      ['/icons.svg', '/glyphicons.svg'].map((url) => fetch(url).then((r) => r.text())),
+    );
+    ok(icons.includes('id="check"'), '/icons.svg lost #check');
+    ok(glyphicons.includes('id="check"'), '/glyphicons.svg has no #check');
+    ok(icons !== glyphicons, 'the two sheets came back identical');
+
+    // A name no directory answers to is a 404 rather than an empty sprite.
+    const missing = await fetch('/lucdie.svg');
+    ok(missing.status === 404, `a typo answered ${missing.status}, not 404`);
+
+    // Dev answers any /name.svg, because a library is named by a directory it
+    // has not read yet. A public file at such a URL has to win anyway, or the
+    // author's own favicon.svg becomes an icon sheet lookup.
+    const mark = await fetch('/mark.svg').then((r) => r.text());
+    ok(mark.includes('<circle'), 'a public .svg was shadowed by the sheet route');
+    ok(!mark.includes('<symbol'), 'a public .svg was answered as a sprite');
+    return 'app/icons/glyphicons/ compiled to /glyphicons.svg';
   });
 
   await check('exported prototype members are shared by every instance', () => {

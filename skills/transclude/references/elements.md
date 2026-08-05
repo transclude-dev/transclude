@@ -195,6 +195,7 @@ inventing.
 ```html
 <script properties>
   export default {
+    library: 'icons',
     name: '',
     label: '',
   };
@@ -211,9 +212,13 @@ inventing.
   }
 </style>
 
-<svg if="label" role="img" aria-label="${label}"><use href="/icons.svg#${name}"></use></svg>
-<svg else aria-hidden="true"><use href="/icons.svg#${name}"></use></svg>
+<svg if="label" role="img" aria-label="${label}"><use href="/${library}.svg#${name}"></use></svg>
+<svg else aria-hidden="true"><use href="/${library}.svg#${name}"></use></svg>
 ```
+
+`library` is the directory in `app/icons/`, and `icons` is the files loose at the
+top. `<svg-icon library="lucide" name="check">` draws
+`app/icons/lucide/check.svg`.
 
 `<svg-icon name="check">` is decorative and hidden from a screen reader, which is
 right when the icon sits beside its own label. `<svg-icon name="check"

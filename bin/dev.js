@@ -7,7 +7,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { getRequestListener } from '@hono/node-server';
 import { publicFiles as publicHandler } from '../src/public-files.js';
-import { buildSprite, readIcons, refuseSpriteClash, SPRITE_PATH } from '../src/icons.js';
+import { buildSprite, readLibraries, refuseSpriteClash } from '../src/icons.js';
 import { createServer as createViteServer } from 'vite';
 import {
   ACTION_METHODS,
@@ -66,18 +66,36 @@ const publicFiles =
 const iconsRoot = config.iconsDir ? path.join(root, config.appDir, config.iconsDir) : null;
 
 /**
- * The sprite the build writes, built per request instead.
+ * One library's sprite, built per request rather than read off disk.
  *
  * Reading a directory of small files on every request is what the rest of dev
  * already does, and it is what makes adding an icon show up on reload. A refusal
- * from `buildSprite` is returned as text rather than thrown, so a missing
- * viewBox reads the same here as the message that would stop the build.
+ * is returned as text rather than thrown, so a missing viewBox reads the same
+ * here as the message that would stop the build.
+ *
+ * A name no library answers to is a 404, not an empty sprite. `/lucdie.svg` is a
+ * typo, and a blank icon is a worse way to find that out than a missing file.
  */
-function sprite() {
+function sprite(name) {
   try {
-    const icons = readIcons(iconsRoot, root);
-    refuseSpriteClash(publicRoot);
-    return { status: 200, type: 'image/svg+xml; charset=utf-8', body: buildSprite(icons) };
+    const libraries = readLibraries(iconsRoot, root);
+    refuseSpriteClash(publicRoot, libraries);
+
+    const library = libraries.find((entry) => entry.name === name);
+    if (!library) {
+      const known = libraries.map((entry) => entry.name).join(', ') || 'none';
+      return {
+        status: 404,
+        type: 'text/plain; charset=utf-8',
+        body: `no icon library "${name}". There is: ${known}`,
+      };
+    }
+
+    return {
+      status: 200,
+      type: 'image/svg+xml; charset=utf-8',
+      body: buildSprite(library.icons),
+    };
   } catch (error) {
     return { status: 500, type: 'text/plain; charset=utf-8', body: error.message };
   }
@@ -284,8 +302,12 @@ async function buildApp() {
   // A public file at this URL is refused rather than raced, so registering after
   // `baseApp` costs nothing: the public handler can only fall through to here.
   if (iconsRoot) {
-    app.get(SPRITE_PATH, (c) => {
-      const { status, type, body } = sprite();
+    // Any `/name.svg` at the root, because a library is named by a directory the
+    // author made and dev has no list of them until it reads the disk. The public
+    // handler ran first, so an .svg the author wrote still wins.
+    app.get('/:file{[^/]+\\.svg}', (c) => {
+      const name = c.req.param('file').slice(0, -'.svg'.length);
+      const { status, type, body } = sprite(name);
       return c.body(body, status, { 'content-type': type });
     });
   }

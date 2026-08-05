@@ -22,7 +22,7 @@ import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
 import { sitemap } from '../src/sitemap.js';
 import { etagOf, loadAssets, loadStatic } from '../src/static-cache.js';
-import { buildSprite, readIcons, refuseSpriteClash, SPRITE_PATH } from '../src/icons.js';
+import { buildSprite, readLibraries, refuseSpriteClash, spritePath } from '../src/icons.js';
 import { PRECACHE_PATH, precacheDocument, precacheList } from '../src/precache.js';
 import { cookiesOf } from '../src/cookies.js';
 import { pool } from '../src/pool.js';
@@ -356,20 +356,29 @@ function countFiles(dir) {
 // It is not counted as a public file, because the author did not write it.
 //
 // An icon named for a file the author can see is worth a stop: `buildSprite`
-// throws on a missing viewBox or two files claiming one name, and the build ends
-// there rather than shipping icons that render wrong.
+// throws on a missing viewBox, and the build ends there rather than shipping
+// icons that render wrong.
+//
+// One file per library. A downloaded icon set is a directory here, so the count
+// this reports is two numbers: an icon total says nothing about how much any one
+// page fetches, and the sheets are what a page fetches.
 
 const iconsSrc = config.iconsDir ? path.join(root, config.appDir, config.iconsDir) : null;
 let iconCount = 0;
+let libraryCount = 0;
 
 if (iconsSrc) {
-  const icons = readIcons(iconsSrc, root);
-  if (icons.length) {
-    refuseSpriteClash(publicSrc);
-    fs.mkdirSync(publicOut, { recursive: true });
-    fs.writeFileSync(path.join(publicOut, path.basename(SPRITE_PATH)), buildSprite(icons));
-    iconCount = icons.length;
+  const libraries = readLibraries(iconsSrc, root);
+  refuseSpriteClash(publicSrc, libraries);
+
+  if (libraries.length) fs.mkdirSync(publicOut, { recursive: true });
+
+  for (const { name, icons } of libraries) {
+    const file = path.join(publicOut, path.basename(spritePath(name)));
+    fs.writeFileSync(file, buildSprite(icons));
+    iconCount += icons.length;
   }
+  libraryCount = libraries.length;
 }
 
 // ---- assets, for runtimes with no filesystem ------------------------------
@@ -495,7 +504,12 @@ const summary = [
   `${dynamic.length} route${dynamic.length === 1 ? '' : 's'} left to the server`,
   `${assets.size} client entr${assets.size === 1 ? 'y' : 'ies'}`,
   ...(publicFiles ? [`${publicFiles} public file${publicFiles === 1 ? '' : 's'}`] : []),
-  ...(iconCount ? [`${iconCount} icon${iconCount === 1 ? '' : 's'}`] : []),
+  ...(iconCount
+    ? [
+        `${iconCount} icon${iconCount === 1 ? '' : 's'} in ` +
+          `${libraryCount} sheet${libraryCount === 1 ? '' : 's'}`,
+      ]
+    : []),
 ];
 console.log(`\n${summary.join(', ')}`);
 for (const url of prerendered) console.log(`  ${url}`);

@@ -566,13 +566,14 @@ export function methodsOf(page) {
  *
  * @param {object[]} chain the compiled modules, outermost first
  * @param {object[]} datas one per level, in the same order
- * @param {{ clientEntry?: string|null, stylesheet?: string|null, lang?: string }} [options]
+ * @param {{ clientEntry?: string|null, stylesheet?: string|null, lang?: string,
+ *   speculate?: string|null }} [options]
  * @returns {string} the document, starting at `<!doctype html>`
  */
 export function renderDocument(
   chain,
   datas,
-  { clientEntry, stylesheet, lang = 'en' } = {},
+  { clientEntry, stylesheet, lang = 'en', speculate = null } = {},
 ) {
   // Each level renders to a slot map and hands it to the level above, so a page
   // can fill more than one hole in its layout.
@@ -641,6 +642,7 @@ ${openTag('html', { lang, ...attrsOf(chain, datas, 'renderHtmlAttrs') })}
 <meta charset="utf-8">
 ${defaults}
 ${title}
+${speculate ? `<script type="speculationrules">${speculate}</script>` : ''}
 ${headScripts.join('\n')}
 ${stylesheet ? `<link rel="stylesheet" href="${stylesheet}">` : ''}
 ${head.join('\n')}

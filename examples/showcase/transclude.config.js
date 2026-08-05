@@ -5,6 +5,7 @@
 import { people } from "./app/data/people.js";
 
 export default {
+  speculate: true,
   appDir: "app",
 
   // Documents this app may read. Default deny: without a host named here there

@@ -61,6 +61,9 @@
   <svg-icon id="icon-labelled" name="chevron-down" label="More"></svg-icon>
   <svg-icon id="icon-library" library="glyphicons" name="check"></svg-icon>
 
+  <!-- A boolean in <script state>, so it has a custom state to reflect. -->
+  <tally-box id="tally" label="hot at five"></tally-box>
+
   <!-- Where a fetched fragment gets swapped in. Empty in the markup, so nothing
        it ends up containing is in this page's element closure. -->
   <div id="swap"></div>
@@ -263,6 +266,28 @@
     ok(mark.includes('<circle'), 'a public .svg was shadowed by the sheet route');
     ok(!mark.includes('<symbol'), 'a public .svg was answered as a sprite');
     return 'app/icons/glyphicons/ compiled to /glyphicons.svg';
+  });
+
+  await check('boolean state is a custom state, and never an attribute', async () => {
+    // The whole reason state is not in the document is that the page has no
+    // business reading it. `:state()` is how CSS reacts anyway.
+    const box = document.getElementById('tally');
+    ok(box.matches(':state(hot)') === false, 'hot before anything was clicked');
+
+    // Reflected with the render, not with the assignment, so the state and the
+    // markup it styles land in the same frame.
+    box.bump(5);
+    ok(box.n === 5, 'the property write is synchronous');
+    await box.updateComplete;
+
+    ok(box.matches(':state(hot)'), 'the state was not reflected');
+    ok(!box.hasAttribute('hot'), 'state leaked into the document as an attribute');
+    ok(getComputedStyle(box.querySelector('output')).fontWeight === '600', 'CSS did not react');
+
+    box.bump(-5);
+    await box.updateComplete;
+    ok(box.matches(':state(hot)') === false, 'the state was not taken away');
+    return 'ElementInternals.states, from a boolean in <script state>';
   });
 
   await check('exported prototype members are shared by every instance', () => {
@@ -1020,6 +1045,9 @@
     // the answer is explicit rather than absent.
     is(document.getElementById('solo').constructor.formAssociated, false, 'user-card, shadow');
     is(document.getElementById('note').constructor.formAssociated, false, 'site-note, light');
+    // user-card's only state is a number, so there is no custom state to
+    // reflect and no reason to attach internals. tally-box declares a boolean
+    // and does get them, which is the check above.
     ok(!document.getElementById('solo').internals, 'an ordinary element gets no internals');
     return 'no export, no association, and a light element can opt in too';
   });

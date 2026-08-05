@@ -340,6 +340,9 @@ export function createApp({
                 stylesheet: manifest.stylesheet,
                 csp: config.csp,
                 lang: config.lang,
+                // Written by the build and carried here, so a server-rendered
+                // page says the same thing about speculation that a file does.
+                speculate: manifest.speculate ?? null,
                 include,
               })
             : await renderFragment(page, ctx, { region: region || null, include });
@@ -408,6 +411,7 @@ export function createApp({
             stylesheet: manifest.stylesheet,
             csp: config.csp,
             lang: config.lang,
+            speculate: manifest.speculate ?? null,
             include,
           });
 

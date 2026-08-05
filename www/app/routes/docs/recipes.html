@@ -178,6 +178,26 @@ export default (app) => {
   <transclude src="#pricing"></transclude>
 </aside>`,
 
+      popover: `<button command="show-modal" commandfor="prefs">Preferences</button>
+
+<dialog id="prefs">
+  <h2>Preferences</h2>
+  <button command="close" commandfor="prefs">Done</button>
+</dialog>`,
+      popoverCss: [`#prefs {
+  opacity: 0;
+  transition: opacity .15s, overlay .15s allow-discrete, display .15s allow-discrete;
+}
+
+#prefs:open {
+  opacity: 1;
+}
+
+@starting-style {
+  #prefs:open {
+    opacity: 0;
+  }
+}`, 'css'],
       element: `<!-- app/elements/note-card.html -->
 <script properties>
   export default { title: '', tone: 'plain' };
@@ -394,6 +414,25 @@ test('the notes page lists notes', async () => {
   </p>
 
   ${html(s.element)}
+
+  <h3>Open a dialog with no JavaScript</h3>
+
+  <p>
+    <code>command</code> and <code>commandfor</code> are the platform's own
+    invoker: a button names what it acts on and what to do. No listener, no
+    script, and the button stays a button for a keyboard and a screen reader.
+  </p>
+
+  ${html(s.popover)}
+
+  <p>
+    Animating it needs two things a dialog makes awkward.
+    <code>@starting-style</code> gives the open state somewhere to come from.
+    <code>allow-discrete</code> lets <code>display</code> and the top layer take
+    part in the transition instead of snapping.
+  </p>
+
+  ${html(s.popoverCss)}
 
   <h2>Build and serve</h2>
 

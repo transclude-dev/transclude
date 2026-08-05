@@ -28,6 +28,19 @@
 
   host.addEventListener('click', () => host.bump(), { signal });
 <\/script>`,
+      customState: `<script state>
+  export default {
+    hot: false,
+  };
+<\/script>
+
+<style>
+  :scope:state(hot) output {
+    color: #b4232c;
+  }
+</style>
+
+<output>\${n}</output>`,
       stateUse: `<tally-box label="clicks"></tally-box>
 
 <script type="module">
@@ -333,6 +346,29 @@
     State renders on the server too, so the first paint carries the default the
     block declares.
   </p>
+
+  <h3>Styling on state</h3>
+
+  <p>
+    A boolean state field is a custom state, so CSS can select it. There is no
+    attribute to write and no class to add on the way past. State stays out of
+    the document, and a stylesheet still reacts to it.
+  </p>
+
+  ${html(s.customState)}
+
+  <p>
+    Booleans only. A custom state is a name, not a value, so a number or a
+    string has nothing to select on. The state lands with the render rather than
+    with the assignment, so it changes in the same frame as the markup it
+    styles.
+  </p>
+
+  <doc-note label="Nothing is reflected on the server">
+    A state field starts at the default its block declares, so the first paint
+    is that default either way. Anything else is something the reader did, which
+    means the element has upgraded by the time a custom state differs.
+  </doc-note>
 
   <doc-note label="State is not an attribute">
     Nothing outside can set it: not the page's markup, not a parent, not a URL.

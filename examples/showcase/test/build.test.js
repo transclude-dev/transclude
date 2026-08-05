@@ -393,6 +393,41 @@ describe('one name in two libraries is two different icons', async () => {
   assert.notEqual(icons, glyphicons, 'the two sheets are the same bytes');
 });
 
+// ---- speculation --------------------------------------------------------------
+
+describe('a page that runs a loader is never offered for prerender', () => {
+  // The claim the feature rests on. `/notes` reads a cookie and `/` reads a
+  // query string, so both are server-rendered: the browser may fetch them and
+  // must not run them before the reader clicks.
+  const rules = JSON.parse(manifest().speculate);
+  const listed = (kind) =>
+    (rules[kind] ?? []).flatMap((rule) => rule.where.or.map((clause) => clause.href_matches));
+
+  const run = listed('prerender');
+  const fetched = listed('prefetch');
+
+  assert.ok(run.includes('/check'), '/check is a file and is not offered');
+  for (const dynamic of ['/', '/notes']) {
+    assert.ok(!run.includes(dynamic), `${dynamic} runs a loader and may be prerendered`);
+    assert.ok(fetched.includes(dynamic), `${dynamic} is not even prefetched`);
+  }
+
+  // An endpoint answers with whatever it builds. Speculating one spends a
+  // request nothing will reuse.
+  for (const endpoint of ['/api/people', '/api/checks']) {
+    assert.ok(![...run, ...fetched].includes(endpoint), `${endpoint} is speculated`);
+  }
+});
+
+describe('every page carries the same rules, file or server-rendered', () => {
+  // Two computations is two answers, and only one of them was checked.
+  const inFile = read('static/check/index.html').match(
+    /<script type="speculationrules">([\s\S]*?)<\/script>/,
+  );
+  assert.ok(inFile, 'the prerendered page has no rules block');
+  assert.equal(inFile[1], manifest().speculate);
+});
+
 // ---- what the build must not publish ---------------------------------------
 
 describe('an operating system leaving a file in public does not publish it', () => {

@@ -20,7 +20,9 @@
     border-color: var(--warn-rule);
   }
   .label {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
     font-family: var(--sans);
     font-size: 0.66rem;
     font-weight: 600;
@@ -32,6 +34,11 @@
   :scope[tone="warn"] .label {
     color: var(--warn-ink);
   }
+  /* The label is small caps at 0.66rem, and an icon at 1em of that reads as a
+     smudge. Sized against the note's own text instead. */
+  .label svg-icon {
+    font-size: 0.95rem;
+  }
   p {
     margin: 0;
     font-size: 0.97rem;
@@ -39,5 +46,11 @@
   }
 </style>
 
-<span class="label">${label}</span>
+<!-- A warn note was told apart by color alone, which is the one thing some
+     readers cannot use. The icon says the same thing in a second way, and it
+     carries the word rather than repeating the label beside it. -->
+<span class="label"
+  ><svg-icon if="tone === 'warn'" name="alert" label="Warning"></svg-icon
+  >${label}</span
+>
 <p><slot></slot></p>

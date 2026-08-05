@@ -8,6 +8,7 @@
   appDir: 'app',
   routesDir: 'routes',
   elementsDir: 'elements',
+  iconsDir: 'icons',
   publicDir: 'public',
   stylesheet: 'app/styles/global.css',
 
@@ -187,6 +188,17 @@
             arriving in a swap. Worth it when
             <a href="/docs/fragments">fragments</a> bring in elements the page did not
             render.
+          </td>
+        </tr>
+        <tr>
+          <td><code>iconsDir</code></td>
+          <td><code>'icons'</code></td>
+          <td>
+            One SVG file per icon, compiled into <code>/icons.svg</code> as a
+            sprite of <code>&lt;symbol&gt;</code>s. Relative to
+            <code>appDir</code>. Point a <code>&lt;use&gt;</code> at one by file
+            name: <code>&lt;use href="/icons.svg#check"&gt;</code> draws
+            <code>icons/check.svg</code>.
           </td>
         </tr>
         <tr>

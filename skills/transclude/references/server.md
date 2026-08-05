@@ -94,7 +94,7 @@ Source is JavaScript with JSDoc. Do not convert it to TypeScript.
 | `strict` | `false` | Full TypeScript strictness. |
 | `csrf` | `true` | `false` to turn it off, or an object for `hono/csrf`. |
 | `csp` | `false` | `true`, or `{ directives, reportOnly }`. |
-| `speculate` | `false` | `true` emits speculation rules: prerender for pages that became files, prefetch for the rest. |
+| `speculate` | `false` | `true` emits speculation rules. See below. |
 | `cookieSecret` | `null` | Signs cookies. |
 | `fragmentParam` | `'fragment'` | The query parameter that asks for a fragment. |
 | `fragmentHeader` | `null` | A request header that may name one. Adds it to `Vary`. |
@@ -106,6 +106,27 @@ Source is JavaScript with JSDoc. Do not convert it to TypeScript.
 | `proxy` | `false` | `{ allow: [...] }` for cross-site includes. |
 | `precache` | `false` | `true` writes `/precache.json`. |
 | `onError` | `null` | `(error, { request, url, method })` per failed request. |
+
+
+### speculate
+
+`true` writes a `<script type="speculationrules">` block into every page, so the
+browser can fetch or render the next document before the reader clicks. No
+JavaScript of the framework's is involved.
+
+The split matters and the build decides it. A URL prerendered to a file has no
+loader left to run, so it goes in `prerender`. Every route the server still
+renders goes in `prefetch` only, because its loader may read a cookie or count a
+view and a prerender would run that for a reader who never clicked. Endpoints are
+in neither.
+
+```js
+speculate: { eagerness: 'moderate', exclude: ['/logout'] }
+```
+
+`eagerness` defaults to `moderate`, which waits for a hover. `exclude` is matched
+against the emitted pattern, so a route `/docs/:path{.+}` is excluded as
+`/docs/*`.
 
 ## The build
 

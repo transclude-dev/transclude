@@ -129,6 +129,63 @@ export const POST = async ({ request, revalidateTag }) => {
     that would be wrong for every visitor after the first.
   </doc-note>
 
+  <h2>Speculation</h2>
+
+  <p>
+    Every link is a document request, so every navigation costs a round trip.
+    <code>speculate: true</code> lets the browser pay it early:
+  </p>
+
+  ${html(s.speculate)}
+
+  <p>
+    Each page then carries a
+    <code>&lt;script type="speculationrules"&gt;</code> block. Nothing of this
+    framework's runs to make it work, and a browser that does not support it
+    ignores it.
+  </p>
+
+  <h3>What may be run, and what may only be fetched</h3>
+
+  <p>
+    A prerender runs the page. A page the build wrote to a file has no loader
+    left to run, so running it early costs nothing. Those go in
+    <code>prerender</code>.
+  </p>
+
+  <p>
+    Every route the server still renders goes in <code>prefetch</code>. Its
+    loader may read a cookie, count a view or hand out a token. Running that for
+    a reader who only hovered a link is wrong rather than slow. Endpoints are in
+    neither.
+  </p>
+
+  ${html(s.speculateOut)}
+
+  <p>
+    The build decides this, because the build is what knows which routes became
+    files.
+  </p>
+
+  <h3>Options</h3>
+
+  ${html(s.speculateOpts)}
+
+  <p>
+    <code>eagerness</code> is <code>moderate</code> by default, which waits for
+    a hover. <code>immediate</code> and <code>eager</code> act before the reader
+    has done anything. <code>exclude</code> is matched against the pattern that
+    is emitted, so a route <code>/docs/:path{.+}</code> is excluded as
+    <code>/docs/*</code>.
+  </p>
+
+  <doc-note label="A page you prerender is a page you visited">
+    Speculation is a hint and the browser may ignore it, but when it acts on
+    one, the page really runs. Anything a loader does that a reader would notice
+    belongs behind <code>prerender = false</code>, which is what keeps it out of
+    that list.
+  </doc-note>
+
   <h2>Holding a render</h2>
 
   <p>

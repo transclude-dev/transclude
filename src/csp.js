@@ -104,9 +104,15 @@ export async function policyFor(html, { directives = CSP_DEFAULTS } = {}) {
     inline.filter((one) => one.kind === 'style').map((one) => sha256(one.body)),
   );
 
+  // Which set `'hashes'` stands for, by directive. Anything else gets none:
+  // there is nothing to hash for `default-src`, and a directive carrying a hash
+  // ignores `'unsafe-inline'` outright, so handing it an empty list is wrong in a
+  // way that only shows up in a browser.
+  const hashesFor = { 'script-src': scripts, 'style-src': styles };
+
   const parts = [];
   for (const [name, sources] of Object.entries(directives)) {
-    const hashes = name === 'script-src' ? scripts : name === 'style-src' ? styles : [];
+    const hashes = hashesFor[name] ?? [];
     const resolved = sources.flatMap((source) => (source === "'hashes'" ? hashes : [source]));
 
     // A directive left with nothing is dropped. An empty source list means

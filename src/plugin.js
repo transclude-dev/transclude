@@ -164,6 +164,12 @@ export default function transclude({
     };
   };
 
+  /** The 404 or the 500 page, as the manifest holds it, or null if there is none. */
+  const errorPageEntry = (route) => {
+    if (!route) return null;
+    return { id: route.id, rel: route.rel, params: [], client: clientManifest(route) };
+  };
+
   const report = (label, warnings) => {
     for (const w of warnings ?? []) console.warn(`[transclude] ${label}: ${w}`);
   };
@@ -202,12 +208,10 @@ export default function transclude({
             rel: route.rel,
             params: route.params,
           })),
-          notFound: scanned.notFound
-            ? { id: scanned.notFound.id, rel: scanned.notFound.rel, params: [], client: clientManifest(scanned.notFound) }
-            : null,
-          error: scanned.error
-            ? { id: scanned.error.id, rel: scanned.error.rel, params: [], client: clientManifest(scanned.error) }
-            : null,
+          // Neither is a route: both are reached for rather than matched, so
+          // they carry no pattern and no params.
+          notFound: errorPageEntry(scanned.notFound),
+          error: errorPageEntry(scanned.error),
         };
       },
       configure(config) {

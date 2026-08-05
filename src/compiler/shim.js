@@ -15,6 +15,7 @@
 
 import { parse, parseExpressionAt } from 'acorn';
 import { ambientJsdoc } from './ambient.js';
+import { parseEach } from './directives.js';
 import { childrenOf } from './codegen.js';
 import { splitInterpolations } from './interp.js';
 import { splitBlocks } from './index.js';
@@ -547,20 +548,18 @@ function emitNodes(nodes, out, scope, components, depth) {
     let closes = 0;
 
     if (each) {
-      const spec = /^\s*([A-Za-z_$][\w$]*)\s*(?:,\s*([A-Za-z_$][\w$]*)\s*)?\s+of\s+([\s\S]+?)\s*$/.exec(
-        each.value,
-      );
+      const spec = parseEach(each.value);
       if (spec) {
-        const listOffset = attrValueOffset(node, 'each') + each.value.indexOf(spec[3]);
+        const listOffset = attrValueOffset(node, 'each') + each.value.indexOf(spec.list);
         indent(out, depth);
-        out.add(`for (const ${spec[1]} of `);
-        emitExpression(spec[3], listOffset, out, scope);
+        out.add(`for (const ${spec.item} of `);
+        emitExpression(spec.list, listOffset, out, scope);
         out.add(') {\n');
-        inner.add(spec[1]);
-        if (spec[2]) {
+        inner.add(spec.item);
+        if (spec.index) {
           indent(out, depth + 1);
-          out.add(`const ${spec[2]}: number = 0;\n`);
-          inner.add(spec[2]);
+          out.add(`const ${spec.index}: number = 0;\n`);
+          inner.add(spec.index);
         }
         closes++;
       }

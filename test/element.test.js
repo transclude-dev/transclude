@@ -7,6 +7,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { coerceProps } from '../src/runtime/index.js';
 import { createRoot } from './dom.js';
 
@@ -869,4 +870,72 @@ test('a prop wins over a state default of the same name', async () => {
   const def = { stateDefs: { n: 7 }, coerce: (p) => ({ ...p }) };
 
   assert.deepEqual(data(def, { n: 1 }), { n: 1 });
+});
+
+// ---- what the two element classes share ------------------------------------
+
+/** The body of the `class … extends HTMLElement` inside a named function. */
+function classBody(source, after) {
+  const from = source.indexOf(after);
+  const open = source.indexOf('{', source.indexOf('extends HTMLElement', from));
+  let depth = 0;
+
+  for (let i = open; i < source.length; i++) {
+    if (source[i] === '{') depth++;
+    else if (source[i] === '}') {
+      depth--;
+      if (depth === 0) return source.slice(open + 1, i);
+    }
+  }
+  return '';
+}
+
+/** Each method of a class body, by name, as text. */
+function methodsOfClass(body) {
+  const found = new Map();
+
+  for (const match of body.matchAll(/^ {4}(?:get |set |static )?(#?\w+)\s*\([^)]*\)\s*\{/gm)) {
+    let depth = 0;
+    for (let i = match.index + match[0].length - 1; i < body.length; i++) {
+      if (body[i] === '{') depth++;
+      else if (body[i] === '}') {
+        depth--;
+        if (depth === 0) {
+          found.set(match[1], body.slice(match.index, i + 1));
+          break;
+        }
+      }
+    }
+  }
+  return found;
+}
+
+/** Comments and spacing are not the behavior. */
+const codeOnly = (text) =>
+  text
+    .replace(/\/\/.*$/gm, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+test('the light and shadow elements agree on everything but painting', async () => {
+  // The two classes are separate on purpose. Sharing a base class would put
+  // indirection into the one file that ships to a browser, and the halves
+  // differ where it matters. What they must not do is drift on the parts that
+  // are the same, so those are compared rather than merged.
+  //
+  // `connectedCallback` and `#apply` are the two that differ, and they are the
+  // whole difference between the halves: a light element writes into the nodes
+  // that are already there, and a shadow one may rebuild.
+  const file = new URL('../src/runtime/index.js', import.meta.url);
+  const source = await fs.promises.readFile(file, 'utf8');
+
+  const light = methodsOfClass(classBody(source, 'export function defineLight'));
+  const shadow = methodsOfClass(classBody(source, 'export function defineComponent'));
+  assert.ok(light.size >= 10 && shadow.size >= 10, 'both classes were found and parsed');
+
+  const shared = [...light.keys()].filter((name) => shadow.has(name));
+  const differ = shared.filter((name) => codeOnly(light.get(name)) !== codeOnly(shadow.get(name)));
+
+  assert.deepEqual(differ.sort(), ['#apply', 'connectedCallback']);
 });

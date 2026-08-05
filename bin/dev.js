@@ -234,7 +234,10 @@ async function loadMiddleware() {
   if (!fs.existsSync(serverFile)) return null;
 
   const url = `/${config.appDir}/${SERVER_FILE}`;
-  const node = await vite.moduleGraph.getModuleByUrl(url, true);
+  // Vite's second argument is `ssr`. This module is only ever loaded through
+  // `ssrLoadModule`, so the SSR graph is the one holding it.
+  const ssr = true;
+  const node = await vite.moduleGraph.getModuleByUrl(url, ssr);
   if (node) vite.moduleGraph.invalidateModule(node);
 
   const mod = await vite.ssrLoadModule(url);

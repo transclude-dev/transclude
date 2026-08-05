@@ -59,6 +59,25 @@ const TYPE_FORMAT =
 const LAYOUT_FILE = '_layout.html';
 
 /**
+ * The checker, and everything it needs held in one closure.
+ *
+ * This is long and stays long: every helper below reads the language service,
+ * the shim map or the resolved project, and handing each of them five arguments
+ * instead would be more to read rather than less. It is a list of small named
+ * functions, in this order:
+ *
+ *   the language service     host, install, sourceOf
+ *   reading a type back      exportTypeOf, expand, resolveNames, and the four
+ *                            `…TypeOf` shorthands
+ *   finding the project      elementFiles, layoutFiles, ancestorsOf, chainFor
+ *   what a shim is given     contextLiteral, endpointLiteral, mergeTypes
+ *   building them            build, refresh
+ *   what callers use         the returned object
+ *
+ * `build` is the one to read first. It compiles every shim in dependency order,
+ * which is the only order that resolves: an element depends on nothing, a layout
+ * on the layouts above it, a page on its whole chain.
+ *
  * @param {{ root: string, appDir: string, routesDir: string, elementsDir: string,
  *   strict?: boolean }} options
  * @returns {{ files: Function, update: Function, rebuild: Function,

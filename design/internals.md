@@ -5,6 +5,43 @@ gotchas are the useful half: nearly every one was written after something failed
 quietly, and each says what the failure looked like so the next person recognizes
 it. `design/voice.md` covers how anything here is written.
 
+## Writing code here
+
+The reader is someone tired, at night, who did not write this. Everything below
+follows from that. Most of it is [grugbrain.dev](https://grugbrain.dev) applied
+to this codebase.
+
+**Name the steps.** A condition with three clauses gets three names, and the
+`if` reads as a sentence. The same goes for a value built by four chained calls:
+give the middle one a name and let the next line use it. A debugger can stop on a
+named line and cannot stop inside an expression.
+
+**One `?` per line.** A ternary inside a ternary is a table written sideways.
+Write the table, or write `if`.
+
+**Repeat yourself before you build a mechanism.** Two copies of six plain lines
+cost less than one clever thing that serves both. The rule is about knowledge,
+not characters: two pieces of code that look alike and change for different
+reasons were never one piece.
+
+**Wait for the shape.** An abstraction invented before the third case is a guess,
+and the guess sets the shape everything after it has to fit. Three call sites
+that agree are the signal, not two that might.
+
+**Keep behavior together.** A page's loader lives in the page. The reason this
+framework exists is that reading one file should answer what one thing does.
+
+**Small steps, green at each one.** A refactor that cannot be stopped halfway is
+a rewrite. Run the tests between steps, and keep the working state one commit
+away.
+
+**Say no.** The cheapest complexity is the kind never added. A feature refused is
+a decision, and it belongs in `/docs/decisions` so it is refused once.
+
+**Say when it is too much.** Code nobody can follow is a fact about the code. If
+a function cannot be read in one pass, that goes in a comment or a gotcha rather
+than into the next reader's evening.
+
 ## Layout
 
 - `src/compiler/`. `index.js` splits blocks and assembles the module. `codegen.js`
@@ -197,6 +234,29 @@ against.
   server and the build both read `client.needed`. They each had their own copy of
   that condition once, and only one got updated, so dev served a page with no entry
   while the build gave it one.
+- **The two element classes are duplicated on purpose, and a test holds them
+  together.** `defineLight` and `defineComponent` each carry their own
+  `schedule`, `updateComplete`, `reportFormValue`, `#data`, `#snapshot` and the
+  rest: nine methods that are identical today. A shared base class would put
+  indirection into the one file that ships to a browser, so the copies stay and
+  a test compares them instead. Only `connectedCallback` and `#apply` may
+  differ, and those two *are* the difference between the halves: a light element
+  writes into nodes that are already there, a shadow one may rebuild. Changing
+  one half's `schedule` and not the other fails that test even when the change
+  behaves identically.
+- **A test that loops over the thing it checks proves nothing.** The list of void
+  elements moved into `html.js`, and a test walked `VOID` asserting each one
+  emits without a closing tag. Deleting `br` from the set passed: the loop just
+  had one fewer thing to check. The tags are written out in the test now and a
+  second test says the two lists match, so removing one from either side fails.
+  The same shape caught it the first time: before any of this, only `input` and
+  `meta` were covered, and only because other tests happened to use them.
+- **The compiler leaves `>` in an attribute and escapes it in text.** Both are
+  correct, and the difference is why `mergeHead` has to be quote-aware. The
+  runtime escapes it in both, so an interpolated value and a static one are
+  spelled differently and parse the same. That is deliberate: the runtime ships
+  to a browser and must not import from the compiler. `escapeAttr` and
+  `escapeText` live in `compiler/html.js`; the runtime's are its own.
 - **An action runs after the region is known to exist.** `POST ?fragment=nope`
   used to change data and then 404. Anything that can refuse a request has to
   refuse it before `runAction`, not after. `hasRegion` is that check, in both

@@ -9,14 +9,10 @@
 
 import { Scope, collectRefs, emit, parseExpr } from './expr.js';
 import { splitInterpolations } from './interp.js';
+import { parseEach as readEach } from './directives.js';
+import { escapeAttr, escapeText, RAW_TEXT, VOID } from './html.js';
 
-const VOID = new Set([
-  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-  'link', 'meta', 'param', 'source', 'track', 'wbr',
-]);
 
-// Content is not entity-decoded by the parser and must not be escaped by us.
-const RAW_TEXT = new Set(['script', 'style']);
 
 // Hoisted out of a page body into <head>.
 const HEAD_TAGS = new Set(['title', 'meta', 'link', 'base']);
@@ -68,7 +64,7 @@ function assertStaticAttrNames(el) {
  */
 export function compileFragment(nodes, opts = {}) {
   const gen = new Codegen(opts);
-  gen.emitChildren(nodes, gen.body, gen.rootScope, true);
+  gen.emitChildren(nodes, gen.body, gen.rootScope, { topLevel: true });
 
   // `<html>` is read separately, because the fragment parser drops it: a nested
   // html start tag is not something that can appear in a body, so parse5 throws
@@ -256,7 +252,7 @@ class Codegen {
 
   // ---- traversal ----------------------------------------------------------
 
-  emitChildren(nodes, out, scope, topLevel = false) {
+  emitChildren(nodes, out, scope, { topLevel = false } = {}) {
     let i = 0;
     while (i < nodes.length) {
       const node = nodes[i];
@@ -268,7 +264,7 @@ class Codegen {
         if (slot) {
           const target = this.slots.get(slot) ?? [];
           this.slots.set(slot, target);
-          this.emitChildren(childrenOf(node), target, scope, false);
+          this.emitChildren(childrenOf(node), target, scope);
           i++;
           continue;
         }
@@ -362,7 +358,7 @@ class Codegen {
 
   emitNodeAt(node, out, scope, topLevel) {
     if (node.nodeName === '#text') {
-      this.emitText(node.value ?? '', out, scope, node, false);
+      this.emitText(node.value ?? '', out, scope, node);
       return;
     }
     // Authoring comments are stripped. They still count as "insignificant" when
@@ -595,14 +591,14 @@ class Codegen {
         return;
       }
       this.c(out, `if (${filled}) { __o += ${filled}; } else {`);
-      this.emitChildren(fallback, out, scope, false);
+      this.emitChildren(fallback, out, scope);
       this.c(out, `}`);
       return;
     }
 
     // A <template> carrying a directive is structural: consumed, children emitted.
     if (tag === 'template' && directivesOf(el).size > 0) {
-      this.emitChildren(childrenOf(el), out, scope, false);
+      this.emitChildren(childrenOf(el), out, scope);
       return;
     }
 
@@ -632,11 +628,11 @@ class Codegen {
       for (const child of childrenOf(el)) {
         if (child.nodeName === '#text') {
           assertRawTextSafe(tag, child.value ?? '', el);
-          this.emitText(child.value ?? '', target, scope, child, true);
+          this.emitText(child.value ?? '', target, scope, child, { raw: true });
         }
       }
     } else {
-      this.emitChildren(childrenOf(el), target, scope, false);
+      this.emitChildren(childrenOf(el), target, scope);
     }
 
     this.s(target, `</${tag}>`);
@@ -659,7 +655,7 @@ class Codegen {
     this.c(out, `__o += __sh(${ref}, {${props}}${this.fragments ? ', __fragment' : ''});`);
 
     // Light DOM children fill <slot>.
-    this.emitChildren(childrenOf(el), out, scope, false);
+    this.emitChildren(childrenOf(el), out, scope);
 
     this.s(out, `</${tag}>`);
   }
@@ -777,7 +773,7 @@ class Codegen {
     const uid = ++this.uid;
     if (children.length) {
       this.c(out, `const __fb${uid} = (() => { let __o = '';`);
-      this.emitChildren(children, out, scope, false);
+      this.emitChildren(children, out, scope);
       this.c(out, `return __o; })();`);
     }
 
@@ -799,7 +795,7 @@ class Codegen {
     const children = childrenOf(el);
     if (children.length) {
       this.c(out, `const __sl${id} = (() => { let __o = '';`);
-      this.emitChildren(children, out, scope, false);
+      this.emitChildren(children, out, scope);
       this.c(out, `return __o; })();`);
     }
 
@@ -889,7 +885,7 @@ class Codegen {
       .join(' + ');
   }
 
-  emitText(value, out, scope, node, raw) {
+  emitText(value, out, scope, node, { raw = false } = {}) {
     const start = node?.sourceCodeLocation?.startLine ?? this.at;
     let line = start;
 
@@ -949,7 +945,9 @@ function assertRawTextSafe(tag, text, el) {
 function isJsonCall(source) {
   try {
     const node = parseExpr(source);
-    return node.type === 'CallExpression' && node.callee?.type === 'Identifier' && node.callee.name === 'json';
+    if (node.type !== 'CallExpression') return false;
+    if (node.callee?.type !== 'Identifier') return false;
+    return node.callee.name === 'json';
   } catch {
     return false;
   }
@@ -1029,14 +1027,14 @@ function nextSignificant(nodes, from) {
 
 
 function parseEach(value, node) {
-  const m = /^\s*([A-Za-z_$][\w$]*)\s*(?:,\s*([A-Za-z_$][\w$]*)\s*)?\s+of\s+([\s\S]+?)\s*$/.exec(value);
-  if (!m) {
+  const spec = readEach(value);
+  if (!spec) {
     throw new CompileError(
       `each="${value}" is malformed. Expected each="item of list" or each="item, index of list"`,
       node,
     );
   }
-  return { item: m[1], index: m[2] || null, list: m[3] };
+  return spec;
 }
 
 // ---- output ---------------------------------------------------------------
@@ -1085,11 +1083,3 @@ function joinOut(entries) {
   return { code: lines.join('\n'), at };
 }
 
-// parse5 hands us decoded text, so static output has to be re-encoded.
-function escapeText(value) {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-function escapeAttr(value) {
-  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-}

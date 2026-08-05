@@ -369,6 +369,9 @@ function scopedNames(statements) {
   return (statements ?? []).flatMap(declaredNames);
 }
 
+/** Keys acorn puts on every node. They hold positions, never child nodes. */
+const NODE_BOOKKEEPING = new Set(['type', 'start', 'end', 'loc', 'range']);
+
 /**
  * Identifiers a subtree reads from outside itself.
  *
@@ -406,8 +409,12 @@ function freeNames(node, bound, out) {
     case 'ArrowFunctionExpression': {
       const inner = new Set(bound);
       if (node.id) inner.add(node.id.name);
-      for (const param of node.params) for (const name of patternNames(param)) inner.add(name);
-      if (node.body.type === 'BlockStatement') for (const name of scopedNames(node.body.body)) inner.add(name);
+      for (const param of node.params) {
+        for (const name of patternNames(param)) inner.add(name);
+      }
+      if (node.body.type === 'BlockStatement') {
+        for (const name of scopedNames(node.body.body)) inner.add(name);
+      }
       // A default is evaluated in the function's own scope, so it sees the params.
       for (const param of node.params) freeNames(param, inner, out);
       freeNames(node.body, inner, out);
@@ -463,7 +470,7 @@ function freeNames(node, bound, out) {
 
     default:
       for (const key of Object.keys(node)) {
-        if (key === 'type' || key === 'start' || key === 'end' || key === 'loc' || key === 'range') continue;
+        if (NODE_BOOKKEEPING.has(key)) continue;
         freeNames(node[key], bound, out);
       }
       return out;

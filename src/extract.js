@@ -327,13 +327,14 @@ export function listFragments(input) {
   return doc.order.map(({ id, element, implicit }) => {
     const tag = tagOf(element);
     const rank = rankOf(element);
-    return {
-      id,
-      implicit,
-      tag,
-      rank,
-      kind: rank ? 'heading-run' : tag === 'dt' ? 'dt-run' : 'element',
-      text: textOf(element).replace(/\s+/g, ' ').trim().slice(0, 120),
-    };
+    // A heading and a `<dt>` each name the run of content that follows them. Any
+    // other element is only itself.
+    let kind = 'element';
+    if (rank) kind = 'heading-run';
+    else if (tag === 'dt') kind = 'dt-run';
+
+    const collapsed = textOf(element).replace(/\s+/g, ' ').trim();
+
+    return { id, implicit, tag, rank, kind, text: collapsed.slice(0, 120) };
   });
 }

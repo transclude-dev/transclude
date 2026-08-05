@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { splitBlocks, compileComponent, compileLayout, compilePage } from '../src/compiler/index.js';
 import { compileFragment, CompileError } from '../src/compiler/codegen.js';
+import { VOID } from '../src/compiler/html.js';
 import * as rt from '../src/runtime/index.js';
 
 function compile(source, components = new Map()) {
@@ -131,6 +132,56 @@ test('templates nest, including inside table structure', () => {
     </template>`;
   const out = render(source, { rows: [['a', 'b'], ['c', 'd']] }).replace(/\s+</g, '<');
   assert.match(out, /<tr><td>a<\/td><td>b<\/td><\/tr><tr><td>c<\/td><td>d<\/td><\/tr>/);
+});
+
+// ---- void elements --------------------------------------------------------
+
+// Where HTML lets one of these appear. The parser drops a `<col>` that is not
+// in a table and a `<source>` that is not in a media element, so testing them
+// inside a `<div>` tests nothing: the tag never reaches the compiler.
+const PARENT_OF = {
+  col: ['<table><colgroup>', '</colgroup></table>'],
+  param: ['<object>', '</object>'],
+  source: ['<video>', '</video>'],
+  track: ['<video>', '</video>'],
+};
+
+// Hoisted into <head> by the compiler, so they never appear in a body.
+const HOISTED = new Set(['base', 'link', 'meta']);
+
+// Written out rather than read from `VOID`. A loop over the set under test skips
+// whatever was deleted from it and passes, which is what the first version of
+// this did: removing `br` broke nothing.
+const VOID_TAGS = [
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr',
+];
+
+test('the compiler knows exactly these void elements', () => {
+  assert.deepEqual([...VOID].sort(), [...VOID_TAGS].sort());
+});
+
+test('a void element is emitted without a closing tag', () => {
+  // The list lived in two files and was covered for two of its fourteen
+  // entries: removing `br`, `img`, `hr`, `wbr` or `col` from it broke no test
+  // at all. Only `input` and `meta` were reached, and only because other tests
+  // happened to use them.
+  for (const tag of VOID_TAGS) {
+    if (HOISTED.has(tag)) continue;
+    const [open, close] = PARENT_OF[tag] ?? ['<div>', '</div>'];
+
+    const html = render(`${open}<${tag}>${close}`);
+
+    assert.match(html, new RegExp(`<${tag}>`), `<${tag}> did not survive the parse`);
+    assert.doesNotMatch(html, new RegExp(`</${tag}>`), `<${tag}> was given a closing tag`);
+  }
+});
+
+test('an element that is not void keeps its closing tag', () => {
+  // The other half of the same rule. Without this, an empty VOID set passes the
+  // test above.
+  assert.equal(render('<div><span></span></div>'), '<div><span></span></div>');
+  assert.equal(render('<p>${x}</p>', { x: 'hi' }), '<p>hi</p>');
 });
 
 // ---- attributes -----------------------------------------------------------

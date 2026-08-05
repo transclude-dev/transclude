@@ -24,14 +24,10 @@
 import { Scope, collectRefs, emit, parseExpr } from './expr.js';
 import { splitInterpolations } from './interp.js';
 import { childrenOf, gatherChain } from './codegen.js';
+import { parseEach } from './directives.js';
+import { RAW_TEXT, VOID } from './html.js';
 
 const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each', 'key']);
-const VOID = new Set([
-  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-  'link', 'meta', 'param', 'source', 'track', 'wbr',
-]);
-const RAW_TEXT = new Set(['script', 'style']);
-const EACH = /^\s*([A-Za-z_$][\w$]*)\s*(?:,\s*([A-Za-z_$][\w$]*)\s*)?\s+of\s+([\s\S]+?)\s*$/;
 
 /**
  * @param {object[]} nodes the same parse5 nodes the renderer walked
@@ -140,13 +136,13 @@ class Bindgen {
     let inner = scope;
 
     const each = attrs.find((attr) => attr.name === 'each');
-    const spec = each && EACH.exec(each.value);
+    const spec = each ? parseEach(each.value) : null;
     if (spec) {
-      this.giveUp(spec[3], scope);
+      this.giveUp(spec.list, scope);
       inner = new Scope(scope);
       // The name only has to exist for collectRefs to stop calling it data.
-      inner.declare(spec[1], spec[1]);
-      if (spec[2]) inner.declare(spec[2], spec[2]);
+      inner.declare(spec.item, spec.item);
+      if (spec.index) inner.declare(spec.index, spec.index);
     }
 
     for (const attr of attrs) {
@@ -265,11 +261,14 @@ class Bindgen {
    * rebuild. -1 is "none of them", which an `if` with no `else` can be.
    */
   emitBranchParts(id, branches) {
-    const pick = branches.reduceRight(
-      (rest, branch, at) =>
-        branch.kind === 'else' ? String(at) : `${this.js(branch.cond)} ? ${at} : ${rest}`,
-      '-1',
-    );
+    // Built from the last branch back, so each condition wraps the answer for
+    // everything after it. An `else` has no condition and ends the chain.
+    let pick = '-1';
+    for (let at = branches.length - 1; at >= 0; at--) {
+      const branch = branches[at];
+      if (branch.kind === 'else') pick = String(at);
+      else pick = `${this.js(branch.cond)} ? ${at} : ${pick}`;
+    }
     // The condition may read the loop variables, so pick takes them too. The
     // runtime hands every piece of a block the same arguments.
     const outer = this.frame.loopArgs;
@@ -284,7 +283,7 @@ class Bindgen {
 
   /** One part, reused for every item the loop produces. */
   emitItemPart(id, element) {
-    const spec = EACH.exec(element.attrs.find((attr) => attr.name === 'each').value);
+    const spec = parseEach(element.attrs.find((attr) => attr.name === 'each').value);
     if (!spec) return;
 
     const outer = this.frame.loopArgs;
@@ -293,8 +292,8 @@ class Bindgen {
     const index = `__i${depth}`;
 
     const scope = new Scope(this.scope);
-    scope.declare(spec[1], item);
-    if (spec[2]) scope.declare(spec[2], index);
+    scope.declare(spec.item, item);
+    if (spec.index) scope.declare(spec.index, index);
 
     const inner = [...outer, item, index];
     // Same shape as a branch: the element itself, whose `each` is already
@@ -393,7 +392,11 @@ class Bindgen {
       return `__b[${ref}]`;
     };
     // Descending only ever happens inside `bind`, so a stable path is fine.
-    const parentExpr = () => (ref !== null ? `__b[${ref}]` : stable ? nodeExpr : slotFor());
+    const parentExpr = () => {
+      if (ref !== null) return `__b[${ref}]`;
+      if (stable) return nodeExpr;
+      return slotFor();
+    };
 
     for (const attr of node.attrs ?? []) {
       if (DIRECTIVES.has(attr.name)) continue;
@@ -407,14 +410,18 @@ class Bindgen {
 
       let value;
       try {
-        value =
-          parts.length === 1
-            ? this.js(parts[0].value)
-            : parts
-                .map((part) =>
-                  part.type === 'expr' ? `__str(${this.js(part.value)})` : JSON.stringify(part.value),
-                )
-                .join(' + ');
+        if (parts.length === 1) {
+          value = this.js(parts[0].value);
+        } else {
+          // Several pieces, so each one is turned into a string and the lot
+          // concatenated. `__str` is what makes null and undefined empty rather
+          // than the words.
+          const pieces = parts.map((part) => {
+            if (part.type !== 'expr') return JSON.stringify(part.value);
+            return `__str(${this.js(part.value)})`;
+          });
+          value = pieces.join(' + ');
+        }
       } catch {
         this.giveUpText(attr.value);
         continue;

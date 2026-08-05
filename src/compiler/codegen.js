@@ -9,14 +9,10 @@
 
 import { Scope, collectRefs, emit, parseExpr } from './expr.js';
 import { splitInterpolations } from './interp.js';
+import { parseEach as readEach } from './directives.js';
+import { RAW_TEXT, VOID } from './html.js';
 
-const VOID = new Set([
-  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-  'link', 'meta', 'param', 'source', 'track', 'wbr',
-]);
 
-// Content is not entity-decoded by the parser and must not be escaped by us.
-const RAW_TEXT = new Set(['script', 'style']);
 
 // Hoisted out of a page body into <head>.
 const HEAD_TAGS = new Set(['title', 'meta', 'link', 'base']);
@@ -1029,14 +1025,14 @@ function nextSignificant(nodes, from) {
 
 
 function parseEach(value, node) {
-  const m = /^\s*([A-Za-z_$][\w$]*)\s*(?:,\s*([A-Za-z_$][\w$]*)\s*)?\s+of\s+([\s\S]+?)\s*$/.exec(value);
-  if (!m) {
+  const spec = readEach(value);
+  if (!spec) {
     throw new CompileError(
       `each="${value}" is malformed. Expected each="item of list" or each="item, index of list"`,
       node,
     );
   }
-  return { item: m[1], index: m[2] || null, list: m[3] };
+  return spec;
 }
 
 // ---- output ---------------------------------------------------------------

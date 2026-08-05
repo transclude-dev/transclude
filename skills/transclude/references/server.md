@@ -85,6 +85,7 @@ Source is JavaScript with JSDoc. Do not convert it to TypeScript.
 | `appDir` | `'app'` | Where the app lives, relative to the project root. |
 | `routesDir` | `'routes'` | Pages and endpoints. Relative to `appDir`. |
 | `elementsDir` | `'elements'` | Custom elements. Relative to `appDir`. |
+| `iconsDir` | `'icons'` | One SVG file per icon, compiled to `/icons.svg`. Relative to `appDir`. |
 | `publicDir` | `'public'` | Copied to the site root as-is. Relative to `appDir`. |
 | `outDir` | `'dist'` | Where the build writes. |
 | `stylesheet` | — | One global stylesheet, relative to the project root. |

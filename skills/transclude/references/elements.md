@@ -186,6 +186,49 @@ document.addEventListener(
 The element is then a real form field: it submits, resets and validates with the
 rest of them.
 
+## An icon element
+
+The framework compiles `app/icons/` into one `/icons.svg` and ships no element
+for it. This is the one most apps write, and it is worth copying rather than
+inventing.
+
+```html
+<script properties>
+  export default {
+    name: '',
+    label: '',
+  };
+</script>
+
+<style>
+  :scope {
+    display: inline-flex;
+    vertical-align: -0.125em;
+  }
+  svg {
+    width: 1em;
+    height: 1em;
+  }
+</style>
+
+<svg if="label" role="img" aria-label="${label}"><use href="/icons.svg#${name}"></use></svg>
+<svg else aria-hidden="true"><use href="/icons.svg#${name}"></use></svg>
+```
+
+`<svg-icon name="check">` is decorative and hidden from a screen reader, which is
+right when the icon sits beside its own label. `<svg-icon name="check"
+label="Mark as done">` is announced, which is what a control holding nothing but
+an icon needs. Do not pass a label for a decorative icon: `aria-hidden` and a
+label together leave a screen reader nothing to say.
+
+Set no `fill` or `stroke` here. Each symbol carries what its own file declared,
+and an attribute on the symbol beats a value inherited from the element, so
+setting them wins for some icon sets and loses for others. `1em` and
+`currentColor` put size and color under the surrounding text instead.
+
+Put a space between text and an icon with a `gap`, not a text node. A space is
+underlined by a link and the icon is not, which reads as a typo.
+
 ## Traps
 
 **A light element cannot `if` or `each` over a value that changes.** It does not

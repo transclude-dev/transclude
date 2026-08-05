@@ -37,6 +37,8 @@ app/
     api/_shared.js # not a route, the _ prefix says so
   elements/        # every custom element, one file each
     note-card.html # <note-card>, the name needs a dash
+  icons/           # one SVG file per icon, compiled to /icons.svg
+    check.svg      # <use href="/icons.svg#check">
   public/          # copied to the site root as-is
 transclude.config.js
 ```
@@ -155,6 +157,22 @@ into `<slot>`. Layouts nest, and each one loads its own data.
 <main><slot></slot></main>
 <footer>${year}</footer>
 ```
+
+## Icons
+
+`app/icons/` holds one SVG file per icon. The build compiles them into a single
+`/icons.svg` of `<symbol>`s, so a page fetches one file however many icons it
+shows. The file name is the id.
+
+```html
+<svg width="16" height="16"><use href="/icons.svg#check"></use></svg>
+```
+
+Every icon file needs a `viewBox`, and two files cannot share a name. The build
+refuses either rather than shipping an icon that renders wrong.
+
+Most apps wrap this in a light element so a page names an icon instead of a URL.
+See [references/elements.md](references/elements.md).
 
 ## Commands
 

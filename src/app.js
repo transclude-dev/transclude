@@ -40,6 +40,71 @@ const encoder = new TextEncoder();
 export const COMPRESSIBLE_FLOOR = 512;
 
 /**
+ * Sends the best representation the client will accept. `Vary` is not optional
+ * here: without it a shared cache would serve one encoding to everyone.
+ */
+function send(c, entry, cacheControl, status = 200) {
+  // The key list is built once per entry rather than per request. An entry is
+  // produced at load time and never changes, so the spread was a fresh array
+  // for every hit on the same file.
+  entry.encodingList ??= [...entry.encodings.keys()];
+  const encoding = pickEncoding(c.req.header('accept-encoding'), entry.encodingList);
+  const chosen = encoding ? entry.encodings.get(encoding) : null;
+
+  const body = chosen?.body ?? entry.body;
+  const etag = chosen?.etag ?? entry.etag;
+
+  c.header('Vary', 'Accept-Encoding');
+  c.header('Cache-Control', cacheControl);
+  c.header('ETag', etag);
+
+  if (c.req.header('if-none-match') === etag) return c.body(null, 304);
+
+  if (chosen) c.header('Content-Encoding', encoding);
+  c.header('Content-Type', entry.type);
+  c.header('Content-Length', String(body.length));
+  return c.body(body, status);
+}
+
+/**
+ * What a page is going to ask for, said in a header.
+ *
+ * This is not streaming. Render is `__o += …` to the last component, which is
+ * what lets an include resolve before it and a prerendered page stay a file,
+ * and making it async would tax every component call for something most pages
+ * here do not need. So the body still leaves in one piece.
+ *
+ * What it does buy: the stylesheet and the client entry come from the route
+ * table, not from a loader, so they are known before any loader runs. A proxy
+ * that reads this sends a 103 and the browser fetches them while the page is
+ * still being made. Cloudflare and Fastly do. A browser reading it directly
+ * gets less, since these headers arrive with the body anyway.
+ */
+function preloadHeader(stylesheet, clientEntry) {
+  const parts = [];
+  if (stylesheet) parts.push(`<${stylesheet}>; rel=preload; as=style`);
+  if (clientEntry) parts.push(`<${clientEntry}>; rel=preload; as=script; crossorigin`);
+  return parts.length ? parts.join(', ') : null;
+}
+
+/**
+ * Whether this render can be handed to the next visitor.
+ *
+ * Three ways it cannot. It answered with a `Response`, it is not 2xx, or it is
+ * personal. Personal means a header was written *or* a cookie was read. The
+ * second half matters: a page that only reads a cookie and renders a count from
+ * it sets no header at all, and holding it would hand one visitor's count to the
+ * next.
+ */
+function isShareable(html, ctx) {
+  if (html instanceof Response) return false;
+  if (ctx.response.status >= 300) return false;
+
+  const wroteHeader = [...ctx.response.headers.keys()].length > 0;
+  return !wroteHeader && !ctx.cookies.personal;
+}
+
+/**
  * `statics`, `assets`, `notFound` and `errorPage` are bytes from wherever the
  * runtime keeps them; `publicFiles` is a Hono handler or null; `compress` is null
  * when the runtime cannot, in which case bodies go out identity-encoded and the
@@ -162,12 +227,6 @@ export function createApp({
    */
   const varyOn = header ? `Accept-Encoding, ${header}` : 'Accept-Encoding';
 
-  /**
-   * Fragments and actions come first, and for every route rather than only the
-   * dynamic ones: a page whose document was prerendered still has regions worth
-   * asking for and mutations worth accepting, and the prerendered handler below
-   * matches on path alone, so it would answer either one with a static document.
-   */
   // Before the route table, like the public files, so a `[...path]` catch-all
   // cannot answer for it.
   if (config.sitemap) {
@@ -209,6 +268,12 @@ export function createApp({
     app.get(PROXY_PATH, (c) => handler(c.req.raw));
   }
 
+  /**
+   * Fragments and actions come first, and for every route rather than only the
+   * dynamic ones: a page whose document was prerendered still has regions worth
+   * asking for and mutations worth accepting, and the prerendered handler below
+   * matches on path alone, so it would answer either one with a static document.
+   */
   for (const route of manifest.routes ?? []) {
     app.get(route.pattern, async (c, next) => {
       const region = regionOf(route, c);
@@ -313,12 +378,11 @@ export function createApp({
 
     app.get(route.pattern, async (c) => {
       try {
-        // One render, called by the cache when it needs one and directly when
-        // the route has no window. `cacheable` is the same rule the build uses
-        // to decide a route can be a file: a 2xx with no header a file could not
-        // carry. A `Set-Cookie` in a shared cache is one visitor's session
-        // handed to the next.
-        let rendered = null;
+        // The cache calls this when it needs a render and nothing calls it on a
+        // hit, so what it produced is left here for the lines after. A hit
+        // leaves it null, which is the difference the code below reads.
+        let last = null;
+
         const render = async () => {
           const ctx = contextFor(route, c);
           const html = await renderRoute(pages[route.id], ctx, {
@@ -329,32 +393,27 @@ export function createApp({
             include,
           });
 
-          rendered = { ctx, html };
-          const ok = !(html instanceof Response) && ctx.response.status < 300;
-          // Three ways a page is not a shared answer: it answered with a
-          // Response, it is not 2xx, or it is personal. Personal means a header
-          // was written *or* a cookie was read. The second half matters: a page
-          // that only reads a cookie and renders a count from it sets no header
-          // at all, and holding it would hand one visitor's count to the next.
-          const shared = [...ctx.response.headers.keys()].length === 0 && !ctx.cookies.personal;
-          return { html, cacheable: ok && shared };
+          last = { ctx, html };
+          return { html, cacheable: isShareable(html, ctx) };
         };
 
-        if (window) {
-          const html = await cache.read(cacheKey(c.req.url), window, render);
-
-          // A miss renders through the cache, and that render can answer with a
-          // `Response`. It was not stored, but it is still the answer.
-          if (html instanceof Response) return withEnvelope(html, rendered.ctx);
-
-          // A hit ran no loader, so there is no envelope to carry. A cached page
-          // has none by definition: one with a header was never stored.
-          return sendRendered(c, html, rendered?.ctx ?? contextFor(route, c), preload);
+        if (!window) {
+          await render();
+          const { ctx, html } = last;
+          if (html instanceof Response) return withEnvelope(html, ctx);
+          return sendRendered(c, html, ctx, preload);
         }
 
-        await render();
-        if (rendered.html instanceof Response) return withEnvelope(rendered.html, rendered.ctx);
-        return sendRendered(c, rendered.html, rendered.ctx, preload);
+        const html = await cache.read(cacheKey(c.req.url), window, render);
+
+        // A miss rendered through the cache, and that render can answer with a
+        // `Response`. It was not stored, but it is still the answer.
+        if (html instanceof Response) return withEnvelope(html, last.ctx);
+
+        // A hit ran no loader, so there is no envelope to carry: a page with a
+        // header was never stored. It still needs a context to send with.
+        const ctx = last ? last.ctx : contextFor(route, c);
+        return sendRendered(c, html, ctx, preload);
       } catch (err) {
         return internalError(c, err);
       }
@@ -388,27 +447,6 @@ export function createApp({
     }
   }
 
-  /**
-   * What a page is going to ask for, said in a header.
-   *
-   * This is not streaming. Render is `__o += …` to the last component, which is
-   * what lets an include resolve before it and a prerendered page stay a file,
-   * and making it async would tax every component call for something most pages
-   * here do not need. So the body still leaves in one piece.
-   *
-   * What it does buy: the stylesheet and the client entry come from the route
-   * table, not from a loader, so they are known before any loader runs. A proxy
-   * that reads this sends a 103 and the browser fetches them while the page is
-   * still being made. Cloudflare and Fastly do. A browser reading it directly
-   * gets less, since these headers arrive with the body anyway.
-   */
-  function preloadHeader(stylesheet, clientEntry) {
-    const parts = [];
-    if (stylesheet) parts.push(`<${stylesheet}>; rel=preload; as=style`);
-    if (clientEntry) parts.push(`<${clientEntry}>; rel=preload; as=script; crossorigin`);
-    return parts.length ? parts.join(', ') : null;
-  }
-
   /** Every `catch` above. One place decides what a failed request looks like. */
   function internalError(c, err) {
     report(err, c);
@@ -419,33 +457,6 @@ export function createApp({
     c.header('Cache-Control', 'no-store');
     c.header('Content-Type', errorPage.type);
     return c.body(errorPage.body, 500);
-  }
-
-  /**
-   * Sends the best representation the client will accept. `Vary` is not optional
-   * here: without it a shared cache would serve one encoding to everyone.
-   */
-  function send(c, entry, cacheControl, status = 200) {
-    // The key list is built once per entry rather than per request. An entry is
-    // produced at load time and never changes, so the spread was a fresh array
-    // for every hit on the same file.
-    entry.encodingList ??= [...entry.encodings.keys()];
-    const encoding = pickEncoding(c.req.header('accept-encoding'), entry.encodingList);
-    const chosen = encoding ? entry.encodings.get(encoding) : null;
-
-    const body = chosen?.body ?? entry.body;
-    const etag = chosen?.etag ?? entry.etag;
-
-    c.header('Vary', 'Accept-Encoding');
-    c.header('Cache-Control', cacheControl);
-    c.header('ETag', etag);
-
-    if (c.req.header('if-none-match') === etag) return c.body(null, 304);
-
-    if (chosen) c.header('Content-Encoding', encoding);
-    c.header('Content-Type', entry.type);
-    c.header('Content-Length', String(body.length));
-    return c.body(body, status);
   }
 
   /**

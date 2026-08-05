@@ -23,12 +23,42 @@ const read = (rel) => JSON.parse(fs.readFileSync(path.join(root, rel), 'utf8'));
 
 function usage() {
   return [
-    'Usage: node bin/release.js <version|major|minor|patch> [--dry-run]',
+    'Usage: node bin/release.js <version|major|minor|patch> --notes <file> [--dry-run]',
     '',
     '  Sets the version in both packages, verifies, commits and tags.',
+    '  The notes become the tag message, and CI makes the release page from it.',
     '  Pushing the tag is what publishes. Nothing here talks to a registry.',
     '',
   ].join('\n');
+}
+
+/**
+ * The release notes, which are the tag's message and nothing else's.
+ *
+ * They used to be typed into the GitHub release form after the fact, which is
+ * a step with nothing holding it: v0.1.0 and v0.1.1 went to npm with no release
+ * page at all. Held in the tag, they are written before the thing that publishes
+ * exists, and `publish.yml` reads them back rather than asking anyone.
+ *
+ * @param {string|undefined} file
+ * @returns {string} the notes, trimmed
+ * @throws when there is no file, it is missing, or it says nothing
+ */
+function notesFrom(file) {
+  if (!file) {
+    throw new Error(
+      'no --notes <file>. The notes are the release page, so a release without ' +
+        'them is one nobody can read. Write them, then pass the file.',
+    );
+  }
+
+  const full = path.resolve(root, file);
+  if (!fs.existsSync(full)) throw new Error(`no notes file at ${full}`);
+
+  const notes = fs.readFileSync(full, 'utf8').trim();
+  if (!notes) throw new Error(`${full} is empty`);
+
+  return notes;
 }
 
 /** `1.2.3`, or what `major`/`minor`/`patch` makes of the current one. */
@@ -135,7 +165,12 @@ function packed() {
 function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
-  const asked = args.find((a) => !a.startsWith('-'));
+
+  const notesAt = args.indexOf('--notes');
+  // Its value, or nowhere. Written out because `notesAt + 1` is 0 when there is
+  // no `--notes`, which is the first argument and is the version.
+  const notesValueAt = notesAt === -1 ? -1 : notesAt + 1;
+  const asked = args.find((arg, i) => !arg.startsWith('-') && i !== notesValueAt);
 
   if (!asked || args.includes('--help')) {
     process.stdout.write(usage());
@@ -145,6 +180,11 @@ function main() {
   const current = assertReleasable();
   const version = nextVersion(current, asked);
   assertUntagged(version);
+
+  // Read before the verify, which takes minutes. A missing notes file should
+  // cost a second, the way every other refusal here does.
+  const notes = notesFrom(args[notesValueAt]);
+
   process.stdout.write(`\n${current} -> ${version}\n\n`);
 
   setVersion(version);
@@ -171,14 +211,22 @@ function main() {
   const staged = run('git', ['diff', '--cached', '--name-only']).trim();
   if (staged) run('git', ['commit', '-m', `Release ${version}`]);
 
-  run('git', ['tag', '-a', `v${version}`, '-m', `Release ${version}`]);
+  // The notes are the message, not `Release x.y.z`. `publish.yml` reads them
+  // back with `git tag -l --format=%(contents)` and makes the release page from
+  // them, so this is the only copy.
+  //
+  // `--cleanup=verbatim` because the default strips every line beginning with
+  // `#` as a comment. Release notes are markdown, so that silently deletes each
+  // heading and leaves the paragraphs under it, which reads as a formatting bug
+  // on the release page and is a git default doing what it was asked.
+  run('git', ['tag', '-a', `v${version}`, '--cleanup=verbatim', '-m', notes]);
 
   process.stdout.write(
     [
       `\nTagged v${version}. Nothing has been published yet.\n\n`,
       '  git push --follow-tags\n\n',
-      'That is what publishes. The workflow builds from the tag and signs\n',
-      'provenance against it.\n\n',
+      'That is what publishes. The workflow builds from the tag, signs\n',
+      'provenance against it, and writes the release page from its message.\n\n',
     ].join(''),
   );
 }

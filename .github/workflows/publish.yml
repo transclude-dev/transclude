@@ -21,11 +21,18 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # `write` for the release page at the end. Nothing here pushes a commit.
+      contents: write
       id-token: write
 
     steps:
+      # `fetch-depth: 0` and `fetch-tags`, because the release notes are the tag's
+      # own message. A shallow checkout of a tag gives the commit and not the tag
+      # object, so `%(contents)` comes back empty and the release page is blank.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/setup-node@v7
         with:
@@ -76,3 +83,22 @@ jobs:
       - name: Publish @transclude/create
         run: npm publish --access public
         working-directory: create
+
+      # After both publishes, because the notes say `npm install @transclude/core`
+      # and a release page announcing a version the registry does not have yet is
+      # wrong for however long the publish takes. The cost of this order is that a
+      # publish which succeeds and then fails here leaves no page, which is what
+      # `--verify-tag` and a re-run are for: the notes are in the tag either way.
+      - name: The release page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git tag -l --format='%(contents)' "$GITHUB_REF_NAME" > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "the tag carries no message, so there are no notes to publish"
+            exit 1
+          fi
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release-notes.md

@@ -1,3 +1,6 @@
 node_modules/
 dist/
 app/transclude-env.d.ts
+
+# Written by scripts/write-version.js on every dev, build and check.
+app/lib/version.js

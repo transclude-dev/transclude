@@ -4,9 +4,12 @@
   "type": "module",
   "description": "The documentation site. An app built against the framework beside it.",
   "scripts": {
+    "predev": "node scripts/write-version.js",
     "dev": "transclude-dev",
+    "prebuild": "node scripts/write-version.js",
     "build": "transclude-build",
     "start": "transclude-serve",
+    "precheck": "node scripts/write-version.js",
     "check": "transclude-check",
     "test": "node --test \"test/**/*.test.js\"",
     "preview": "npm run build && npm start",

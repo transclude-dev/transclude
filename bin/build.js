@@ -165,6 +165,17 @@ async function render(route, { url, params }) {
     response,
     cookies: cookiesOf(null, response, config.cookieSecret),
     absolute: absoluteFrom(config.metadataBase, null),
+    // Refused rather than left undefined. A file is written once and read by
+    // everyone, so there is no response for the work to outlive and no request
+    // that asked for it. Dropping it quietly would be the worse answer: the
+    // build would pass and the work would never run in production either.
+    after: () => {
+      throw new Error(
+        `called \`ctx.after\`, and a file has no response for that work to outlive. ` +
+          `Give it \`export const prerender = false\`, or start the work from an ` +
+          `endpoint or an action instead`,
+      );
+    },
   };
 
   const html = await renderRoute(pages[route.id], ctx, {

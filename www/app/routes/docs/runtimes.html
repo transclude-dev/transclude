@@ -44,6 +44,23 @@ function appFor(env) {
         'js',
       ],
 
+      after: [
+        `// app/routes/notes.html
+import { recordView } from '../lib/analytics.js';
+
+export const prerender = false;
+
+export default async ({ after, url }) => {
+  const { results } = await bindings().DB.prepare('select id, title from notes').all();
+
+  // The reader is served without waiting for this.
+  after(recordView(url));
+
+  return { notes: results };
+};`,
+        'js',
+      ],
+
       use: [
         `// app/routes/notes.html
 import { bindings } from '../lib/bindings.js';
@@ -167,7 +184,8 @@ export default async () => {
   <doc-note label="A page that reads a binding cannot be prerendered" tone="warn">
     The build runs on Node, where nothing calls <code>hold</code>. A page whose
     loader reads a binding needs <code>export const prerender = false</code>,
-    or the build runs that loader and throws.
+    or the build runs that loader and throws. The same is true of a page calling
+    <code>ctx.after</code>, for a different reason given below.
   </doc-note>
 
   <doc-note label="A binding is per isolate, a request is not">
@@ -183,10 +201,37 @@ export default async () => {
     its own fallback instead.
   </p>
 
-  <doc-note label="Nothing outlives the response" tone="warn">
-    There is no <code>waitUntil</code> on <code>ctx</code>. Work that a loader
-    or an endpoint starts has to finish before the response does, or
-    <code>workerd</code> may cancel it. Anything that has to happen after the
-    reader is served belongs outside the app.
+  <h2>Work after the response</h2>
+
+  <p>
+    <code>ctx.after</code> takes a promise the reader does not have to wait for.
+    A view counted, a webhook sent, a log written.
+  </p>
+
+  ${html(s.after)}
+
+  <p>
+    On <code>workerd</code> this is <code>waitUntil</code>, which is how a worker
+    asks to stay up past the response it just sent. Without it the isolate may
+    stop and take the work with it. Node, Bun and Deno keep running either way,
+    so there it changes nothing about when the work finishes.
+  </p>
+
+  <p>
+    It takes the promise, not a function that makes one. Call the work and pass
+    what it returns. A function is refused rather than wrapped, because wrapping
+    one would resolve to the function and run nothing.
+  </p>
+
+  <doc-note label="A failure has no request left to fail" tone="warn">
+    Nothing awaits this work, so a rejection would reach the runtime and end the
+    process on Node. It goes to <code>onError</code> instead, with the request
+    that started it. The response is already sent and does not change.
   </doc-note>
+
+  <p>
+    A prerendered page has no response for the work to outlive, so calling it
+    there stops the build. That is the same <code>prerender = false</code> the
+    sample above carries.
+  </p>
 </doc-page>

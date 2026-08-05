@@ -112,6 +112,14 @@ against.
   paints itself on connect. `__fragment` threads through both `emitShadow` and
   `emitLight`. Drop it from the second one and a shadow element inside a light one emits
   a shadow root nobody will process.
+- **`ctx.after` catches the rejection before `waitUntil` sees it.** Nothing awaits
+  the work, so an unhandled rejection ends the process on Node. `after.js` hands
+  `waitUntil` the already-caught promise, not the original, or workerd logs the
+  same failure a second time on its own. The `try` in `executionCtxOf` covers
+  Hono's getter and nothing else: it throws when the runtime has no
+  ExecutionContext rather than answering undefined, and widening the `try` over
+  the `waitUntil` call would swallow a real failure. A test asserts each of those
+  three separately, because any one of them passes while the other two are wrong.
 - **`contextFor` names no runtime, and that is why it has no `env`.** A loader is
   handed `ctx` from `app.js`, which the no-`node:` test keeps portable. Hono has
   `c.env` right there and it is tempting to forward: do not. It is the bindings on

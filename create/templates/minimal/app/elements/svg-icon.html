@@ -1,0 +1,41 @@
+<!-- Yours. Change the sizing, add a class, delete it if you have no icons.
+     It is here so the accessibility half is right from the start, which is the
+     half that fails quietly.
+
+     Put SVG files in `app/icons/`. The build compiles them into `/icons.svg`,
+     and a subdirectory becomes a library of its own. -->
+
+<script properties>
+  export default {
+    // A directory in `app/icons/`, or `icons` for the files loose at the top.
+    // An icon set downloaded as a folder is a library named by that folder.
+    library: 'icons',
+    // A file in that library, without the extension. `check` in `lucide` draws
+    // `app/icons/lucide/check.svg`.
+    name: '',
+    // What a screen reader says. Empty means the icon repeats the text beside
+    // it, which is most icons, so it is hidden instead.
+    label: '',
+  };
+</script>
+
+<style>
+  /* No fill and no stroke here. Each symbol carries the ones its own file
+     declared, and an attribute on the symbol beats a value inherited from this
+     side. Size and color are the two this side owns: 1em follows the text, and
+     most icon sets draw with currentColor. */
+  :scope {
+    display: inline-flex;
+    vertical-align: -0.125em;
+  }
+  svg {
+    width: 1em;
+    height: 1em;
+  }
+</style>
+
+<!-- Two spellings, because they are different elements to a screen reader.
+     `aria-hidden` and a label together leave one nothing to say, so a labelled
+     icon is not also hidden. -->
+<svg if="label" role="img" aria-label="${label}"><use href="/${library}.svg#${name}"></use></svg>
+<svg else aria-hidden="true"><use href="/${library}.svg#${name}"></use></svg>

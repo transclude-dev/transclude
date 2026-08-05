@@ -37,6 +37,7 @@ app/
     api/_shared.js # not a route, the _ prefix says so
   elements/        # every custom element, one file each
     note-card.html # <note-card>, the name needs a dash
+    svg-icon.html  # scaffolded by npm create, yours to edit
   icons/           # one SVG file per icon, compiled to /icons.svg
     check.svg      # <use href="/icons.svg#check">
     lucide/        # a subdirectory is a library: /lucide.svg
@@ -179,6 +180,14 @@ icon set in whole and reference it by library and name:
 
 Every icon file needs a `viewBox`. A library is one flat directory, so a
 directory inside one is refused. Two libraries may each have a `check`.
+
+A new project has `app/elements/svg-icon.html`, which wraps the `<use>` and gets
+the two aria spellings right. It is the project's file, not the framework's.
+
+```html
+<svg-icon name="check"></svg-icon>
+<svg-icon library="lucide" name="check" label="Mark as done"></svg-icon>
+```
 
 Most apps wrap this in a light element so a page names an icon instead of a URL.
 See [references/elements.md](references/elements.md).

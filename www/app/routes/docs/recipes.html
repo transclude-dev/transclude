@@ -260,6 +260,19 @@ export default {
         'js',
       ],
 
+      dataBlock: [
+        `<!-- structured data, an import map, or anything a library reads out of
+     the document. Emitted as written, and never compiled. -->
+<script type="application/ld+json">
+  { "@type": "Article", "headline": "Written once" }
+<\/script>
+
+<script type="importmap">
+  { "imports": { "confetti": "/vendor/confetti.js" } }
+<\/script>`,
+        'html',
+      ],
+
       testing: [
         `import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -406,6 +419,28 @@ test('the notes page lists notes', async () => {
   </p>
 
   ${html(s.fragment)}
+
+  <h3>Put data in the page for something else to read</h3>
+
+  <p>
+    A <code>&lt;script&gt;</code> with a type the browser does not execute is a
+    data block. It is emitted as written, rather than compiled as client code.
+  </p>
+
+  ${html(s.dataBlock)}
+
+  <p>
+    A plain <code>&lt;script&gt;</code> and one with
+    <code>type="module"</code> are still yours to write, and are still compiled
+    and bundled. The type is what decides.
+  </p>
+
+  <doc-note label="A value cannot be interpolated into one" tone="warn">
+    The contents are raw text, so a <code>${'$'}{…}</code> could close the
+    element or the statement around it. The compiler refuses it. Pass the whole
+    block through <code>html()</code>, or put the value in an attribute and read
+    it from there.
+  </doc-note>
 
   <h3>Show the same content twice</h3>
 

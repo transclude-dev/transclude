@@ -30,6 +30,7 @@ import { pickEncoding } from './negotiate.js';
 import { baseApp, endpointMethods, runEndpoint } from './server.js';
 import { cookiesOf } from './cookies.js';
 import { afterFor } from './after.js';
+import { withDefaults } from './defaults.js';
 
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 const REVALIDATE = 'public, max-age=0, must-revalidate';
@@ -143,7 +144,11 @@ function isShareable(html, ctx) {
  * @returns {object} a Hono app, ready to serve
  */
 export function createApp({
-  config,
+  // Filled in here rather than by the caller, because only one of the four
+  // runtimes has a `loadProject` to fill them in on the way. A worker imports
+  // `transclude.config.js` and hands over exactly what the author wrote, so
+  // every key they left out was undefined until this line.
+  config: written,
   manifest,
   pages,
   endpoints = {},
@@ -164,6 +169,7 @@ export function createApp({
   // it the proxy's allowlist is the whole defense.
   lookup = null,
 }) {
+  const config = withDefaults(written);
   const cache = createCache(config.cache);
 
   // One resolver for the app, so several pages including the same document read

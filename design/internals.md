@@ -117,6 +117,18 @@ against.
   paints itself on connect. `__fragment` threads through both `emitShadow` and
   `emitLight`. Drop it from the second one and a shadow element inside a light one emits
   a shadow root nobody will process.
+- **Config defaults are applied in `createApp`, not in `loadProject`.** They used
+  to be in `project.js`, which reads a disk, so only Node ever applied them. A
+  worker imports `transclude.config.js` and hands over exactly what the author
+  wrote, so every key they left out was undefined on the one runtime the docs
+  recommend deploying to. `fragmentParam` undefined reads as "no parameter
+  configured", so `?fragment=` was answered with the whole document, and a swap
+  wrote a second copy of the page into the element it should have replaced. It
+  looked like a compiler bug for as long as anyone looked at the compiler. Seven
+  of the nine examples were shipped that way; `www` and `showcase` were fine only
+  because their configs happen to set the key. `DEFAULTS` lives in `defaults.js`
+  now, which imports nothing, and `withDefaults` runs on the first line of
+  `createApp` so no entry can skip it.
 - **The build's context refuses rather than omits.** `revalidateTag` and `after`
   are on the prerender context as functions that throw. Leaving them off is what
   it did before, and a loader calling one failed with `revalidateTag is not a

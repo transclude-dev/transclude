@@ -9,7 +9,9 @@
     "start": "node --env-file-if-exists=.env node_modules/.bin/transclude-serve",
     "check": "transclude-check",
     "test": "node --test --env-file-if-exists=.env \"test/**/*.test.js\"",
-    "preview": "npm run build && npm start"
+    "preview": "npm run build && npm start",
+    "start:worker": "wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@transclude/core": "file:../.."

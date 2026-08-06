@@ -102,6 +102,79 @@
     wins, and the compiler says the outer one became unreachable.
   </p>
 
+  <h2>Before 1.0</h2>
+
+  <p>
+    Below <code>1.0</code>, a minor version may break something. Every release
+    that does says so at the top of its notes, with the change to make.
+  </p>
+
+  <p>
+    Two releases have broken something so far. Both were narrow, and both were
+    the compiler starting to refuse code that was already not doing what it
+    looked like it did.
+  </p>
+
+  <h3>Settled</h3>
+
+  <p>
+    These are what the framework is. Changing one would be a different project,
+    not a version.
+  </p>
+
+  <ul>
+    <li>
+      A page is an <code>.html</code> file, and the directory tree is the route
+      table.
+    </li>
+    <li>
+      <code>&lt;script server&gt;</code> holds the loader, and verb exports
+      answer the other methods.
+    </li>
+    <li>
+      <code>fragment</code> gives an element a URL, and the same compiled markup
+      serves it inline and alone.
+    </li>
+    <li>An element in <code>elements/</code> is light DOM unless it asks not to be.</li>
+    <li>The browser downloads no runtime of ours, on any page.</li>
+  </ul>
+
+  <h3>Still moving</h3>
+
+  <p>
+    Each of these works and is documented. Each could also change shape before
+    <code>1.0</code>, so weigh that if you build on one.
+  </p>
+
+  <ul>
+    <li>
+      <strong>The shadow half of the compiler.</strong> It answers a narrower
+      question than most pages ask, and it is the harder half to keep correct.
+      Light DOM is the part to lean on.
+    </li>
+    <li>
+      <strong>What the compiler refuses.</strong> The list grows when a mistake
+      turns out to be silent, which is what both breaking releases were. Expect
+      it to keep growing.
+    </li>
+    <li>
+      <strong>The context a loader is handed.</strong> Fields have been added in
+      three of the last four releases. Nothing has been taken away, and that is
+      the intent rather than a promise.
+    </li>
+    <li>
+      <strong><code>transclude.config.js</code> keys.</strong> An unknown key
+      throws, so a rename is loud rather than silent, and the
+      <a href="/docs/config">table</a> is generated from what the code reads.
+    </li>
+  </ul>
+
+  <doc-note label="What a version number means here">
+    A patch fixes something. A minor may add a refusal, which is the shape a
+    break takes. Nothing removes a documented field without a major, and there
+    has not been one.
+  </doc-note>
+
   <h2>What it does not do</h2>
 
   <p>

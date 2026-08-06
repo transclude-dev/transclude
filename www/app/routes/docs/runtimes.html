@@ -11,6 +11,18 @@ wrangler dev                                                 # Cloudflare`,
         'shell',
       ],
 
+      entry: [
+        `// worker.js
+import { workerFrom } from '@transclude/core/worker';
+import * as bundle from './dist/server/assets.js';
+import * as entry from './dist/server/entry.js';
+import manifest from './dist/routes.json';
+import config from './transclude.config.js';
+
+export default workerFrom({ config, manifest, entry, bundle });`,
+        'js',
+      ],
+
       bindings: [
         `// app/lib/bindings.js
 //
@@ -102,7 +114,23 @@ export default async () => {
 
   <p>
     The Node, Bun and Deno adapters come from the package and only listen.
-    <code>worker.js</code> belongs to the app.
+    <code>worker.js</code> belongs to the app, and this is all of it.
+  </p>
+
+  ${html(s.entry)}
+
+  <p>
+    The imports stay in the app because a bundler needs a literal path to
+    follow. The wiring behind <code>workerFrom</code> does not, so it lives in
+    the package. It builds the app on the first request, which is when
+    <code>env</code> exists, and reads <code>cookieSecret</code> from
+    <code>env.COOKIE_SECRET</code> when there is one.
+  </p>
+
+  <p>
+    An app wanting something else calls <code>createApp</code> from
+    <code>@transclude/core/app</code> and does the wiring itself. That is what
+    this was before there were nine copies of it.
   </p>
 
   <h2>What differs</h2>

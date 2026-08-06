@@ -154,6 +154,23 @@ something built on Wasm fails there and nowhere else. A prerendered page never
 runs its loader in production, so this stays hidden until something asks for a
 fragment.
 
+### worker.js
+
+```js
+import { workerFrom } from '@transclude/core/worker';
+import * as bundle from './dist/server/assets.js';
+import * as entry from './dist/server/entry.js';
+import manifest from './dist/routes.json';
+import config from './transclude.config.js';
+
+export default workerFrom({ config, manifest, entry, bundle });
+```
+
+The imports stay in the app: a bundler needs a literal path. `workerFrom` builds
+the app on the first request, which is when `env` exists, and takes
+`cookieSecret` from `env.COOKIE_SECRET`. For anything else, call `createApp`
+from `@transclude/core/app` directly.
+
 ### Bindings
 
 `ctx` has no `env`. It carries nothing that names one runtime, and `env` names

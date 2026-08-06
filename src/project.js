@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { withDefaults } from './defaults.js';
 
 export const CONFIG_FILE = 'transclude.config.js';
 
@@ -80,24 +81,11 @@ export function findRoot(from = process.cwd()) {
  *
  * `port` is not here. `portOf` already answers it, and it reads the environment
  * first, which a plain default cannot do.
+ *
+ * They live in `defaults.js` rather than here, because a worker has no
+ * `loadProject` and needs the same answers. `createApp` applies them for every
+ * runtime, and this file is only Node's way in.
  */
-const DEFAULTS = {
-  appDir: 'app',
-  routesDir: 'routes',
-  elementsDir: 'elements',
-  publicDir: 'public',
-  iconsDir: 'icons',
-  outDir: 'dist',
-  typesFile: 'app/transclude-env.d.ts',
-  stylesheet: null,
-  lang: 'en',
-  fragmentParam: 'fragment',
-  trailingSlash: 'never',
-  strict: false,
-  csrf: true,
-  csp: false,
-  speculate: false,
-};
 
 /**
  * The root and its config together, because nothing needs one without the other.
@@ -117,7 +105,7 @@ export async function loadProject(from = process.cwd()) {
     throw new Error(`[transclude] ${CONFIG_FILE} must export a config object as its default`);
   }
   assertNoSplitDirs(config, file);
-  return { root, config: { ...DEFAULTS, ...config }, configFile: file };
+  return { root, config: withDefaults(config), configFile: file };
 }
 
 /**

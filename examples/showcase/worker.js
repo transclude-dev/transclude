@@ -1,54 +1,20 @@
 // Cloudflare Workers entry for this app. `npm run start:worker`
 //
 // This file is the app's, not the framework's, because every import in it names
-// something the app owns: its build output and its config. What a worker does
-// differently from Node is in `transclude/worker`, which this wires up.
+// something the app owns: its build output and its config. A bundler needs a
+// literal path to follow, so those cannot move into the package. The wiring
+// behind `workerFrom` can, and did.
 //
 // The cost of having no filesystem is that the assets are in the bundle. Plain
 // bytes only, and the platform compresses on the way out.
 
-import { createApp } from '@transclude/core/app';
-import { bytesFrom, fileHandler, hash, pageEntry } from '@transclude/core/worker';
-import { assets, errorPage, notFound, precache, publicFiles, statics } from './dist/server/assets.js';
-import { endpoints, middleware, pages } from './dist/server/entry.js';
-import manifestText from './dist/routes.json';
+import { workerFrom } from '@transclude/core/worker';
+import * as bundle from './dist/server/assets.js';
+import * as entry from './dist/server/entry.js';
+import manifest from './dist/routes.json';
 import config from './transclude.config.js';
 
-// There is no JSON module type in Workers, so the manifest arrives as a string.
-// Importing it and using it as an object gave a route table of `undefined` and a
-// site of 404s that looked exactly like a routing bug.
-// The cast is the other half of that: every other runtime hands this back as an
-// object, so TypeScript types the import that way and `JSON.parse` refuses it.
-const manifest = JSON.parse(/** @type {any} */ (manifestText));
-
-/**
- * Built once, on the first request, because that is when `env` exists.
- *
- * There is no `process.env` here. A secret read at import time would be undefined
- * and signing would refuse. That is correct and confusing at the same time,
- * because the variable is set. Config on this runtime arrives with the request.
- */
-let app = null;
-
-function appFor(env) {
-  app ??= createApp({
-    config: { ...config, cookieSecret: env.COOKIE_SECRET ?? config.cookieSecret },
-    manifest,
-    pages,
-    endpoints,
-    middleware,
-    statics: bytesFrom(statics),
-    assets: bytesFrom(assets),
-    publicFiles: fileHandler(publicFiles),
-    notFound: pageEntry(notFound),
-    errorPage: pageEntry(errorPage),
-    hash,
-    compress: null,
-    precache,
-  });
-  return app;
-}
-
-export default {
-  fetch: (request, env, ctx) => appFor(env).fetch(request, env, ctx),
-};
+// `cookieSecret` comes from `env.COOKIE_SECRET`, which arrives with the first
+// request. There is no `process.env` on this runtime, so a secret read at import
+// time would be undefined and signing would refuse.
+export default workerFrom({ config, manifest, entry, bundle });

@@ -236,3 +236,40 @@ test('the other defaults are unchanged', () => {
   assert.match(header, /SameSite=Lax/);
   assert.match(header, /Path=\//);
 });
+
+// ---- a secret that is set and empty ----------------------------------------
+//
+// From a real deploy. `wrangler secret put` took a blank line, so the binding
+// existed and every `typeof` along the way said `string`. The old message told
+// the reader to set a secret they were looking at, which sends you through the
+// wiring rather than to the value.
+
+test('an empty secret says so, rather than saying there is none', async () => {
+  const response = { headers: new Headers() };
+  const cookies = cookiesOf(new Request('http://x/'), response, '');
+
+  await assert.rejects(() => cookies.signed.get('session'), /set to an empty string/);
+});
+
+test('a missing secret still says to set one', async () => {
+  const response = { headers: new Headers() };
+  const cookies = cookiesOf(new Request('http://x/'), response, null);
+
+  await assert.rejects(() => cookies.signed.get('session'), /Set `cookieSecret` in/);
+});
+
+test('the two messages are not the same, which is the whole point', async () => {
+  const empty = cookiesOf(new Request('http://x/'), { headers: new Headers() }, '');
+  const missing = cookiesOf(new Request('http://x/'), { headers: new Headers() }, null);
+
+  const of = async (cookies) => {
+    try {
+      await cookies.signed.get('session');
+      return null;
+    } catch (error) {
+      return error.message;
+    }
+  };
+
+  assert.notEqual(await of(empty), await of(missing));
+});

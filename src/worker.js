@@ -5,6 +5,8 @@
 // is WebCrypto and therefore async. Those are runtime facts, so they live here.
 // Which modules to import is an app fact, so that stays in the app's own entry.
 
+import { createApp } from './app.js';
+
 /** base64 in, bytes out. `atob` is in every runtime that has no `Buffer`. */
 const decode = (base64) => Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 
@@ -84,4 +86,59 @@ export async function hash(body) {
   let base64 = '';
   for (const byte of bytes) base64 += String.fromCharCode(byte);
   return `"${btoa(base64).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '').slice(0, 20)}"`;
+}
+
+/**
+ * The whole worker, for an app that wants the ordinary wiring.
+ *
+ * Nine apps in this repository wrote the same forty lines: parse the manifest,
+ * wrap each byte map, build the app on the first request because that is when
+ * `env` exists, and hand the request on. The imports have to stay in the app's
+ * own file, because a bundler needs a literal path to follow. The wiring does
+ * not, and this is it.
+ *
+ * `cookieSecret` comes from `env.COOKIE_SECRET` when there is one, which is the
+ * only piece of config a worker cannot read at import time. An app needing
+ * something else calls `createApp` itself: this covers the common shape rather
+ * than every shape.
+ *
+ * @param {object} options
+ * @param {object} options.config the app's `transclude.config.js`
+ * @param {string|object} options.manifest `dist/routes.json`, text or parsed
+ * @param {object} options.entry everything `dist/server/entry.js` exports
+ * @param {object} options.bundle everything `dist/server/assets.js` exports
+ * @returns {{ fetch: (request: Request, env: object, ctx: object) => Response|Promise<Response> }}
+ */
+export function workerFrom({ config, manifest, entry, bundle }) {
+  // Built on the first request rather than at import, because that is when
+  // `env` exists. There is no `process.env` here, so a secret read any earlier
+  // is undefined, and signing refuses.
+  let app = null;
+
+  return {
+    fetch(request, env, ctx) {
+      app ??= createApp({
+        config: { ...config, cookieSecret: env.COOKIE_SECRET ?? config.cookieSecret },
+        // There is no JSON module type in Workers, so the manifest usually
+        // arrives as a string. Used as an object it gives a route table of
+        // `undefined` and a site of 404s that looks exactly like a routing bug.
+        manifest: typeof manifest === 'string' ? JSON.parse(manifest) : manifest,
+        pages: entry.pages,
+        endpoints: entry.endpoints,
+        middleware: entry.middleware,
+        statics: bytesFrom(bundle.statics),
+        assets: bytesFrom(bundle.assets),
+        publicFiles: fileHandler(bundle.publicFiles),
+        notFound: pageEntry(bundle.notFound),
+        errorPage: pageEntry(bundle.errorPage),
+        hash,
+        // The edge compresses. Doing it here would be a second pass over bytes
+        // already going through one.
+        compress: null,
+        precache: bundle.precache,
+      });
+
+      return app.fetch(request, env, ctx);
+    },
+  };
 }

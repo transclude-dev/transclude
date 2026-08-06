@@ -29,7 +29,7 @@
   "vars": {
     "MAIL_FROM": "transclude <admin@dakroub.co>",
     "MAIL_REPLY_TO": "admin@dakroub.co",
-    "RESEND_AUDIENCE_ID": ""
+    "RESEND_AUDIENCE_ID": "7b197ded-d4d9-4e0e-b568-b49a28ea1b58"
   },
 
   // Both hostnames answer, and `app/server.js` sends www to the apex, which is

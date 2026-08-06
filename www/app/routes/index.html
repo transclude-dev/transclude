@@ -306,10 +306,13 @@ npm run dev`,
     overflow: hidden;
   }
   /* Further from the form than the form is from the paragraph above it, so it
-     reads as a note on the field rather than as the next thing to say. */
-  .notes-more {
+     reads as a note on the field rather than as the next thing to say.
+     Two classes, because `.notes p` above is `(0,1,1)` and beats a single one.
+     Written as `.notes-more` first, which shipped and never applied. */
+  .notes .notes-more {
     font-size: 0.875rem;
     margin-top: 2.25rem;
+    margin-bottom: 0;
   }
 
   .points {

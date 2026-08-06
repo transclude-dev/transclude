@@ -1,5 +1,7 @@
 // Where the app lives. Every path the framework needs is here.
 
+import { byDate } from './app/data/posts.js';
+
 export default {
   appDir: 'app',
 
@@ -41,6 +43,22 @@ export default {
   // no service worker: only the build knows an asset's hashed name, so this is
   // the half an app cannot write for itself.
   precache: true,
+
+  // GET /feed.xml. The route table cannot answer this one: a feed is a list of
+  // writing in the order it was written, and only the posts know that.
+  feed: {
+    hostname: 'https://transclude.dev',
+    title: 'transclude',
+    description: 'Posts about the web platform, and about building on it.',
+    author: { name: 'Joe Dakroub' },
+    items: () =>
+      byDate().map((post) => ({
+        title: post.title,
+        path: `/blog/${post.slug}`,
+        date: post.date,
+        description: post.summary,
+      })),
+  },
 
   // The origin `ctx.absolute()` resolves against. The request's own is wrong
   // behind a proxy, and there is no request at all while prerendering.

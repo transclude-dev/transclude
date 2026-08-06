@@ -1,0 +1,60 @@
+<script server>
+  import { byDate } from '../../data/posts.js';
+
+  export default async () => ({ posts: byDate() });
+</script>
+
+<title>Writing · transclude</title>
+<meta
+  name="description"
+  content="Posts about the web platform, and about building on it without shipping a framework to the browser."
+/>
+
+<style>
+  .listing {
+    list-style: none;
+    padding: 0;
+    margin: 2.5rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  .listing h2 {
+    margin: 0 0 0.4rem;
+    font-size: 1.25rem;
+  }
+  .listing h2 a {
+    text-decoration: none;
+  }
+  .listing h2 a:hover {
+    text-decoration: underline;
+  }
+  .listing time {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .listing p {
+    margin: 0.4rem 0 0;
+    color: var(--muted);
+  }
+</style>
+
+<h1>Writing</h1>
+
+<p>
+  Mostly about the web platform. Most of these are useful whether or not you
+  ever install this framework.
+</p>
+
+<p>
+  There is a <a href="/feed.xml">feed</a>.
+</p>
+
+<ul class="listing">
+  <li each="post of posts">
+    <time datetime="${post.date.toISOString()}">${post.date.toDateString()}</time>
+    <h2><a href="/blog/${post.slug}">${post.title}</a></h2>
+    <p>${post.summary}</p>
+  </li>
+</ul>

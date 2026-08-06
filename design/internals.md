@@ -117,6 +117,14 @@ against.
   paints itself on connect. `__fragment` threads through both `emitShadow` and
   `emitLight`. Drop it from the second one and a shadow element inside a light one emits
   a shadow root nobody will process.
+- **The dev server mounts its own routes, so `createApp` is not the only list.**
+  `bin/dev.js` builds a Hono app with `baseApp` and registers what it needs.
+  Anything `createApp` mounts from config has to be added there too, or it works
+  in the build and 404s in dev, which is the direction nobody checks. `/feed.xml`
+  and `/sitemap.xml` were missing for as long as the config keys existed, and the
+  proxy route with them. `/precache.json` is the exception and stays one: it
+  names hashed filenames only the build knows. Adding a config-driven route means
+  touching both files.
 - **Config defaults are applied in `createApp`, not in `loadProject`.** They used
   to be in `project.js`, which reads a disk, so only Node ever applied them. A
   worker imports `transclude.config.js` and hands over exactly what the author

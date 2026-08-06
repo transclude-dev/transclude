@@ -123,8 +123,16 @@
     color: var(--link);
   }
 
-  .repo {
+  /* Takes the free space, so the links sit at the end of the bar.
+     `.repo:first-of-type` did not: `of-type` counts tag names, and the first
+     `<a>` in here is the logo, so the rule matched nothing. */
+  .ends {
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+  }
+  .repo {
     font-size: 0.8rem;
     color: var(--muted);
     text-decoration: none;
@@ -271,7 +279,12 @@
 <header class="topbar">
   <div class="topbar-inner">
     <a class="logo" href="/"><span class="hash">#</span>transclude</a>
-    <a class="repo" href="https://github.com/transclude-dev/transclude">Source</a>
+    <!-- Plain markup rather than `sections` entries: the sidebar lists the
+         documentation, and both of these leave it. -->
+    <div class="ends">
+      <a class="repo" href="/blog">Writing</a>
+      <a class="repo" href="https://github.com/transclude-dev/transclude">Source</a>
+    </div>
   </div>
 </header>
 

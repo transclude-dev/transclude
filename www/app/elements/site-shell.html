@@ -1,0 +1,74 @@
+<script properties>
+  export default {
+    // Which link in the bar is the current page, or none.
+    here: '',
+  };
+</script>
+
+<style>
+  /* The chrome for a page that belongs to no section. The docs layout brings its
+     own and so does the blog, because both have more to put in it. This is for
+     the pages that sit at the route root and inherit nothing: the error pages
+     rendered a heading against the left edge of the viewport until it existed. */
+  :scope {
+    display: block;
+  }
+
+  .bar {
+    border-bottom: 1px solid var(--rule);
+  }
+  .bar-inner {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+    height: 4.25rem;
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+  .mark {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1.45rem;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .mark .hash {
+    color: var(--link);
+  }
+  .bar nav {
+    margin-left: auto;
+    display: flex;
+    gap: 1.5rem;
+  }
+  .bar nav a {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .bar nav a:hover,
+  .bar nav a[aria-current] {
+    color: var(--ink);
+  }
+
+  .column {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 4.5rem 1.5rem 6rem;
+  }
+</style>
+
+<div class="bar">
+  <div class="bar-inner">
+    <a class="mark" href="/"><span class="hash">#</span>transclude</a>
+    <nav>
+      <a href="/docs" aria-current="${here === 'docs' ? 'page' : false}">Documentation</a>
+      <a href="/blog" aria-current="${here === 'blog' ? 'page' : false}">Writing</a>
+      <a href="https://github.com/transclude-dev/transclude">Source</a>
+    </nav>
+  </div>
+</div>
+
+<div class="column"><slot></slot></div>

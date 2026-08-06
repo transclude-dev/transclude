@@ -15,8 +15,18 @@ import { bindings } from './bindings.js';
 
 const ENDPOINT = 'https://api.resend.com/emails';
 
-/** Where the mail comes from. A subdomain Resend was set up to sign for. */
-const FROM = 'transclude <notes@transclude.dev>';
+/**
+ * Where the mail comes from, and where a reply goes.
+ *
+ * `MAIL_FROM` is a var in `wrangler.jsonc`, so changing it is one line and a
+ * deploy rather than an edit here. Whatever it names, Resend has to hold a
+ * verified domain for it: an address on a domain it cannot sign for is refused
+ * at send time, not at deploy time.
+ */
+const from = () => bindings()?.MAIL_FROM ?? 'transclude <notes@transclude.dev>';
+
+/** Replies reach a person, which the sending address does not have to. */
+const replyTo = () => bindings()?.MAIL_REPLY_TO ?? null;
 
 /**
  * The confirmation mail, as text and as markup.
@@ -80,7 +90,12 @@ export async function sendConfirmation({ email, token, origin }) {
   const res = await fetch(ENDPOINT, {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: FROM, to: [email], ...confirmationMail(link) }),
+    body: JSON.stringify({
+      from: from(),
+      to: [email],
+      ...(replyTo() ? { reply_to: replyTo() } : {}),
+      ...confirmationMail(link),
+    }),
   });
 
   if (res.ok) return { sent: true };

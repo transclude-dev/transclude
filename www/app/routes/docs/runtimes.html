@@ -29,12 +29,19 @@ export default workerFrom({ config, manifest, entry, bundle });`,
 // Nothing from \`node:\` here. A loader importing this puts it in the bundle
 // workerd loads, and that runtime has none of it.
 
-/** @type {Env|null} */
-let current = null;
+// A symbol in the global registry, not a module variable. Two bundlers touch
+// this file in a transclude app: the build inlines a copy into the server
+// bundle, and wrangler bundles \`worker.js\` with a second one. \`hold\` wrote to
+// one and \`bindings\` read the other, so a loader saw nothing and a live signup
+// went into a fallback instead of the database.
+const SLOT = Symbol.for('app.bindings');
 
-export const hold = (env) => (current = env);
+export const hold = (env) => {
+  globalThis[SLOT] = env;
+};
 
 export const bindings = () => {
+  const current = globalThis[SLOT];
   // Named rather than left to fail on a property of null, which reads like a
   // missing binding instead of a missing runtime.
   if (!current) throw new Error('No bindings: this app is running off workerd.');

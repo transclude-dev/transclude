@@ -182,12 +182,18 @@ import that.
 
 ```js
 // app/lib/bindings.js — no `node:` imports, this ends up in the worker bundle
-/** @type {Env|null} */
-let current = null;
+// A symbol in the global registry, not a module variable. The build inlines a
+// copy of this file into the server bundle and wrangler bundles `worker.js`
+// with a second one, so a module variable is written in one copy and read in
+// the other.
+const SLOT = Symbol.for('app.bindings');
 
-export const hold = (env) => (current = env);
+export const hold = (env) => {
+  globalThis[SLOT] = env;
+};
 
 export const bindings = () => {
+  const current = globalThis[SLOT];
   if (!current) throw new Error('No bindings: this app is running off workerd.');
   return current;
 };

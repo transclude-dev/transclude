@@ -117,6 +117,14 @@ against.
   paints itself on connect. `__fragment` threads through both `emitShadow` and
   `emitLight`. Drop it from the second one and a shadow element inside a light one emits
   a shadow root nobody will process.
+- **A module variable does not bridge the two bundles.** An app holding `env`
+  from `worker.js` for its loaders has to keep it on `globalThis`, because the
+  build inlines a copy of that module into `dist/server/entry.js` and wrangler
+  bundles `worker.js` with a second one. Written as `let current`, `hold` set one
+  copy and `bindings` read the other. The failure is quiet in the worst way: the
+  form answered, the reader was told to check their inbox, and the row went to a
+  dev fallback instead of D1. Found on the live site, not in a test. The
+  runtimes page and the skill both teach the symbol now.
 - **The dev server builds its own `ctx` too, and `test/context-shape.test.js` is
   what notices.** `ctx.after` shipped in 0.7.0 and was undefined in dev, so a form
   calling it worked in the build and threw `after is not a function` while you

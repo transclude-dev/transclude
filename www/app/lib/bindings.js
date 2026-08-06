@@ -12,11 +12,23 @@
 // the life of the isolate, so every request in it gets the same one. Holding a
 // `Request` here would hand one visitor's to the next.
 
-/** @type {Record<string, any>|null} */
-let current = null;
+// Held on `globalThis` rather than in a module variable, and the reason is not
+// style. Two bundlers touch this file. Vite compiles the loaders into
+// `dist/server/entry.js` and inlines a copy of this module into it; wrangler
+// then bundles `worker.js`, which imports this file again and gets a second
+// copy. `hold` wrote to one and `bindings` read the other, so the loader saw
+// null, fell through to the in-memory fallback, and every signup on the live
+// site went into a Map instead of D1. The form worked, the page said "check
+// your inbox", and the table stayed empty.
+//
+// A symbol in the global registry is one slot per isolate no matter how many
+// copies of this module exist.
+const SLOT = Symbol.for('transclude.www.bindings');
 
 /** Called by `worker.js` on every request. Same object each time. */
-export const hold = (env) => (current = env);
+export const hold = (env) => {
+  globalThis[SLOT] = env;
+};
 
 /**
  * The bindings, or null anywhere that has none.
@@ -27,4 +39,4 @@ export const hold = (env) => (current = env);
  *
  * @returns {Record<string, any>|null}
  */
-export const bindings = () => current;
+export const bindings = () => globalThis[SLOT] ?? null;

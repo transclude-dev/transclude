@@ -12,6 +12,22 @@
   // is uploaded as a separate asset.
   "keep_vars": true,
 
+  // Who the confirmation mail comes from, and where a reply lands. Not secrets,
+  // so they live here where they can be read rather than in `wrangler secret`.
+  //
+  // Resend has to hold a verified domain for whatever `MAIL_FROM` names. An
+  // address on a domain it cannot sign for is refused when the mail is sent,
+  // which is after the reader has already been told to check their inbox.
+  // `transclude.dev` is the domain Resend holds. Sending as `admin@dakroub.co`
+  // was tried and refused: "The dakroub.co domain is not verified", which
+  // arrives at send time, after the reader has been told to check their inbox.
+  // Verify that domain at resend.com/domains and this becomes one line and a
+  // deploy. Replies already go there.
+  "vars": {
+    "MAIL_FROM": "transclude <notes@transclude.dev>",
+    "MAIL_REPLY_TO": "admin@dakroub.co"
+  },
+
   // Both hostnames answer, and `app/server.js` sends www to the apex, which is
   // what every page's <link rel="canonical"> already names. Declaring them here
   // rather than clicking them into the dashboard means the deploy creates the

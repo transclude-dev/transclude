@@ -5,5 +5,10 @@
   // There is no JSON module type, so the manifest arrives as text and the
   // adapter parses it. `fallthrough` matters: without it this rule silently
   // replaces the default text rule for .txt/.html/.sql rather than adding to it.
-  "rules": [{ "type": "Text", "globs": ["**/routes.json"], "fallthrough": true }]
+  "rules": [{ "type": "Text", "globs": ["**/routes.json"], "fallthrough": true }],
+
+  // Declared here rather than clicked into the dashboard, so the deploy makes
+  // the DNS record and the certificate, and the next person can read the address
+  // without logging in.
+  "routes": [{ "pattern": "includes.transclude.dev", "custom_domain": true }]
 }

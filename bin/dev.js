@@ -30,6 +30,7 @@ import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
 import { feed, feedPath, feedType } from '../src/feed.js';
 import { sitemap } from '../src/sitemap.js';
+import { documentStore, PROXY_PATH, proxyHandler } from '../src/proxy.js';
 
 const { root, config } = await loadProject();
 const routesDir = resolveRoutesDir(path.join(root, config.appDir), config.routesDir);
@@ -340,6 +341,21 @@ async function buildApp() {
       const xml = await feed(config.feed);
       return c.body(xml, 200, { 'Content-Type': feedType(config.feed) });
     });
+  }
+
+  // The browser calls this one, so a page using an external include worked in
+  // the build and 404ed here. Default deny is the config's doing either way: no
+  // `proxy` key, no route.
+  //
+  // `/precache.json` is deliberately not here. It names hashed asset filenames,
+  // which only the build knows, and a service worker holding anything in dev is
+  // a bug rather than a feature. It is build output and stays that way.
+  if (config.proxy) {
+    const handler = proxyHandler(config.proxy, {
+      lookup: config.proxy.lookup ?? nodeLookup(),
+      store: documentStore(config.proxy.cache),
+    });
+    app.get(PROXY_PATH, (c) => handler(c.req.raw));
   }
 
   // Already ordered most-specific first, so registration order is deterministic

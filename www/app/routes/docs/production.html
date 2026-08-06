@@ -287,6 +287,13 @@ export const POST = async ({ request, revalidateTag }) => {
 
   ${html(s.register)}
 
+  <doc-note label="It is build output, so dev has none" tone="warn">
+    <code>/precache.json</code> names hashed asset filenames, which only the
+    build knows. <code>npm run dev</code> answers it with a 404 on purpose. A
+    service worker holding anything while you edit is a bug rather than a
+    feature, so register one behind a check for production.
+  </doc-note>
+
   <h2>Caching</h2>
 
   <p>Build output is compressed once, and each encoding gets its own ETag.</p>

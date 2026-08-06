@@ -27,7 +27,7 @@
   // one the confirm page still confirms, and says in the log that it added
   // nobody. Create one at resend.com/audiences and paste the id here.
   "vars": {
-    "MAIL_FROM": "transclude <admin@dakroub.co>",
+    "MAIL_FROM": "transclude <notes@dakroub.co>",
     "MAIL_REPLY_TO": "admin@dakroub.co",
     "RESEND_AUDIENCE_ID": "7b197ded-d4d9-4e0e-b568-b49a28ea1b58"
   },

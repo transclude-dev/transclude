@@ -105,6 +105,23 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
 
   <p>A fragment is an ordinary URL. Anything that fetches HTML can use it.</p>
 
+  <doc-note label="Why a query parameter and not #list">
+    A URL fragment is never sent to a server. The browser keeps everything after
+    the <code>#</code> for itself, so <code>GET /notes#list</code> arrives as
+    <code>GET /notes</code>. The server has no way to know a part was wanted. A
+    query parameter is on the wire, which is why it is the one that asks.
+  </doc-note>
+
+  <p>
+    The <code>#</code> spelling does appear here, in
+    <code>&lt;transclude src="/notes#list"&gt;</code>. That is resolved while the
+    page is rendered, where the whole URL is in hand and nothing has been sent
+    anywhere. <code>&lt;use href="/icons.svg#check"&gt;</code> works for the same
+    reason from the other side: the browser fetches the whole file, then finds
+    the piece. Transferring the whole document is the thing a fragment exists to
+    avoid, so it has to be the request that names it.
+  </p>
+
   ${html(s.fetch)}
 
   <doc-note label="setHTMLUnsafe, not innerHTML">

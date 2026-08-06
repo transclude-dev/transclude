@@ -15,6 +15,9 @@
   <a href="https://github.com/transclude-dev/transclude/blob/main/LICENSE"
     ><img alt="MIT" src="https://img.shields.io/npm/l/%40transclude%2Fcore?color=0b7285"
   /></a>
+  <a href="https://bsky.app/profile/transclude.dev" rel="me"
+    ><img alt="Bluesky" src="https://img.shields.io/badge/Bluesky-transclude.dev-0b7285"
+  /></a>
 </p>
 
 HTML is the product. A page is an `.html` file, the directory tree is the route

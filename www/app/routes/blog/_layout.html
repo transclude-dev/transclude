@@ -1,0 +1,123 @@
+<script server>
+  import { versionHref, versionLabel } from '../../lib/version.js';
+
+  // One column. The docs need a sidebar because they are a reference and you
+  // arrive knowing what you want. A post is read start to finish.
+  export default async ({ route, absolute }) => ({
+    year: new Date().getFullYear(),
+    versionHref,
+    versionLabel,
+    canonical: absolute(route.path),
+  });
+</script>
+
+<title>transclude</title>
+<link rel="canonical" href="${canonical}" />
+
+<style>
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    height: 4.25rem;
+    background: color-mix(in srgb, var(--ground) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .topbar-inner {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+    height: 100%;
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1.45rem;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .logo .hash {
+    color: var(--link);
+  }
+  .topbar a.here {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .topbar a.here:hover {
+    color: var(--ink);
+  }
+
+  .paper {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 6rem;
+  }
+
+  .paper h1 {
+    font-family: var(--serif);
+    font-size: clamp(1.9rem, 5vw, 2.6rem);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.75rem;
+    text-wrap: balance;
+  }
+  .paper h2 {
+    font-family: var(--serif);
+    font-size: 1.35rem;
+    margin: 2.75rem 0 0.75rem;
+  }
+  .paper p,
+  .paper li {
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    max-width: 40em;
+  }
+  .paper p {
+    margin: 0 0 1.25rem;
+  }
+  .paper .dateline {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 2.5rem;
+  }
+
+  .paper footer {
+    border-top: 1px solid var(--rule);
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+</style>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="logo" href="/"><span class="hash">#</span>transclude</a>
+    <a class="here" href="/blog">Writing</a>
+  </div>
+</header>
+
+<div class="paper">
+  <slot></slot>
+
+  <footer>
+    <a href="/blog">All writing</a> &middot; <a href="/feed.xml">Feed</a>
+    &middot; <a href="/docs">Documentation</a>
+    <br />
+    <a href="${versionHref}">${versionLabel}</a>
+    &middot;
+    <a href="https://github.com/transclude-dev/transclude/blob/main/LICENSE">MIT</a>
+    &middot; &copy; ${year} Atelier Dakroub
+  </footer>
+</div>

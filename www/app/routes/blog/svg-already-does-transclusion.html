@@ -1,0 +1,149 @@
+<script server>
+  import { all } from '../../lib/code.js';
+  import { posts } from '../../data/posts.js';
+
+  const post = posts.find((one) => one.slug === 'svg-already-does-transclusion');
+
+  export default async () => ({
+    post,
+    s: await all({
+      sprite: `<!-- one file, fetched once, cached like any other -->
+<svg xmlns="http://www.w3.org/2000/svg" hidden>
+  <symbol id="check" viewBox="0 0 16 16">
+    <path d="M2 8l4 4 8-8" fill="none" stroke="currentColor" stroke-width="2" />
+  </symbol>
+</svg>`,
+      use: `<svg width="16" height="16"><use href="/icons.svg#check" /></svg>
+<svg width="16" height="16"><use href="/icons.svg#check" /></svg>
+<svg width="16" height="16"><use href="/icons.svg#check" /></svg>`,
+      inline: `<svg width="16" height="16" viewBox="0 0 16 16">
+  <path d="M2 8l4 4 8-8" fill="none" stroke="currentColor" stroke-width="2" />
+</svg>`,
+      img: `<img src="/header.html" />`,
+      fetchIt: `const res = await fetch('/notes');
+const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+document.querySelector('#list').replaceWith(doc.querySelector('#list'));`,
+    }),
+  });
+</script>
+
+<title>SVG already does transclusion · transclude</title>
+<meta
+  name="description"
+  content="One tag has pointed at an element by id and rendered it in place for fifteen years. It only works for shapes."
+/>
+
+<article>
+  <h1>SVG already does transclusion</h1>
+
+  <time class="dateline" datetime="${post.date.toISOString()}">
+    ${post.date.toDateString()}
+  </time>
+
+  <p>
+    Every icon system on the web is built on a feature nobody calls by its name.
+    You write a shape once, give it an id, and point at it from anywhere.
+  </p>
+
+  ${html(s.sprite)}
+
+  ${html(s.use)}
+
+  <p>
+    Three elements, one definition. Change the path and all three change. The
+    browser does the pointing, and nothing runs to make it happen.
+  </p>
+
+  <p>
+    That is transclusion: a document naming a piece of another document, and the
+    piece appearing in place. Ted Nelson coined the word in 1980 for exactly
+    this. The browser has shipped a working version since 2011.
+  </p>
+
+  <p>It works for shapes. That is the whole of it.</p>
+
+  <h2>What the alternative costs</h2>
+
+  <p>
+    Without <code>&lt;use&gt;</code> you inline the shape at each site.
+  </p>
+
+  ${html(s.inline)}
+
+  <p>
+    Now the definition is copied. Three copies drift, and a fourth appears in a
+    template someone wrote last month. This is the same problem a partial solves
+    on the server, and the same problem a component solves in a client
+    framework.
+  </p>
+
+  <p>
+    The interesting part is that the platform solved it once, narrowly, and then
+    stopped.
+  </p>
+
+  <h2>Why it stopped at shapes</h2>
+
+  <p>
+    There is no HTML equivalent. There is no tag that says "render the element
+    with this id, from that document, here".
+  </p>
+
+  ${html(s.img)}
+
+  <p>
+    That is not a thing. <code>&lt;img&gt;</code> takes an image.
+    <code>&lt;iframe&gt;</code> takes a whole document and gives it its own box,
+    its own styles and its own scrollbar. That is a different feature wearing
+    similar clothes.
+  </p>
+
+  <p>
+    HTML Imports tried and were removed. They were tied to the component story
+    of the time, and when that story changed they went with it. What is left is
+    a gap where a plain declarative include should be.
+  </p>
+
+  <h2>What everyone does instead</h2>
+
+  <p>
+    Fetch the document, parse it, find the element, put it somewhere.
+  </p>
+
+  ${html(s.fetchIt)}
+
+  <p>
+    That is what htmx does, and Turbo, and every hand-rolled version in between.
+    It works. It also means the piece you swapped in and the page it came from
+    are two renders of the same thing. Nothing checks that they still agree.
+  </p>
+
+  <p>
+    A partial template drifts from the page that also renders it. An endpoint
+    returns markup that used to match and now does not. The bug is silent,
+    because both halves are individually correct.
+  </p>
+
+  <h2>The shape of the missing feature</h2>
+
+  <p>
+    <code>&lt;use&gt;</code> gets one thing right, and it goes past most people.
+    The definition and the use are the same markup. There is no second copy that
+    can disagree, because there is no second copy.
+  </p>
+
+  <p>
+    Everything else about it is a limitation: shapes only, same origin, and a
+    shadow boundary that makes styling awkward. Those are the parts worth
+    leaving behind. The part worth keeping is that one definition serves every
+    use of it.
+  </p>
+
+  <p>
+    Put a fragment of a document on a URL, and render it from the same markup
+    that renders the page. That is the version of this HTML never got, and you
+    can build it on a server today. It is what
+    <a href="/docs/fragments">this framework does</a>. The idea is not the
+    framework's, though. It is fifteen years old and already in your icons.
+  </p>
+</article>

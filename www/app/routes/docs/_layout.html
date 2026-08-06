@@ -123,8 +123,11 @@
     color: var(--link);
   }
 
-  .repo {
+  /* The first of them takes the free space, so both sit at the right. */
+  .repo:first-of-type {
     margin-left: auto;
+  }
+  .repo {
     font-size: 0.8rem;
     color: var(--muted);
     text-decoration: none;
@@ -271,6 +274,9 @@
 <header class="topbar">
   <div class="topbar-inner">
     <a class="logo" href="/"><span class="hash">#</span>transclude</a>
+    <!-- Plain markup rather than a `sections` entry: the sidebar lists the
+         documentation, and this leaves it. -->
+    <a class="repo" href="/blog">Writing</a>
     <a class="repo" href="https://github.com/transclude-dev/transclude">Source</a>
   </div>
 </header>

@@ -29,16 +29,58 @@ npm run elements   # http://localhost:1969`,
   heading="Examples"
   lede="Whole apps, not snippets. Each one is a directory in the repository that depends on the package by name, the same way your project does."
 >
-  ${html(s.run)}
+  <p>What each one is there to prove, shortest first.</p>
 
-  <p>
-    Each one has a port of its own, so they run beside each other.
-    <code>1960</code> is left free on purpose. It is what
-    <a href="/docs/getting-started">a new project</a> gets, and an example
-    sitting there would collide with the first thing you make.
-  </p>
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Example</th>
+          <th>What it proves</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><a href="#todomvc">TodoMVC</a></td>
+          <td>Seven actions, one POST handler, and zero bytes of JavaScript</td>
+        </tr>
+        <tr>
+          <td><a href="#search">Search</a></td>
+          <td>A fragment that is a substring of the document it came from</td>
+        </tr>
+        <tr>
+          <td><a href="#blog">Blog</a></td>
+          <td>Markdown to files, with no server left running</td>
+        </tr>
+        <tr>
+          <td><a href="#htmx">htmx</a></td>
+          <td>A swap library and this framework, each doing its own half</td>
+        </tr>
+        <tr>
+          <td><a href="#includes">Includes</a></td>
+          <td>One piece of markup rendered in two places</td>
+        </tr>
+        <tr>
+          <td><a href="#auth">Auth</a></td>
+          <td>A session on signed cookies, with nothing stored</td>
+        </tr>
+        <tr>
+          <td><a href="#live">Live</a></td>
+          <td>Server-sent events into a fragment</td>
+        </tr>
+        <tr>
+          <td><a href="#elements">Elements</a></td>
+          <td>Light DOM and shadow, and what each costs</td>
+        </tr>
+        <tr>
+          <td><a href="#showcase">Showcase</a></td>
+          <td>Every feature at once, and the browser checks</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
-  <h2>Showcase</h2>
+  <h2 id="showcase">Showcase</h2>
 
   <p>
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/showcase"
@@ -55,7 +97,7 @@ npm run elements   # http://localhost:1969`,
     model.
   </p>
 
-  <h2>TodoMVC</h2>
+  <h2 id="todomvc">TodoMVC</h2>
 
   <p>
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/todomvc"
@@ -82,7 +124,7 @@ npm run elements   # http://localhost:1969`,
     it changes.
   </doc-note>
 
-  <h2>Elements</h2>
+  <h2 id="elements">Elements</h2>
 
   <p>
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/elements"
@@ -106,7 +148,7 @@ npm run elements   # http://localhost:1969`,
     models a boundary, so that pair is the demonstration.
   </doc-note>
 
-  <h2>Blog</h2>
+  <h2 id="blog">Blog</h2>
 
   <p>
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/blog"
@@ -136,7 +178,7 @@ npm run elements   # http://localhost:1969`,
     a feed needs titles and dates, so the config supplies the items.
   </doc-note>
 
-  <h2>Search</h2>
+  <h2 id="search">Search</h2>
 
   <p>
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/search"
@@ -158,7 +200,7 @@ npm run elements   # http://localhost:1969`,
     <code>history.replaceState</code> keeps the URL in step so a reload works.
   </p>
 
-  <h2>htmx</h2>
+  <h2 id="htmx">htmx</h2>
 
   <p>
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/htmx"
@@ -191,7 +233,7 @@ npm run elements   # http://localhost:1969`,
     <code>app/public/</code> before the build.
   </doc-note>
 
-  <h2>Includes</h2>
+  <h2 id="includes">Includes</h2>
 
   <p>
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/includes"
@@ -208,7 +250,7 @@ npm run elements   # http://localhost:1969`,
     another document and there is one of it here.
   </p>
 
-  <h2>Auth</h2>
+  <h2 id="auth">Auth</h2>
 
   <p>
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/auth"
@@ -235,7 +277,7 @@ npm run elements   # http://localhost:1969`,
     only that section pays.
   </doc-note>
 
-  <h2>Live</h2>
+  <h2 id="live">Live</h2>
 
   <p>
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/live"
@@ -260,6 +302,17 @@ npm run elements   # http://localhost:1969`,
     either leak a listener holding a dead connection, or close a controller that
     is already closed. Both happened while this was written.
   </doc-note>
+
+  <h2>Running them</h2>
+
+  ${html(s.run)}
+
+  <p>
+    Each one has a port of its own, so they run beside each other.
+    <code>1960</code> is left free on purpose. It is what
+    <a href="/docs/getting-started">a new project</a> gets, and an example
+    sitting there would collide with the first thing you make.
+  </p>
 
   <h2>Reading one</h2>
 

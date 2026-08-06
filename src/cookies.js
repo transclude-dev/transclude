@@ -39,6 +39,21 @@ export function cookiesOf(request, response, secret = null) {
 
   const requireSecret = (what) => {
     if (secret) return secret;
+
+    // Set-but-empty is worth its own sentence. It happened on a real deploy:
+    // `wrangler secret put` took a blank line, so the binding existed, every
+    // `typeof` along the way said `string`, and the config carried it all the
+    // way here. The only thing that said otherwise was the length. Reading
+    // "needs a secret" while looking at a secret that is plainly set sends you
+    // hunting through the wiring instead of the value.
+    if (typeof secret === 'string') {
+      throw new Error(
+        `[transclude] ${what} needs a secret, and \`cookieSecret\` is set to an ` +
+          `empty string. Whatever supplies it handed over nothing: on a worker that ` +
+          `is usually a \`wrangler secret put\` that took a blank line`,
+      );
+    }
+
     throw new Error(
       `[transclude] ${what} needs a secret. Set \`cookieSecret\` in ` +
         `transclude.config.js (read it from the environment there, not from a literal)`,

@@ -236,6 +236,10 @@ test('the documented defaults are the defaults', () => {
   // `loadProject` applied none of these until an example was written with a
   // short config, so the table was a description of what should happen. Now it
   // is a description of what does, and the two can drift again.
+  // `defaults.js`, not `project.js`. They moved there when it turned out that
+  // only Node ever applied them: a worker imports the config module directly, so
+  // every key an author left out was undefined on the one runtime the docs
+  // recommend. `createApp` applies them now, for all four.
   const source = path.join(
     root,
     '..',
@@ -243,7 +247,7 @@ test('the documented defaults are the defaults', () => {
     '@transclude',
     'core',
     'src',
-    'project.js',
+    'defaults.js',
   );
   if (!fs.existsSync(source)) return; // not installed: nothing to compare against
 

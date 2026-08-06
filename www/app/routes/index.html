@@ -236,6 +236,85 @@ npm run dev`,
     font-size: 0.95rem;
   }
 
+  .notes {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 3.5rem 1.25rem 1rem;
+  }
+  .notes h2 {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    margin: 0 0 0.75rem;
+  }
+  .notes p {
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.68;
+    color: var(--muted);
+    margin: 0 0 1.75rem;
+    max-width: 40em;
+  }
+
+  .signup {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+    max-width: 34rem;
+  }
+  /* The label is for a screen reader. The placeholder is the visible one, which
+     is fine here because the field asks for exactly one thing. */
+  .signup label[for='email'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .signup input[type='email'] {
+    flex: 1 1 16rem;
+    font: inherit;
+    font-size: 0.95rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--ground);
+    color: var(--ink);
+  }
+  .signup input[type='email']:focus-visible {
+    outline: 2px solid var(--link);
+    outline-offset: 1px;
+  }
+  .signup button {
+    font: inherit;
+    font-size: 0.95rem;
+    padding: 0.6rem 1.1rem;
+    border: 1px solid var(--ink);
+    border-radius: var(--radius);
+    background: var(--ink);
+    color: var(--ground);
+    cursor: pointer;
+  }
+  /* Not `display: none`: a field that is not rendered is a field a browser
+     leaves out of the submission, and then the trap catches nothing. */
+  .trap {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  /* Further from the form than the form is from the paragraph above it, so it
+     reads as a note on the field rather than as the next thing to say.
+     Two classes, because `.notes p` above is `(0,1,1)` and beats a single one.
+     Written as `.notes-more` first, which shipped and never applied. */
+  .notes .notes-more {
+    font-size: 0.875rem;
+    margin-top: 2.25rem;
+    margin-bottom: 0;
+  }
+
   .points {
     max-width: 46rem;
     margin: 0 auto;
@@ -458,6 +537,48 @@ npm run dev`,
     </p>
     ${html(s.start)}
   </div>
+</div>
+
+<div class="notes">
+  <h2>Notes on the design</h2>
+
+  <p>
+    Most of the interesting work here is unfinished. How to infer a fragment's
+    extent from an id, what belongs in the light DOM, what an element should be
+    allowed to assume. I write about the tradeoffs as I make them.
+  </p>
+
+  <!-- A plain form, posting to a route. Nothing on this page needs JavaScript
+       and neither does this: a signup box that wants a bundle to submit would
+       be the one bug worth screenshotting on a site that says what this one
+       says. -->
+  <form class="signup" method="post" action="/subscribe">
+    <label for="email">Your email</label>
+    <input
+      id="email"
+      name="email"
+      type="email"
+      required
+      autocomplete="email"
+      placeholder="you@example.com"
+    />
+
+    <!-- The honeypot. Hidden from anyone reading the page and left in the
+         markup for anything reading the markup. `tabindex` and `autocomplete`
+         keep it away from a keyboard and a password manager. -->
+    <div class="trap" aria-hidden="true">
+      <label for="website">Leave this empty</label>
+      <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <input type="hidden" name="source" value="/" />
+    <button type="submit">Subscribe</button>
+  </form>
+
+  <p class="notes-more">
+    Roughly monthly. Unsubscribe in one click. Or take the same writing as a
+    <a href="/feed.xml">feed</a> and give no address at all.
+  </p>
 </div>
 
 <footer>

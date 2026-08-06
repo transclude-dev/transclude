@@ -18,5 +18,16 @@ import * as bundle from './dist/server/assets.js';
 import * as entry from './dist/server/entry.js';
 import manifest from './dist/routes.json';
 import config from './transclude.config.js';
+import { hold } from './app/lib/bindings.js';
 
-export default workerFrom({ config, manifest, entry, bundle });
+const inner = workerFrom({ config, manifest, entry, bundle });
+
+// `hold` before the request goes in, because a loader reaching the subscriber
+// database asks for `env` and `ctx` has none. Outside any memoisation, since the
+// app is built once and this is free to repeat.
+export default {
+  fetch(request, env, ctx) {
+    hold(env);
+    return inner.fetch(request, env, ctx);
+  },
+};

@@ -11,18 +11,44 @@ import assert from 'node:assert/strict';
 
 import { add, confirm, looksLikeEmail, newToken } from '../app/lib/subscribers.js';
 
-const unique = (name) => `${name}-${newToken().slice(0, 8)}@example.com`;
+// Not `example.com`: the guard refuses it, which is the point of the guard.
+const unique = (name) => `${name}-${newToken().slice(0, 8)}@subscriber-test.dev`;
 
 // ---- what counts as an address ---------------------------------------------
 
 test('an ordinary address passes', () => {
-  assert.equal(looksLikeEmail('joe@example.com'), true);
-  assert.equal(looksLikeEmail('joe+notes@example.co.uk'), true);
+  assert.equal(looksLikeEmail('joe@dakroub.co'), true);
+  assert.equal(looksLikeEmail('joe+notes@somewhere.co.uk'), true);
 });
 
 test('what is missing an at, a dot or a body is refused', () => {
-  for (const bad of ['joe', 'joe@example', '@example.com', 'joe@.com', '', 'a b@c.com']) {
+  for (const bad of ['joe', 'joe@nodot', '@nothing.com', 'joe@.com', '', 'a b@c.com']) {
     assert.equal(looksLikeEmail(bad), false, `${JSON.stringify(bad)} should not pass`);
+  }
+});
+
+test('a reserved domain is refused, because nothing can ever answer for it', () => {
+  // RFC 2606 and RFC 6761. Sending to one buys a bounce against the domain doing
+  // the sending, and eight of them went out of here before this existed. They
+  // never reached the mail API, which was luck rather than design.
+  for (const bad of [
+    'someone@example.com',
+    'someone@example.net',
+    'someone@example.org',
+    'someone@anything.test',
+    'someone@anything.invalid',
+    'someone@sub.example',
+  ]) {
+    assert.equal(looksLikeEmail(bad), false, `${bad} should be refused`);
+  }
+});
+
+test('a domain that merely looks like one is not refused', () => {
+  // `example.dev` is a real domain someone can own, and `testing.com` is not a
+  // reserved name. The rule is the standard's list, not anything that reads
+  // like a test.
+  for (const good of ['someone@example.dev', 'someone@testing.com', 'someone@invalid-name.com']) {
+    assert.equal(looksLikeEmail(good), true, `${good} should pass`);
   }
 });
 

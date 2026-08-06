@@ -7,19 +7,27 @@
   export const prerender = false;
 
   /**
-   * `sendConfirmation` returns its failures rather than throwing, so that a
-   * caller who wanted to carry on could. This one does not: nothing downstream
-   * can act on it, and a send that quietly fails is a subscriber who never
-   * hears from us and never knows why. Thrown here, it reaches `onError` with
-   * the request that caused it.
+   * Awaited, not handed to `ctx.after`.
+   *
+   * It was `after` first, which is what that exists for: the reader does not
+   * care about the mail API and should not wait on it. Measured, though, four
+   * posts in a burst produced two sends and no errors. Work given to `waitUntil`
+   * is kept alive on a best effort, and best effort is the wrong promise for the
+   * only message this form exists to send. A subscriber who never gets it has no
+   * way to ask again except to guess.
+   *
+   * So the reader waits for one API call, and finds out if it failed. `after` is
+   * still the right tool for something nobody is owed.
    *
    * @param {{ email: string, token: string, origin: string }} about
+   * @returns {Promise<boolean>} whether the mail is on its way
    */
-  async function sendOrReport(about) {
+  async function sendNow(about) {
     const { sent, reason } = await sendConfirmation(about);
-    if (!sent && reason !== 'no key') {
-      throw new Error(`[subscribe] confirmation to ${about.email} was not sent: ${reason}`);
-    }
+    if (sent || reason === 'no key') return true;
+
+    console.error(`[subscribe] confirmation to ${about.email} was not sent: ${reason}`);
+    return false;
   }
 
   const STATES = {
@@ -43,6 +51,11 @@
       lede: 'That was more signups from one place than this form takes.',
       body: 'Wait a minute and try again. Nothing was stored and nothing was sent.',
     },
+    nomail: {
+      heading: 'Stored, but the mail did not go',
+      lede: 'Your address is on the list and the confirmation could not be sent.',
+      body: 'Try again in a minute. Signing up twice is safe and sends a fresh link.',
+    },
     nodb: {
       heading: 'Not here',
       lede: 'This copy of the site has no subscriber database.',
@@ -59,7 +72,7 @@
    * Post, redirect, get. A reload after this re-runs the redirect rather than
    * the write, and the outcome is a URL that can be linked to.
    */
-  export const POST = async ({ request, url, after }) => {
+  export const POST = async ({ request, url }) => {
     // The request's own origin, not `absolute()`. That one resolves against
     // `metadataBase`, which is what a canonical link wants and would send a
     // form on localhost to the live site.
@@ -95,9 +108,13 @@
     // response, and everywhere else the promise finishes on its own. A failure
     // goes to `onError` with the request, and the address is already recorded,
     // so it can be sent again.
-    if (!already) after(sendOrReport({ email, token, origin: here }));
+    if (already) return Response.redirect(`${here}/subscribe?state=already`, 303);
 
-    return Response.redirect(`${here}/subscribe?state=${already ? 'already' : 'check'}`, 303);
+    // The row is written either way. If the mail did not go, say so rather than
+    // sending the reader to an inbox to wait for nothing.
+    const sent = await sendNow({ email, token, origin: here });
+
+    return Response.redirect(`${here}/subscribe?state=${sent ? 'check' : 'nomail'}`, 303);
   };
 </script>
 

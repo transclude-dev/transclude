@@ -6,17 +6,22 @@
   export const prerender = false;
 
   /**
-   * Adding the contact is not this page's answer, so it does not wait for it,
-   * and a failure has to be loud somewhere. Thrown, it reaches `onError` with
-   * the request. The row in D1 already says the person confirmed, so a failure
-   * here is a contact to add by hand rather than consent that was lost.
+   * Awaited, for the same reason the confirmation mail is.
+   *
+   * This was `ctx.after` and it is where the problem showed first: the row said
+   * confirmed and Resend held no contact. Work handed to `waitUntil` is kept
+   * alive on a best effort, and the audience is what every broadcast goes to, so
+   * losing this is a subscriber who confirmed and then hears nothing ever again.
+   *
+   * D1 still holds the consent, so a failure here is recoverable by hand. It is
+   * only recoverable by someone who knows, which is what the log is for.
    *
    * @param {string} email
    */
-  async function addOrReport(email) {
+  async function addToAudience(email) {
     const { added, reason } = await addContact(email);
     if (!added && reason !== 'not configured' && reason !== 'already a contact') {
-      throw new Error(`[confirm] ${email} confirmed but was not added to the audience: ${reason}`);
+      console.error(`[confirm] ${email} confirmed but was not added to the audience: ${reason}`);
     }
   }
 
@@ -26,14 +31,14 @@
    * The token is single use, so a prefetcher following it does what the reader
    * was going to do anyway.
    */
-  export default async ({ url, after }) => {
+  export default async ({ url }) => {
     const token = new URL(url).searchParams.get('token') ?? '';
     const email = token ? await confirm(token) : null;
 
     // `confirm` answers with an address only on the move from pending to
     // confirmed, and the token is spent doing it. So this runs once per person
     // however many times the link is followed.
-    if (email) after(addOrReport(email));
+    if (email) await addToAudience(email);
 
     return { email };
   };

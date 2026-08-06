@@ -35,15 +35,27 @@ export function newToken() {
 }
 
 /**
+ * Domains reserved by RFC 2606 and RFC 6761. No mail server will ever answer
+ * for one, so an address at any of them is a typo or a test, and either way
+ * sending to it buys a bounce against the domain doing the sending.
+ *
+ * This is the only thing the check is strict about, and it is strict because
+ * the rule comes from a standard rather than from a guess about what an address
+ * looks like.
+ */
+const UNREACHABLE = /@(example\.(com|net|org)|.*\.(test|invalid|localhost|example))$/i;
+
+/**
  * Whether this looks like an address worth storing.
  *
- * Deliberately loose. The real check is whether the confirmation mail arrives,
- * and a stricter pattern rejects valid addresses for no gain.
+ * Deliberately loose otherwise. The real check is whether the confirmation mail
+ * arrives, and a stricter pattern rejects valid addresses for no gain.
  *
  * @param {string} email
  * @returns {boolean}
  */
-export const looksLikeEmail = (email) => /^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(email);
+export const looksLikeEmail = (email) =>
+  /^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(email) && !UNREACHABLE.test(email);
 
 /**
  * Records a signup and returns its token.

@@ -23,7 +23,10 @@ table, and any fragment of a page is a URL of its own.
 The same app runs on Node, Bun, Deno and workerd, the runtime behind
 Cloudflare Workers, and ships no client JavaScript by default.
 
-**[transclude.dev](https://transclude.dev)** has the documentation.
+**[transclude.dev](https://transclude.dev)** has the documentation, and
+[every example is running](https://transclude.dev/docs/examples).
+[todomvc.transclude.dev](https://todomvc.transclude.dev) ships zero bytes of
+JavaScript, which is easier to believe with the page open.
 
 ```sh
 npm create @transclude my-app
@@ -127,15 +130,23 @@ npm run check:src     # type-check the framework itself
 ```
 
 `examples/` holds apps built against this package the same way any other project
-would be. `todomvc` is TodoMVC with forms and no client JavaScript, `blog` is a
-prerendered site with a sitemap and a feed, `search` swaps a fragment into a
-page that works without it, `htmx` does the same with htmx and the
-`HX-Target` header, `includes` shows transclusion from three sources,
-`auth` guards a section with a layout and a signed cookie, `live` pushes
-updates over server-sent events, `elements` puts a light and a shadow element
-side by side, and `showcase` uses every feature and is where the
-browser checks live, because those need an app to run against. `www/` is the site at transclude.dev: a landing page, the
-documentation under `/docs`, and itself built with the framework.
+would be. Every one of them is deployed, from the same source you would clone.
+
+| Example | What it proves | Running |
+| --- | --- | --- |
+| `todomvc` | Seven actions, one POST handler, zero bytes of JavaScript | [todomvc.transclude.dev](https://todomvc.transclude.dev) |
+| `search` | A fragment that is a substring of the document it came from | [search.transclude.dev](https://search.transclude.dev) |
+| `blog` | Markdown to files, with a sitemap and a feed | [blog.transclude.dev](https://blog.transclude.dev) |
+| `htmx` | htmx and this framework, each doing its own half | [htmx.transclude.dev](https://htmx.transclude.dev) |
+| `includes` | One piece of markup rendered in more than one place | [includes.transclude.dev](https://includes.transclude.dev) |
+| `auth` | A section behind a layout and a signed cookie | [auth.transclude.dev](https://auth.transclude.dev) |
+| `live` | Server-sent events into a fragment | [live.transclude.dev](https://live.transclude.dev) |
+| `elements` | A light element and a shadow one, side by side | [elements.transclude.dev](https://elements.transclude.dev) |
+| `showcase` | Every feature at once, and where the browser checks live | [showcase.transclude.dev](https://showcase.transclude.dev) |
+
+The browser checks are in `showcase` because they need an app to run against.
+`www/` is the site at transclude.dev: a landing page, the documentation under
+`/docs`, the writing under `/blog`, and itself built with the framework.
 
 ### Trying the CLI against this checkout
 

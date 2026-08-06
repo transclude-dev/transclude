@@ -17,6 +17,22 @@ on:
   push:
     tags: ['v*']
 
+  # The same job, started by hand, for when the tag push does not start it.
+  #
+  #   gh workflow run publish.yml --ref v0.8.1
+  #
+  # Added after a tag push produced a run that queued forever and could not be
+  # cancelled, rerun or drained: `gh run cancel` called it completed, `gh run
+  # rerun` called it already running, and `gh run list` called it queued. Nothing
+  # restarts a push event, and deleting and re-pushing the tag fired nothing.
+  #
+  # Dispatch against the tag, not against a branch. Everything below reads the
+  # version from `GITHUB_REF_NAME`, which is whichever ref this was started on,
+  # and the check that the tag and the manifests agree is what catches the
+  # mistake: dispatched from `main` it compares `main` against `0.8.1` and stops
+  # before anything is published.
+  workflow_dispatch:
+
 jobs:
   publish:
     runs-on: ubuntu-latest

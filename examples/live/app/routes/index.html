@@ -39,6 +39,24 @@
   <li class="count">${listeners} window${listeners === 1 ? '' : 's'} listening.</li>
 </ul>
 
+<p class="shared-note">
+  The board lives in memory on the server, so everyone looking at this page
+  shares it and a restart empties it. That is the point of the example rather
+  than a shortcut in it: swap <code>app/data/board.js</code> for a database
+  and nothing above it changes.
+</p>
+
+<style>
+  .shared-note {
+    margin: 2rem auto 0;
+    max-width: 34rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    text-align: center;
+    opacity: 0.7;
+  }
+</style>
+
 <script type="module">
   // The whole client. It listens for a nudge and asks for the fragment; the
   // stream carries no markup, because the list already has a URL.

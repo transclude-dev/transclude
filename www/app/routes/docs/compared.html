@@ -1,0 +1,271 @@
+<script server>
+  import { all } from '../../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      astro: [
+        `---
+// Astro: the island ships a framework runtime for this one component.
+import Counter from '../components/Counter.jsx';
+---
+<Counter client:load />`,
+        'html',
+      ],
+
+      here: [
+        `<!-- transclude: the server re-renders the piece, and nothing ships -->
+<ul id="list" fragment>
+  <li each="note of notes">\${note.text}</li>
+</ul>`,
+        'html',
+      ],
+
+      enhance: [
+        `// Enhance: an element is a function returning a template string
+export default function MyMessage({ html, state }) {
+  return html\`<p>\${state.attrs.message}</p>\`;
+}`,
+        'js',
+      ],
+
+      element: [
+        `<!-- transclude: app/elements/my-message.html -->
+<script properties>
+  export default { message: '' };
+<\/script>
+
+<p>\${message}</p>`,
+        'html',
+      ],
+    }),
+  });
+</script>
+
+<title>Compared to other tools · transclude</title>
+<meta
+  name="description"
+  content="Where transclude differs from Astro, Enhance, htmx, Eleventy and Nue, and where each of them is the better answer."
+/>
+
+<doc-page
+  heading="Compared to other tools"
+  lede="Where this differs from the tools it sits nearest, and where each of those is the better answer."
+>
+  <p>
+    Every tool here is good, and some of them are older and better supported
+    than this one. The differences below are real, and none of them is a
+    complaint.
+  </p>
+
+  <doc-note label="One thing to check first">
+    If you want a client application, none of this is for you and neither is
+    this framework. React, Svelte and their frameworks exist because some
+    problems really are applications. This is for the far larger set of pages
+    that are not.
+  </doc-note>
+
+  <h2>Astro</h2>
+
+  <p>
+    The nearest in spirit. Both send HTML, both prerender what they can, and
+    both treat client JavaScript as something you opt into.
+  </p>
+
+  <p>
+    The difference is what happens when a piece of the page has to change.
+    Astro's answer is an island: a component that hydrates in the browser, which
+    means shipping the runtime of whatever framework wrote it.
+  </p>
+
+  ${html(s.astro)}
+
+  <p>
+    This framework has no islands. A piece of the page is a URL, the server
+    renders it, and what comes back is markup.
+  </p>
+
+  ${html(s.here)}
+
+  <p>
+    <strong>Astro is better</strong> for a large ecosystem, MDX, content
+    collections and image handling. It also lets you drop a React component in
+    and stop thinking about it. This has none of that.
+  </p>
+
+  <p>
+    <strong>This is better</strong> when the interaction is a form, or a swap
+    of server-rendered markup. Nothing has to be shipped to get either.
+  </p>
+
+  <h2>Enhance</h2>
+
+  <p>
+    The closest thing to this that exists, and worth reading before you pick
+    either. HTML-first, custom elements, light DOM, server-rendered, progressive
+    enhancement as the default rather than a mode.
+  </p>
+
+  <p>
+    We agree on most of it. Two things differ. An Enhance element is a JavaScript
+    function returning a template string.
+  </p>
+
+  ${html(s.enhance)}
+
+  <p>An element here is an HTML file, compiled.</p>
+
+  ${html(s.element)}
+
+  <p>
+    The second difference is the fragment. Enhance has no equivalent of marking
+    an element and getting a URL for it, so a partial response is a route you
+    write. That is a small thing until it is the fifth one.
+  </p>
+
+  <p>
+    <strong>Enhance is better</strong> when you want something older with a
+    company behind it, a worked-out design system story, and hosting that knows
+    the framework. It is the safer choice today and I would not argue otherwise.
+  </p>
+
+  <p>
+    <strong>This is better</strong> if you want the element to be a file a
+    designer can open. Or if fragments as URLs is what you came for.
+  </p>
+
+  <h2>htmx</h2>
+
+  <p>
+    Not a competitor. htmx swaps HTML into a page, and this framework ships
+    nothing that swaps.
+  </p>
+
+  <p>
+    What htmx needs is a server that returns fragments of HTML. Writing those
+    is usually the work. A partial template, a route to serve it, and a second
+    copy of the markup that can drift from the first.
+  </p>
+
+  <p>
+    Here the fragment is the same compiled markup as the page, on a URL. So the
+    two compose well, and one of the examples is exactly that.
+  </p>
+
+  <p>
+    <strong>Use htmx</strong> with whatever server you already have. If that
+    server is this one, you write less of the other half.
+  </p>
+
+  <h2>Eleventy</h2>
+
+  <p>
+    A static site generator, and a very good one. It builds files, it is
+    template-language agnostic, and it needs no server at all.
+  </p>
+
+  <p>
+    The overlap is prerendering, which both do. The difference is everything
+    after it: forms that post, loaders that run per request, actions, cookies
+    and sessions.
+  </p>
+
+  <p>
+    <strong>Eleventy is better</strong> for a content site that never needs a
+    server. It has more plugins, more templating choices, and a deployment story
+    that is just files.
+  </p>
+
+  <p>
+    <strong>This is better</strong> when part of the site has to answer a
+    POST. Doing that with a generator means adding a second system.
+  </p>
+
+  <h2>Nue</h2>
+
+  <p>
+    Standards-first, like this one, and more serious about CSS and design than
+    this one is. It treats content, layout and style as separate concerns and
+    holds that line carefully.
+  </p>
+
+  <p>
+    <strong>Nue is better</strong> if the design system is the hard part of your
+    project, or if you want opinions about content structure. Its answers there
+    are more developed than anything here.
+  </p>
+
+  <p>
+    <strong>This is better</strong> if the server half is the hard part.
+    Routes that load data, forms that write it, pieces of a page that update.
+  </p>
+
+  <h2>Next, Remix, SvelteKit and the rest</h2>
+
+  <p>
+    These are how most people build server-rendered pages, and they are good at
+    it. Each one is also a client framework, so the page arrives and then the
+    same UI is built a second time in the browser.
+  </p>
+
+  <p>
+    That buys real things: client routing, optimistic updates, and a component
+    model that works in both places. It costs a runtime download and a second
+    copy of the state.
+  </p>
+
+  <p>
+    <strong>They are better</strong> for an application: a dashboard, an editor,
+    anything where the page is a shell around a long session.
+  </p>
+
+  <p>
+    <strong>This is better</strong> for a document that has some behaviour, which
+    is what most of the web is.
+    <a href="/docs/why">Why transclude</a> is the longer version of that
+    argument.
+  </p>
+
+  <h2>The short version</h2>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>If you want</th>
+          <th>Use</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>A rich client application</td>
+          <td>Next, Remix, SvelteKit</td>
+        </tr>
+        <tr>
+          <td>A content site with a big ecosystem</td>
+          <td>Astro</td>
+        </tr>
+        <tr>
+          <td>Files only, no server</td>
+          <td>Eleventy</td>
+        </tr>
+        <tr>
+          <td>A design system to be the centre</td>
+          <td>Nue</td>
+        </tr>
+        <tr>
+          <td>HTML-first with a company behind it</td>
+          <td>Enhance</td>
+        </tr>
+        <tr>
+          <td>Any element to be a URL, and no runtime shipped</td>
+          <td>this</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <doc-note label="These change">
+    Every project here is worked on, and some of what is written above will go
+    out of date. Check theirs before you decide, not only this page.
+  </doc-note>
+</doc-page>

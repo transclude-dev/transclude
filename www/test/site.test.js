@@ -154,11 +154,21 @@ test('the docs content comes before the nav in the document', () => {
 // checked rather than remembered. The prose of a page is its paragraphs, its
 // notes and its lede; a table cell and a code sample are not prose.
 function prose(source) {
-  // A file with no doc-page has no prose to read. `slice(-1)` would hand back
-  // its last character and quietly find nothing.
-  const start = source.indexOf('<doc-page');
-  const body = start === -1 ? '' : source.slice(start);
-  const found = [...body.matchAll(/<(?:p|doc-note[^>]*)>([\s\S]*?)<\/(?:p|doc-note)>/g)].map(
+  // Where the readable part starts. A docs page opens with `<doc-page>`; the
+  // landing page has none and opens with its hero.
+  //
+  // It used to be `<doc-page>` alone, which meant the landing page was checked
+  // for nothing but its lede. That is the page most people read, and it was
+  // carrying a 28-word sentence while every docs page was held to the rule.
+  const start = [source.indexOf('<doc-page'), source.indexOf('<div class="hero"')].filter(
+    (at) => at !== -1,
+  );
+  const body = start.length ? source.slice(Math.min(...start)) : '';
+  // `<p class="lede">` is prose too. The pattern used to be `<(?:p|doc-note[^>]*)>`,
+  // where the `[^>]*` belonged to `doc-note` alone, so a `p` with any attribute
+  // at all was skipped. Every `class` on a paragraph was a paragraph nobody
+  // checked, on every page.
+  const found = [...body.matchAll(/<(?:p|doc-note)(?:\s[^>]*)?>([\s\S]*?)<\/(?:p|doc-note)>/g)].map(
     ([, text]) => text,
   );
   const lede = source.match(/lede="([^"]*)"/)?.[1];

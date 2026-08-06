@@ -648,3 +648,56 @@ test('an interpolation elsewhere in the style does not excuse a written-out name
     /view-transition-name/,
   );
 });
+
+// ---- script data blocks ----------------------------------------------------
+//
+// A `<script>` whose type the browser does not run is a data block: an import
+// map, JSON-LD, hand-written speculation rules, a template a library reads.
+// Every one of them was classified as a client module and compiled, which meant
+// swallowed. Found by asking whether a hyperscript `behavior` block would
+// survive, which it did not, and neither did anything else of that shape.
+
+test('a script the browser does not execute is markup', () => {
+  for (const type of ['application/ld+json', 'importmap', 'speculationrules', 'text/hyperscript']) {
+    const source = `<script type="${type}">{"a":1}</script>`;
+    const blocks = splitBlocks(source);
+
+    assert.equal(blocks.client.length, 0, `${type} was read as client code`);
+    assert.equal(blocks.nodes.length, 1, `${type} did not survive as markup`);
+  }
+});
+
+test('a data block reaches the page with its contents intact', () => {
+  // Raw text, so none of it is escaped and none of it is reformatted.
+  assert.equal(
+    render('<script type="application/ld+json">{"@type":"Article"}</script>'),
+    '<script type="application/ld+json">{"@type":"Article"}</script>',
+  );
+});
+
+test('a script that is JavaScript is still compiled', () => {
+  // The other half. Widening this rule until it caught `type="module"` would
+  // stop every client block in the project from being compiled at all.
+  for (const open of ['<script>', '<script type="module">', '<script type="text/javascript">']) {
+    const blocks = splitBlocks(`${open}console.log(1)<\/script>`);
+
+    assert.equal(blocks.client.length, 1, `${open} stopped being client code`);
+    assert.equal(blocks.nodes.length, 0, `${open} was emitted as markup`);
+  }
+});
+
+test('a marked block wins over its type, so `head` still means head', () => {
+  const blocks = splitBlocks('<script head type="text/hyperscript">behavior R end<\/script>');
+
+  assert.equal(blocks.head.length, 1);
+  assert.equal(blocks.nodes.length, 0);
+});
+
+test('interpolating into a data block is still refused', () => {
+  // Being markup does not make it safe. It is raw text, so a value could close
+  // the element or the statement it sits in, and the existing guard covers it.
+  assert.throws(
+    () => compile('<script type="application/ld+json">{"h":"${title}"}<\/script>'),
+    /written to the page as code/,
+  );
+});

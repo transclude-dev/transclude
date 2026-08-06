@@ -125,6 +125,15 @@ against.
   form answered, the reader was told to check their inbox, and the row went to a
   dev fallback instead of D1. Found on the live site, not in a test. The
   runtimes page and the skill both teach the symbol now.
+- **A `<script>` with a non-JavaScript type is markup, not a client block.**
+  `splitBlocks` reads anything without a marker as client code to compile, which
+  swallowed every data block: JSON-LD, import maps, hand-written speculation
+  rules, a hyperscript `behavior`. `isDataBlock` sends those to `nodes` for the
+  same reason a `src` goes there, and the JS list is `''`, `module`,
+  `text/javascript`, `application/javascript`. Widening it until `module` matched
+  would stop every client block in a project from compiling, which is what one
+  falsification does on purpose. Interpolation into one is still refused by
+  `assertRawTextSafe`, since being markup does not make raw text safe.
 - **The dev server builds its own `ctx` too, and `test/context-shape.test.js` is
   what notices.** `ctx.after` shipped in 0.7.0 and was undefined in dev, so a form
   calling it worked in the build and threw `after is not a function` while you

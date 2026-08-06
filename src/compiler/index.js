@@ -92,6 +92,25 @@ export function readFlags(source, label = 'element') {
 }
 
 /**
+ * Script types the browser executes. Everything else is a data block.
+ *
+ * The list is the HTML spec's, minus the legacy spellings nobody writes. An
+ * absent `type` is a classic script, `module` is a module, and both are code.
+ * `importmap` is not executed either, but the browser reads it, which is the
+ * same reason to emit it rather than compile it.
+ *
+ * @param {{ attrs?: Array<{ name: string, value: string }> }} node
+ * @returns {boolean} whether this script holds data rather than code
+ */
+function isDataBlock(node) {
+  const type = node.attrs?.find((attr) => attr.name === 'type')?.value;
+  if (type === undefined) return false;
+
+  const JS = ['', 'module', 'text/javascript', 'application/javascript'];
+  return !JS.includes(type.trim().toLowerCase());
+}
+
+/**
  * Top-level <script>/<style> blocks are pulled out; everything else is template.
  *
  *   <script server>      data loading, page only
@@ -162,6 +181,12 @@ export function splitBlocks(source) {
       // with nothing said. A nested `<script src>` was always markup; only a
       // top-level one went missing.
       else if (attrs.has('src')) out.nodes.push(node);
+      // A type the browser does not run as JavaScript makes this a data block,
+      // which is markup for the same reason a `src` is: there is no code here to
+      // compile. Import maps, JSON-LD, speculation rules written by hand and
+      // whatever a library reads out of the document were all swallowed, because
+      // anything without a marker was read as a client module.
+      else if (isDataBlock(node)) out.nodes.push(node);
       else out.client.push(block);
       continue;
     }

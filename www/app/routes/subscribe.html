@@ -1,6 +1,7 @@
 <script server>
   import { add, looksLikeEmail } from '../lib/subscribers.js';
   import { sendConfirmation } from '../lib/mail.js';
+  import { withinLimit } from '../lib/limit.js';
 
   // It writes to a database and reads a query parameter, so it is not a file.
   export const prerender = false;
@@ -37,6 +38,11 @@
       lede: 'Try it again?',
       body: 'Nothing was stored.',
     },
+    slow: {
+      heading: 'Too many, too fast',
+      lede: 'That was more signups from one place than this form takes.',
+      body: 'Wait a minute and try again. Nothing was stored and nothing was sent.',
+    },
     nodb: {
       heading: 'Not here',
       lede: 'This copy of the site has no subscriber database.',
@@ -58,6 +64,12 @@
     // `metadataBase`, which is what a canonical link wants and would send a
     // form on localhost to the live site.
     const here = new URL(url).origin;
+
+    // Before the body is read and before anything is written. A flood costs a
+    // send apiece under double opt-in, so the cheapest place to stop is first.
+    if (!(await withinLimit(request))) {
+      return Response.redirect(`${here}/subscribe?state=slow`, 303);
+    }
 
     const form = await request.formData();
     const email = String(form.get('email') ?? '')

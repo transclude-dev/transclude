@@ -48,6 +48,21 @@
   //
   // A binding reaches a loader through `app/lib/bindings.js`, because `ctx` has
   // no `env`. See /docs/runtimes.
+  // Five posts a minute from one address. Double opt-in means a flood of them
+  // makes us mail strangers, so what this protects is the sending reputation
+  // rather than the table. `namespace_id` is a number this account picks and
+  // keeps; it is not secret and it is not looked up anywhere.
+  "unsafe": {
+    "bindings": [
+      {
+        "name": "SIGNUP_LIMIT",
+        "type": "ratelimit",
+        "namespace_id": "1001",
+        "simple": { "limit": 5, "period": 60 }
+      }
+    ]
+  },
+
   "d1_databases": [
     {
       "binding": "SUBSCRIBERS",

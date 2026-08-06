@@ -20,5 +20,19 @@
   "routes": [
     { "pattern": "transclude.dev", "custom_domain": true },
     { "pattern": "www.transclude.dev", "custom_domain": true }
+  ],
+
+  // The subscriber list. Schema in `schema.sql`:
+  //
+  //   wrangler d1 execute transclude-subscribers --remote --file schema.sql
+  //
+  // A binding reaches a loader through `app/lib/bindings.js`, because `ctx` has
+  // no `env`. See /docs/runtimes.
+  "d1_databases": [
+    {
+      "binding": "SUBSCRIBERS",
+      "database_name": "transclude-subscribers",
+      "database_id": "e78f3300-af74-4ab2-8105-c10a9b0c3ca4"
+    }
   ]
 }

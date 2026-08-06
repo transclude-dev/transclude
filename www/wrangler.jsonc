@@ -22,9 +22,14 @@
   // a domain it cannot sign for is refused at send time, which is after the
   // reader has been told to check their inbox, so changing it means sending one
   // and reading the log rather than assuming.
+  // `RESEND_AUDIENCE_ID` is the list a confirmed address is added to, and it is
+  // an identifier rather than a secret. Empty until an audience exists: without
+  // one the confirm page still confirms, and says in the log that it added
+  // nobody. Create one at resend.com/audiences and paste the id here.
   "vars": {
     "MAIL_FROM": "transclude <admin@dakroub.co>",
-    "MAIL_REPLY_TO": "admin@dakroub.co"
+    "MAIL_REPLY_TO": "admin@dakroub.co",
+    "RESEND_AUDIENCE_ID": ""
   },
 
   // Both hostnames answer, and `app/server.js` sends www to the apex, which is

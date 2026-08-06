@@ -112,3 +112,56 @@ export async function sendConfirmation({ email, token, origin }) {
   // and a domain that is not verified yet.
   return { sent: false, reason: `${res.status} ${(await res.text()).slice(0, 200)}` };
 }
+
+/**
+ * Adds a confirmed address to the audience the broadcasts go to.
+ *
+ * The split is the point. D1 says whether someone confirmed, and it is the
+ * consent record. Resend says whether they still want it, because unsubscribing
+ * happens in the footer of a message and never comes back through this site.
+ * Neither mirrors the other, so there is one authority for each question.
+ *
+ * Which is why an address already known to Resend is left exactly as it is. A
+ * contact who unsubscribed and later signs up again would otherwise be pushed
+ * back in as subscribed, and re-subscribing someone who opted out is the one
+ * mistake here with a legal shape.
+ *
+ * @param {string} email an address that has just confirmed
+ * @returns {Promise<{ added: boolean, reason?: string }>}
+ */
+export async function addContact(email) {
+  const env = bindings();
+  const key = env?.RESEND_API_KEY;
+  const audience = env?.RESEND_AUDIENCE_ID;
+
+  if (!key || !audience) {
+    console.log(`[confirm] no ${key ? 'RESEND_AUDIENCE_ID' : 'RESEND_API_KEY'}, so ${email} was not added`);
+    return { added: false, reason: 'not configured' };
+  }
+
+  const base = `https://api.resend.com/audiences/${audience}/contacts`;
+  const headers = { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
+
+  // Asked before written. Resend's create would answer for an address it
+  // already holds, and what it does with the unsubscribed flag is its business
+  // rather than something to find out on a real person.
+  const held = await fetch(`${base}/${encodeURIComponent(email)}`, { headers });
+  if (held.ok) {
+    console.log(`[confirm] resend already holds ${email}, left as it is`);
+    return { added: false, reason: 'already a contact' };
+  }
+
+  const res = await fetch(base, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ email, unsubscribed: false }),
+  });
+
+  if (!res.ok) {
+    return { added: false, reason: `${res.status} ${(await res.text()).slice(0, 200)}` };
+  }
+
+  const { id } = await res.json().catch(() => ({}));
+  console.log(`[confirm] resend added ${email} as ${id ?? 'an unnamed contact'}`);
+  return { added: true };
+}

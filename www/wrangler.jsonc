@@ -18,13 +18,12 @@
   // Resend has to hold a verified domain for whatever `MAIL_FROM` names. An
   // address on a domain it cannot sign for is refused when the mail is sent,
   // which is after the reader has already been told to check their inbox.
-  // `transclude.dev` is the domain Resend holds. Sending as `admin@dakroub.co`
-  // was tried and refused: "The dakroub.co domain is not verified", which
-  // arrives at send time, after the reader has been told to check their inbox.
-  // Verify that domain at resend.com/domains and this becomes one line and a
-  // deploy. Replies already go there.
+  // Resend has to hold a verified domain for whatever this names. An address on
+  // a domain it cannot sign for is refused at send time, which is after the
+  // reader has been told to check their inbox, so changing it means sending one
+  // and reading the log rather than assuming.
   "vars": {
-    "MAIL_FROM": "transclude <notes@transclude.dev>",
+    "MAIL_FROM": "transclude <admin@dakroub.co>",
     "MAIL_REPLY_TO": "admin@dakroub.co"
   },
 

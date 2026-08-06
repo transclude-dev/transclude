@@ -98,7 +98,15 @@ export async function sendConfirmation({ email, token, origin }) {
     }),
   });
 
-  if (res.ok) return { sent: true };
+  if (res.ok) {
+    // Resend answers with the id it filed the message under. Logged, because
+    // "accepted" and "delivered" are different claims: a message it took and
+    // then bounced looks exactly like one that arrived, and the id is the only
+    // way to ask which happened.
+    const { id } = await res.json().catch(() => ({}));
+    console.log(`[subscribe] resend accepted ${email} as ${id ?? 'an unnamed message'}`);
+    return { sent: true, id };
+  }
 
   // The body carries Resend's reason, and it is the difference between a bad key
   // and a domain that is not verified yet.

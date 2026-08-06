@@ -31,6 +31,7 @@ import { nodeLookup } from '../src/lookup.js';
 import { feed, feedPath, feedType } from '../src/feed.js';
 import { sitemap } from '../src/sitemap.js';
 import { documentStore, PROXY_PATH, proxyHandler } from '../src/proxy.js';
+import { afterFor } from '../src/after.js';
 
 const { root, config } = await loadProject();
 const routesDir = resolveRoutesDir(path.join(root, config.appDir), config.routesDir);
@@ -142,6 +143,17 @@ const contextFor = (route, c, extra = {}) => ({
   // is right for a form, and wrong for a caller that asked for markup.
   fragment: fragmentOf(c),
   action: null,
+
+  // Nothing is held between requests here, so there is nothing to drop. A
+  // no-op rather than an omission: an action calling this is correct code, and
+  // it should not throw in dev and work in production.
+  revalidateTag: () => {},
+
+  // Node keeps running after a response, so this only has to handle the
+  // rejection. `console.error` rather than `config.onError`, which the dev
+  // server does not use for anything else either.
+  after: afterFor(c, (error) => console.error('[transclude] ctx.after:', error)),
+
   ...withResponse(c, extra),
 });
 

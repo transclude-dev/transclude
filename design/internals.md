@@ -117,6 +117,16 @@ against.
   paints itself on connect. `__fragment` threads through both `emitShadow` and
   `emitLight`. Drop it from the second one and a shadow element inside a light one emits
   a shadow root nobody will process.
+- **The dev server builds its own `ctx` too, and `test/context-shape.test.js` is
+  what notices.** `ctx.after` shipped in 0.7.0 and was undefined in dev, so a form
+  calling it worked in the build and threw `after is not a function` while you
+  were writing it. `revalidateTag` had been the same since it was added. Four
+  files carry the field list: `src/app.js`, `bin/dev.js`, `src/prerender.js` and
+  the literal in `src/typecheck.js`. Adding a field means all four and the list in
+  that test. It is a text check, because `bin/dev.js` starts a server when it is
+  imported and nothing can build its context and look. It reads the files with
+  comments stripped, since the first version was satisfied by prose containing
+  the word "after".
 - **The dev server mounts its own routes, so `createApp` is not the only list.**
   `bin/dev.js` builds a Hono app with `baseApp` and registers what it needs.
   Anything `createApp` mounts from config has to be added there too, or it works

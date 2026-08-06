@@ -1,8 +1,25 @@
 <script server>
   import { add, looksLikeEmail } from '../lib/subscribers.js';
+  import { sendConfirmation } from '../lib/mail.js';
 
   // It writes to a database and reads a query parameter, so it is not a file.
   export const prerender = false;
+
+  /**
+   * `sendConfirmation` returns its failures rather than throwing, so that a
+   * caller who wanted to carry on could. This one does not: nothing downstream
+   * can act on it, and a send that quietly fails is a subscriber who never
+   * hears from us and never knows why. Thrown here, it reaches `onError` with
+   * the request that caused it.
+   *
+   * @param {{ email: string, token: string, origin: string }} about
+   */
+  async function sendOrReport(about) {
+    const { sent, reason } = await sendConfirmation(about);
+    if (!sent && reason !== 'no key') {
+      throw new Error(`[subscribe] confirmation to ${about.email} was not sent: ${reason}`);
+    }
+  }
 
   const STATES = {
     check: {
@@ -36,7 +53,7 @@
    * Post, redirect, get. A reload after this re-runs the redirect rather than
    * the write, and the outcome is a URL that can be linked to.
    */
-  export const POST = async ({ request, url }) => {
+  export const POST = async ({ request, url, after }) => {
     // The request's own origin, not `absolute()`. That one resolves against
     // `metadataBase`, which is what a canonical link wants and would send a
     // form on localhost to the live site.
@@ -59,7 +76,14 @@
     }
 
     const source = String(form.get('source') ?? new URL(url).pathname);
-    const { already } = await add(email, source);
+    const { token, already } = await add(email, source);
+
+    // The row is written. The mail is work the reader does not wait for, which
+    // is what `ctx.after` is: on workerd it holds the isolate open past this
+    // response, and everywhere else the promise finishes on its own. A failure
+    // goes to `onError` with the request, and the address is already recorded,
+    // so it can be sent again.
+    if (!already) after(sendOrReport({ email, token, origin: here }));
 
     return Response.redirect(`${here}/subscribe?state=${already ? 'already' : 'check'}`, 303);
   };

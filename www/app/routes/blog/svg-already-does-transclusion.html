@@ -20,9 +20,14 @@
   <path d="M2 8l4 4 8-8" fill="none" stroke="currentColor" stroke-width="2" />
 </svg>`,
       img: `<img src="/header.html" />`,
-      fetchIt: `const res = await fetch('/notes');
+      // `all()` reads `html` when no language is given, and the four above are
+      // markup. This one is not, and read as markup it came out unhighlighted.
+      fetchIt: [
+        `const res = await fetch('/notes');
 const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
 document.querySelector('#list').replaceWith(doc.querySelector('#list'));`,
+        'js',
+      ],
     }),
   });
 </script>

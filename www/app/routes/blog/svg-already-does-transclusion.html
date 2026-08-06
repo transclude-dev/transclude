@@ -104,9 +104,21 @@ document.querySelector('#list').replaceWith(doc.querySelector('#list'));`,
   </p>
 
   <p>
-    HTML Imports tried and were removed. They were tied to the component story
-    of the time, and when that story changed they went with it. What is left is
-    a gap where a plain declarative include should be.
+    <a href="https://web.dev/articles/imports">HTML Imports</a> came closest.
+    <code>&lt;link rel="import" href="/header.html"&gt;</code> loaded a document,
+    and Chrome removed it in February 2020.
+  </p>
+
+  <p>
+    Even they were not this. An import loaded the file and stopped. The content
+    did not appear anywhere: you reached into <code>link.import</code> and cloned
+    the nodes you wanted. Declarative loading, imperative insertion.
+  </p>
+
+  <p>
+    So the gap where a plain declarative include should be has never had anything
+    in it. The one shipped feature that renders a named piece of another document
+    in place is still <code>&lt;use&gt;</code>, and it still only does shapes.
   </p>
 
   <h2>What everyone does instead</h2>

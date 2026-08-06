@@ -43,10 +43,7 @@ npm run dev`,
   <button>Add</button>
 </form>
 
-<ul id="list">
-  <li each="note of notes">\${note.text}</li>
-</ul>`,
-        region: `<ul id="list" fragment>
+<ul id="list" fragment>
   <li each="note of notes">\${note.text}</li>
 </ul>`,
       }),
@@ -157,22 +154,22 @@ npm run dev`,
 
   /* Answers the question the sample above it raises, so it reads as a note on
      the code rather than as the next thing to say. */
-  .band .aside {
+  .route .aside {
     margin: 1.75rem 0 0;
     font-size: 0.95rem;
   }
 
-  .regions {
+  .route {
     max-width: 46rem;
     margin: 0 auto;
     padding: 3.5rem 1.25rem 1rem;
   }
-  .regions h2 {
+  .route h2 {
     font-family: var(--serif);
     font-size: 1.5rem;
     margin: 0 0 0.75rem;
   }
-  .regions p {
+  .route p {
     font-family: var(--serif);
     font-size: 1.0625rem;
     line-height: 1.68;
@@ -309,79 +306,82 @@ npm run dev`,
 
 <div class="band">
   <div class="inner">
-    <h2>One file is one route</h2>
+    <h2>Any element can be a URL</h2>
+
     <p>
-      <code>app/routes/notes.html</code> responds to <code>/notes</code>. The
-      <code>&lt;script server&gt;</code> block is the loader: it runs on the
-      server and returns the data the markup reads.
-      <code>export const POST</code>
-      answers the form. No client JavaScript is involved.
+      A page is one <code>.html</code> file. Put <code>fragment</code> on an
+      element inside it, and that element answers on a URL of its own.
     </p>
+
     ${html(s.page)}
 
-    <p class="aside">
-      The loader and the markup that reads it change together, so they are one
-      file to open and one file to review. Splitting them would split by
-      technology rather than by concern. The block is compiled into the route
-      and never appears in the page, so none of it reaches the browser.
+    <p>One word, and the page answers two requests.</p>
+
+    <div class="scroller">
+      <table class="urls">
+        <tbody>
+          <tr>
+            <td><code>GET /notes</code></td>
+            <td>the whole document</td>
+          </tr>
+          <tr>
+            <td><code>GET /notes?fragment=list</code></td>
+            <td>the <code>&lt;ul&gt;</code> and nothing else</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Both come from the same compiled markup, so the page and the piece cannot
+      drift apart. That is the whole agreement: a fragment is a resource with a
+      plain HTTP URL.
     </p>
+
+    <p>
+      Nothing here swaps one into a page. <a href="https://htmx.org">htmx</a>,
+      <a href="https://turbo.hotwired.dev">Turbo</a> or a few lines of
+      <code>fetch</code> does that, and this framework ships none of them.
+    </p>
+
+    <p>
+      The server can put that element in a second place instead.
+      <code>&lt;transclude src="#list"&gt;</code> renders it somewhere else on
+      the page, and <code>src="/notes#list"</code> reaches into another route.
+      Showing the same content in more than one place is what the word
+      <em>transclusion</em> means, and it is where the name comes from.
+      <a href="/docs/includes">Includes</a> covers it.
+    </p>
+
+    <div id="demo" fragment class="demo">
+      <p><strong>You are reading a fragment.</strong></p>
+      <p class="demo-note">
+        This box is part of the page you loaded, and it is also its own URL.
+        <a href="/?fragment=demo"><code>/?fragment=demo</code></a> returns the
+        markup of this box and nothing else. No <code>&lt;head&gt;</code>, no
+        layout, no second template. Open it and compare.
+      </p>
+    </div>
   </div>
 </div>
 
-<div class="regions">
-  <h2>Any element can be a URL</h2>
-
-  <p>Add <code>fragment</code> to an element and it gets a URL of its own.</p>
-
-  ${html(s.region)}
-
-  <p>That one word makes the page answer two requests.</p>
-
-  <div class="scroller">
-    <table class="urls">
-      <tbody>
-        <tr>
-          <td><code>GET /notes</code></td>
-          <td>the whole document</td>
-        </tr>
-        <tr>
-          <td><code>GET /notes?fragment=list</code></td>
-          <td>the <code>&lt;ul&gt;</code> and nothing else</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+<div class="route">
+  <h2>One file is one route</h2>
 
   <p>
-    Both come from the same compiled markup, so the page and the piece cannot
-    drift apart. That is the whole agreement: a fragment is a resource with a
-    plain HTTP URL.
+    <code>app/routes/notes.html</code> responds to <code>/notes</code>. The
+    <code>&lt;script server&gt;</code> block above is the loader: it runs on the
+    server and returns the data the markup reads.
+    <code>export const POST</code>
+    answers the form. No client JavaScript is involved.
   </p>
 
-  <p>
-    Nothing here swaps one into a page. <a href="https://htmx.org">htmx</a>,
-    <a href="https://turbo.hotwired.dev">Turbo</a> or a few lines of
-    <code>fetch</code> does that, and this framework ships none of them.
+  <p class="aside">
+    The loader and the markup that reads it change together, so they are one
+    file to open and one file to review. Splitting them would split by
+    technology rather than by concern. The block is compiled into the route and
+    never appears in the page, so none of it reaches the browser.
   </p>
-
-  <p>
-    The server can put that element in a second place instead.
-    <code>&lt;transclude src="#list"&gt;</code> renders it somewhere else on the
-    page, and <code>src="/notes#list"</code> reaches into another route. Showing
-    the same content in more than one place is what the word
-    <em>transclusion</em> means, and it is where the name comes from.
-    <a href="/docs/includes">Includes</a> covers it.
-  </p>
-
-  <div id="demo" fragment class="demo">
-    <p><strong>You are reading a fragment.</strong></p>
-    <p class="demo-note">
-      This box is part of the page you loaded, and it is also its own URL.
-      <a href="/?fragment=demo"><code>/?fragment=demo</code></a> returns the
-      markup of this box and nothing else. No <code>&lt;head&gt;</code>, no
-      layout, no second template. Open it and compare.
-    </p>
-  </div>
 </div>
 
 <div class="why">
@@ -403,8 +403,8 @@ npm run dev`,
   </p>
 
   <p class="why-more">
-    <a href="/docs/why">Why this exists</a> goes further: the server returns the
-    HTML, links and forms are what change the state, and that idea is older than
+    <a href="/docs/why">Why this exists</a> goes further. The server returns the
+    HTML, and links and forms are what change the state. That idea is older than
     the problem it solves.
   </p>
 </div>
@@ -429,8 +429,10 @@ npm run dev`,
     <div class="cell">
       <h3>Types without TypeScript</h3>
       <p>
-        A misspelled field, an unknown prop and a wrong-typed one are caught
-        from the shapes your loaders already return.
+        <code>npm run check</code> reads the shapes your loaders already return.
+        A misspelled field in a template is an error rather than a blank space
+        on the page. No annotations, and these pages are checked on every
+        commit.
       </p>
     </div>
     <div class="cell">

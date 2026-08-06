@@ -1,6 +1,6 @@
 {
   "name": "@transclude/create",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Starts a transclude project. `npm create @transclude my-app`.",
   "keywords": [
     "transclude",

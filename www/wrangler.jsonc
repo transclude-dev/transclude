@@ -23,7 +23,7 @@
   // reader has been told to check their inbox, so changing it means sending one
   // and reading the log rather than assuming.
   "vars": {
-    "MAIL_FROM": "transclude <notes@transclude.dev>",
+    "MAIL_FROM": "transclude <admin@dakroub.co>",
     "MAIL_REPLY_TO": "admin@dakroub.co"
   },
 

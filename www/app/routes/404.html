@@ -1,5 +1,67 @@
 <title>Not found · transclude</title>
 
-<doc-page heading="Not found" lede="No page answers that URL.">
-  <p><a href="/docs">Back to the overview</a>.</p>
-</doc-page>
+<style>
+  .ways {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.9rem;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  }
+  .ways a {
+    display: block;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 0.85rem 1rem;
+    text-decoration: none;
+  }
+  .ways a:hover {
+    background: var(--surface);
+  }
+  .ways strong {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .ways span {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+</style>
+
+<site-shell>
+  <doc-page heading="Not found" lede="No page answers that URL.">
+    <p>
+      It may have moved, or it may never have existed. These are the places
+      worth trying.
+    </p>
+
+    <ul class="ways">
+      <li>
+        <a href="/docs">
+          <strong>Documentation</strong>
+          <span>Every page, from routing to deployment</span>
+        </a>
+      </li>
+      <li>
+        <a href="/docs/getting-started">
+          <strong>Getting started</strong>
+          <span>A new project in four commands</span>
+        </a>
+      </li>
+      <li>
+        <a href="/docs/examples">
+          <strong>Examples</strong>
+          <span>Nine apps, all of them running</span>
+        </a>
+      </li>
+      <li>
+        <a href="/blog">
+          <strong>Writing</strong>
+          <span>Posts about the web platform</span>
+        </a>
+      </li>
+    </ul>
+  </doc-page>
+</site-shell>

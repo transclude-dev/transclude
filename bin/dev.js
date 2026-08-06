@@ -28,6 +28,8 @@ import { cookiesOf } from '../src/cookies.js';
 import { loadProject, portOf } from '../src/project.js';
 import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
+import { feed, feedPath, feedType } from '../src/feed.js';
+import { sitemap } from '../src/sitemap.js';
 
 const { root, config } = await loadProject();
 const routesDir = resolveRoutesDir(path.join(root, config.appDir), config.routesDir);
@@ -309,6 +311,34 @@ async function buildApp() {
       const name = c.req.param('file').slice(0, -'.svg'.length);
       const { status, type, body } = sprite(name);
       return c.body(body, status, { 'content-type': type });
+    });
+  }
+
+  // Before the route table, the same way production registers them, so a
+  // catch-all route cannot answer for one of these.
+  //
+  // They were missing here entirely. `createApp` mounts them and the dev server
+  // builds its own app, so `/feed.xml` and `/sitemap.xml` were 404 in dev and
+  // correct in the build. That is the worst shape a difference can take: the
+  // thing you check by hand is the thing that was never wired.
+  if (config.sitemap) {
+    app.get('/sitemap.xml', async (c) => {
+      // Only a parameter route ever reads its module, for `paths`. Loading the
+      // rest would compile the whole site to answer one request.
+      const pages = {};
+      for (const route of routes) {
+        if (route.params.length) pages[route.id] = await vite.ssrLoadModule(pageModuleId(route.id));
+      }
+
+      const xml = await sitemap({ routes }, pages, config.sitemap, c.req.query('p') ?? null);
+      return c.body(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
+    });
+  }
+
+  if (config.feed) {
+    app.get(feedPath(config.feed), async (c) => {
+      const xml = await feed(config.feed);
+      return c.body(xml, 200, { 'Content-Type': feedType(config.feed) });
     });
   }
 

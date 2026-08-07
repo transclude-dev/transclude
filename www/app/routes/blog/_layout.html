@@ -4,7 +4,6 @@
   // One column. The docs need a sidebar because they are a reference and you
   // arrive knowing what you want. A post is read start to finish.
   export default async ({ route, absolute }) => ({
-    year: new Date().getFullYear(),
     versionHref,
     versionLabel,
     canonical: absolute(route.path),
@@ -119,6 +118,6 @@
     <a href="${versionHref}">${versionLabel}</a>
     &middot;
     <a href="https://github.com/transclude-dev/transclude/blob/main/LICENSE">MIT</a>
-    &middot; &copy; ${year} Joe Dakroub
+    &middot; Created by <a href="https://joe-dakroub.github.io" rel="me">Joe Dakroub</a>
   </footer>
 </div>

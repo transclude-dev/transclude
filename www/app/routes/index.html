@@ -10,9 +10,6 @@
     if (fragment) return {};
 
     return {
-      // See the docs layout: a template expression has no `new`, and every page
-      // here is a file, so this is the year the build ran.
-      year: new Date().getFullYear(),
       // What this site is documentation of, worked out by the build.
       versionHref,
       versionLabel,
@@ -357,7 +354,11 @@ npm run dev`,
     padding: 2rem 1.25rem 3rem;
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem 1.5rem;
+    /* Eight items land within a few pixels of the measure, and the version
+       reads `after v0.8.2` for most of the time between releases. A tighter gap
+       and `Docs` rather than the whole word buy enough room that a label
+       growing does not orphan the last link on a line of its own. */
+    gap: 1rem 1.25rem;
     font-size: 0.9rem;
     color: var(--muted);
   }
@@ -583,12 +584,12 @@ npm run dev`,
 
 <footer>
   <div class="inner">
-    <span>&copy; ${year} Joe Dakroub</span>
+    <span>Created by <a href="https://joe-dakroub.github.io" rel="me">Joe Dakroub</a></span>
     <a href="${versionHref}">${versionLabel}</a>
     <a href="https://github.com/transclude-dev/transclude/blob/main/LICENSE"
       >MIT</a
     >
-    <a href="/docs">Documentation</a>
+    <a href="/docs">Docs</a>
     <a href="/blog">Writing</a>
     <a href="https://github.com/transclude-dev/transclude">Source</a>
     <a href="https://bsky.app/profile/transclude.dev" rel="me">Bluesky</a>

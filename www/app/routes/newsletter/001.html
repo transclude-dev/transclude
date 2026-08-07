@@ -35,6 +35,25 @@
 <meta name="supported-color-schemes" content="light dark" />
 
 <style>
+  /* The site's stylesheet reaches this page and styles tables for documentation:
+     a border under every cell, its own padding, a smaller size. None of that
+     exists in an inbox, so the browser was showing something the email is not,
+     which is the one thing view-in-browser must never do. Scoped by `.page` so
+     it outranks the bare `td` rule, and every inline style still outranks this.
+     In the email it matches nothing and costs three lines. */
+  .page,
+  .page table {
+    border-collapse: collapse;
+    width: auto;
+    font-size: inherit;
+  }
+  .page td {
+    padding: 0;
+    border: 0;
+    text-align: left;
+    vertical-align: top;
+  }
+
   /* The only rule not written inline, because a media query cannot be. Apple
      Mail and iOS honour it. Gmail and Outlook do not, and get the light copy,
      which is what most people read anyway. */
@@ -176,28 +195,38 @@
               class="ink"
               style="margin:0 0 18px;font-family:'Noto Serif',Georgia,'Times New Roman',serif;font-size:16px;line-height:1.7;color:#14141a"
             >
-              The framework grew <code>ctx.after</code> this week: work the
-              reader does not wait for, held open by
-              <code>waitUntil</code> on Cloudflare. I used it to send the mail
-              confirming this very subscription.
+              The form you used to subscribe wrote to nothing for a while, and
+              told you it had worked.
             </p>
 
             <p
               class="ink"
               style="margin:0 0 18px;font-family:'Noto Serif',Georgia,'Times New Roman',serif;font-size:16px;line-height:1.7;color:#14141a"
             >
-              Four signups in a burst produced two sends and no errors at all.
-              <code>waitUntil</code> keeps work alive on a best effort, and the
-              page said to check your inbox either way.
+              On Cloudflare a worker is handed its database connection in an
+              object that only exists once a request arrives. The code that
+              needs it runs elsewhere, so I kept that object in a module
+              variable. Set on the way in, read on the way out.
             </p>
 
             <p
               class="ink"
               style="margin:0 0 18px;font-family:'Noto Serif',Georgia,'Times New Roman',serif;font-size:16px;line-height:1.7;color:#14141a"
             >
-              Best effort is the right promise for something nobody is owed.
-              It is the wrong one for the only message a signup form exists to
-              send. It is awaited now, and the page says when it fails.
+              Two bundlers touch that file, and each inlined its own copy. The
+              value went into one copy and was read from the other, which was
+              still empty. So the form answered, the page said to check your
+              inbox, and the row went to a fallback meant for running locally.
+            </p>
+
+            <p
+              class="ink"
+              style="margin:0 0 18px;font-family:'Noto Serif',Georgia,'Times New Roman',serif;font-size:16px;line-height:1.7;color:#14141a"
+            >
+              Nothing logged anything. I found it by looking at the table. A
+              module you import twice can be two modules. Keeping the value on
+              <code>globalThis</code> fixed it: one slot per isolate, however
+              many copies exist.
             </p>
           </td>
         </tr>

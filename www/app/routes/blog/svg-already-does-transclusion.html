@@ -38,6 +38,13 @@ document.querySelector('#list').replaceWith(doc.querySelector('#list'));`,
   content="One tag has pointed at an element by id and rendered it in place for fifteen years. It only works for shapes."
 />
 
+<!-- From `posts.js`, which the index and the feed also read, so a post says the
+     same thing in all three places or in none of them. -->
+<meta property="og:type" content="article" />
+<meta property="og:title" content="${post.title}" />
+<meta property="og:description" content="${post.summary}" />
+<meta property="article:published_time" content="${post.date.toISOString()}" />
+
 <article>
   <h1>SVG already does transclusion</h1>
 

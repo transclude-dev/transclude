@@ -77,12 +77,22 @@
       ...data,
       prev: at > 0 ? flat[at - 1] : null,
       next: at !== -1 && at < flat.length - 1 ? flat[at + 1] : null,
+      // The sharing title, out of the list that already names every page. A
+      // second list of titles would be a second thing to keep true, and this
+      // one is the nav, which cannot drift from itself.
+      shared: at === -1 ? 'Documentation' : `${flat[at].label} · transclude`,
     };
   };
 </script>
 
 <title>transclude</title>
 <link rel="canonical" href="${canonical}" />
+
+<!-- No `og:description` here. Every page carries `<meta name="description">`,
+     which is what a crawler reads when this is absent, and a second copy of the
+     same sentence is a second copy to keep right. -->
+<meta property="og:type" content="article" />
+<meta property="og:title" content="${shared}" />
 
 <style>
   .topbar {

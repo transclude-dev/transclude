@@ -373,3 +373,59 @@ test('a post says when it was written, in a machine-readable way', () => {
     assert.match(source, /<time[^>]*datetime=/, `${name} has no machine-readable date`);
   }
 });
+
+// ---- sharing cards ---------------------------------------------------------
+//
+// What a link looks like when someone posts it. The failure is invisible from
+// inside the site: every page renders, and the only symptom is a bare grey box
+// on somebody else's timeline.
+
+describe('every page carries the sharing card', () => {
+  // The image and the card type never vary, so they are in the root layout and
+  // every page inherits them. Checked against the built output rather than the
+  // source, because inheriting is the thing that could break.
+  for (const route of ['/', '/docs', '/blog', '/docs/fragments']) {
+    const html = built(route);
+
+    for (const tag of [
+      'property="og:image"',
+      'property="og:image:width" content="1200"',
+      'property="og:image:height" content="630"',
+      'property="og:url"',
+      'name="twitter:card" content="summary_large_image"',
+    ]) {
+      assert.match(html, new RegExp(tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `${route} has no ${tag}`);
+    }
+  }
+});
+
+describe('the card image is the size every platform crops from', () => {
+  // A wrong size is not an error anywhere. It is a crop nobody chose.
+  const png = path.join(root, '..', 'app', 'public', 'og.png');
+  assert.ok(fs.existsSync(png), 'app/public/og.png is missing; `npm run og` writes it');
+
+  // The IHDR chunk of a PNG holds the dimensions, sixteen bytes in.
+  const head = fs.readFileSync(png).subarray(16, 24);
+  assert.equal(head.readUInt32BE(0), 1200);
+  assert.equal(head.readUInt32BE(4), 630);
+});
+
+describe('a shared page says what it is', () => {
+  // `og:title` is the one crawlers are least reliable about falling back for,
+  // and LinkedIn is the one that matters most here.
+  for (const route of ['/', '/blog', '/docs/fragments']) {
+    assert.match(built(route), /property="og:title"/, `${route} has no og:title`);
+  }
+});
+
+test('the card image and the stylesheet agree about the colours', () => {
+  // The card is rendered from its own file with its own copy of the palette,
+  // because it is not served by the site. Two copies drift; this is what says so.
+  const card = fs.readFileSync(path.join(root, '..', 'scripts', 'og-card.html'), 'utf8');
+  const css = fs.readFileSync(path.join(root, '..', 'app', 'styles', 'global.css'), 'utf8');
+
+  for (const colour of ['#0000ee', '#fcfcfd', '#14141a']) {
+    assert.ok(card.includes(colour), `the card does not use ${colour}`);
+    assert.ok(css.includes(colour), `the stylesheet no longer uses ${colour}`);
+  }
+});

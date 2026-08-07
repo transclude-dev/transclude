@@ -1,0 +1,84 @@
+<!doctype html>
+<!--
+  The source of the sharing image, so the design is a file someone can edit
+  rather than a PNG nobody can. `npm run og` renders this at 1200x630 in
+  headless Chrome and writes app/public/og.png.
+
+  Its own colours and its own copy of the two font faces, because it is rendered
+  from a file rather than served by the site. The values match global.css and a
+  test checks that they still do.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: 'IBM Plex Mono';
+        font-weight: 700;
+        src: url('../app/public/fonts/ibm-plex-mono-latin-700-normal.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Noto Serif';
+        font-weight: 400;
+        src: url('../app/public/fonts/noto-serif-latin-wght-normal.woff2') format('woff2');
+      }
+
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+      }
+
+      body {
+        background: #fcfcfd;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0 88px;
+        /* A hairline of the link blue down the left, which is the only colour
+           the site uses and the only one worth spending here. */
+        border-left: 16px solid #0000ee;
+      }
+
+      .mark {
+        font-family: 'IBM Plex Mono', monospace;
+        font-weight: 700;
+        font-size: 76px;
+        letter-spacing: -0.03em;
+        color: #14141a;
+      }
+      .mark .hash {
+        color: #0000ee;
+      }
+
+      .lede {
+        font-family: 'Noto Serif', Georgia, serif;
+        font-size: 40px;
+        line-height: 1.35;
+        color: #14141a;
+        margin-top: 34px;
+        max-width: 22ch;
+        text-wrap: balance;
+      }
+
+      .foot {
+        font-family: 'IBM Plex Mono', monospace;
+        font-weight: 700;
+        font-size: 22px;
+        letter-spacing: 0.02em;
+        color: #55555f;
+        margin-top: 44px;
+      }
+    </style>
+  </head>
+  <body>
+    <p class="mark"><span class="hash">#</span>transclude</p>
+    <p class="lede">HTML is the product.</p>
+    <p class="foot">An HTML-first server-side web framework</p>
+  </body>
+</html>

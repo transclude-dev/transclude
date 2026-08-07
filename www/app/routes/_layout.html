@@ -1,12 +1,18 @@
 <script server>
   // The site's outermost layout. It renders no chrome: the landing page and the
   // docs look nothing alike and each brings its own. What belongs here is what
-  // every page needs and no page should have to remember, which today is the
-  // icons.
+  // every page needs and no page should have to remember, which is the icons and
+  // the half of the sharing card that never varies.
   //
   // Layouts chain, so `docs/_layout.html` nests inside this one and both halves
   // of the site inherit whatever is added here.
-  export default async () => ({});
+  export default async ({ route, absolute }) => ({
+    // Absolute, because a crawler does not resolve a relative one. `absolute`
+    // reads `metadataBase`, which is right behind a proxy and while prerendering,
+    // where there is no request to take an origin from.
+    here: absolute(route.path),
+    card: absolute('/og.png'),
+  });
 </script>
 
 <!-- `/favicon.ico` is requested with no link tag at all, so it needs none. These
@@ -14,5 +20,25 @@
      styles a file the browser fetches on its own. -->
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+<!-- The parts of a sharing card that are the same on every page. A title and a
+     description are not among them, so each section supplies its own below, and
+     what has none falls back to the page's `<title>` and `<meta name=description>`
+     the way every crawler does.
+
+     The newsletter inherits these, which is right for the web copy of an issue
+     and four hundred dead bytes in the mailed one. Worth it: a link to an issue
+     is a thing people share. -->
+<meta property="og:site_name" content="transclude" />
+<meta property="og:url" content="${here}" />
+<meta property="og:image" content="${card}" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta
+  property="og:image:alt"
+  content="The transclude wordmark above the line: HTML is the product."
+/>
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="${card}" />
 
 <slot></slot>

@@ -34,3 +34,25 @@ CREATE TABLE IF NOT EXISTS subscribers (
 -- The confirm route looks a signup up by token and nothing else, so this is the
 -- one index that is not the primary key.
 CREATE INDEX IF NOT EXISTS subscribers_token ON subscribers (token);
+
+
+-- What has been sent, so it cannot be sent twice.
+--
+-- A retry, a fat-fingered command, a queue redelivery. Everything else in this
+-- system is recoverable by hand; posting issue three to the list a second time
+-- is the one a subscriber sees, and there is no taking it back.
+--
+-- Keyed on the issue rather than on a timestamp, so the check is `does a row
+-- exist` rather than arithmetic on when the last one went.
+CREATE TABLE IF NOT EXISTS sends (
+  issue        TEXT PRIMARY KEY,
+
+  -- What the provider filed it under, for looking up what happened afterwards.
+  broadcast_id TEXT,
+
+  -- How many addresses it went to when it went, which is the number that stops
+  -- meaning anything the moment anyone else subscribes.
+  recipients   INTEGER,
+
+  sent_at      INTEGER NOT NULL
+);

@@ -14,13 +14,15 @@
     "test": "node --test \"test/**/*.test.js\"",
     "preview": "npm run build && npm start",
     "deploy": "npm run build && wrangler deploy",
-    "start:worker": "npm run build && wrangler dev"
+    "start:worker": "npm run build && wrangler dev",
+    "newsletter": "node scripts/send.js"
   },
   "dependencies": {
-    "shiki": "^4.3.1",
-    "@transclude/core": "file:.."
+    "@transclude/core": "file:..",
+    "shiki": "^4.3.1"
   },
   "devDependencies": {
+    "parse5": "^8.0.1",
     "typescript": "^5.9.3",
     "vite": "^8.1.5",
     "wrangler": "^4"

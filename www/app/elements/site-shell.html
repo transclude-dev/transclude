@@ -14,8 +14,10 @@
     display: block;
   }
 
+  /* No rule under the wordmark. The column below is narrow enough that the
+     bar reads as a bar without one drawn across the whole viewport. */
   .bar {
-    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.25rem;
   }
   .bar-inner {
     display: flex;

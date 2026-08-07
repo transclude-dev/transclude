@@ -64,8 +64,15 @@
   };
 
   export default async ({ url }) => {
-    const state = new URL(url).searchParams.get('state') ?? 'invalid';
-    return { state: STATES[state] ?? STATES.invalid };
+    const asked = new URL(url).searchParams.get('state');
+
+    // Nothing asked for means nobody posted anything: a typed URL, a stale
+    // link, a back button. Sending them to the form is the answer. It used to
+    // fall through to `invalid`, which told a reader their address was wrong
+    // when they had not given one.
+    if (!asked) return Response.redirect(`${new URL(url).origin}/#notes`, 303);
+
+    return { state: STATES[asked] ?? STATES.invalid };
   };
 
   /**
@@ -103,11 +110,7 @@
     const source = String(form.get('source') ?? new URL(url).pathname);
     const { token, already } = await add(email, source);
 
-    // The row is written. The mail is work the reader does not wait for, which
-    // is what `ctx.after` is: on workerd it holds the isolate open past this
-    // response, and everywhere else the promise finishes on its own. A failure
-    // goes to `onError` with the request, and the address is already recorded,
-    // so it can be sent again.
+    // Confirmed already means no second mail and no new token.
     if (already) return Response.redirect(`${here}/subscribe?state=already`, 303);
 
     // The row is written either way. If the mail did not go, say so rather than

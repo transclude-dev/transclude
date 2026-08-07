@@ -18,12 +18,17 @@ body {
 h1 { font-size: 1.8rem; letter-spacing: -0.02em; margin: 0 0 0.5rem; }
 .lede { color: var(--muted); margin: 0 0 2rem; }
 
-form { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
+/* `wrap` and `min-width: 0` together, because either alone still overflows.
+   A flex item defaults to `min-width: auto`, which means it refuses to shrink
+   below its content, so two inputs and a button pushed past a narrow screen
+   with no scrollbar to say so. Wrapping gives them somewhere to go; the zero
+   lets them shrink before they get there. */
+form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
 form.add { margin-bottom: 2rem; }
 label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 
 input[type='search'], input[type='text'], input:not([type]) {
-  flex: 1; padding: 0.55rem 0.75rem; border: 1px solid var(--rule);
+  flex: 1 1 8rem; min-width: 0; padding: 0.55rem 0.75rem; border: 1px solid var(--rule);
   border-radius: 6px; background: var(--ground); color: inherit; font: inherit;
 }
 button {

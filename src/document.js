@@ -457,6 +457,37 @@ export async function renderFragment(page, ctx, { region = null, ...options } = 
 export const ACTION_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
 /**
+ * The layouts' answer to a request that is about to change something, or null
+ * when every one of them let it through.
+ *
+ * A layout loader returning a `Response` is how a login redirect is written once
+ * for everything below it, and until this existed that only held for the render.
+ * The action ran first, so a signed-out POST reached the handler, mutated, and
+ * then met the guard on the way back out. The reader got the redirect, which is
+ * what a request stopped at the door also gets, so nothing anywhere said the
+ * handler had run.
+ *
+ * The data is thrown away. `renderRoute` loads the chain again afterwards, which
+ * is a second run of every layout loader on an action request, and the price of
+ * the render seeing what the action just did rather than what was true before it.
+ *
+ * @param {object} page a compiled page module
+ * @param {object} ctx the request context
+ * @returns {Promise<Response|null>} the first layout that answered for itself
+ */
+export async function runGuards(page, ctx) {
+  let inherited = {};
+
+  for (const layout of page.layouts) {
+    const data = await layout.load({ ...ctx, layout: inherited });
+    if (data instanceof Response) return data;
+    inherited = { ...inherited, ...data };
+  }
+
+  return null;
+}
+
+/**
  * Runs the page's handler for a request that is not a GET.
  *
  * A `Response` is the author's own answer and goes out as it is: a redirect after

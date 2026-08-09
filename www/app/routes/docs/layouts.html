@@ -96,6 +96,14 @@
 
   ${html(s.guard)}
 
+  <p>
+    Nothing below it includes the actions. A <code>POST</code> to a page under
+    this layout runs the guard first, so a signed-out request never reaches the
+    handler. The render that follows asks the layouts again, so each loader runs
+    twice on a request that changes something. That is on purpose: the page
+    renders from what the action just did, not from what was true before it.
+  </p>
+
   <doc-note label="A page behind a guard is not a file" tone="warn">
     Give it <code>export const prerender = false</code>. A guard reads a cookie,
     and a page that reads one has an answer per visitor, so the build refuses to

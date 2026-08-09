@@ -129,6 +129,10 @@ The action runs, then the loader renders what it left behind. `POST`, `PUT`,
 `PATCH` and `DELETE` are the verbs. Return nothing to re-render, or return a
 `Response` to redirect.
 
+A layout's loader runs before the action, so a guard that returns a `Response`
+stops the handler as well as the render. Write the check once, in the layout,
+rather than at the top of every verb export below it.
+
 ## Endpoints
 
 A `.js` file in `routes/` returns a `Response`.

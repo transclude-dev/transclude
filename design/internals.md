@@ -349,6 +349,19 @@ against.
   used to change data and then 404. Anything that can refuse a request has to
   refuse it before `runAction`, not after. `hasRegion` is that check, in both
   servers.
+- **A layout guard is one of the things that can refuse a request, and it did
+  not.** The same rule as above, missed for the case that matters most. A layout
+  loader returning a `Response` stopped the render, and the render is after the
+  action, so a signed-out `POST` reached the handler, mutated, and then met the
+  guard on the way out. The response was the guard's redirect either way, so the
+  hole was invisible from outside: a test asserting `303 → /login` passed, and so
+  did the logs. `runGuards` walks `page.layouts` before `runAction` in both
+  servers, throws the data away, and lets `renderRoute` load the chain again, so
+  the render sees what the action did rather than what was true before it. That
+  is a second run of every layout loader on an action request, on purpose.
+  `examples/auth` could not catch this because every page under its guard was
+  read-only; it has a `POST` under there now, and the test asserts nothing
+  changed rather than asserting the status, which was never wrong.
 - **`transclude-env.d.ts` has to compile, and one flag is why nobody saw that it
   did not.** Every context type named `__Cookies` and the file declared it
   nowhere, in every project, from the first `npm run check`. A `.d.ts` is the one

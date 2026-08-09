@@ -18,6 +18,7 @@ import {
   renderRoute,
   responseOf,
   runAction,
+  runGuards,
   withEnvelope,
 } from '../src/document.js';
 import transclude, { clientEntryUrl, pageModuleId } from '../src/plugin.js';
@@ -222,10 +223,11 @@ const sendFragment = async (route, c, region, extra = {}) => {
 /**
  * A form submission, or anything else that is not a GET.
  *
- * The action runs first, then the request is answered the same way a GET is: the
- * whole document, or one region if the URL asked for one. That last part is what
- * regions are for. POST a form to `?fragment=list` and what comes back is
- * the list, already rendered, by the same compiled region the page uses.
+ * The layouts answer first, then the action, then the request is answered the
+ * same way a GET is: the whole document, or one region if the URL asked for one.
+ * That last part is what regions are for. POST a form to `?fragment=list` and
+ * what comes back is the list, already rendered, by the same compiled region the
+ * page uses.
  */
 const handleAction = async (route, c) => {
   const page = await vite.ssrLoadModule(pageModuleId(route.id));
@@ -238,6 +240,13 @@ const handleAction = async (route, c) => {
   }
 
   const ctx = contextFor(route, c);
+
+  // The layouts answer before the handler does, exactly as production does it.
+  // A guard that only stopped the render would let the mutation happen and then
+  // send its redirect, which is the same response a stopped request gets.
+  const refused = await runGuards(page, ctx);
+  if (refused) return withEnvelope(refused, ctx);
+
   const outcome = await runAction(page, ctx, c.req.method);
 
   if (!outcome) {

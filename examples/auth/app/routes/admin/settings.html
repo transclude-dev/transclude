@@ -1,15 +1,44 @@
 <script server>
+  import { find, rename } from '../../data/users.js';
+
   export const prerender = false;
 
-  export default async () => ({});
+  // The action a guard has to cover. It changes something, so a signed-out
+  // request reaching it would be the whole problem: the layout above runs
+  // first and answers with a redirect, and this never runs.
+  //
+  // The session is read again here because a guard establishes that there is a
+  // visitor, not which one. `ctx.layout` is what a loader gets; an action gets
+  // the request.
+  export const POST = async ({ cookies, request, url }) => {
+    const id = await cookies.signed.get('session');
+    const form = await request.formData();
+    const name = String(form.get('name') ?? '').trim();
+
+    if (name) rename(id, name);
+
+    return Response.redirect(new URL('/admin/settings', url), 303);
+  };
+
+  export default async ({ cookies }) => {
+    const id = await cookies.signed.get('session');
+
+    return { name: find(id)?.name ?? '' };
+  };
 </script>
 
 <title>Settings</title>
-<meta name="description" content="Also behind the guard." />
+<meta name="description" content="Also behind the guard, and so is what it changes." />
 
 <h1>Settings</h1>
 
 <p>
   Nothing here checks anything. The guard is one file up, and it runs before this
-  loader does.
+  loader does and before the action below.
 </p>
+
+<form method="post">
+  <label for="name">Display name</label>
+  <input id="name" name="name" value="${name}" required />
+  <button>Save</button>
+</form>

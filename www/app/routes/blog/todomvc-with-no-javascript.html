@@ -16,31 +16,34 @@
       ],
 
       handler: [
-        `export const POST = async ({ request, url }) => {
-  const form = await request.formData();
+        `<!-- app/routes/index.html, the same file that holds the markup -->
+<script server>
+  export const POST = async ({ request, url }) => {
+    const form = await request.formData();
 
-  // Which button was pressed. A submit button's name and value are sent only
-  // when it is the one that submitted, which is how a page has seven actions
-  // and no router for them.
-  const intent = String(form.get('intent') ?? '');
-  const id = Number(form.get('id') ?? 0);
-  const text = String(form.get('text') ?? '').trim();
+    // Which button was pressed. A submit button's name and value are sent only
+    // when it is the one that submitted, which is how a page has seven actions
+    // and no router for them.
+    const intent = String(form.get('intent') ?? '');
+    const id = Number(form.get('id') ?? 0);
+    const text = String(form.get('text') ?? '').trim();
 
-  if (intent === 'add' && text) todos.add(text);
-  if (intent === 'toggle') todos.toggle(id);
-  if (intent === 'remove') todos.remove(id);
-  if (intent === 'mark-all') todos.markAll(form.get('done') === '1');
-  if (intent === 'clear') todos.clearDone();
+    if (intent === 'add' && text) todos.add(text);
+    if (intent === 'toggle') todos.toggle(id);
+    if (intent === 'remove') todos.remove(id);
+    if (intent === 'mark-all') todos.markAll(form.get('done') === '1');
+    if (intent === 'clear') todos.clearDone();
 
-  // An empty edit deletes the todo, which is what TodoMVC has always done.
-  if (intent === 'rename') {
-    if (text) todos.rename(id, text);
-    else todos.remove(id);
-  }
+    // An empty edit deletes the todo, which is what TodoMVC has always done.
+    if (intent === 'rename') {
+      if (text) todos.rename(id, text);
+      else todos.remove(id);
+    }
 
-  return Response.redirect(back(url), 303);
-};`,
-        'js',
+    return Response.redirect(back(url), 303);
+  };
+<\/script>`,
+        'html',
       ],
 
       editing: [
@@ -99,9 +102,10 @@
   ${html(s.handler)}
 
   <p>
-    That is the whole of it. Read the intent, do the thing, redirect. The
-    redirect is post/redirect/get, so a reload repeats the navigation rather
-    than the change, and the back button does not resubmit anything.
+    That is the whole of it, and it sits in the same file as the markup it
+    answers for. Read the intent, do the thing, redirect. The redirect is
+    post/redirect/get, so a reload repeats the navigation rather than the
+    change, and the back button does not resubmit anything.
   </p>
 
   <h2>The editing state is a URL</h2>

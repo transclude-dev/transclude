@@ -1,0 +1,217 @@
+<script server>
+  import { all } from "../../lib/code.js";
+
+  // Not finished. `npm run dev` serves this; the build leaves it out.
+  export const draft = true;
+
+  export default async () => ({
+    s: await all({
+      tail: [
+        `# Start the log stream, do the thing, read what came back.
+wrangler tail --format json > /tmp/log.json &
+sleep 8
+curl -X POST https://example.dev/subscribe -d "email=me@example.dev"
+sleep 8
+
+# Then: no errors, so it worked.
+grep -c '"name": "Error"' /tmp/log.json   # 0`,
+        "shell",
+      ],
+
+      logged: [
+        `// What the send says when it happens, rather than what it does not say.
+const { id } = await res.json();
+console.log(\`resend accepted \${email} as \${id}\`);`,
+        "js",
+      ],
+
+      check: [
+        `# Was anything captured at all, and did the send happen?
+grep -c '"outcome"' /tmp/log.json         # events seen
+grep -c 'resend accepted' /tmp/log.json   # sends that happened`,
+        "shell",
+      ],
+
+      exists: [
+        `test('a draft is not written to a file', () => {
+  assert.equal(fs.existsSync(\`\${dist}/draft-example/index.html\`), false);
+});`,
+        "js",
+      ],
+
+      css: [
+        `.notes p      { font-size: 1.0625rem; margin: 0 0 1.75rem; }
+.notes-more   { font-size: 0.875rem; margin-top: 2.25rem; }`,
+        "css",
+      ],
+    }),
+  });
+</script>
+
+<title>No output looks exactly like good output · transclude</title>
+<meta
+  name="description"
+  content="A check has three outcomes and most people write two. Passed, failed, and never ran, which gets counted as passed."
+/>
+
+<article>
+  <h1>No output looks exactly like good output</h1>
+
+  <p>
+    A check has three outcomes. It passed, it failed, or it never really ran.
+    Most checks are written with two, and the third gets counted as the first.
+  </p>
+
+  <p>
+    I did this three times in one week, in three different tools, and told
+    somebody the wrong thing twice. Here they are, because the pattern is
+    clearer with three than with one.
+  </p>
+
+  <h2>One: the log stream that had not connected</h2>
+
+  <p>
+    A form writes a row and then asks an email provider to send a confirmation.
+    I wanted to know whether the send happened, so I opened the provider's log
+    stream, submitted the form, and looked for errors.
+  </p>
+
+  ${html(s.tail)}
+
+  <p>
+    No errors. I reported that the send was clean. Twice, on two different days.
+  </p>
+
+  <p>
+    The log stream takes several seconds to attach, and both times it had not
+    finished before the request went through. The file was empty. Zero errors in
+    an empty file is not zero errors: it is no information, wearing the same
+    clothes.
+  </p>
+
+  <p>
+    The real answer was that no mail had ever been sent, because the sending
+    domain was not verified. That was in the log the whole time, on the run
+    where the stream did attach.
+  </p>
+
+  <p>
+    The fix is not a longer sleep. It is asking a question that silence cannot
+    answer. Log a line when the send happens, so there is something to find
+    rather than something to fail to find.
+  </p>
+
+  ${html(s.logged)}
+
+  <p>And then count the events before drawing any conclusion from them.</p>
+
+  ${html(s.check)}
+
+  <h2>Two: the file that was never built</h2>
+
+  <p>
+    A page can be marked as a draft, and the build leaves it out. So I wrote a
+    test asserting the file is not there.
+  </p>
+
+  ${html(s.exists)}
+
+  <p>
+    That passes when the feature works. It also passes when nothing was built at
+    all, which is how the project's own continuous integration runs that suite.
+    There was no output directory, so there was no file, so the assertion held.
+  </p>
+
+  <p>
+    A test that asserts something is absent will pass in an empty room. Mine
+    reported success for having nothing to look at, and it would have kept doing
+    that after the feature broke.
+  </p>
+
+  <p>
+    The repair had two halves. The absence tests skip when there is no build,
+    like every other test in that file that reads one. And a separate test
+    asserts the draft page still exists in the source, so the other three cannot
+    pass by having nothing to find.
+  </p>
+
+  <h2>Three: the rule that shipped and did nothing</h2>
+
+  <p>
+    A footer line needed to be smaller and further down. I wrote the rule,
+    deployed, and checked by searching the built stylesheet for it. It was
+    there. I said it was fixed.
+  </p>
+
+  <p>It was not fixed, and the reason is two lines apart in the same file.</p>
+
+  ${html(s.css)}
+
+  <p>
+    <code>.notes p</code> is a class and an element, which outranks a single
+    class. Both of my values lost. The rule shipped, and shipped is not applied.
+  </p>
+
+  <p>
+    Grepping the output proved the text was in the file. I had checked the cheap
+    thing and reported on the thing I wanted to know. Those are not the same,
+    and a step I skipped is what sits between them.
+  </p>
+
+  <h2>The shape</h2>
+
+  <p>
+    Three different tools, three different mechanisms, one mistake. In each case
+    the check could not tell a success from a nothing.
+  </p>
+
+  <p>
+    The absence of an error is not evidence. An empty log has no errors. An
+    empty directory has no wrong files. A stylesheet contains your rule whether
+    or not the browser ever obeys it.
+  </p>
+
+  <p>
+    So ask this of a check: what would it look like if the thing I am testing
+    had not run at all? If the answer is "the same", it is not a check yet.
+  </p>
+
+  <h2>What to do instead</h2>
+
+  <p>
+    Assert on something that only exists when the work happened. A message id
+    from the provider. A line the code logs on the way through. The computed
+    style on the element rather than the text in the file.
+  </p>
+
+  <p>
+    Make the check prove it ran, and let a count of zero be its own answer
+    rather than a good one. Nothing observed is a third result, not a pass.
+  </p>
+
+  <p>
+    And where a test asserts something is missing, add one asserting the thing
+    that should be there. Absence is only meaningful next to a presence you have
+    confirmed.
+  </p>
+
+  <h2>The one that failed loudly instead</h2>
+
+  <p>
+    In the same week I checked nine links with a script and got nine failures.
+    It looked like the whole site was down.
+  </p>
+
+  <p>
+    It was a bot filter refusing an unfamiliar user agent. Every link was fine.
+    That is the same class of mistake pointing the other way. It cost five
+    minutes rather than an afternoon, because a wall of failures gets
+    investigated and a clean run does not.
+  </p>
+
+  <p>
+    Which is the argument, really. A check that is wrong in the failing
+    direction gets found. A check that is wrong in the passing direction becomes
+    something you believe.
+  </p>
+</article>

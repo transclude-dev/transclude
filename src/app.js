@@ -24,6 +24,7 @@ import {
   renderRoute,
   responseOf,
   runAction,
+  runGuards,
   withEnvelope,
 } from './document.js';
 import { pickEncoding } from './negotiate.js';
@@ -330,6 +331,13 @@ export function createApp({
         }
 
         const acting = contextFor(route, c);
+
+        // The layouts answer before the handler does. A guard that only stopped
+        // the render would let the mutation happen and then send its redirect,
+        // which is the same response a request that was stopped gets.
+        const refused = await runGuards(page, acting);
+        if (refused) return withEnvelope(refused, acting);
+
         const outcome = await runAction(page, acting, c.req.method);
         if (!outcome) {
           return c.text(`${c.req.method} not allowed`, 405, { Allow: methodsOf(page).join(', ') });

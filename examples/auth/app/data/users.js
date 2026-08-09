@@ -67,3 +67,17 @@ export async function signIn(email, password) {
  * @param {string} id
  */
 export const find = (id) => users.find((row) => String(row.id) === id) ?? null;
+
+/**
+ * The one thing in this demo that changes anything, so the one thing a guard
+ * covering only the render would have let through.
+ *
+ * @param {string} id
+ * @param {string} name
+ */
+export function rename(id, name) {
+  const user = find(id);
+  if (user) user.name = name;
+
+  return user;
+}

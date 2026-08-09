@@ -50,6 +50,30 @@ describe('it covers everything below it, not only the page it was written on', a
   assert.match(res.headers.get('location') ?? '', /next=%2Fadmin%2Fsettings$/);
 });
 
+describe('the guard covers the actions, not only what renders', async () => {
+  // The one that matters, and the one this example could not fail for a long
+  // time: every page under the guard was read-only, so a guard that ran after
+  // the action would have passed every test here.
+  const res = await app.request('http://localhost/admin/settings', {
+    method: 'POST',
+    headers: {
+      origin: 'http://localhost',
+      'content-type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({ name: 'Not Ada' }).toString(),
+    redirect: 'manual',
+  });
+
+  assert.equal(res.status, 303);
+  assert.match(res.headers.get('location') ?? '', /\/login\?next=/);
+
+  // The status alone proves nothing: a handler that ran and then met the guard
+  // on the way out sends this same redirect. What says it did not run is that
+  // nothing changed.
+  const cookie = cookieOf(await signIn({ email: 'ada@example.com', password: 'correct horse' }));
+  assert.match(await get('/admin', cookie).then((r) => r.text()), /Signed in as Ada Lovelace/);
+});
+
 describe('a wrong password says the same thing as an unknown address', async () => {
   const wrong = await signIn({ email: 'ada@example.com', password: 'nope' }).then((r) => r.text());
   const missing = await signIn({ email: 'nobody@example.com', password: 'nope' }).then((r) =>
@@ -133,6 +157,30 @@ describe('no page under a cookie-reading layout was written to a file', () => {
   const files = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
 
   assert.ok(!files.includes('index.html'), 'the home page is rendered per request');
+});
+
+describe('a signed-in visitor can run the action the guard was protecting', async () => {
+  // The other half. A guard that turned everyone away would pass the test above
+  // and be useless, and this is what says it does not.
+  const cookie = cookieOf(await signIn({ email: 'ada@example.com', password: 'correct horse' }));
+
+  const save = (name) =>
+    app.request('http://localhost/admin/settings', {
+      method: 'POST',
+      headers: {
+        origin: 'http://localhost',
+        cookie,
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({ name }).toString(),
+      redirect: 'manual',
+    });
+
+  assert.equal((await save('Ada L.')).status, 303);
+  assert.match(await get('/admin', cookie).then((r) => r.text()), /Signed in as Ada L\./);
+
+  // The store is in memory and shared, so this puts it back.
+  await save('Ada Lovelace');
 });
 
 describe('the 404 page is a file, and does not read a session to be one', async () => {

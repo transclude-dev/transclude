@@ -352,6 +352,10 @@ test('every post is a file, and every post file is listed', () => {
   const files = fs
     .readdirSync(dir)
     .filter((name) => name.endsWith('.html') && !name.startsWith('_') && name !== 'index.html')
+    // A draft is not a post yet. It is deliberately not in `posts.js`, so it is
+    // not in the index and not in the feed, and the build leaves it out of the
+    // site entirely. Publishing it is deleting the export and adding the entry.
+    .filter((name) => !isDraft(path.join(dir, name)))
     .map((name) => name.replace(/\.html$/, ''))
     .sort();
 
@@ -362,13 +366,20 @@ test('every post is a file, and every post file is listed', () => {
   assert.deepEqual(listed, files, 'posts.js and app/routes/blog/ disagree');
 });
 
+/** Whether a page keeps itself out of the build. */
+const isDraft = (file) => /export const draft = true/.test(fs.readFileSync(file, 'utf8'));
+
 test('a post says when it was written, in a machine-readable way', () => {
   // The feed carries the date, and so should the page. A reader arriving from a
   // search result has no other way to tell how old the writing is.
+  //
+  // A draft has no date because it has no entry in `posts.js` to take one from,
+  // which is the same reason it is not in the feed.
   const dir = path.join(routes, 'blog');
 
   for (const name of fs.readdirSync(dir)) {
     if (!name.endsWith('.html') || name.startsWith('_') || name === 'index.html') continue;
+    if (isDraft(path.join(dir, name))) continue;
     const source = fs.readFileSync(path.join(dir, name), 'utf8');
     assert.match(source, /<time[^>]*datetime=/, `${name} has no machine-readable date`);
   }

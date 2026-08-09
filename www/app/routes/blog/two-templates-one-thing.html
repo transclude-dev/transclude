@@ -1,0 +1,145 @@
+<script server>
+  import { all } from '../../lib/code.js';
+
+  // Not finished. `npm run dev` serves this; the build leaves it out.
+  export const draft = true;
+
+  export default async () => ({
+    s: await all({
+      page: [
+        `<!-- views/search.html -->
+<ul id="results">
+  {% for hit in hits %}
+    <li><a href="{{ hit.url }}">{{ hit.title }}</a></li>
+  {% endfor %}
+</ul>`,
+        'html',
+      ],
+
+      partial: [
+        `<!-- views/_results.html, for the endpoint the swap calls -->
+<ul id="results">
+  {% for hit in hits %}
+    <li><a href="{{ hit.url }}">{{ hit.title }}</a></li>
+  {% endfor %}
+</ul>`,
+        'html',
+      ],
+
+      test: [
+        `const whole = await text('/?q=form');
+const fragment = (await text('/?q=form&fragment=results')).trim();
+
+assert.ok(whole.includes(fragment));`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
+<title>Your page and your partial are two templates · transclude</title>
+<meta
+  name="description"
+  content="Anything that swaps HTML needs a second template for the piece. Two templates for one thing is a pair that drifts, and the bug is silent."
+/>
+
+<article>
+  <h1>Your page and your partial are two templates</h1>
+
+  <p>
+    Every way of swapping HTML into a page works the same underneath. Something
+    asks the server for a piece of markup, and the server renders that piece and
+    sends it back. htmx, Turbo, a few lines of <code>fetch</code>: the swapping
+    differs and the requirement does not.
+  </p>
+
+  <p>
+    Which means the server needs a way to render the piece on its own. That is
+    usually a second template.
+  </p>
+
+  ${html(s.page)}
+
+  ${html(s.partial)}
+
+  <p>
+    Two files. The same loop, the same markup, the same class names. One is what
+    the page renders on a full load, the other is what the endpoint returns when
+    something swaps.
+  </p>
+
+  <h2>They will drift, and nothing will say so</h2>
+
+  <p>
+    Someone adds a date to the list item. They add it to the page, because that
+    is the file they had open. The swapped version keeps returning items without
+    dates.
+  </p>
+
+  <p>
+    Now the page is right on load and wrong after the first interaction. Or right
+    after the first interaction and wrong on load, depending which file was
+    edited. Both templates are individually correct. Neither test fails. The bug
+    is that they disagree, and nothing in the system holds an opinion about that.
+  </p>
+
+  <p>
+    This is the same failure as a duplicated constant. The difference is that
+    the duplication is forty lines of markup, and the disagreement only shows up
+    in a browser after a click.
+  </p>
+
+  <h2>The fix is not discipline</h2>
+
+  <p>
+    The usual answer is to make the page include the partial, so there is one
+    copy again. That works and it is worth doing. It is also where the problem
+    moves rather than ends. The page renders the partial with one set of
+    variables, and the endpoint renders it with another. The markup agrees. What
+    it is handed may not.
+  </p>
+
+  <p>
+    The version with no seam is one template that answers both requests, and the
+    server deciding how much of it to send.
+  </p>
+
+  <h2>What that looks like</h2>
+
+  <p>
+    Mark the element and it gets a URL of its own. One file, no partial, and the
+    same compiled markup serves the whole page and the piece.
+  </p>
+
+  <p>
+    Then the property you want is testable, which is the part I would keep even
+    if you took nothing else from this.
+  </p>
+
+  ${html(s.test)}
+
+  <p>
+    Ask for the document, ask for the fragment, and assert that the second is a
+    literal substring of the first. If the two ever render differently, that
+    fails. Not "looks similar", not "has the same fields": the exact bytes,
+    inside the exact bytes.
+  </p>
+
+  <p>
+    It is a strange-looking test and it is checking the only thing that actually
+    matters here.
+  </p>
+
+  <h2>You can write that test today</h2>
+
+  <p>
+    Nothing above needs a particular framework. Take a page and a partial that
+    are supposed to agree, and assert that the endpoint's output appears verbatim
+    in the full page's output. Then you know whether they still do.
+  </p>
+
+  <p>
+    Most of the time they do not, and the surprising part is how long that has
+    been true.
+  </p>
+</article>

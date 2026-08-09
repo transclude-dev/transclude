@@ -1,0 +1,201 @@
+<script server>
+  import { all } from '../../lib/code.js';
+
+  // Not finished. `npm run dev` serves this; the build leaves it out.
+  export const draft = true;
+
+  export default async () => ({
+    s: await all({
+      naive: [
+        `export const GET = ({ request }) => {
+  const stream = new ReadableStream({
+    start(controller) {
+      const unsubscribe = onChange(() => controller.enqueue(nudge));
+
+      request.signal.addEventListener('abort', () => {
+        unsubscribe();
+        controller.close();
+      });
+    },
+  });
+
+  return new Response(stream, { headers: { 'content-type': 'text/event-stream' } });
+};`,
+        'js',
+      ],
+
+      cancel: [
+        `const stream = new ReadableStream({
+  start(controller) { /* … */ },
+
+  cancel() {
+    // The consumer went away. Nothing to close: it is closing.
+    unsubscribe();
+  },
+});`,
+        'js',
+      ],
+
+      both: [
+        `let open = true;
+let unsubscribe = () => {};
+
+// One place that stops the subscription, and it runs once however it is reached.
+const done = () => {
+  if (!open) return;
+  open = false;
+  unsubscribe();
+};
+
+const stream = new ReadableStream({
+  start(controller) {
+    // Guarded, because a change can arrive in the moment between the socket
+    // going and this hearing about it.
+    const send = (event) => {
+      if (open) controller.enqueue(encoder.encode(event));
+    };
+
+    unsubscribe = onChange(() => send('event: notes\\ndata: changed\\n\\n'));
+
+    request.signal.addEventListener('abort', () => {
+      done();
+      // The consumer may have closed it already, in which case this throws.
+      try {
+        controller.close();
+      } catch {}
+    });
+  },
+
+  cancel() {
+    done();
+  },
+});`,
+        'js',
+      ],
+
+      headers: [
+        `return new Response(stream, {
+  headers: {
+    'content-type': 'text/event-stream',
+    'cache-control': 'no-store',
+    // nginx and friends buffer by default, which holds every line until the
+    // response ends, which for this response is never.
+    'x-accel-buffering': 'no',
+  },
+});`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
+<title>A server-sent events stream ends two ways · transclude</title>
+<meta
+  name="description"
+  content="The socket closing and the reader letting go are different events. Handle one and you leak a listener or close a controller twice."
+/>
+
+<article>
+  <h1>A server-sent events stream ends two ways</h1>
+
+  <p>
+    Server-sent events are the least fashionable way to push something to a
+    browser and usually the right one. One long-lived response, lines of text,
+    and <code>EventSource</code> reconnects on its own. No handshake, no second
+    protocol, no library.
+  </p>
+
+  <p>
+    The part that goes wrong is not the sending. It is the stopping.
+  </p>
+
+  <h2>The version everyone writes first</h2>
+
+  ${html(s.naive)}
+
+  <p>
+    Open a stream, subscribe to whatever changes, and unsubscribe when the
+    request aborts. That reads as complete. It is not.
+  </p>
+
+  <h2>There are two endings, and they are different events</h2>
+
+  <p>
+    The socket going away fires <code>abort</code> on the request signal. That is
+    the one everybody handles: the reader closed the tab, the network dropped,
+    the process was told to stop.
+  </p>
+
+  <p>
+    The other one comes from the other side. When whoever is reading the stream
+    lets go of the reader, the stream's own <code>cancel</code> runs.
+  </p>
+
+  ${html(s.cancel)}
+
+  <p>
+    Nothing fires <code>abort</code> in that case. The socket is fine. The
+    consumer stopped consuming, and that happens more often than it sounds. A
+    runtime tears down a response. A proxy in front of you gives up. Your own
+    code calls <code>cancel</code> on a reader it no longer needs.
+  </p>
+
+  <h2>What each half costs on its own</h2>
+
+  <p>
+    Handle only <code>abort</code> and a cancelled stream leaves the
+    subscription behind. Nothing errors. The listener stays on the list, holding
+    whatever it closed over, and the next change calls it. On a server that runs
+    for weeks this is the leak you find by watching memory rather than by
+    reading a stack.
+  </p>
+
+  <p>
+    Handle only <code>cancel</code> and an aborted stream never unsubscribes,
+    which is the same leak arriving by the other road. Handle both without
+    noticing they can both happen, and you close a controller that is already
+    closed, which throws.
+  </p>
+
+  <h2>The shape that survives both</h2>
+
+  ${html(s.both)}
+
+  <p>
+    Three things are doing work there. One function ends the subscription, and a
+    flag makes it idempotent, because either ending may come first and both may
+    come at all. The send is guarded, because a change can arrive in the moment
+    between the socket going and this hearing about it. And the close is wrapped,
+    because the consumer may have closed the controller already.
+  </p>
+
+  <p>
+    None of that is defensive programming for its own sake. Each line is one of
+    the two endings arriving when the other has already been dealt with.
+  </p>
+
+  <h2>The header nobody mentions</h2>
+
+  ${html(s.headers)}
+
+  <p>
+    <code>x-accel-buffering: no</code> is the one that costs an afternoon.
+    nginx buffers responses by default, which means it holds your lines until
+    the response ends. For a stream that never ends, that is forever. It works
+    perfectly on your machine and sends nothing in production.
+  </p>
+
+  <h2>What to send down it</h2>
+
+  <p>
+    A nudge, not the markup. Say that something changed and let the page ask for
+    it on the URL that already returns it. Sending rendered HTML down the stream
+    is a second way to render the same thing, and two ways to render one thing
+    will drift.
+  </p>
+
+  <p>
+    Both endings above happened while this was being written. That is the only
+    reason the code has a flag in it.
+  </p>
+</article>

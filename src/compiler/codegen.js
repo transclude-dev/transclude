@@ -152,6 +152,10 @@ class Codegen {
     this.body = [];
     this.head = [];
     this.title = [];
+    // Depth inside the head buffer. Nothing in <head> is ever re-rendered, so a
+    // directive there is emitted plainly rather than as an updatable block: the
+    // anchors would be comments in <head> that nothing ever looks for.
+    this.inHead = 0;
     // `<template slot="x">` at the top level of a page or layout fills the named
     // slot of the level above it, so it compiles to its own buffer.
     this.slots = new Map();
@@ -274,7 +278,16 @@ class Codegen {
 
       if (dirs?.has('if')) {
         const { chain, next } = gatherChain(nodes, i);
-        this.emitIfChain(chain, out, scope, topLevel);
+        // Decided here rather than in emitElement, which is too late: by then the
+        // branch has already written `if (…) {` into this buffer, and the tag
+        // itself is about to be written into another one.
+        const target = this.hoistTargetOf(chain, out, topLevel);
+        const hoisted = target !== out;
+
+        if (hoisted) this.inHead++;
+        this.emitIfChain(chain, target, scope, topLevel);
+        if (hoisted) this.inHead--;
+
         i = next;
         continue;
       }
@@ -287,9 +300,63 @@ class Codegen {
         );
       }
 
-      this.emitNode(node, out, scope, topLevel);
+      // `each` on a hoisted tag needs the same treatment for the same reason: the
+      // loop would be written here and the tag into <head>, once, unconditionally.
+      const target = dirs?.has('each') ? this.hoistTargetOf([{ node }], out, topLevel) : out;
+      const hoisted = target !== out;
+
+      if (hoisted) this.inHead++;
+      this.emitNode(node, target, scope, topLevel);
+      if (hoisted) this.inHead--;
+
       i++;
     }
+  }
+
+  /**
+   * Where a directive-carrying top-level tag has to be written, given that
+   * `<title>`, `<meta>`, `<link>` and `<base>` are hoisted into <head>. The
+   * buffer for the head, or `out` when nothing here is hoisted.
+   *
+   * Every branch of an if-chain has to agree. One that mixes a hoisted tag with
+   * an ordinary one has no single answer, so it is refused rather than guessed.
+   *
+   * @param {{node: object}[]} chain the branches, or a single node in a list
+   * @param {any[]} out the buffer this level is being written into
+   * @param {boolean} topLevel
+   * @returns {any[]} the buffer to use
+   */
+  hoistTargetOf(chain, out, topLevel) {
+    if (!topLevel || !this.page) return out;
+
+    const hoisted = chain.filter(({ node }) => HEAD_TAGS.has(node.tagName));
+    if (hoisted.length === 0) return out;
+
+    if (hoisted.length !== chain.length) {
+      const ordinary = chain.find(({ node }) => !HEAD_TAGS.has(node.tagName));
+      throw new CompileError(
+        `<${hoisted[0].node.tagName}> is hoisted into <head> and ` +
+          `<${ordinary.node.tagName}> is not, so this chain would be split in two. ` +
+          `Give each of them its own condition.`,
+        ordinary.node,
+      );
+    }
+
+    // The innermost <title> winning is decided when this compiles, by whether a
+    // level has one at all. A condition would make that a question only the
+    // request can answer, and a false one would leave the document untitled with
+    // the layout's title already ruled out.
+    const titled = chain.find(({ node }) => node.tagName === 'title');
+    if (titled) {
+      throw new CompileError(
+        `<title> cannot carry a directive. Which level's title wins is settled ` +
+          `when this compiles. Interpolate the text instead, or move the ` +
+          `condition into the loader.`,
+        titled.node,
+      );
+    }
+
+    return this.head;
   }
 
   /**
@@ -298,7 +365,7 @@ class Codegen {
    * variables as arguments, so nesting is not a reason to give up on either.
    */
   standalone() {
-    return this.blocks;
+    return this.blocks && this.inHead === 0;
   }
 
   /** Flat list of the loop variables in scope, outermost first. */

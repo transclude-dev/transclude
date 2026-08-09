@@ -459,23 +459,30 @@ describe('an operating system leaving a file in public does not publish it', () 
 // inside the repository.
 
 test('a draft is in the source', () => {
-  // If this file goes, the three tests under it pass by having nothing to find.
+  // Reads the source, so it runs without a build. If this file goes, the three
+  // below it pass by having nothing to find.
   const source = fs.readFileSync(path.join(root, 'app/routes/draft-example.html'), 'utf8');
   assert.match(source, /export const draft = true/);
 });
 
-test('a draft is not written to a file', () => {
+// The three below read what the build wrote, so they skip without one, the way
+// everything else in this file that reads `dist` does. Written as plain `test`
+// first, which failed in CI where the examples are not built before they are
+// tested. The `existsSync` one was worse than a failure: with no build it found
+// no file and passed, which is a test reporting success for having nothing to
+// look at.
+describe('a draft is not written to a file', () => {
   assert.equal(fs.existsSync(path.join(dist, 'static/draft-example/index.html')), false);
   assert.equal(fs.existsSync(path.join(dist, 'static/draft-example.html')), false);
 });
 
-test('a draft is not a route the server knows', () => {
+describe('a draft is not a route the server knows', () => {
   // Absent here is what makes the deployed URL a 404 rather than a page.
   const routes = fs.readFileSync(path.join(dist, 'routes.json'), 'utf8');
   assert.doesNotMatch(routes, /draft-example/);
 });
 
-test('a draft is not advertised in the sitemap', () => {
+describe('a draft is not advertised in the sitemap', () => {
   // This app has no `sitemap` in its config, so there is nothing to read and
   // asserting against a file that was never written is a test that passes by
   // finding nothing. The sitemap takes the same route list the rest of the

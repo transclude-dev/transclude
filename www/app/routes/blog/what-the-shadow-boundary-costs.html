@@ -1,0 +1,164 @@
+<script server>
+  import { all } from '../../lib/code.js';
+
+  // Not finished. `npm run dev` serves this; the build leaves it out.
+  export const draft = true;
+
+  export default async () => ({
+    s: await all({
+      label: [
+        `<label for="email">Email</label>
+<email-field id="email"></email-field>`,
+        'html',
+      ],
+
+      light: [
+        `<!-- app/elements/site-note.html -->
+<script properties>
+  export default { tone: 'info' };
+<\\/script>
+
+<style>
+  :scope {
+    display: block;
+    border-left: 3px solid;
+    padding: 0.75rem 1rem;
+  }
+<\\/style>
+
+<slot><\\/slot>`,
+        'html',
+      ],
+
+      shadow: [
+        `<!-- app/elements/person-card.html -->
+<script properties>
+  export const shadow = true;
+
+  export default { name: '' };
+<\\/script>`,
+        'html',
+      ],
+    }),
+  });
+</script>
+
+<title>What the shadow boundary costs · transclude</title>
+<meta
+  name="description"
+  content="Style encapsulation is the reason people reach for shadow DOM. The bill includes label-for, a JavaScript runtime, and your own stylesheet."
+/>
+
+<article>
+  <h1>What the shadow boundary costs</h1>
+
+  <p>
+    Custom elements and shadow DOM arrived together and get talked about as one
+    feature. They are not. You can define an element and never attach a shadow
+    root, and for most of what people build that is the better trade.
+  </p>
+
+  <p>
+    The boundary buys one thing: nothing outside can style what is inside, and
+    nothing inside leaks out. That is genuinely valuable if you are shipping a
+    widget into a stranger's page. It is a strange thing to want inside your own
+    site, where the stylesheet is yours.
+  </p>
+
+  <h2>The one that surprises people</h2>
+
+  ${html(s.label)}
+
+  <p>
+    That does not work. A <code>&lt;label for&gt;</code> looks for an element in
+    the same tree, and the input is behind a boundary. So the click does not
+    focus the field, the accessible name is not attached, and a screen reader
+    announces an unlabelled text box.
+  </p>
+
+  <p>
+    There are ways around it. You can put a label inside the element, or wire
+    <code>ElementInternals</code> and take on form association properly, or
+    delegate focus. All of them are work you would not be doing if the input
+    were in the page.
+  </p>
+
+  <p>
+    This is the shape of most shadow DOM problems. Nothing is impossible. Every
+    ordinary thing costs a paragraph of explanation.
+  </p>
+
+  <h2>The boundary is not free at runtime either</h2>
+
+  <p>
+    A shadow root has to be attached. Server-rendered, that is a declarative
+    shadow root, which is real and works. But the element still needs JavaScript
+    in the browser to define the class, adopt the root, and re-render when an
+    attribute changes.
+  </p>
+
+  <p>
+    A light element with no behaviour ships nothing. The markup is in the page
+    and the styles are in your stylesheet. There is no class to define, because
+    nothing needs to happen after the HTML arrives.
+  </p>
+
+  ${html(s.light)}
+
+  <p>
+    That renders on the server, inherits the page's typography, and is styleable
+    from your own CSS with the selector you would have used anyway. It is a
+    partial with a nicer name, and most components on most sites want to be
+    exactly that.
+  </p>
+
+  <h2>Your stylesheet stops at the boundary</h2>
+
+  <p>
+    The encapsulation people want is usually one-directional. They want their
+    component not to be broken by page CSS. What they get is a component their
+    page CSS cannot reach at all.
+  </p>
+
+  <p>
+    So the design system's spacing scale does not apply. The dark mode rule does
+    not apply. The font stack arrives only because typography inherits. Anything
+    you want to reach in has to be published deliberately, as a custom property
+    or a <code>::part()</code>. Every styling need becomes an API decision made
+    in advance.
+  </p>
+
+  <p>
+    That is a reasonable trade for a date picker distributed on npm. It is a
+    strange one for a card that appears on four pages of one site.
+  </p>
+
+  <h2>When the boundary earns it</h2>
+
+  ${html(s.shadow)}
+
+  <p>
+    Reach for it when the element has to seal itself off from a page you do not
+    control. Or when it re-renders its own structure, and you want that not to
+    fight whatever else is on the page.
+  </p>
+
+  <p>
+    Those are real cases. They are just narrower than the number of times
+    <code>attachShadow</code> gets typed.
+  </p>
+
+  <h2>The part that made me care</h2>
+
+  <p>
+    A framework built on shadow roots cannot render to an email, because no mail
+    client has a shadow DOM. It cannot render to anything that reads markup
+    rather than running a browser.
+  </p>
+
+  <p>
+    Light DOM is not a limitation you accept for now. It is the version of a
+    component that is still HTML at the end, and HTML goes places a component
+    does not.
+  </p>
+</article>

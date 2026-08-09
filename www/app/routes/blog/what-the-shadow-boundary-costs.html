@@ -1,5 +1,5 @@
 <script server>
-  import { all } from '../../lib/code.js';
+  import { all } from "../../lib/code.js";
 
   // Not finished. `npm run dev` serves this; the build leaves it out.
   export const draft = true;
@@ -9,14 +9,14 @@
       label: [
         `<label for="email">Email</label>
 <email-field id="email"></email-field>`,
-        'html',
+        "html",
       ],
 
       light: [
         `<!-- app/elements/site-note.html -->
 <script properties>
   export default { tone: 'info' };
-<\\/script>
+<\/script>
 
 <style>
   :scope {
@@ -24,10 +24,10 @@
     border-left: 3px solid;
     padding: 0.75rem 1rem;
   }
-<\\/style>
+<\/style>
 
-<slot><\\/slot>`,
-        'html',
+<slot><\/slot>`,
+        "html",
       ],
 
       shadow: [
@@ -36,8 +36,8 @@
   export const shadow = true;
 
   export default { name: '' };
-<\\/script>`,
-        'html',
+<\/script>`,
+        "html",
       ],
     }),
   });

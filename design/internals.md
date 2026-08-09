@@ -768,6 +768,21 @@ against.
   its value and leaves the tail in the document. The test for that was vacuous
   at first: it searched for the whole value, which a truncated cut does not
   leave behind either. It counts the surviving tags now.
+- **A hoisted tag's directive has to be decided before anything is emitted.**
+  `<title>`, `<meta>`, `<link>` and `<base>` at the top level of a page are
+  written into the head buffer, and `emitElement` used to be where that was
+  decided. That is too late for `if`: `emitBranches` has already written
+  `if (…) {` into the body buffer, so the condition guarded an empty block and
+  the tag went into `<head>` on every request. `<link rel="next" if="older">`
+  shipped to everyone. Nothing failed, and the attribute was stripped as a
+  directive on the way, so the source did not show it either. `hoistTargetOf`
+  picks the buffer in `emitChildren`, before the chain is emitted, and
+  `standalone()` is off inside `<head>` because nothing there is ever re-rendered
+  and the block anchors would be comments nobody looks for. A chain mixing a
+  hoisted tag with an ordinary one has no single buffer, so it is refused, and so
+  is a directive on `<title>`: which level's title wins is settled at compile
+  time from `hasTitle`, and a false condition would leave the document untitled
+  with the layout's title already ruled out.
 - **`renderHtmlAttrs` returns an object, not markup.** The chain merges by name,
   innermost winning per attribute, so a root layout setting the theme and a page
   setting `dir` both survive. Concatenating serialized attributes instead would

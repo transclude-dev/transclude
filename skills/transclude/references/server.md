@@ -141,6 +141,11 @@ this to a page that has to run for each request:
 export const prerender = false;
 ```
 
+**`export const draft = true` keeps a page out of the build.** `npm run dev`
+serves it, because the dev server reads the directory. The build writes no file,
+puts no route in the manifest and no line in the sitemap, and prints what it
+skipped. Deployed, the URL is a 404. Publishing is deleting the line.
+
 `prerender` is read off the page, never off its layouts. A layout that reads a
 cookie makes every page under it request-dependent, and nothing says so.
 

@@ -450,3 +450,42 @@ describe('an operating system leaving a file in public does not publish it', () 
     assert.ok(!files.includes(junk), `${junk} was copied into the build`);
   }
 });
+
+// ---- drafts ----------------------------------------------------------------
+//
+// `export const draft = true` is the one thing here that is in the source and
+// deliberately not in the build. Every assertion below is about absence, which
+// is why they are worth having: nothing about a missing page looks wrong from
+// inside the repository.
+
+test('a draft is in the source', () => {
+  // If this file goes, the three tests under it pass by having nothing to find.
+  const source = fs.readFileSync(path.join(root, 'app/routes/draft-example.html'), 'utf8');
+  assert.match(source, /export const draft = true/);
+});
+
+test('a draft is not written to a file', () => {
+  assert.equal(fs.existsSync(path.join(dist, 'static/draft-example/index.html')), false);
+  assert.equal(fs.existsSync(path.join(dist, 'static/draft-example.html')), false);
+});
+
+test('a draft is not a route the server knows', () => {
+  // Absent here is what makes the deployed URL a 404 rather than a page.
+  const routes = fs.readFileSync(path.join(dist, 'routes.json'), 'utf8');
+  assert.doesNotMatch(routes, /draft-example/);
+});
+
+test('a draft is not advertised in the sitemap', () => {
+  // This app has no `sitemap` in its config, so there is nothing to read and
+  // asserting against a file that was never written is a test that passes by
+  // finding nothing. The sitemap takes the same route list the rest of the
+  // build does, so a draft is out of it by construction; what is checked here
+  // is that the file's absence is the reason, and not a silent read failure.
+  const at = path.join(dist, 'static/sitemap.xml');
+  if (!fs.existsSync(at)) {
+    assert.doesNotMatch(fs.readFileSync(path.join(dist, 'routes.json'), 'utf8'), /draft-example/);
+    return;
+  }
+
+  assert.doesNotMatch(fs.readFileSync(at, 'utf8'), /draft-example/);
+});

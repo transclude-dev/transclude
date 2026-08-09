@@ -1,0 +1,29 @@
+<script server>
+  // A page that is not published.
+  //
+  // `npm run dev` serves this: open it, reload it, read it on a phone. The
+  // build leaves it out, so there is no file for it, no pattern in
+  // `routes.json` and no line in the sitemap, and the deployed site answers
+  // its URL with the not-found page.
+  //
+  // Delete the export to publish it. That is the whole of it.
+  export const draft = true;
+
+  export default async () => ({ written: 'not yet' });
+</script>
+
+<title>A draft · showcase</title>
+<meta name="description" content="A page the build leaves out." />
+
+<h1>This page is a draft</h1>
+
+<p>
+  It is ${written} finished, so <code>export const draft = true</code> keeps it
+  out of the build. You are reading it because this is the dev server, which
+  reads the directory rather than the manifest.
+</p>
+
+<p>
+  The build prints what it skipped, so a page missing from production is
+  something you were told about rather than something you find.
+</p>

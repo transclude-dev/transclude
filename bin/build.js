@@ -123,6 +123,29 @@ fs.writeFileSync(entry, `// @ts-nocheck\n${fs.readFileSync(entry, 'utf8')}`);
 
 const { pages } = await import(pathToFileURL(entry).href);
 
+// ---- drafts ---------------------------------------------------------------
+
+/**
+ * `export const draft = true` keeps a page out of the build.
+ *
+ * The dev server reads the directory, so a draft is a page there and you can
+ * open it, reload it and read it on a phone. This is the only place that knows
+ * the difference, and it takes the route out of the one list every step below
+ * reads: nothing is prerendered for it, no pattern reaches `routes.json`, and
+ * the sitemap never hears of it. In production the URL is a 404.
+ *
+ * Assigned back onto the manifest rather than carried alongside it. Three steps
+ * below read `manifest.routes`, and a fourth added later would publish drafts
+ * without anyone noticing. One list is the only version of this that stays true.
+ *
+ * The build says what it skipped, at the end, next to everything else it wrote.
+ * A page that is missing from production and silent about it is an afternoon.
+ */
+const isDraft = (route) => pages[route.id]?.draft === true;
+const drafts = manifest.routes.filter(isDraft);
+
+manifest.routes = manifest.routes.filter((route) => !isDraft(route));
+
 /**
  * A static route has one URL. A dynamic route has as many as its `paths` export
  * names, and none at all if it does not export one, in which case it stays a
@@ -516,6 +539,17 @@ const summary = [
 console.log(`\n${summary.join(', ')}`);
 for (const url of prerendered) console.log(`  ${url}`);
 for (const route of dynamic) console.log(`  ${route.pattern}  (server-rendered)`);
+
+// Last, and never silent. A draft is the one thing here that is absent from
+// production on purpose, and the only way to tell a page that was skipped from
+// a page that broke is to be told.
+if (drafts.length) {
+  console.log(
+    `\n${drafts.length} draft${drafts.length === 1 ? '' : 's'} skipped, ` +
+      `and served by \`npm run dev\`:`,
+  );
+  for (const route of drafts) console.log(`  ${route.pattern}`);
+}
 
 if (compressed.files) {
   const kb = (n) => `${(n / 1024).toFixed(1)} KB`;

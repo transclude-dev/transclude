@@ -1,0 +1,150 @@
+<script server>
+  import { all } from '../../lib/code.js';
+
+  // Not finished. `npm run dev` serves this; the build leaves it out.
+  export const draft = true;
+
+  export default async () => ({
+    s: await all({
+      layout: [
+        `<!-- app/routes/_layout.html -->
+<script server>
+  export default async ({ cookies }) => ({
+    theme: cookies.get('theme') ?? 'auto',
+  });
+<\\/script>
+
+<html data-theme="\${theme}">
+  <slot><\\/slot>
+<\\/html>`,
+        'html',
+      ],
+
+      refusal: [
+        `1 page failed to render:
+  /about
+    read a cookie, so it is different for each visitor and cannot be one file.
+    Give it \`export const prerender = false\`, or stop reading the cookie here
+    or in what it includes`,
+        'text',
+      ],
+
+      client: [
+        `<!-- app/routes/_layout.html -->
+<script head>
+  // Before the body parses, so nothing paints in the wrong theme first.
+  const theme = localStorage.getItem('theme');
+  if (theme) document.documentElement.dataset.theme = theme;
+<\\/script>`,
+        'html',
+      ],
+    }),
+  });
+</script>
+
+<title>A cookie in the root layout costs the whole site · transclude</title>
+<meta
+  name="description"
+  content="Read one there and every page under it is different for every visitor, so none of them can be a file or sit in a shared cache."
+/>
+
+<article>
+  <h1>A cookie in the root layout costs the whole site</h1>
+
+  <p>
+    A theme toggle is the friendliest feature there is. Read a cookie, put the
+    value on the html element, done. It belongs in the outermost layout, because
+    every page needs it and no page should have to remember it.
+  </p>
+
+  ${html(s.layout)}
+
+  <p>Then every page on the site stops being cacheable.</p>
+
+  <h2>Reading is what does it, not writing</h2>
+
+  <p>
+    A page that reads a cookie renders differently for different people. That is
+    the definition of a response a shared cache must not hold. Put one visitor's
+    copy in front of the next and you have handed over their theme, their name,
+    or their session.
+  </p>
+
+  <p>
+    Writing a cookie is fine. A response that sets one is still the same
+    response for everybody. It is the read that makes the output depend on who
+    asked.
+  </p>
+
+  <p>
+    Which means the check cannot be "did a Set-Cookie header go out". It has to
+    be "did anything ask what the request carried". Once you say it that way, the
+    cost of putting the read in a layout is obvious, and it is not obvious
+    before.
+  </p>
+
+  <h2>Layouts are the trap</h2>
+
+  <p>
+    A cookie read in one page costs that page. A cookie read in the layout above
+    forty pages costs forty pages, and none of those forty files mentions a
+    cookie anywhere.
+  </p>
+
+  <p>
+    You go looking for why your marketing pages are being rendered per request.
+    You read the marketing pages. They are three paragraphs and an image. The
+    reason is two directories up, in a file you last edited in March.
+  </p>
+
+  <h2>This is where a build should be rude</h2>
+
+  ${html(s.refusal)}
+
+  <p>
+    That is what our build does rather than write the file. A page that read a
+    cookie cannot be one file for everybody. So it says which page, what it did,
+    and the two ways out.
+  </p>
+
+  <p>
+    The alternative is a build that writes the file anyway. Then one visitor's
+    theme is baked into a page every other visitor gets. The failure reaches you
+    as a bug report about somebody else's name in the corner.
+  </p>
+
+  <h2>What to do instead</h2>
+
+  <p>
+    Keep the read as close to the thing that needs it as you can. A theme
+    toggle's page can read the cookie; the layout above the whole site does not
+    have to.
+  </p>
+
+  <p>
+    Or move it off the server. A theme is one of the few things the client knows
+    better. It can read the preference and apply it before the first paint.
+  </p>
+
+  ${html(s.client)}
+
+  <p>
+    Now the pages are files again, and the theme is applied by four lines that
+    run before the body parses. The cost is four lines of JavaScript on a site
+    that wanted none. That is a real tradeoff and it is a smaller one than every
+    page being personal.
+  </p>
+
+  <h2>The general shape</h2>
+
+  <p>
+    Anything read high in a tree is paid for by everything under it. Cookies are
+    the version of this with a cache attached, so the bill arrives as latency
+    and hosting rather than as an error.
+  </p>
+
+  <p>
+    Worth knowing which of your reads are up there. Most people find out when
+    the bill arrives.
+  </p>
+</article>

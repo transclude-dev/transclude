@@ -1,0 +1,160 @@
+<script server>
+  import { all } from '../../lib/code.js';
+
+  // Not finished. `npm run dev` serves this; the build leaves it out.
+  export const draft = true;
+
+  export default async () => ({
+    s: await all({
+      button: [
+        `<form method="post">
+  <input type="hidden" name="id" value="3" />
+  <button name="intent" value="toggle">Done</button>
+  <button name="intent" value="remove">Delete</button>
+</form>`,
+        'html',
+      ],
+
+      handler: [
+        `export const POST = async ({ request, url }) => {
+  const form = await request.formData();
+
+  // Which button was pressed. A submit button's name and value are sent only
+  // when it is the one that submitted, which is how a page has seven actions
+  // and no router for them.
+  const intent = String(form.get('intent') ?? '');
+  const id = Number(form.get('id') ?? 0);
+  const text = String(form.get('text') ?? '').trim();
+
+  if (intent === 'add' && text) todos.add(text);
+  if (intent === 'toggle') todos.toggle(id);
+  if (intent === 'remove') todos.remove(id);
+  if (intent === 'mark-all') todos.markAll(form.get('done') === '1');
+  if (intent === 'clear') todos.clearDone();
+
+  // An empty edit deletes the todo, which is what TodoMVC has always done.
+  if (intent === 'rename') {
+    if (text) todos.rename(id, text);
+    else todos.remove(id);
+  }
+
+  return Response.redirect(back(url), 303);
+};`,
+        'js',
+      ],
+
+      editing: [
+        `<!-- A link, not a click handler. The row being edited is in the URL. -->
+<a class="label" href="?show=\${show}&editing=\${todo.id}">\${todo.text}</a>`,
+        'html',
+      ],
+    }),
+  });
+</script>
+
+<title>TodoMVC with no JavaScript · transclude</title>
+<meta
+  name="description"
+  content="Seven actions through one POST handler, and the row being edited kept in the URL where a reload cannot lose it."
+/>
+
+<article>
+  <h1>TodoMVC with no JavaScript</h1>
+
+  <p>
+    TodoMVC is the benchmark every framework implements: add, toggle, delete,
+    rename, filter, mark all, clear completed. It exists to show off state
+    management, and every version of it ships a runtime to do that.
+  </p>
+
+  <p>
+    All seven work with forms. The interesting part is not that it can be done.
+    It is which HTML features turn out to be doing the work.
+  </p>
+
+  <h2>A submit button sends its own name</h2>
+
+  <p>
+    This is the one that makes the whole thing possible, and most people have
+    never needed it.
+  </p>
+
+  ${html(s.button)}
+
+  <p>
+    A submit button's name and value are included in the submission
+    <em>only when it is the button that submitted the form</em>. Press Done and
+    the server gets <code>intent=toggle</code>. Press Delete and the same form
+    sends <code>intent=remove</code>.
+  </p>
+
+  <p>
+    One form, one action attribute, as many verbs as you have buttons. No
+    routing table for them and no JavaScript deciding which one was clicked,
+    because the browser already told you.
+  </p>
+
+  <h2>Seven actions, one handler</h2>
+
+  ${html(s.handler)}
+
+  <p>
+    That is the whole of it. Read the intent, do the thing, redirect. The
+    redirect is post/redirect/get, so a reload repeats the navigation rather
+    than the change, and the back button does not resubmit anything.
+  </p>
+
+  <h2>The editing state is a URL</h2>
+
+  <p>
+    Renaming needs a mode: one row becomes a text field while the others stay
+    labels. That is the piece which usually forces a client state library.
+  </p>
+
+  ${html(s.editing)}
+
+  <p>
+    The row being edited is a query parameter, and the thing that sets it is a
+    link. The server renders a text field for that row and labels for the rest.
+    The mode survives a reload, a shared link and the back button.
+  </p>
+
+  <p>
+    Client state would not survive any of those, which is a thing nobody
+    mentions because a click handler is quicker to write.
+  </p>
+
+  <h2>What it costs</h2>
+
+  <p>
+    A round trip per action. On a local list that is a few milliseconds and you
+    will not see it; on a slow connection you will. That is the trade, and it is
+    a real one rather than a free win.
+  </p>
+
+  <p>
+    What you get back is a page that works with JavaScript disabled, before the
+    bundle loads, and while it is failing to load. There is no loading state,
+    because there is nothing to load.
+  </p>
+
+  <p>
+    <a href="https://todomvc.transclude.dev">The running version</a> ships zero
+    bytes of JavaScript. Not a small bundle. None: view source and there is no
+    script tag on the page.
+  </p>
+
+  <h2>The point is not that you should</h2>
+
+  <p>
+    Most applications want the round trips back. A todo list is a benchmark, not
+    a product.
+  </p>
+
+  <p>
+    The point is which parts of the platform were sitting there unused. A
+    submit button carries which button it was. A URL carries which row is
+    open. Post-redirect-get handles the reload. Every one of those is older than
+    every framework, and every one gets reimplemented in JavaScript most weeks.
+  </p>
+</article>

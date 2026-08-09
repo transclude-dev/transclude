@@ -1,5 +1,5 @@
 <script server>
-  import { all } from '../../lib/code.js';
+  import { all } from "../../lib/code.js";
 
   // Not finished. `npm run dev` serves this; the build leaves it out.
   export const draft = true;
@@ -12,12 +12,12 @@
   export default async ({ cookies }) => ({
     theme: cookies.get('theme') ?? 'auto',
   });
-<\\/script>
+<\/script>
 
 <html data-theme="\${theme}">
-  <slot><\\/slot>
-<\\/html>`,
-        'html',
+  <slot><\/slot>
+<\/html>`,
+        "html",
       ],
 
       refusal: [
@@ -26,7 +26,7 @@
     read a cookie, so it is different for each visitor and cannot be one file.
     Give it \`export const prerender = false\`, or stop reading the cookie here
     or in what it includes`,
-        'text',
+        "text",
       ],
 
       client: [
@@ -36,7 +36,7 @@
   const theme = localStorage.getItem('theme');
   if (theme) document.documentElement.dataset.theme = theme;
 <\\/script>`,
-        'html',
+        "html",
       ],
     }),
   });
@@ -78,8 +78,8 @@
 
   <p>
     Which means the check cannot be "did a Set-Cookie header go out". It has to
-    be "did anything ask what the request carried". Once you say it that way, the
-    cost of putting the read in a layout is obvious, and it is not obvious
+    be "did anything ask what the request carried". Once you say it that way,
+    the cost of putting the read in a layout is obvious, and it is not obvious
     before.
   </p>
 

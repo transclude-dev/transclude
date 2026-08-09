@@ -15,6 +15,14 @@
 <\/script>
 
 <h1>\${person.name}</h1>`,
+      draft: [
+        `<!-- app/routes/blog/002.html -->
+<script server>
+  export const draft = true;
+<\/script>`,
+        'html',
+      ],
+
       response: [
         `export default async ({ params }) => {
   const person = find(params.name);
@@ -120,6 +128,34 @@
       </tbody>
     </table>
   </div>
+
+  <h2>Drafts</h2>
+
+  <p>
+    A page in the tree is a route, which leaves nowhere to put one that is not
+    finished. This is that.
+  </p>
+
+  ${html(s.draft)}
+
+  <p>
+    <code>npm run dev</code> serves it, because the dev server reads the
+    directory. The build leaves it out: no file, no route in the manifest, no
+    line in the sitemap. The deployed site answers that URL with the not-found
+    page. Publishing is deleting the line.
+  </p>
+
+  <doc-note label="The build says what it skipped" tone="warn">
+    A page absent from production and silent about it is a bad afternoon, so
+    every build prints its drafts under everything it wrote. If you deploy and a
+    page is missing, the reason was on screen when you built it.
+  </doc-note>
+
+  <p>
+    Being in dev and not in production is a difference, and differences like it
+    are where the quiet bugs live. This one is the whole point of the feature,
+    which is why the build is loud about it.
+  </p>
 
   <h2>The loader</h2>
 

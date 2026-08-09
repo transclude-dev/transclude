@@ -164,6 +164,16 @@ against.
   because their configs happen to set the key. `DEFAULTS` lives in `defaults.js`
   now, which imports nothing, and `withDefaults` runs on the first line of
   `createApp` so no entry can skip it.
+- **`draft` is filtered out of `manifest.routes` once, and the manifest is
+  reassigned.** Three steps in `bin/build.js` read that list: the render pass,
+  the sitemap and `routes.json`. Carrying the published routes alongside the
+  manifest would leave a fourth one added later publishing drafts, so the filter
+  replaces the list rather than sitting beside it. The dev server never sees any
+  of this: it scans the directory, which is what makes a draft previewable and is
+  the whole point. That is a deliberate dev-versus-production difference, in a
+  file that has had three accidental ones, so the build prints what it skipped
+  under everything it wrote. A page missing from production and silent about it is
+  the failure this feature would otherwise create.
 - **The build's context refuses rather than omits.** `revalidateTag` and `after`
   are on the prerender context as functions that throw. Leaving them off is what
   it did before, and a loader calling one failed with `revalidateTag is not a

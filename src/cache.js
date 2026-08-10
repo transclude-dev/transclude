@@ -63,6 +63,35 @@ export function memoryStore({ max = 1000 } = {}) {
 }
 
 /**
+ * How long an unfinished render may hold a key.
+ *
+ * The map exists so one render happens per key. It assumed every promise it held
+ * would settle. On workerd one may not: the isolate is allowed to stop when the
+ * response is sent, and it stops the work with it. The `finally` never runs, the
+ * entry stays, and every later request for that key waits on a promise that is
+ * already dead. The page hangs for as long as the isolate lives.
+ *
+ * `after` is the fix, and this is the bound on it being wrong. A render slower
+ * than this loses its claim on the key rather than keeping it forever.
+ */
+const ABANDONED_MS = 30_000;
+
+/**
+ * Keeps the background rebuild alive, and its failure off the unhandled path.
+ *
+ * `after` is `waitUntil` on workerd and a no-op elsewhere, and it attaches its
+ * own catch. Without one, the catch here is all there is: a rebuild that throws
+ * must not take down a process that was only serving a stale page.
+ *
+ * @param {Promise<unknown>} work
+ * @param {((work: Promise<unknown>) => void)|null} after
+ */
+function hold(work, after) {
+  if (after) after(work);
+  else work.catch(() => {});
+}
+
+/**
  * One route's cache, wrapped around the render.
  *
  * `render` is called with nothing and returns `{ html, cacheable }`. A page is
@@ -80,8 +109,11 @@ export function createCache(store = memoryStore(), { now = () => Date.now() } = 
   // and every request behind it each start their own.
   const inFlight = new Map();
 
-  const refresh = async (key, window, render) => {
-    if (inFlight.has(key)) return inFlight.get(key);
+  const refresh = (key, window, render) => {
+    const current = inFlight.get(key);
+    if (current && now() - current.at < ABANDONED_MS) return current.work;
+
+    const started = now();
 
     const work = (async () => {
       const result = await render();
@@ -97,15 +129,25 @@ export function createCache(store = memoryStore(), { now = () => Date.now() } = 
         store.delete(key);
       }
       return result;
-    })().finally(() => inFlight.delete(key));
+    })().finally(() => {
+      // Only if this is still the entry made above. A render that ran past
+      // ABANDONED_MS was replaced, and it must not delete its replacement.
+      if (inFlight.get(key)?.at === started) inFlight.delete(key);
+    });
 
-    inFlight.set(key, work);
+    inFlight.set(key, { work, at: started });
     return work;
   };
 
   return {
-    /** `null` when the caller should just render, which is every uncached route. */
-    async read(key, window, render) {
+    /**
+     * `null` when the caller should just render, which is every uncached route.
+     *
+     * `after` is the request's `ctx.after`. Only the stale path uses it, and a
+     * caller that leaves it out gets a rebuild nothing holds, which is what this
+     * used to do everywhere.
+     */
+    async read(key, window, render, after = null) {
       if (!window) return null;
 
       const hit = store.get(key);
@@ -116,7 +158,10 @@ export function createCache(store = memoryStore(), { now = () => Date.now() } = 
       // Stale. Answer with it now and rebuild behind the response. A failed
       // rebuild leaves the stale entry in place rather than emptying the cache
       // because one render threw.
-      refresh(key, window, render).catch(() => {});
+      //
+      // `after` is what keeps the rebuild alive. On workerd the isolate may stop
+      // the moment the response is sent, and work nothing holds stops with it.
+      hold(refresh(key, window, render), after);
       return hit.html;
     },
 

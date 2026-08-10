@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { buildShim, originalOffset } from '../src/compiler/shim.js';
+import { GLOBALS as EXPRESSION_GLOBALS } from '../src/compiler/expr.js';
 import { createChecker, positionAt } from '../src/typecheck.js';
 
 const CONTEXT = '{ params: { name: string }; layout: { site: string } }';
@@ -31,6 +32,27 @@ test('runtime globals are parameters, so an import of the same name cannot clash
   const { code } = shim('<p>${html(body)}</p>');
   assert.match(code, /@param \{\(value: unknown\) => string\} html/);
   assert.match(code, /__expr\(html\(__d\.body\)\)/);
+});
+
+test('json is a global here too, not a field of the page data', () => {
+  // It was declared as a parameter of `__template` and still rewritten to
+  // `__d.json`, so `${json(rows)}` compiled, rendered, and then failed
+  // `npm run check` saying json was not on the data. Reported from an app.
+  const { code } = shim('<script type="application/json">${json(rows)}</script><p>x</p>');
+
+  assert.match(code, /__expr\(json\(__d\.rows\)\)/);
+  assert.doesNotMatch(code, /__d\.json/);
+});
+
+test('every name the compiler resolves without a lookup resolves here', () => {
+  // The two lists were written out separately and drifted. This is the check
+  // that says they agree, without either of them having to be exported: a name
+  // the expression layer treats as a global must not come out as page data.
+  for (const name of EXPRESSION_GLOBALS) {
+    const { code } = shim(`<p>\${${name}}</p>`);
+
+    assert.doesNotMatch(code, new RegExp(`__d\\.${name}\\b`), `${name} was read off the data`);
+  }
 });
 
 test('the loader keeps its inferred return type while its parameter is typed', () => {

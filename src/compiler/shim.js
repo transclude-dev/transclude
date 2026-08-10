@@ -18,6 +18,7 @@ import { ambientJsdoc } from './ambient.js';
 import { parseEach } from './directives.js';
 import { childrenOf } from './codegen.js';
 import { splitInterpolations } from './interp.js';
+import { GLOBALS as EXPRESSION_GLOBALS } from './expr.js';
 import { splitBlocks } from './index.js';
 import { planLift } from './script.js';
 import { ACTION_METHODS } from '../document.js';
@@ -700,10 +701,17 @@ function collectRoots(node, scope, out) {
   }
 }
 
-const GLOBALS = new Set([
-  'html', 'Math', 'JSON', 'String', 'Number', 'Boolean', 'Array', 'Object', 'Date',
-  'isNaN', 'parseInt', 'parseFloat', 'undefined', 'NaN', 'Infinity', 'true', 'false', 'null',
-]);
+/**
+ * The names an expression resolves without a data lookup, plus the three
+ * literals acorn hands back as identifiers where jsep does not.
+ *
+ * Taken from the expression layer rather than written out again. The two lists
+ * were separate and drifted: `json` was in one and not the other, so the
+ * documented helper compiled, rendered, and then failed `npm run check` saying
+ * it was not a field of the page's data. Anything the compiler resolves has to
+ * resolve here too, or the shim checks code the compiler never emits.
+ */
+const GLOBALS = new Set([...EXPRESSION_GLOBALS, 'true', 'false', 'null']);
 
 function collectUsedTags(nodes, components, found = new Set()) {
   for (const node of nodes) {

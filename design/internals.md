@@ -104,6 +104,18 @@ against.
   `export function GET(ctx)` is not, and gets a trailing `@type` assignment
   instead, which holds the return type but leaves the parameter untyped. So
   `export const` is the better spelling for a handler.
+- **The shim's globals come from `expr.js`, and used not to.** Two lists of the
+  same names, written out separately, drifted: `json` was in the compiler's and
+  not the shim's. So `${json(rows)}` compiled, rendered the right bytes, and then
+  failed `npm run check` claiming `json` was not a field of the page's data. The
+  shim already declared it as a parameter of `__template`; only the rewrite did
+  not know, so it emitted `__d.json(...)` against a name sitting right there in
+  scope. Worse than a missing feature, because the compiler's own raw-text error
+  tells the author to reach for `json()`: follow the advice, get a type error.
+  `GLOBALS` is now `expr.js`'s set plus the three literals acorn hands back as
+  identifiers, and a test walks every name in it. Nothing in this repo uses
+  `json()` as live markup — it appears only inside code samples, which are
+  strings — so `transclude-check` on `www` could not have caught it.
 - **Report parse failures directly.** A syntax error in a `<script>` block used
   to surface as a confusing tsc error in a different file. `buildShim` records
   them with mapped offsets. Keep it that way.

@@ -193,6 +193,20 @@ against.
   the generated type either way, because the checker cannot know which pages
   become files. All six refusals live in `src/prerender.js` rather than in
   `bin/build.js`, for the reason below.
+- **The cache's own background work forgot `after`, which is the rule `after`
+  exists for.** `src/after.js` says it in its first paragraph: workerd may stop
+  the isolate when the response is sent, and work nothing holds stops with it.
+  `src/cache.js` then wrote `refresh(...).catch(() => {})` behind a stale
+  response and held nothing. Two failures follow. The rebuild never happens, so a
+  revalidating page is permanently stale on Cloudflare and correct on the other
+  three. And the `finally` that frees the key never runs, so `inFlight` keeps a
+  promise that will never settle, and any later request reaching the *miss* path
+  waits on it for as long as the isolate lives. The stale path does not await, so
+  expiry alone does not hang: the store entry has to be gone as well, which
+  `revalidateTag`, `revalidatePath`, eviction at `max`, or a render that stopped
+  being cacheable all do. Found on a deployed site, not here, because nothing in
+  this repository runs on workerd. `read` takes the request's `after` now, and
+  `ABANDONED_MS` bounds how long one unfinished render may hold a key.
 - **`ctx.after` catches the rejection before `waitUntil` sees it.** Nothing awaits
   the work, so an unhandled rejection ends the process on Node. `after.js` hands
   `waitUntil` the already-caught promise, not the original, or workerd logs the

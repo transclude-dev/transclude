@@ -89,6 +89,128 @@ test('one render at a time per key, however many requests arrive', async () => {
   assert.equal(renders, 1);
 });
 
+// ---- the rebuild has to be held --------------------------------------------
+//
+// Node, Bun and Deno are processes: a promise nobody awaits finishes anyway.
+// workerd is not. The isolate may stop when the response is sent, and it stops
+// the rebuild with it, so the `finally` that frees the key never runs. The next
+// request for that key then waits on a promise that is already dead, and the
+// page hangs for as long as the isolate lives. Found on a deployed site.
+
+test('the stale rebuild is handed to after, which is what keeps it alive', async () => {
+  const time = clock();
+  const cache = createCache(memoryStore(), time);
+  const held = [];
+  const after = (work) => held.push(work);
+  const window = { seconds: 60, tags: [] };
+
+  await cache.read('/x', window, ok('v1'), after);
+  assert.deepEqual(held, [], 'a first render is awaited by the request itself');
+
+  time.tick(61_000);
+  await cache.read('/x', window, ok('v2'), after);
+
+  assert.equal(held.length, 1, 'the rebuild behind the response was not held');
+  assert.equal(typeof held[0].then, 'function', 'after takes a promise, not a function');
+});
+
+test('a rebuild nobody holds still cannot reject into the runtime', async () => {
+  // The old behavior, kept for a caller that passes no `after`.
+  const time = clock();
+  const cache = createCache(memoryStore(), time);
+  const window = { seconds: 60, tags: [] };
+  const failing = async () => {
+    throw new Error('the loader threw');
+  };
+
+  await cache.read('/x', window, ok('v1'));
+  time.tick(61_000);
+
+  assert.equal(await cache.read('/x', window, failing), 'v1', 'the stale copy still went out');
+  await new Promise((resolve) => setTimeout(resolve, 5));
+});
+
+test('a rebuild that never settles does not hang the next request', async () => {
+  // The reported failure, as a test. The first rebuild is a promise that never
+  // settles, which is what workerd leaves behind when it stops the work.
+  const time = clock();
+  const cache = createCache(memoryStore(), time);
+  const window = { seconds: 60, tags: [] };
+  let renders = 0;
+
+  const render = async () => {
+    renders++;
+    if (renders === 2) await new Promise(() => {});
+    return { html: `v${renders}`, cacheable: true };
+  };
+
+  await cache.read('/x', window, render);
+  time.tick(61_000);
+
+  // Serves the stale copy and abandons a rebuild that will never come back.
+  assert.equal(await cache.read('/x', window, render), 'v1');
+
+  // A save drops the entry, so the next request has nothing to serve and has to
+  // wait for a render. Without the bound it waits on the dead one, forever.
+  cache.revalidatePath('/x');
+  time.tick(30_000);
+
+  const answer = await Promise.race([
+    cache.read('/x', window, render),
+    new Promise((resolve) => setTimeout(() => resolve('HUNG'), 50)),
+  ]);
+
+  assert.notEqual(answer, 'HUNG', 'the request waited on a promise that was already dead');
+  assert.equal(answer, 'v3');
+});
+
+test('inside the bound the key is still shared, so one render serves all', async () => {
+  // The other half. A bound that let every request start its own render would
+  // pass the test above and lose the reason the map exists.
+  const time = clock();
+  const cache = createCache(memoryStore(), time);
+  const window = { seconds: 60, tags: [] };
+  let renders = 0;
+  const render = async () => {
+    renders++;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    return { html: 'v', cacheable: true };
+  };
+
+  cache.read('/x', window, render);
+  time.tick(29_000);
+  await cache.read('/x', window, render);
+
+  assert.equal(renders, 1);
+});
+
+test('a render that finishes after it was replaced leaves the replacement alone', async () => {
+  // Two entries for one key existed in sequence. The slow one's `finally` must
+  // not delete the fast one, or the key is free while a render is running.
+  const time = clock();
+  const cache = createCache(memoryStore(), time);
+  const window = { seconds: 60, tags: [] };
+  let release;
+  let renders = 0;
+
+  const render = async () => {
+    renders++;
+    if (renders === 1) await new Promise((resolve) => (release = resolve));
+    return { html: `v${renders}`, cacheable: true };
+  };
+
+  cache.read('/x', window, render);
+  time.tick(31_000);
+  cache.read('/x', window, render);
+
+  // The first one comes back late, after the second took the key.
+  release();
+  await new Promise((resolve) => setTimeout(resolve, 5));
+
+  await cache.read('/x', window, render);
+  assert.equal(renders, 2, 'the late finally freed a key the replacement was using');
+});
+
 test('a route with no window always renders', async () => {
   const cache = createCache();
   assert.equal(await cache.read('/x', null, ok('fresh')), null);

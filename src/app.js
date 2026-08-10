@@ -444,7 +444,12 @@ export function createApp({
           return sendRendered(c, html, ctx, preload);
         }
 
-        const html = await cache.read(cacheKey(c.req.url), window, render);
+        // The fourth argument is what holds the background rebuild. Without it
+        // workerd stops the rebuild when this response is sent, and the entry it
+        // leaves in the in-flight map answers every later request with a dead
+        // promise.
+        const after = afterFor(c, (error) => report(error, c));
+        const html = await cache.read(cacheKey(c.req.url), window, render, after);
 
         // A miss rendered through the cache, and that render can answer with a
         // `Response`. It was not stored, but it is still the answer.

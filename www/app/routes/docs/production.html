@@ -208,6 +208,19 @@ export const POST = async ({ request, revalidateTag }) => {
     <code>?q=</code> renders differently for each one.
   </p>
 
+  <p>
+    That rebuild is held with <a href="/docs/runtimes">ctx.after</a>, which is
+    <code>waitUntil</code> on <code>workerd</code>. A worker may stop the moment
+    it sends a response, and work nothing holds stops with it. Node, Bun and
+    Deno keep running either way.
+  </p>
+
+  <p>
+    A rebuild that throws leaves the held page where it is, so one bad render
+    does not empty the store. The error goes to
+    <a href="/docs/config">onError</a> with the request that started it.
+  </p>
+
   <h3>Tags</h3>
 
   <p>

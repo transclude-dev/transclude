@@ -221,6 +221,11 @@ text containing it in from the loader as data.
 **Directive values are expressions, not interpolations.** Write
 `each="note of notes"`, never `each="${notes}"`.
 
+**A page's `<title>`, `<meta>`, `<link>` and `<base>` move into `<head>`.** Write
+them next to the markup that needs them. The last three take `if` and `each`, and
+the tag still lands in `<head>`. `<title>` takes neither directive: which level's
+title wins is settled when the page compiles, not per request.
+
 **A `fragment` element cannot carry `if`, `else` or `each`.** A fragment is one
 element with one id, so it cannot be conditional or repeated. Put the condition
 on something inside it.

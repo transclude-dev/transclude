@@ -39,6 +39,12 @@
 };`,
         'js',
       ],
+      head: `<!-- app/routes/people/[name].html -->
+<title>\${person.name}</title>
+<meta name="description" content="\${person.bio}" />
+<link if="person.feed" rel="alternate" type="application/rss+xml" href="\${person.feed}" />
+
+<h1>\${person.name}</h1>`,
       interpolation: `<p>\${name}</p>
 
 <p>\${html(body)}</p>`,
@@ -78,7 +84,14 @@
 <!-- "else" with no "if" before it -->
 
 <li each="\${notes}">…</li>
-<!-- a directive takes an expression, not an interpolation -->`,
+<!-- a directive takes an expression, not an interpolation -->
+
+<meta if="person" name="author" content="\${person.name}" />
+<p else>Nobody here.</p>
+<!-- one branch is hoisted into <head> and one is not -->
+
+<title if="person">\${person.name}</title>
+<!-- which title wins is settled when this compiles -->`,
       'html',
     ],
     }),
@@ -246,6 +259,30 @@
   <p>Write to <code>ctx.response</code> to answer with something other than 200.</p>
 
   ${html(s.status)}
+
+  <h2>Tags that move into &lt;head&gt;</h2>
+
+  <p>
+    Write <code>&lt;title&gt;</code>, <code>&lt;meta&gt;</code>,
+    <code>&lt;link&gt;</code> or <code>&lt;base&gt;</code> at the top level of a
+    page and it is moved into <code>&lt;head&gt;</code>. A page keeps its head
+    next to the markup that needs it.
+  </p>
+
+  ${html(s.head)}
+
+  <p>
+    A directive on one of them works, and the tag still lands in
+    <code>&lt;head&gt;</code>. The condition is written there with it, so a
+    <code>&lt;link&gt;</code> whose condition is false is not sent at all.
+  </p>
+
+  <doc-note label="A title takes no directive" tone="warn">
+    Which level's title wins is settled when the page compiles, by whether a
+    level has one at all. A condition would make it a question only the request
+    can answer. A false one would leave the page with no title, and the layout's
+    already ruled out. Interpolate the text instead.
+  </doc-note>
 
   <h2>Interpolation</h2>
 

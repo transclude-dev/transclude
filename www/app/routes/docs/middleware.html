@@ -13,6 +13,17 @@ export default (app) => {
 };`,
         'js',
       ],
+
+      gated: [
+        `// app/server.js
+export const gated = ['/premium', '/api/*'];
+
+export default (app) => {
+  app.use('/premium', requireSubscription);
+  app.use('/api/*', requirePayment);
+};`,
+        'js',
+      ],
     }),
   });
 </script>
@@ -49,9 +60,32 @@ export default (app) => {
     table, so a real file beats a <code>[...path]</code> catch-all.
   </p>
 
-  <doc-note label="A guard needs prerender: false" tone="warn">
-    Middleware does not run during the build. A prerendered page behind a guard
-    is written to a file in its logged-out state.
+  <h2>Paths that are not public</h2>
+
+  <p>
+    Middleware does not run during the build. So nothing there can tell a gated
+    page from an open one. A page behind a guard is written to a file in its
+    signed-out state, and any static host then serves it.
+  </p>
+
+  <p>
+    <code>gated</code> is how the build finds out. It writes no file for those
+    paths and leaves them out of the sitemap. They are still routes, and the
+    middleware still answers them at runtime.
+  </p>
+
+  ${html(s.gated)}
+
+  <p>
+    A path matches itself. <code>/api/*</code> matches that path and everything
+    under it. An entry that is not a path fails the build. Every mistake here
+    fails open: the file gets written, and the build reports a success.
+  </p>
+
+  <doc-note label="A layout guard is already caught" tone="warn">
+    The build runs layout loaders, and a guard reads a cookie, which the build
+    refuses to write down. Nothing runs <code>app/server.js</code> during a
+    build, which is why this one has to be declared.
   </doc-note>
 
   <h2>Trailing slashes</h2>

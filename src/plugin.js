@@ -289,7 +289,7 @@ export default function transclude({
         return `
 ${ids.map((pageId, i) => `import * as __P${i} from ${JSON.stringify(`${P_PAGE}${pageId}`)};`).join('\n')}
 ${apiIds.map((apiId, i) => `import * as __E${i} from ${apiSpec(endpoints.get(apiId))};`).join('\n')}
-${hasMiddleware ? `import __middleware from ${JSON.stringify(specifier)};` : ''}
+${hasMiddleware ? `import * as __server from ${JSON.stringify(specifier)};` : ''}
 
 export const pages = {
 ${ids.map((pageId, i) => `  ${JSON.stringify(pageId)}: __P${i},`).join('\n')}
@@ -299,7 +299,12 @@ export const endpoints = {
 ${apiIds.map((apiId, i) => `  ${JSON.stringify(apiId)}: __E${i},`).join('\n')}
 };
 
-export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
+export const middleware = ${hasMiddleware ? '__server.default ?? null' : 'null'};
+
+// Paths the app says are not public. The build reads this and writes no file for
+// them, because middleware does not run during a build and a file it was meant
+// to gate would be served by any static host.
+export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
 `;
       }
 

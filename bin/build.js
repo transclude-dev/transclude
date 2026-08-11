@@ -18,6 +18,7 @@ import transclude from '../src/plugin.js';
 import { loadProject } from '../src/project.js';
 import { renderRoute, urlFor } from '../src/document.js';
 import { prerenderContext, refusePrerender } from '../src/prerender.js';
+import { isGated, readGated } from '../src/gate.js';
 import { feed, feedPath } from '../src/feed.js';
 import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
@@ -121,7 +122,20 @@ fs.writeFileSync(entry, `// @ts-nocheck\n${fs.readFileSync(entry, 'utf8')}`);
 
 // ---- prerender ------------------------------------------------------------
 
-const { pages } = await import(pathToFileURL(entry).href);
+const { pages, gated: declared } = await import(pathToFileURL(entry).href);
+
+/**
+ * Paths `app/server.js` says are not public, and the routes they cover.
+ *
+ * Middleware does not run during a build, so nothing here can tell a payment
+ * gate or an auth check from an open page. Without the declaration a gated page
+ * is written to `dist/static` and served by any static host that finds it, and
+ * the build reports it as a page it prerendered.
+ *
+ * An entry matching nothing is a typo, and a typo here fails open, so it is an
+ * error rather than a shrug.
+ */
+const gated = readGated(declared);
 
 // ---- drafts ---------------------------------------------------------------
 
@@ -158,16 +172,19 @@ manifest.routes = manifest.routes.filter((route) => !isDraft(route));
  */
 async function urlsFor(route) {
   if (pages[route.id]?.prerender === false) return [];
-  if (!route.params.length) return [{ url: route.pattern, params: {} }];
+  if (!route.params.length) {
+    return isGated(route.pattern, gated) ? [] : [{ url: route.pattern, params: {} }];
+  }
 
   const paths = pages[route.id]?.paths;
   if (typeof paths !== 'function') return [];
 
   const listed = (await paths()) ?? [];
-  return listed.map((params) => ({
-    url: urlFor(route, params),
-    params,
-  }));
+  return listed
+    .map((params) => ({ url: urlFor(route, params), params }))
+    // Matched per URL, not per route: `/notes/[id]` can be open while
+    // `/notes/secret` is not, and the pattern is the same for both.
+    .filter(({ url }) => !isGated(url, gated));
 }
 
 /**
@@ -284,7 +301,7 @@ const prerendered = outcomes.filter((outcome) => outcome.ok).map((outcome) => ou
 // site with no sitemap there would be missing one only on the host that needs it
 // written down most.
 if (config.sitemap) {
-  write('sitemap.xml', await sitemap({ routes: manifest.routes }, pages, config.sitemap));
+  write('sitemap.xml', await sitemap({ routes: manifest.routes, gated }, pages, config.sitemap));
   prerendered.push('/sitemap.xml');
 }
 
@@ -306,6 +323,10 @@ fs.writeFileSync(
   path.join(dist, 'routes.json'),
   JSON.stringify(
     {
+      // Carried so `/sitemap.xml` at runtime leaves out what the build left out.
+      // The gate itself is `app/server.js` middleware, which runs at runtime and
+      // needs no help from here.
+      gated,
       dynamic: dynamic.map((route) => ({
         id: route.id,
         pattern: route.pattern,

@@ -7,6 +7,7 @@
 // crawler can reach by guessing, so it is left out.
 
 import { urlFor } from './document.js';
+import { isGated } from './gate.js';
 
 /** The protocol's cap for one file. Past it the response is an index of files. */
 const LIMIT = 50000;
@@ -65,9 +66,16 @@ export async function sitemapEntries(manifest, pages, { entries = [], exclude = 
   const extra = typeof entries === 'function' ? ((await entries()) ?? []) : entries;
   const all = [...found, ...extra];
 
+  // `manifest.gated` rather than a second config key. A path the app declared
+  // not public should not be advertised, and reading it here covers the file the
+  // build writes and the `/sitemap.xml` route together. Two lists is two answers
+  // about which URLs a crawler is invited to.
+  const gated = manifest.gated ?? [];
+
   const seen = new Set();
   return all.filter((entry) => {
     if (seen.has(entry.path) || excluded(entry.path, exclude)) return false;
+    if (isGated(entry.path, gated)) return false;
     seen.add(entry.path);
     return true;
   });

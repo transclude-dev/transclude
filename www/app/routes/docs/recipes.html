@@ -166,6 +166,47 @@ export default (app) => {
         'js',
       ],
 
+      x402: [
+        `// app/server.js
+import { paymentMiddleware, x402ResourceServer } from '@x402/hono';
+import { ExactEvmScheme } from '@x402/evm/exact/server';
+import { HTTPFacilitatorClient } from '@x402/core/server';
+
+const paid = {
+  'GET /api/weather': {
+    accepts: [
+      {
+        scheme: 'exact',
+        price: '$0.001',
+        network: 'eip155:84532',
+        payTo: '0xYourAddress',
+      },
+    ],
+    description: 'Weather data',
+    mimeType: 'application/json',
+  },
+};
+
+// One list, read twice: the middleware enforces it and the build reads it to
+// decide what not to write down.
+export const gated = Object.keys(paid).map((key) => key.split(' ')[1]);
+
+export default (app) => {
+  const server = x402ResourceServer([
+    new ExactEvmScheme(new HTTPFacilitatorClient('https://x402.org/facilitator')),
+  ]);
+
+  app.use(paymentMiddleware(paid, server));
+};`,
+        'js',
+      ],
+
+      x402Endpoint: [
+        `// app/routes/api/weather.js
+export const GET = async () => Response.json({ tempC: 14, wind: 'NW 12kt' });`,
+        'js',
+      ],
+
       fragment: `<ul id="list" fragment>
   <li each="note of notes">\${note.text}</li>
 </ul>`,
@@ -408,6 +449,36 @@ test('the notes page lists notes', async () => {
   </p>
 
   ${html(s.middleware)}
+
+  <h3>Charge for an endpoint</h3>
+
+  <p>
+    <a href="https://x402.org">x402</a> is HTTP 402 with a payload. A request
+    with no payment gets a 402 and the terms. The client pays, and the retry
+    carries a header the server verifies. The seller supplies a receiving
+    address and no private key.
+  </p>
+
+  <p>
+    <code>@x402/hono</code> is Hono middleware, and the server here is Hono, so
+    it needs nothing from this framework.
+  </p>
+
+  ${html(s.x402)}
+  ${html(s.x402Endpoint)}
+
+  <p>
+    <code>gated</code> is the half that is ours. Middleware does not run during
+    the build, so without it a paid <em>page</em> is written to a file and given
+    away. An endpoint is never prerendered. This matters the moment you charge
+    for a page or a <a href="/docs/fragments">fragment</a>.
+  </p>
+
+  <doc-note label="Who is on the other end">
+    x402 is aimed at agents and API clients. A person in a browser has no wallet
+    unless they installed one. So a paid page is a worse trade today than a paid
+    endpoint.
+  </doc-note>
 
   <h2>The page</h2>
 

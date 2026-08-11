@@ -1051,6 +1051,22 @@ against.
 - **Three places decide what a page file is.** `PAGE_EXTS` in `routes.js`, the
   watcher in `plugin.js`, and the watcher in `bin/dev.js`. The dev server is a
   separate program and this is the fifth thing that has to change in two places.
+- **The build cannot see a gate in `app/server.js`, and the failure looks like a
+  success.** Middleware never runs during a build, so a page behind a payment or
+  auth check is rendered, written to `dist/static`, counted in "4 pages
+  prerendered" and then served by any static host. A layout guard is caught
+  because the build runs layout loaders and a guard reads a cookie. Nothing runs
+  `app/server.js`. `export const gated` is the declaration, `src/gate.js` is the
+  matcher, and `readGated` refuses anything that is not a list of paths: every
+  mistake here fails open.
+- **`gated` reaches the runtime through `routes.json`, not through a second
+  config key.** `sitemapEntries` reads `manifest.gated`, which is how the written
+  sitemap and the `/sitemap.xml` route leave out the same URLs. Two lists would
+  be two answers about what a crawler is invited to.
+- **`src/gate.js` has no imports on purpose.** The sitemap reads it at runtime on
+  every runtime, so it must not drag `prerender.js` and its context builder into
+  a worker bundle. `test/portable.test.js` names every module the core reaches,
+  so adding one there is a decision rather than a side effect.
 - **A `file:` dependency does not bring its peers.** npm installs a peer
   dependency alongside a package from the registry, so `npm install @transclude/core`
   gets Vite and TypeScript. It does not do that for `file:..`, which is how both

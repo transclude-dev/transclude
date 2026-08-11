@@ -277,6 +277,19 @@ element name. `card.html` is not, and the file is dropped.
 **`<transclude>` has no self-closing form.** `<transclude src="#a" />` is read
 as an open tag and the rest of the page becomes its fallback content.
 
+**Middleware does not run during the build.** A page gated only by
+`app/server.js` is prerendered to a file and served by any static host. Declare
+the paths so the build knows:
+
+```js
+// app/server.js
+export const gated = ['/premium', '/api/*'];
+```
+
+No file is written for them and the sitemap leaves them out. They are still
+routes. A layout guard needs no declaration: the build runs layout loaders, and
+a guard reads a cookie.
+
 **Reading a cookie makes a page personal.** It is then not cached and not
 prerendered. Writing one does not do this; reading one does.
 

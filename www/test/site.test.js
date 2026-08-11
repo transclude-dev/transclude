@@ -369,6 +369,12 @@ test('every post is a file, and every post file is listed', () => {
 /** Whether a page keeps itself out of the build. */
 const isDraft = (file) => /export const draft = true/.test(fs.readFileSync(file, 'utf8'));
 
+/** Every published slug, read from `posts.js`, so a new post is covered by name. */
+function listedPosts() {
+  const source = fs.readFileSync(path.join(root, '..', 'app', 'data', 'posts.js'), 'utf8');
+  return [...source.matchAll(/slug:\s*'([^']+)'/g)].map(([, slug]) => slug);
+}
+
 test('a post says when it was written, in a machine-readable way', () => {
   // The feed carries the date, and so should the page. A reader arriving from a
   // search result has no other way to tell how old the writing is.
@@ -383,6 +389,32 @@ test('a post says when it was written, in a machine-readable way', () => {
     const source = fs.readFileSync(path.join(dir, name), 'utf8');
     assert.match(source, /<time[^>]*datetime=/, `${name} has no machine-readable date`);
   }
+});
+
+describe('a date reads the same to a person and to a machine', () => {
+  // `posts.js` writes `new Date('2026-08-11')`, which is midnight UTC.
+  // `toDateString()` renders in the build machine's zone, so west of UTC the
+  // page said the 10th while its own `datetime` and the feed said the 11th.
+  //
+  // Read from the built output, because the bug was in what the build wrote and
+  // the source looked right. A build machine on UTC cannot see this at all,
+  // which is why it is asserted rather than looked at.
+  const shown = /<time[^>]*datetime="([^"]+)"[^>]*>\s*([^<]+?)\s*<\/time>/g;
+
+  const wrong = [];
+
+  for (const route of ['/blog', ...listedPosts().map((slug) => `/blog/${slug}`)]) {
+    const found = [...built(route).matchAll(shown)];
+    assert.notEqual(found.length, 0, `${route} has no dateline`);
+
+    for (const [, machine, person] of found) {
+      const utc = new Date(machine).toUTCString().split(' ');
+      const expected = `${utc[0].replace(',', '')} ${utc[2]} ${utc[1]} ${utc[3]}`;
+      if (person !== expected) wrong.push(`${route}: shows ${person}, means ${expected}`);
+    }
+  }
+
+  assert.deepEqual(wrong, [], `datelines a person and a machine read differently:\n${wrong.join('\n')}`);
 });
 
 // ---- sharing cards ---------------------------------------------------------

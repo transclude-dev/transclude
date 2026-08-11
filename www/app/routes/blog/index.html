@@ -1,7 +1,12 @@
 <script server>
   import { byDate } from '../../data/posts.js';
+  import { dateline } from '../../lib/dateline.js';
 
-  export default async () => ({ posts: byDate() });
+  // Formatted here rather than in the markup: a directive takes an expression,
+  // and one that reads well is one the loader already answered.
+  export default async () => ({
+    posts: byDate().map((post) => ({ ...post, when: dateline(post.date) })),
+  });
 </script>
 
 <title>Writing · transclude</title>
@@ -60,7 +65,7 @@
 
 <ul class="listing">
   <li each="post of posts">
-    <time datetime="${post.date.toISOString()}">${post.date.toDateString()}</time>
+    <time datetime="${post.date.toISOString()}">${post.when}</time>
     <h2><a href="/blog/${post.slug}">${post.title}</a></h2>
     <p>${post.summary}</p>
   </li>

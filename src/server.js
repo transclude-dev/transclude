@@ -1,7 +1,7 @@
 // The Hono app both servers start from.
 //
 // One function rather than two `new Hono()` calls, because the order things are
-// registered in *is* the behavior: a guard registered after the static handler
+// registered in *is* the behaviour: a guard registered after the static handler
 // does not guard a prerendered page. Two copies of that order is two servers
 // that disagree, which has happened twice in this codebase already.
 
@@ -83,7 +83,7 @@ export function baseApp(options = {}) {
   if (csrfOption) app.use('*', csrf(csrfOption === true ? undefined : csrfOption));
 
   /**
-   * The one security header with no judgment in it.
+   * The one security header with no judgement in it.
    *
    * Without it a browser may sniff a response's bytes and decide the declared
    * type was wrong, so a text file an app serves can be read as HTML and a

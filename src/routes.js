@@ -155,7 +155,7 @@ function idOf(parts) {
 }
 
 // Static beats dynamic, dynamic beats catch-all, and among equals the longer
-// path wins. Registration order then makes Hono's behavior deterministic
+// path wins. Registration order then makes Hono's behaviour deterministic
 // rather than something to reason about per-router.
 function bySpecificity(a, b) {
   if (a.hasRest !== b.hasRest) return a.hasRest ? 1 : -1;

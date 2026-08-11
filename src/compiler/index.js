@@ -246,7 +246,7 @@ export function compileComponent(
 
   assertDistinct(props.defaultNode, state.defaultNode, tag);
 
-  // Whether this element is registered at all. A light element with no behavior
+  // Whether this element is registered at all. A light element with no behaviour
   // is markup that was already rendered and ships nothing, so it can never see
   // an attribute change and has nothing to update. Anchors would be bytes on
   // every page that pay for a repaint that cannot happen.

@@ -131,7 +131,7 @@ export default {
 
 This copies someone else's work onto your origin. Name a host only when you have
 the right to republish what it holds, and read its license: a share-alike
-license can put conditions on the page you put the fragment in. Nothing is
+licence can put conditions on the page you put the fragment in. Nothing is
 attributed for you. Write the credit yourself.
 
 Tuning:

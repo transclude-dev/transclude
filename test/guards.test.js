@@ -8,7 +8,7 @@
 // could a log of it.
 //
 // `examples/auth` never caught it because its guarded pages are read-only. The
-// docs described the behavior this file now checks: "Return a Response from a
+// docs described the behaviour this file now checks: "Return a Response from a
 // layout loader and it stops there. Nothing below it runs."
 
 import test from 'node:test';

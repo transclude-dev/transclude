@@ -1,7 +1,7 @@
 // Contrast, in APCA rather than in WCAG ratios.
 //
 // The two disagree most on dark themes: a pairing that clears WCAG AA can sit
-// near Lc 40, which is not readable. Every color the site ships is checked
+// near Lc 40, which is not readable. Every colour the site ships is checked
 // here against the background it is actually used on, so a palette change that
 // looks fine cannot quietly drop below the floor.
 

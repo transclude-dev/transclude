@@ -1,7 +1,7 @@
 /**
  * Picks a content encoding from an Accept-Encoding header.
  *
- * Getting this wrong is not a missed optimization, it is a corrupt response: a
+ * Getting this wrong is not a missed optimisation, it is a corrupt response: a
  * client that did not ask for brotli must never be handed brotli. So the rules
  * are followed properly: q-values, `*`, and `q=0` as a refusal.
  *

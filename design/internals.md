@@ -2,7 +2,7 @@
 
 How this repository is put together, and what has broken in it before. The
 gotchas are the useful half: nearly every one was written after something failed
-quietly, and each says what the failure looked like so the next person recognizes
+quietly, and each says what the failure looked like so the next person recognises
 it. `design/voice.md` covers how anything here is written.
 
 ## Writing code here
@@ -28,7 +28,7 @@ reasons were never one piece.
 and the guess sets the shape everything after it has to fit. Three call sites
 that agree are the signal, not two that might.
 
-**Keep behavior together.** A page's loader lives in the page. The reason this
+**Keep behaviour together.** A page's loader lives in the page. The reason this
 framework exists is that reading one file should answer what one thing does.
 
 **Small steps, green at each one.** A refactor that cannot be stopped halfway is
@@ -257,7 +257,7 @@ against.
   the guard failed no test until one was written for it. State is held to the same
   rule, because a volatile name is whatever the template read and not where the
   value came from.
-- **State is behavior, so it defines the element.** Nothing observes state: its
+- **State is behaviour, so it defines the element.** Nothing observes state: its
   accessor is what schedules the write, the way an attribute change does for a
   prop. So a light element with a `<script state>` block and no `<script>` at all
   still has to be registered, or `el.n = 1` sets a value no node will ever hear
@@ -271,7 +271,7 @@ against.
   one with state through the server. Props go on top of state in both places: put
   them the other way and the first paint disagrees with every paint after it.
 - **Reacting costs a definition, and only a definition.** `defineLight` returns
-  before registering unless there is behavior, members or form association, so
+  before registering unless there is behaviour, members or form association, so
   `observedAttributes` costs a page nothing it was not already paying. The docs
   site still ships 0 client entries.
 
@@ -448,7 +448,7 @@ against.
   URL the pattern matches but `paths` never listed. Leaving those to the not-found
   handler is what made dev answer 200 with the page's own "not found" body while
   production answered the 404 page. Different status and different body.
-- **The order middleware is registered in is the behavior, so it lives in one
+- **The order middleware is registered in is the behaviour, so it lives in one
   function.** `baseApp` registers, in this order: the trailing-slash redirect,
   CSRF, `app/server.js`, the public-file handler, and then whatever routes the
   caller adds. Every position does a job. The redirect is first because it cleans
@@ -697,7 +697,7 @@ against.
   fails closed. Nothing reads it to turn `Secure` off.
 - **`nosniff` is sent always; `X-Frame-Options` and HSTS are not.** Nothing
   legitimate depends on a browser second-guessing a declared Content-Type, so
-  that header has no judgment in it and is on for every response including a
+  that header has no judgement in it and is on for every response including a
   404 and a public file. The other two refuse something an app may actually
   want, one being embedded and one being reachable over HTTP at all, so they
   stay the author's to set.
@@ -761,7 +761,7 @@ against.
   from a loader and so are known before any loader runs. A proxy that reads it
   sends a 103. 103 cannot be sent from here directly: a `Response` carries one
   status, and the Fetch API does not model an informational one.
-- **The precache list is a build artifact, and cannot be anything else.** Only
+- **The precache list is a build artefact, and cannot be anything else.** Only
   the build knows an asset's hashed name, and a runtime with no disk cannot be
   asked: `bytesFrom` in `worker.js` returns `{ get }` and nothing that
   enumerates. So `bin/build.js` writes `dist/static/precache.json` before the
@@ -790,7 +790,7 @@ against.
 - **`create/templates/` is what a new project is, and `_gitignore` is why.** A real
   `.gitignore` inside a template is applied to the template itself by everything
   that reads one, npm included when the package is packed, so the file is stored
-  under a name nothing recognizes and renamed on the way out. The tests assert
+  under a name nothing recognises and renamed on the way out. The tests assert
   the files rather than the copying: neither template ships a fragment, an
   include or an element, because those are decisions a project makes and the
   showcase already demonstrates.
@@ -964,7 +964,7 @@ against.
   decides what an address *means* and imports nothing; `lookup.js` turns a name
   into addresses and imports `node:dns`. The core reaches the first and never the
   second, which `portable.test.js` now asserts by name. On workerd there is no
-  resolver at all, so the allowlist is the whole defense and the docs say so
+  resolver at all, so the allowlist is the whole defence and the docs say so
   rather than implying the address checks are running everywhere.
 - **Sanitize, then rewrite, then index.** The base is read before `<base>` is
   stripped, cleaning happens before rewriting so nothing rewrites a URL on an
@@ -995,7 +995,7 @@ against.
 - **Template content is not addressable, and `childNodes` is why it looks like it
   is.** A `<template>`'s children live on `.content`, so a walk over
   `childNodes` finds nothing and an id inside one silently resolves to null. That
-  is the behavior we want here, but for a reason worth stating: the content is
+  is the behaviour we want here, but for a reason worth stating: the content is
   inert, so a URL returning it would return markup the source document never
   showed. `kidsOf` returns `[]` for a template on purpose rather than by
   accident.

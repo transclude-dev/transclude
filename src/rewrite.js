@@ -51,7 +51,7 @@ function remove(node) {
  * A `style` attribute is the other kind. It paints the element it sits on and
  * nothing else, so it is kept unless `styles` says otherwise. Dropping them by
  * default would flatten the source's own meaning: a highlighted code block
- * carries its colors that way.
+ * carries its colours that way.
  *
  * @param {object} root a parse5 tree, modified in place
  * @param {{ styles?: 'keep'|'strip' }} [options]

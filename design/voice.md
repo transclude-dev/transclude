@@ -31,7 +31,7 @@ and matters to few of them.
 ## Words
 
 Short and plain. No jargon. Someone reading English as a second language
-gets it on the first pass. American spelling. No em dashes.
+gets it on the first pass. British spelling. No em dashes.
 
 `hypermedia`, `element` and `fragment` are the exceptions. They name things
 this framework is about, so use them and say what they mean the first time.

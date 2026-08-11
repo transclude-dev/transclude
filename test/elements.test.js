@@ -378,7 +378,7 @@ test('on the server there is no document and nothing to do', () => {
 });
 
 test('a light element with nothing to define still gets its styles', () => {
-  // defineLight registers no class for a partial with no behavior. That is the
+  // defineLight registers no class for a partial with no behaviour. That is the
   // zero-JS trade. Styles are the half it still needs, and the half a swapped-in
   // one arrives without, so they have to be adopted before every early return.
   const dom = fakeHead();

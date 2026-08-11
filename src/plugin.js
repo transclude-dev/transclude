@@ -186,7 +186,7 @@ export default function transclude({
   // again gets two: the second scans the app a second time and adds a second
   // dev watcher, which reloads the browser twice for one edit. `api` is the one
   // thing Vite keeps by reference when it copies a plugin, so it is how an
-  // instance recognizes itself in the resolved list.
+  // instance recognises itself in the resolved list.
   let duplicate = false;
 
   const plugin = {

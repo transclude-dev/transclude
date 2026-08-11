@@ -940,7 +940,7 @@ export function watch(loaders, root = globalThis.document) {
  */
 /**
  * A light element has no shadow root to repaint, and repainting would destroy
- * the children the page put inside it. So it upgrades for behavior only: the
+ * the children the page put inside it. So it upgrades for behaviour only: the
  * markup it was served is the markup it keeps.
  *
  * @param {object} def
@@ -949,13 +949,13 @@ export function watch(loaders, root = globalThis.document) {
  */
 export function defineLight(def, init) {
   // Before every other exit below: styles are the half of this that an element
-  // with no behavior still has, and the half a swapped-in one arrives without.
+  // with no behaviour still has, and the half a swapped-in one arrives without.
   adoptStyles(def);
 
   if (typeof customElements === 'undefined') return;
   if (customElements.get(def.tag)) return;
 
-  // No behavior to attach means nothing to register. A light element with no
+  // No behaviour to attach means nothing to register. A light element with no
   // <script> is markup that was already rendered, and it ships no JavaScript at
   // all, accessors included. That is the trade the zero-JS default makes.
   //
@@ -1129,7 +1129,7 @@ function hasCustomStates(def) {
   return Object.values(def.stateDefs ?? {}).some((value) => typeof value === 'boolean');
 }
 
-/** State counts as behavior: its accessors are the only way to change it. */
+/** State counts as behaviour: its accessors are the only way to change it. */
 function hasState(def) {
   return Object.keys(def.stateDefs ?? {}).length > 0;
 }
@@ -1300,7 +1300,7 @@ export function defineComponent(def, init) {
         this.#adopt();
       }
       // Runs on every connect, not just the first: moving an element in the DOM
-      // disconnects and reconnects it, and behavior that was torn down on the
+      // disconnects and reconnects it, and behaviour that was torn down on the
       // way out has to come back on the way in.
       this.#ready = true;
       this.#abort = new AbortController();

@@ -115,7 +115,7 @@ test('the stale rebuild is handed to after, which is what keeps it alive', async
 });
 
 test('a rebuild nobody holds still cannot reject into the runtime', async () => {
-  // The old behavior, kept for a caller that passes no `after`.
+  // The old behaviour, kept for a caller that passes no `after`.
   const time = clock();
   const cache = createCache(memoryStore(), time);
   const window = { seconds: 60, tags: [] };

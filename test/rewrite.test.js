@@ -55,7 +55,7 @@ test('a style block goes, because its rules are not scoped to the fragment', () 
 });
 
 test('a style attribute stays by default, because it paints only its element', () => {
-  // A highlighted code block carries its colors this way. Dropping them would
+  // A highlighted code block carries its colours this way. Dropping them would
   // lose what the source was saying.
   const { html } = clean('<span style="color:#07a">const</span>');
   assert.match(html, /style="color:#07a"/);

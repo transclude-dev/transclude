@@ -111,6 +111,85 @@ function setVersion(version) {
     manifest.version = version;
     fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
   }
+  setLockVersions();
+}
+
+/**
+ * Every lockfile that names this package, brought to what `package.json` says.
+ *
+ * This used to write the two manifests and stop. `npm install` does not run in a
+ * release, so nothing else ever corrected them: the root lockfile said 0.2.0
+ * against a package.json of 0.10.2, and the apps carried linked entries from
+ * 0.1.0, 0.1.1, 0.2.0 and 0.8.2. Eight releases of drift, and no test looked.
+ *
+ * Done here rather than by `npm install --package-lock-only`, which also
+ * rewrites the dependency tree from the registry. A release is not the place to
+ * find out that a transitive dependency moved.
+ */
+function setLockVersions() {
+  const core = read('package.json');
+
+  // npm writes bin paths without the leading `./`.
+  const bin = Object.fromEntries(
+    Object.entries(core.bin).map(([name, file]) => [name, file.replace(/^\.\//, '')]),
+  );
+
+  // The fields npm copies into a link entry, in the order it writes them.
+  const linked = {
+    name: core.name,
+    version: core.version,
+    license: core.license,
+    dependencies: core.dependencies,
+    bin,
+    devDependencies: core.devDependencies,
+    engines: core.engines,
+    peerDependencies: core.peerDependencies,
+  };
+
+  for (const [rel, key] of lockfiles()) {
+    const file = path.join(root, rel);
+    const text = fs.readFileSync(file, 'utf8');
+    const lock = JSON.parse(text);
+
+    // A file npm wrote differently is left alone rather than reformatted. The
+    // alternative is a release whose diff is every lockfile in the repository.
+    if (`${JSON.stringify(lock, null, 2)}\n` !== text) {
+      process.stdout.write(`  ${rel}: npm formats this differently, left alone\n`);
+      continue;
+    }
+
+    if (key === '') {
+      lock.name = core.name;
+      lock.version = core.version;
+      lock.packages[''].name = core.name;
+      lock.packages[''].version = core.version;
+    } else if (lock.packages[key]) {
+      lock.packages[key] = linked;
+    } else {
+      continue;
+    }
+
+    fs.writeFileSync(file, `${JSON.stringify(lock, null, 2)}\n`);
+  }
+}
+
+/** `[relative path, the key naming this package]` for every lockfile here. */
+function lockfiles() {
+  const found = [['package-lock.json', '']];
+
+  if (fs.existsSync(path.join(root, 'www', 'package-lock.json'))) {
+    found.push(['www/package-lock.json', '..']);
+  }
+
+  const examples = path.join(root, 'examples');
+  if (fs.existsSync(examples)) {
+    for (const entry of fs.readdirSync(examples).sort()) {
+      const rel = `examples/${entry}/package-lock.json`;
+      if (fs.existsSync(path.join(root, rel))) found.push([rel, '../..']);
+    }
+  }
+
+  return found;
 }
 
 /** Everything, in the order that fails cheapest first. */
@@ -204,7 +283,7 @@ function main() {
     return;
   }
 
-  run('git', ['add', ...MANIFESTS]);
+  run('git', ['add', ...MANIFESTS, ...lockfiles().map(([rel]) => rel)]);
 
   // A first release at the version the manifests already carry changes nothing,
   // and an empty commit is not worth making. The tag is the release either way.

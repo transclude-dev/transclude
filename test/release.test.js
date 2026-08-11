@@ -83,3 +83,67 @@ test('the release script refuses to tag without notes', () => {
   assert.match(source, /--notes/, 'there is no notes option');
   assert.match(source, /function notesFrom/, 'nothing reads the notes');
 });
+
+// ---- lockfiles ------------------------------------------------------------
+//
+// `bin/release.js` writes the two `package.json` manifests. It used to write
+// only those, and nothing else ever corrected the lockfiles: `npm install` does
+// not run in a release. So the root lockfile said 0.2.0 against a package.json
+// of 0.10.2, and each app carried a linked `@transclude/core` entry from 0.1.0,
+// 0.1.1, 0.2.0 or 0.8.2. Eight releases of drift, found by reading rather than
+// by any check.
+
+/** Every lockfile in the repository, with the key that names this package. */
+function lockfiles() {
+  const found = [['package-lock.json', '']];
+  if (fs.existsSync(path.join(root, 'www', 'package-lock.json'))) {
+    found.push(['www/package-lock.json', '..']);
+  }
+  const examples = path.join(root, 'examples');
+  for (const entry of fs.existsSync(examples) ? fs.readdirSync(examples).sort() : []) {
+    const rel = `examples/${entry}/package-lock.json`;
+    if (fs.existsSync(path.join(root, rel))) found.push([rel, '../..']);
+  }
+  return found;
+}
+
+const readJson = (rel) => JSON.parse(fs.readFileSync(path.join(root, rel), 'utf8'));
+
+test('every lockfile carries the version the package does', () => {
+  const { version } = readJson('package.json');
+  const wrong = [];
+
+  for (const [rel, key] of lockfiles()) {
+    const lock = readJson(rel);
+    const found = key === '' ? lock.version : lock.packages[key]?.version;
+    if (found !== version) wrong.push(`${rel}: ${found ?? 'no entry'}, not ${version}`);
+  }
+
+  assert.deepEqual(wrong, [], `lockfiles behind package.json:\n${wrong.join('\n')}`);
+});
+
+test('a linked entry carries the dependencies the package declares', () => {
+  // The version alone is not enough. A linked entry is a copy of the manifest,
+  // so a dependency added since the entry was written is missing from it, and
+  // `npm ci` in that app installs a tree the package no longer asks for.
+  const core = readJson('package.json');
+  const wrong = [];
+
+  for (const [rel, key] of lockfiles()) {
+    if (key === '') continue;
+    const linked = readJson(rel).packages[key];
+    if (!linked) continue;
+
+    for (const field of ['dependencies', 'devDependencies', 'peerDependencies', 'engines']) {
+      const mine = JSON.stringify(core[field] ?? null);
+      const theirs = JSON.stringify(linked[field] ?? null);
+      if (mine !== theirs) wrong.push(`${rel}: ${field} is ${theirs}, not ${mine}`);
+    }
+  }
+
+  assert.deepEqual(wrong, [], `linked entries behind package.json:\n${wrong.join('\n')}`);
+});
+
+test('both packages carry one version', () => {
+  assert.equal(readJson('create/package.json').version, readJson('package.json').version);
+});

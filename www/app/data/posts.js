@@ -20,6 +20,13 @@
 /** @type {Post[]} */
 export const posts = [
   {
+    slug: 'two-templates-one-thing',
+    title: 'Your page and your partial are two templates',
+    summary:
+      'Anything that swaps HTML needs a second template for the piece. Two templates for one thing is a pair that drifts, and nothing fails when they do.',
+    date: new Date('2026-08-11'),
+  },
+  {
     slug: 'svg-already-does-transclusion',
     title: 'SVG already does transclusion',
     summary:
@@ -30,3 +37,19 @@ export const posts = [
 
 /** Newest first, which is the order every page wants. */
 export const byDate = () => [...posts].sort((a, b) => b.date - a.date);
+
+/**
+ * The entry a post page takes its title, summary and date from.
+ *
+ * Throws rather than returning nothing. A slug with no entry is a post that was
+ * renamed on one side only, and the alternative is a page that builds with an
+ * empty dateline and an empty sharing card.
+ *
+ * @param {string} slug
+ * @returns {Post}
+ */
+export function bySlug(slug) {
+  const found = posts.find((one) => one.slug === slug);
+  if (!found) throw new Error(`no entry in posts.js for ${slug}`);
+  return found;
+}

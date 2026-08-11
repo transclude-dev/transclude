@@ -1,11 +1,13 @@
 <script server>
   import { all } from '../../lib/code.js';
-  import { posts } from '../../data/posts.js';
+  import { bySlug } from '../../data/posts.js';
+  import { dateline } from '../../lib/dateline.js';
 
-  const post = posts.find((one) => one.slug === 'svg-already-does-transclusion');
+  const post = bySlug('svg-already-does-transclusion');
 
   export default async () => ({
     post,
+    when: dateline(post.date),
     s: await all({
       sprite: `<!-- one file, fetched once, cached like any other -->
 <svg xmlns="http://www.w3.org/2000/svg" hidden>
@@ -49,7 +51,7 @@ document.querySelector('#list').replaceWith(doc.querySelector('#list'));`,
   <h1>SVG already does transclusion</h1>
 
   <time class="dateline" datetime="${post.date.toISOString()}">
-    ${post.date.toDateString()}
+    ${when}
   </time>
 
   <p>

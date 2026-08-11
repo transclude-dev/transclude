@@ -492,7 +492,7 @@ test('a shadow element binds the structure instead of calling it volatile', () =
   assert.match(code, /export const volatile = \[\]/);
 });
 
-test('an element with no behaviour is not held to it, since it never re-renders', () => {
+test('an element with no behavior is not held to it, since it never re-renders', () => {
   // It ships nothing, so there is no repaint to refuse.
   const source = '<script properties>export default { tags: [] };</script><ul><li each="t of tags">${t}</li></ul>';
   assert.ok(elementOf(source).code, 'a markup-only element should still compile');

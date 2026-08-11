@@ -154,7 +154,7 @@ assignment, so `await element.updateComplete` before asserting on it.
 Nothing is reflected on the server. A state field starts at the default its
 block declares, so the first paint is that default either way.
 
-## Behaviour
+## Behavior
 
 A plain `<script>` block is the element's own code. `host` is the element,
 `shadow` is its shadow root when it has one, `signal` is an `AbortSignal` that
@@ -301,7 +301,7 @@ is built when a browser parses a document, and nothing that swaps HTML parses
 one. A light element arrives whole.
 
 **An element with `<script state>` and no `<script>` still gets registered.**
-State is behaviour. Without the definition, `el.n = 1` sets a value no node hears
+State is behavior. Without the definition, `el.n = 1` sets a value no node hears
 about.
 
 **`setHTMLUnsafe()`, never `innerHTML`,** when inserting markup that holds an

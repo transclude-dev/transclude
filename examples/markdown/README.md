@@ -15,7 +15,7 @@ npm run dev     # http://localhost:1970
 `markdown` in `transclude.config.js` is a function from source to HTML. This app
 uses `marked`; swapping it is `app/lib/markdown.js` and nothing else. A `.md`
 page with no converter is an error naming the file, rather than a guess about
-which flavour you meant.
+which flavor you meant.
 
 ## The loader needs no new syntax
 
@@ -35,7 +35,7 @@ a shell block is full of `${HOME}` and a JavaScript one is full of template
 literals.
 
 `app/lib/markdown.js` escapes `${` in code spans and fenced blocks, which is four
-lines. Prose is left alone. This is a judgement about how people write rather
+lines. Prose is left alone. This is a judgment about how people write rather
 than a rule about how pages compile, which is why it lives in the app.
 
 `\${` is the framework's escape and works anywhere in any page.

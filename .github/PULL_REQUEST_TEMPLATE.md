@@ -6,7 +6,7 @@
 ## How you checked it
 
 <!-- Which test, or what you ran. If you changed compiler output, say which test
-     would have caught the old behaviour. -->
+     would have caught the old behavior. -->
 
 ## Falsified
 

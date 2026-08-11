@@ -3,7 +3,7 @@
 //
 // The framework ships no Markdown parser. `markdown` in the config is a function
 // from source to HTML, the same way `cache` is a store with four methods: which
-// flavour, which extensions and which highlighter are the app's to pick, and
+// flavor, which extensions and which highlighter are the app's to pick, and
 // none of them becomes a dependency of this package.
 //
 // Three readers exist and they must not disagree: the plugin compiles a page,
@@ -36,7 +36,7 @@ export function sourceOf(file, source, markdown) {
     throw new Error(
       `[transclude] ${file} is Markdown, and transclude.config.js sets no "markdown". ` +
         'It takes (source, file) and returns HTML. This package ships no parser, ' +
-        'so the flavour is yours to choose.',
+        'so the flavor is yours to choose.',
     );
   }
 

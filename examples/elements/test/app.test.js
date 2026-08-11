@@ -45,17 +45,17 @@ describe('a shadow element carries its styles inside the boundary', async () => 
   assert.match(card.slice(0, 1200), /<style>[\s\S]*h3\s*\{/);
 });
 
-describe('a light element with behaviour still ships a definition', async () => {
+describe('a light element with behavior still ships a definition', async () => {
   const markup = await page();
 
   assert.match(markup, /<script type="module" src="\/assets\//, 'tally-box has to be registered');
 });
 
-describe('an element with neither behaviour nor state costs nothing', () => {
+describe('an element with neither behavior nor state costs nothing', () => {
   // site-note is styles and a slot. The page ships a client entry for the others,
   // and this one must not be the reason for it.
   const source = fs.readFileSync(path.join(root, 'app', 'elements', 'site-note.html'), 'utf8');
 
-  assert.doesNotMatch(source, /<script>/, 'no behaviour block');
+  assert.doesNotMatch(source, /<script>/, 'no behavior block');
   assert.doesNotMatch(source, /<script state>/, 'and no state');
 });

@@ -148,7 +148,7 @@ test('a light element can be a control too, no shadow root required', () => {
   assert.match(code, /export const formAssociated = true;/);
   // `null`, not `init`: lifting the export out leaves no setup code behind, so
   // there is no function to run. `defineLight` decides to register anyway,
-  // because being a control is itself behaviour.
+  // because being a control is itself behavior.
   assert.match(code, /defineLight\(def, null\)/);
 });
 
@@ -226,7 +226,7 @@ test('readFlags sees what the compile sees', () => {
 });
 
 test('state compiles in a light element, and registers it', () => {
-  // State is behaviour: its accessors are the only way to change it, so an
+  // State is behavior: its accessors are the only way to change it, so an
   // element that has some is defined even with no <script> block at all.
   const code = componentOf('<script state>\nexport default { n: 0 };\n</script>\n<p>${n}</p>', {
     shadow: false,

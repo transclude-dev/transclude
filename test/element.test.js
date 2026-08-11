@@ -778,7 +778,7 @@ test('a change writes through the bindings, and binds only once', async () => {
   });
 });
 
-test('a light element still ships nothing when it has no behaviour', async () => {
+test('a light element still ships nothing when it has no behavior', async () => {
   // The zero-JS default. Reactivity is what a defined element gets, and an
   // element with nothing to define is still not defined.
   await withDom(async ({ defineLight }, registry) => {
@@ -910,7 +910,7 @@ function methodsOfClass(body) {
   return found;
 }
 
-/** Comments and spacing are not the behaviour. */
+/** Comments and spacing are not the behavior. */
 const codeOnly = (text) =>
   text
     .replace(/\/\/.*$/gm, '')

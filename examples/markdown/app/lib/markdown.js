@@ -13,7 +13,7 @@ import { Marked } from 'marked';
  * full of `${HOME}` and a JavaScript one is full of template literals. Escaping
  * the two code token types keeps prose interpolating and leaves samples alone.
  *
- * Written here rather than in the framework because it is a judgement about how
+ * Written here rather than in the framework because it is a judgment about how
  * people write, not a rule about how pages compile. An app that wants a sample
  * to interpolate deletes this.
  */

@@ -33,9 +33,9 @@ piece from your origin, as part of your page, and a prerendered page carries it
 in a file that ships with your build.
 
 Name a host only when you have the right to republish what it holds, and read
-its licence first: a share-alike licence can put conditions on the page you put
+its license first: a share-alike license can put conditions on the page you put
 the fragment in. Nothing is attributed for you, because a document does not
-carry its author or its licence anywhere a program can read them. The credit on
+carry its author or its license anywhere a program can read them. The credit on
 `/elsewhere` is written by hand.
 
 ## Tests

@@ -93,7 +93,7 @@ a commit records why, including what was tried and what broke.
 
 One branch per change. Say what broke or what was missing, and how you
 checked. If you changed compiler output, say which test would have caught the
-old behaviour.
+old behavior.
 
 A change to a gotcha in `design/internals.md` is part of the change, not a
 follow-up.

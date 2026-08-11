@@ -177,7 +177,7 @@ pre code {
 }
 
 /* Shiki writes both themes as custom properties on every token and sets no
-   colour of its own, so the choice is made here. The block keeps the site's
+   color of its own, so the choice is made here. The block keeps the site's
    surface; only the tokens come from GitHub. */
 .shiki,
 .shiki span {
@@ -192,7 +192,7 @@ pre code {
 }
 
 /* A directory listing. The comment column is part of the content, so the
-   whole block is preformatted and only the roles are coloured. */
+   whole block is preformatted and only the roles are colored. */
 .tree .t-dir {
   color: var(--link);
   font-weight: 700;

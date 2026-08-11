@@ -265,7 +265,7 @@ error naming `shadow`. Add `export const shadow = true` or keep the list still.
 **A dialog does not need a click handler.** `command` and `commandfor` are the
 platform's invoker: `<button command="show-modal" commandfor="prefs">` opens
 `<dialog id="prefs">` with no script. Writing a listener for this is the common
-mistake, and it loses the keyboard and screen reader behaviour the attributes
+mistake, and it loses the keyboard and screen reader behavior the attributes
 already carry.
 
 **`setHTMLUnsafe()`, never `innerHTML`.** `innerHTML` does not process nested

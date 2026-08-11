@@ -3,7 +3,7 @@
 //
 // The conversion is the app's: `markdown` in the config is a function, and this
 // package ships no parser. So most of what is worth asserting here is the seam
-// rather than any flavour of Markdown. The fake converter below is deliberately
+// rather than any flavor of Markdown. The fake converter below is deliberately
 // stupid, because what is under test is where it is called and what happens when
 // it is missing.
 

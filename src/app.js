@@ -118,7 +118,7 @@ function isShareable(html, ctx) {
  * `subtle.digest`. Awaiting costs nothing on the first and is the only way to
  * accept the second.
  *
- * The body is long because the order routes are registered in *is* the behaviour,
+ * The body is long because the order routes are registered in *is* the behavior,
  * so it is written out once, in that order, rather than split across functions
  * that could be called in a different one. What gets registered, in order:
  *
@@ -162,12 +162,12 @@ export function createApp({
   hash,
   compress = null,
   // What the build wrote to `dist/static/precache.json`, or null. It is a build
-  // artefact: only the build knows an asset's hashed name, and the worker's
+  // artifact: only the build knows an asset's hashed name, and the worker's
   // byte store answers `get` and cannot be enumerated.
   precache = null,
   // Resolving a hostname needs the runtime, and one of the four cannot do it at
   // all, so the servers that can supply this and workerd leaves it out. Without
-  // it the proxy's allowlist is the whole defence.
+  // it the proxy's allowlist is the whole defense.
   lookup = null,
 }) {
   const config = withDefaults(written);

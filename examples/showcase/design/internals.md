@@ -49,11 +49,11 @@ running an app.
   and not in both.** It is a fact about the element rather than a prop or a piece
   of setup, so either block can say it. Declaring it twice is a compile error,
   because one fact with two homes has nothing to settle a disagreement. Put it in
-  `<script properties>` when the element has props and no behaviour, which saves a
+  `<script properties>` when the element has props and no behavior, which saves a
   `<script>` block holding one line. It has to be a literal either way: it becomes
   a static class field, the same for every element of the tag, so a computed value
   would look like a per-element choice and could not be one. A light element can
-  opt in too. Being a form control needs no shadow root, and it counts as behaviour
+  opt in too. Being a form control needs no shadow root, and it counts as behavior
   for the "nothing to define, so define nothing" rule.
 - **`static formAssociated` can only be checked in a browser.** Nothing in Node
   models a form, so setting it to `false` broke no test until one read the flag
@@ -142,7 +142,7 @@ running an app.
   difference from Node is one argument to `createApp`: bytes (`dist/server/assets.js`
   instead of a disk), hashing (WebCrypto, which is why `hash` is awaited),
   compression (`null`, because the edge does it), public files (a handler over the
-  same map), and config (see below). There is one real difference in behaviour. A worker
+  same map), and config (see below). There is one real difference in behavior. A worker
   serves no byte ranges, so a Range request gets 200 rather than 206, because
   ranges need a filesystem.
 - **On a worker, config arrives with the request, not the process.** There is no

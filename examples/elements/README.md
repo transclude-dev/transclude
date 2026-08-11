@@ -17,7 +17,7 @@ export const shadow = true;
 
 ## The three in here
 
-**`site-note`** is light, with styles and a slot and no behaviour. It is rendered
+**`site-note`** is light, with styles and a slot and no behavior. It is rendered
 on the server and registers no class in the browser, so a visitor downloads
 nothing for it.
 

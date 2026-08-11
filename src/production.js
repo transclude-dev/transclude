@@ -73,7 +73,7 @@ const bundle = noBuild
 const assets = loadAssets(path.join(dist, 'client'));
 const statics = loadStatic(path.join(dist, 'static'));
 
-/** A build artefact under `static/`, as text. Absent until a build writes it. */
+/** A build artifact under `static/`, as text. Absent until a build writes it. */
 const readText = (name) => {
   const file = path.join(dist, 'static', name);
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;

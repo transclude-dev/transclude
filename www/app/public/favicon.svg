@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <!-- The colours are attributes, not only CSS. A path with a class and no fill
+  <!-- The colors are attributes, not only CSS. A path with a class and no fill
        is black wherever the style block is not applied, and a favicon is fetched
        and drawn in places that do not apply one. So the light rendering is the
        markup, and the style below only overrides it for a dark theme. -->

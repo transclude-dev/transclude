@@ -17,6 +17,7 @@ import {
   readFlags,
 } from './compiler/index.js';
 import { resolveRoutesDir, scanRoutes } from './routes.js';
+import { MARKDOWN_EXT, sourceOf } from './markdown.js';
 import { SERVER_FILE } from './server.js';
 
 const P_COMPONENT = 'virtual:transclude-component/';
@@ -34,11 +35,17 @@ export default function transclude({
   routesDir = 'routes',
   fragmentParam = 'fragment',
   watchElements = false,
+  markdown = null,
 } = {}) {
   // Off unless asked for. It puts a script on every page, and it only earns that
   // when swapped-in markup names an element the page did not already render.
   // A page that renders its own elements defines them without this.
   const watching = watchElements === true;
+
+  // Every compile in this file goes through here, so a `.md` page reaches the
+  // compiler as HTML and nothing downstream learns a second format.
+  const read = (file) => sourceOf(file, readRaw(file), markdown);
+
   let root;
   let app;
   let runtime;
@@ -370,7 +377,7 @@ export const middleware = ${hasMiddleware ? '__middleware ?? null' : 'null'};
       if (duplicate) return;
 
       server.watcher.on('all', (_event, file) => {
-        if (!file.endsWith('.html')) return;
+        if (!file.endsWith('.html') && !file.endsWith(MARKDOWN_EXT)) return;
         if (!file.startsWith(app)) return;
 
         scan();
@@ -429,7 +436,7 @@ function readDir(dir) {
   return map;
 }
 
-function read(file) {
+function readRaw(file) {
   return fs.readFileSync(file, 'utf8');
 }
 

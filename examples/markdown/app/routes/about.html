@@ -1,0 +1,25 @@
+<script server>
+  export default async () => ({ pages: 2 });
+</script>
+
+<title>About</title>
+<meta name="description" content="An HTML page beside the Markdown ones." />
+
+<h1>About</h1>
+
+<p>
+  This one is <code>app/routes/about.html</code>. It sits in the same directory
+  as <code>index.md</code> and is compiled by the same compiler, because by the
+  time anything compiles there is no difference left between them.
+</p>
+
+<p>This app has ${pages} pages.</p>
+
+<site-note>
+  <p>
+    An element in an HTML page needs no blank lines. That rule belongs to
+    Markdown, not to this framework.
+  </p>
+</site-note>
+
+<p><a href="/">Back</a></p>

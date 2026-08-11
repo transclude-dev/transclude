@@ -55,7 +55,8 @@ export type RootLayoutContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `root/_layout.html`. */
@@ -87,7 +88,8 @@ export type AboutContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `about`'s <script server> block. */
@@ -116,7 +118,8 @@ export type IndexContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `index`'s <script server> block. */
@@ -152,7 +155,8 @@ export type PostsSlugContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `posts-_slug`'s <script server> block. */
@@ -183,7 +187,8 @@ export type _404Context = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `404`'s <script server> block. */

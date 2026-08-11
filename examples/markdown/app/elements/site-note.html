@@ -1,0 +1,27 @@
+<script properties>
+  export default {
+    tone: 'neutral',
+  };
+</script>
+
+<style>
+  /* `:scope` is this element. Light DOM, so page CSS still reaches inside. */
+  :scope {
+    display: block;
+    border-left: 3px solid var(--rule);
+    padding: 0.6rem 0.9rem;
+    margin: 1.25rem 0;
+    background: var(--surface);
+  }
+  :scope[tone='warn'] {
+    border-color: #b3261e;
+  }
+  :scope > :first-child {
+    margin-top: 0;
+  }
+  :scope > :last-child {
+    margin-bottom: 0;
+  }
+</style>
+
+<slot>Nothing to say.</slot>

@@ -8,8 +8,9 @@
 /**
  * Text and `${expr}` in source order.
  *
- * There is no escape for a literal `${`, so anything documenting the syntax has
- * to pass its examples in as data rather than write them in a template.
+ * `\${` is a literal `${`. It matters most to a page that documents this syntax,
+ * and to a Markdown page, whose code fences are full of shell and JavaScript
+ * that means `${` literally.
  *
  * @param {string} str raw text or an attribute value
  * @returns {Part[]} empty only for an empty string

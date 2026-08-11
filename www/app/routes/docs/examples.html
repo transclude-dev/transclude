@@ -15,7 +15,8 @@ npm run htmx       # http://localhost:1965
 npm run includes   # http://localhost:1966
 npm run auth       # http://localhost:1967
 npm run live       # http://localhost:1968
-npm run elements   # http://localhost:1969`,
+npm run elements   # http://localhost:1969
+npm run markdown   # http://localhost:1970`,
         'shell',
       ],
     }),
@@ -56,7 +57,7 @@ npm run elements   # http://localhost:1969`,
         </tr>
         <tr>
           <td><a href="#blog">Blog</a></td>
-          <td>Markdown to files, with no server left running</td>
+          <td>Every page written to a file, with no server left running</td>
           <td><a href="https://blog.transclude.dev">blog</a></td>
         </tr>
         <tr>
@@ -78,6 +79,11 @@ npm run elements   # http://localhost:1969`,
           <td><a href="#live">Live</a></td>
           <td>Server-sent events into a fragment</td>
           <td><a href="https://live.transclude.dev">live</a></td>
+        </tr>
+        <tr>
+          <td><a href="#markdown">Markdown</a></td>
+          <td>A .md file that is a page, with a loader and an element in it</td>
+          <td><a href="https://markdown.transclude.dev">markdown</a></td>
         </tr>
         <tr>
           <td><a href="#elements">Elements</a></td>
@@ -189,6 +195,31 @@ npm run elements   # http://localhost:1969`,
     <code>/sitemap.xml</code> is built from the route table, which already knows
     every URL. <code>/feed.xml</code> cannot be. A route table holds paths, and
     a feed needs titles and dates, so the config supplies the items.
+  </doc-note>
+
+  <h2 id="markdown">Markdown</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/markdown"
+      >examples/markdown</a
+    >
+    is a <code>.md</code> file that is a page. It answers a URL and it opens with
+    the same <code>&lt;script server&gt;</code> block an HTML page opens with.
+    The element in it is rendered on the server.
+  </p>
+
+  <p>
+    Read it for the four lines in <code>app/lib/markdown.js</code>. A page is a
+    template whichever format it was written in, so <code>\${title}</code> in a
+    paragraph reads the loader. In a code fence it should not, because a shell
+    sample is full of <code>\${HOME}</code>. Those four lines escape
+    <code>\${</code> in code and leave prose alone.
+  </p>
+
+  <doc-note label="The parser is yours">
+    <code>markdown</code> in the config is a function from source to HTML. This
+    package ships none, so the flavor, the extensions and the highlighter are
+    decisions you make in one file.
   </doc-note>
 
   <h2 id="search">Search</h2>

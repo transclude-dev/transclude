@@ -98,6 +98,34 @@ Globals available in an expression: `html`, `json`, `Math`, `JSON`, `String`,
 `absolute()`. Returning a `Response` from a loader answers the request and skips
 the render, which is how a layout does a login redirect.
 
+## Markdown pages
+
+A `.md` file under `routes/` is a page. Set `markdown` in the config to a
+function from source to HTML; this package ships no parser.
+
+```js
+// transclude.config.js
+import { Marked } from 'marked';
+const marked = new Marked();
+
+export default { markdown: (source, file) => marked.parse(source) };
+```
+
+The loader is the same `<script server>` block, at the top of the `.md` file.
+CommonMark passes a script block through raw, so there is no frontmatter. After
+the conversion it is an ordinary page: interpolation, directives, elements,
+fragments and type checking all work.
+
+Two rules belong to Markdown rather than to this framework:
+
+- **An HTML block ends at the next blank line, and Markdown inside one is not
+  parsed.** Put blank lines inside a block-level custom element or its content
+  arrives as literal asterisks.
+- **`${` in a code fence would interpolate.** Escape `${` in code tokens in your
+  converter, or write `\${` by hand. `\${` is the escape and works in any page.
+
+A diagnostic in a `.md` page reports a line in the converted HTML and says so.
+
 ## Forms and actions
 
 A page responds to GET with its loader. Other verbs are named exports on the same
@@ -215,8 +243,8 @@ there reaches the page as written, so a value would land in code. `json(value)`
 is the one way through, and only as the entire text of the script. For a style,
 pass the value through a custom property, which is an attribute and is escaped.
 
-**A literal `${` cannot be written in a template.** There is no escape. Pass any
-text containing it in from the loader as data.
+**A literal `${` is written `\${`.** Passing the text in from the loader as data
+also works, and is easier to read when a whole sample is full of them.
 
 **Directive values are expressions, not interpolations.** Write
 `each="note of notes"`, never `each="${notes}"`.

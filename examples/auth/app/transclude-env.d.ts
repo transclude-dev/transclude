@@ -46,7 +46,8 @@ export type RootLayoutContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `root/_layout.html`. */
@@ -88,7 +89,8 @@ export type AdminLayoutContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `admin/_layout.html`. */
@@ -146,11 +148,14 @@ export type AdminSettingsContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `admin-settings`'s <script server> block. */
-export type AdminSettingsData = {};
+export type AdminSettingsData = {
+  name: string;
+};
 
 /** The `ctx` argument of `admin-index`'s <script server> loader. */
 export type AdminIndexContext = {
@@ -196,7 +201,8 @@ export type AdminIndexContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `admin-index`'s <script server> block. */
@@ -230,7 +236,8 @@ export type LoginContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `login`'s <script server> block. */
@@ -267,7 +274,8 @@ export type IndexContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `index`'s <script server> block. */
@@ -309,7 +317,8 @@ export type _404Context = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `404`'s <script server> block. */

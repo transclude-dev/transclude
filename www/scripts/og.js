@@ -7,7 +7,7 @@
 // `app/public/og.png` at 1200x630, which is the size every platform crops from.
 //
 // Headless Chrome rather than a rasteriser, because the card is a web page: it
-// uses the site's own two typefaces and its own colours, and anything that could
+// uses the site's own two typefaces and its own colors, and anything that could
 // render it correctly is a browser. The alternative was a native image library
 // as a dependency of a site that has two.
 //

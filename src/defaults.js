@@ -34,6 +34,11 @@ export const DEFAULTS = {
   csrf: true,
   csp: false,
   speculate: false,
+  // `(source, file) => html`, and a `.md` page under `routes/` without one is an
+  // error naming the file. This package ships no Markdown parser: which flavor
+  // and which extensions are the app's to pick, the same way `cache` is a store
+  // the app supplies rather than a database this one depends on.
+  markdown: null,
 };
 
 /**

@@ -19,6 +19,8 @@ import { AMBIENT_NAMES } from './compiler/ambient.js';
 import { buildEndpointShim, buildShim, originalOffset } from './compiler/shim.js';
 import { splitBlocks, readFlags } from './compiler/index.js';
 import { resolveRoutesDir, scanRoutes } from './routes.js';
+// Aliased: this file has its own `sourceOf`, which is the one that reads disk.
+import { MARKDOWN_EXT, sourceOf as htmlFrom } from './markdown.js';
 
 /**
  * Annotations are optional, so `noImplicitAny` is off: an unannotated parameter
@@ -79,9 +81,9 @@ const LAYOUT_FILE = '_layout.html';
  * on the layouts above it, a page on its whole chain.
  *
  * @param {{ root: string, appDir: string, routesDir: string, elementsDir: string,
- *   strict?: boolean }} options
- * @returns {{ files: Function, update: Function, rebuild: Function,
- *   check: Function, quickInfo: Function, describe: Function }}
+ *   strict?: boolean, markdown?: ((source: string, file: string) => string)|null }} options
+ * @returns {{ files: Function, sourceFor: Function, update: Function,
+ *   rebuild: Function, check: Function, quickInfo: Function, describe: Function }}
  */
 export function createChecker({
   root,
@@ -89,6 +91,7 @@ export function createChecker({
   elementsDir = 'elements',
   routesDir = 'routes',
   strict = false,
+  markdown = null,
 }) {
   const app = path.resolve(root, appDir);
   const options = compilerOptions(Boolean(strict));
@@ -126,7 +129,10 @@ export function createChecker({
     return built;
   };
 
-  const sourceOf = (file) => overlays.get(file) ?? fs.readFileSync(file, 'utf8');
+  // An overlay is already HTML: the editor hands over what it is checking, and a
+  // Markdown page is checked as the page it compiles to. Off disk, it is not.
+  const sourceOf = (file) =>
+    overlays.get(file) ?? htmlFrom(file, fs.readFileSync(file, 'utf8'), markdown);
 
   /** The type of one of a shim's marker exports. What tsc made of the file. */
   const exportTypeOf = (file, name) => {
@@ -421,9 +427,21 @@ export function createChecker({
     files() {
       const found = componentFiles();
       const dir = resolveRoutesDir(app, routesDir);
-      walkHtml(dir, found);
+      walkPages(dir, found);
       for (const route of scanRoutes(dir).endpoints) found.push(route.file);
       return found;
+    },
+
+    /**
+     * The source the diagnostics were measured against.
+     *
+     * For an `.html` page that is the file on disk. For a Markdown page it is
+     * the HTML it converted to, and the difference is why this exists: an offset
+     * from a shim built out of the converted HTML, printed against the Markdown,
+     * points at the wrong column and looks authoritative doing it.
+     */
+    sourceFor(file) {
+      return sourceOf(file);
     },
 
     /** Replaces a file's contents without touching disk, for an editor buffer. */
@@ -577,12 +595,12 @@ function readDirSafe(dir) {
   return fs.existsSync(dir) ? fs.readdirSync(dir) : [];
 }
 
-function walkHtml(dir, out) {
+function walkPages(dir, out) {
   if (!fs.existsSync(dir)) return out;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) walkHtml(full, out);
-    else if (entry.name.endsWith('.html')) out.push(full);
+    if (entry.isDirectory()) walkPages(full, out);
+    else if (entry.name.endsWith('.html') || entry.name.endsWith(MARKDOWN_EXT)) out.push(full);
   }
   return out;
 }

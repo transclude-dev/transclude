@@ -86,6 +86,9 @@ so a swap cannot drift from the page it replaces part of.
   Light DOM by default: no boundary, page CSS reaches it, `<label for>` works,
   and it ships no JavaScript. `export const shadow = true` opts into a shadow
   root and a re-render on an attribute change.
+- **Markdown pages.** A `.md` file under `app/routes/` is a page, with the same
+  loader block, elements and type checking an `.html` one has. Set `markdown` in
+  the config to a function from source to HTML; this package ships no parser.
 - **Types without writing TypeScript.** `npm run check` catches a misspelled
   field, an unknown prop and a wrong-typed one, from the shapes your loaders
   return. Annotations are optional.
@@ -129,6 +132,7 @@ npm run includes      # transclusion on http://localhost:1966
 npm run auth          # a guarded section on http://localhost:1967
 npm run live          # server-sent events on http://localhost:1968
 npm run elements      # light and shadow elements on http://localhost:1969
+npm run markdown      # Markdown pages on http://localhost:1970
 npm run check:src     # type-check the framework itself
 ```
 

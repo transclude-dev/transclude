@@ -7,6 +7,7 @@ import ts from 'typescript';
 import { createChecker, positionAt } from '../src/typecheck.js';
 import { emitTypes } from '../src/compiler/types.js';
 import { loadProject } from '../src/project.js';
+import { isMarkdown } from '../src/markdown.js';
 
 const { root, config } = await loadProject();
 const checker = createChecker({ root, ...config });
@@ -63,16 +64,23 @@ for (const file of files) {
   const diagnostics = checker.check(file);
   if (!diagnostics.length) continue;
 
-  const source = fs.readFileSync(file, 'utf8');
+  // What the checker measured, not what is on disk. They are the same file for
+  // an `.html` page. For a Markdown page they are not, and reading disk here put
+  // a caret under an unrelated word several lines from the mistake.
+  const source = checker.sourceFor(file);
   const lines = source.split('\n');
   const relative = path.relative(root, file);
+  const converted = isMarkdown(file);
 
   for (const diagnostic of diagnostics) {
     const { line, column } = positionAt(source, diagnostic.offset);
     if (diagnostic.severity === 'error') errors++;
     else warnings++;
 
-    console.log(`\n${relative}:${line}:${column + 1}  ${diagnostic.severity}  TS${diagnostic.code}`);
+    // Said plainly rather than left to be worked out. The line and column are
+    // real, and they are not positions in the file the author opens.
+    const where = converted ? `${relative}  (converted HTML, line ${line})` : `${relative}:${line}:${column + 1}`;
+    console.log(`\n${where}  ${diagnostic.severity}  TS${diagnostic.code}`);
     console.log(`  ${diagnostic.message}`);
 
     const text = lines[line - 1] ?? '';

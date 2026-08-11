@@ -53,7 +53,7 @@ describe('a code fence says ${ and means it', async () => {
 describe('prose still interpolates', async () => {
   const markup = await text('/');
 
-  // `${count}` in a paragraph read the loader. Both behaviours in one document
+  // `${count}` in a paragraph read the loader. Both behaviors in one document
   // is the point: the difference is the code fence, not the file.
   assert.match(markup, /There are 3 notes/);
 });

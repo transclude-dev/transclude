@@ -461,14 +461,14 @@ describe('a shared page says what it is', () => {
   }
 });
 
-test('the card image and the stylesheet agree about the colours', () => {
+test('the card image and the stylesheet agree about the colors', () => {
   // The card is rendered from its own file with its own copy of the palette,
   // because it is not served by the site. Two copies drift; this is what says so.
   const card = fs.readFileSync(path.join(root, '..', 'scripts', 'og-card.html'), 'utf8');
   const css = fs.readFileSync(path.join(root, '..', 'app', 'styles', 'global.css'), 'utf8');
 
-  for (const colour of ['#0000ee', '#fcfcfd', '#14141a']) {
-    assert.ok(card.includes(colour), `the card does not use ${colour}`);
-    assert.ok(css.includes(colour), `the stylesheet no longer uses ${colour}`);
+  for (const color of ['#0000ee', '#fcfcfd', '#14141a']) {
+    assert.ok(card.includes(color), `the card does not use ${color}`);
+    assert.ok(css.includes(color), `the stylesheet no longer uses ${color}`);
   }
 });

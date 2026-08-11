@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "checkJs": true,
+    "maxNodeModuleJsDepth": 0,
+    // This app depends on the package by path, so TypeScript would follow the
+    // link and check the framework's own source as if it were the app's. An
+    // installed project needs neither of these two keys.
+    "preserveSymlinks": true,
+    "noEmit": true
+  },
+  "include": ["app","test","transclude.config.js"],
+  "exclude": ["app/public"]
+}

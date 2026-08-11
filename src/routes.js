@@ -4,6 +4,7 @@
 //
 //   routes/index.html            ->  /
 //   routes/about.html            ->  /about
+//   routes/notes.md              ->  /notes, Markdown converted before it compiles
 //   routes/blog/index.html       ->  /blog
 //   routes/blog/[slug].html      ->  /blog/:slug
 //   routes/docs/[...path].html   ->  /docs/:path{.+}
@@ -15,7 +16,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { MARKDOWN_EXT } from './markdown.js';
+
 const EXT = '.html';
+/**
+ * A page can also be Markdown, converted to HTML before anything compiles it.
+ * The route table does not care which it was: `about.md` and `about.html` both
+ * answer `/about`, and a directory holding one of each is the collision below
+ * rather than a rule of its own.
+ */
+const PAGE_EXTS = [EXT, MARKDOWN_EXT];
 /**
  * A `.js` file in the routes tree is an endpoint: a route with no template, no
  * layout and no regions, which answers with a `Response` of its own. Same
@@ -81,7 +91,7 @@ export function scanRoutes(dir) {
  */
 export function toRoute(rel, file) {
   const kind = rel.endsWith(ENDPOINT_EXT) ? 'endpoint' : 'page';
-  const ext = kind === 'endpoint' ? ENDPOINT_EXT : EXT;
+  const ext = kind === 'endpoint' ? ENDPOINT_EXT : PAGE_EXTS.find((e) => rel.endsWith(e)) ?? EXT;
   const parts = rel.slice(0, -ext.length).split(path.sep);
 
   // `blog/index.html` and `blog.html` both mean /blog; the trailing `index`
@@ -163,7 +173,7 @@ function walk(dir, base = dir, out = []) {
 
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(full, base, out);
-    else if (entry.name.endsWith(EXT) || entry.name.endsWith(ENDPOINT_EXT)) {
+    else if (entry.name.endsWith(ENDPOINT_EXT) || PAGE_EXTS.some((e) => entry.name.endsWith(e))) {
       out.push(path.relative(base, full));
     }
   }

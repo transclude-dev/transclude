@@ -46,7 +46,8 @@ export type IndexContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `index`'s <script server> block. */
@@ -82,7 +83,8 @@ export type _404Context = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `404`'s <script server> block. */

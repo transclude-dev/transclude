@@ -26,6 +26,46 @@ type __CookieOptions = {
   sameSite?: 'Strict' | 'Lax' | 'None'
 };
 
+// Declared by the app, in the file each was written in.
+type Note = {
+  title: string;
+  body: string;
+};
+
+/** Properties of `<site-note>`, from its <script properties> block. */
+export type SiteNoteProps = {
+  tone: string;
+};
+
+/** The `ctx` argument of `about`'s <script server> loader. */
+export type AboutContext = {
+  url: string;
+  params: {};
+  route: {
+    id: string;
+    pattern: string;
+    path: string
+  };
+  layout: {};
+  request: Request | null;
+  fragment: string | null;
+  action: unknown;
+  response: {
+    status: number;
+    headers: Headers
+  };
+  cookies: __Cookies;
+  htmlAttrs: Record<string, string | boolean | null>;
+  absolute: (path: string) => string;
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
+};
+
+/** Data returned by `about`'s <script server> block. */
+export type AboutData = {
+  pages: number;
+};
+
 /** The `ctx` argument of `index`'s <script server> loader. */
 export type IndexContext = {
   url: string;
@@ -52,13 +92,9 @@ export type IndexContext = {
 
 /** Data returned by `index`'s <script server> block. */
 export type IndexData = {
-  q: string;
-  people: {
-    id: number;
-    name: string;
-    role: string;
-  }[];
-  total: number;
+  title: string;
+  notes: Note[];
+  count: number;
 };
 
 /** The `ctx` argument of `404`'s <script server> loader. */
@@ -87,3 +123,9 @@ export type _404Context = {
 
 /** Data returned by `404`'s <script server> block. */
 export type _404Data = {};
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "site-note": HTMLElement;
+  }
+}

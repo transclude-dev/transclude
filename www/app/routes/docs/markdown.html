@@ -1,0 +1,183 @@
+<script server>
+  import { all } from '../../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      config: [
+        `// transclude.config.js
+import { Marked } from 'marked';
+
+const marked = new Marked();
+
+export default {
+  markdown: (source, file) => marked.parse(source),
+};`,
+        'js',
+      ],
+
+      page: `<!-- app/routes/notes.md -->
+<script server>
+  import { notes } from '../data/notes.js';
+
+  export default async () => ({ title: 'Notes', notes });
+<\/script>
+
+<title>\${title}</title>
+
+# \${title}
+
+There are \${notes.length} of them.`,
+
+      blocks: `<site-note>
+**Four asterisks.** The whole thing is one raw block.
+</site-note>
+
+<site-note>
+
+**Bold.** The blank line above ended the block.
+
+</site-note>`,
+
+      escape: [
+        // Joined rather than written as a template literal: `${` means itself in
+        // an ordinary string, so what is below is what the reader sees.
+        [
+          'walkTokens(token) {',
+          "  if (token.type === 'code' || token.type === 'codespan') {",
+          "    token.text = token.text.replaceAll('${', '\\\\${');",
+          '  }',
+          '}',
+        ].join('\n'),
+        'js',
+      ],
+
+      diagnostic: [
+        `app/routes/notes.md  (converted HTML, line 21)  error  TS2551
+  Property 'cuont' does not exist on type '__Shape<{ title: string; count: number; }>'.`,
+        'shell',
+      ],
+    }),
+  });
+</script>
+
+<title>Markdown pages · transclude</title>
+<meta
+  name="description"
+  content="A .md file under routes/ is a page: a loader, elements, fragments and type checking."
+/>
+
+<doc-page
+  heading="Markdown pages"
+  lede="A .md file under routes/ is a page. It is converted to HTML before anything compiles it, so everything after that is what an .html page gets."
+>
+  <p>
+    <code>app/routes/notes.md</code> answers <code>/notes</code>, the same way
+    <code>notes.html</code> would. Put one of each in a directory and the build
+    refuses, because both claim the URL.
+  </p>
+
+  <h2>The parser is yours</h2>
+
+  <p>
+    This package ships no Markdown parser. <code>markdown</code> in the config is
+    a function from source to HTML, the way <code>cache</code> is a store you
+    supply.
+  </p>
+
+  ${html(s.config)}
+
+  <p>
+    Which flavour, which extensions and which highlighter are one file in your
+    app. A <code>.md</code> page with no converter is an error naming the file,
+    rather than a guess about what you meant.
+  </p>
+
+  <h2>The loader is the same block</h2>
+
+  <p>
+    A Markdown page opens with the <code>&lt;script server&gt;</code> an HTML page
+    opens with. CommonMark starts an HTML block at <code>&lt;script</code> and
+    ends it at the closing tag. Everything between passes through raw, so the
+    loader reaches the compiler untouched.
+  </p>
+
+  ${html(s.page)}
+
+  <p>
+    There is no frontmatter and no YAML. Interpolation, directives, fragments and
+    <a href="/docs/types">type checking</a> all work, because by the time
+    anything compiles there is no Markdown left.
+  </p>
+
+  <doc-note label="Never write the closing script tag inside it" tone="warn">
+    Not even in a comment. The HTML parser ends a script at the first one it
+    sees, and Markdown ends the block there too. The rest of your loader then
+    renders as prose, and the page still builds.
+  </doc-note>
+
+  <h2>Elements need blank lines</h2>
+
+  <p>
+    An HTML block runs to the next blank line, and Markdown inside one is not
+    parsed. That is the one rule to carry around.
+  </p>
+
+  ${html(s.blocks)}
+
+  <p>
+    Inline is easier. A tag inside a paragraph needs no blank lines, and the
+    Markdown between the tags is still parsed.
+  </p>
+
+  <h2>Code fences and \${</h2>
+
+  <p>
+    A page is a template whichever format it was written in, so
+    <code>\${title}</code> in a paragraph reads the loader. In a code fence that
+    is almost never wanted. A shell sample is full of <code>\${HOME}</code>, and
+    a JavaScript one is full of template literals.
+  </p>
+
+  <p>
+    <code>\\${</code> is the escape and works anywhere in any page. Writing it by
+    hand in every sample is not the answer. Escape the code tokens in your
+    converter instead, which is four lines and leaves prose alone.
+  </p>
+
+  ${html(s.escape)}
+
+  <doc-note label="This lives in your app on purpose">
+    It is a judgement about how people write, not a rule about how pages compile.
+    An app that wants a sample to interpolate deletes those four lines.
+  </doc-note>
+
+  <h2>A diagnostic points into the converted HTML</h2>
+
+  <p>
+    <code>npm run check</code> checks Markdown pages, and says where the position
+    came from when it reports one.
+  </p>
+
+  ${html(s.diagnostic)}
+
+  <p>
+    The line is real and it is not a line in the file you opened. Getting one
+    back to the Markdown needs a source map from the conversion, and the
+    conversion is yours.
+  </p>
+
+  <h2>Markdown that is not a page</h2>
+
+  <p>
+    A directory of Markdown read by one route is data, and it needs none of this.
+    A loader reads the files and hands back the converted body.
+    <code>scanRoutes</code> skips any name starting with an underscore,
+    directories included. So <code>routes/blog/_posts/</code> sits beside the
+    page that reads it and answers no URL of its own.
+  </p>
+
+  <p>
+    <a href="/docs/examples#markdown">examples/markdown</a> is all of the above,
+    running.
+  </p>
+</doc-page>

@@ -903,7 +903,12 @@ class Codegen {
       const dynamic = parts.some((p) => p.type === 'expr');
 
       if (!dynamic) {
-        this.s(out, attr.value === '' ? ` ${attr.name}` : ` ${attr.name}="${escapeAttr(attr.value)}"`);
+        // The parts, not `attr.value`. They are the same string except where a
+        // `\${` was escaped, and reading the raw value there put the backslash
+        // in the output: `title="\${name}"` in the source, `title="\${name}"` in
+        // the page. Text got this right and attributes did not.
+        const literal = parts.map((part) => part.value).join('');
+        this.s(out, literal === '' ? ` ${attr.name}` : ` ${attr.name}="${escapeAttr(literal)}"`);
         continue;
       }
       this.c(

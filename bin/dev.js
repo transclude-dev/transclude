@@ -23,6 +23,7 @@ import {
 } from '../src/document.js';
 import transclude, { clientEntryUrl, pageModuleId } from '../src/plugin.js';
 import { resolveRoutesDir, scanRoutes } from '../src/routes.js';
+import { MARKDOWN_EXT } from '../src/markdown.js';
 import { baseApp, endpointMethods, runEndpoint, SERVER_FILE } from '../src/server.js';
 import { randomBytes } from 'node:crypto';
 import { cookiesOf } from '../src/cookies.js';
@@ -447,11 +448,12 @@ let app = await buildApp();
 // Adding or removing a page changes the route table, not just a module.
 vite.watcher.on('all', async (event, file) => {
   // `.js` as well as `.html`: an endpoint is a route too, and watching only for
-  // pages meant adding one needed a restart, with a 404 as the only hint.
+  // pages meant adding one needed a restart, with a 404 as the only hint. `.md`
+  // for the same reason: a Markdown page is a page.
   const extension = path.extname(file);
   const routing =
     file.startsWith(routesDir) &&
-    (extension === '.html' || extension === '.js') &&
+    (extension === '.html' || extension === MARKDOWN_EXT || extension === '.js') &&
     event !== 'change';
   // Middleware is registered once when the app is built, so a change to it needs
   // the app rebuilt, unlike a page, which is loaded per request.

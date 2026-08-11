@@ -46,7 +46,8 @@ export type ElsewhereContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `elsewhere`'s <script server> block. */
@@ -72,7 +73,8 @@ export type NotesContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `notes`'s <script server> block. */
@@ -103,7 +105,8 @@ export type SummaryContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `summary`'s <script server> block. */
@@ -129,7 +132,8 @@ export type IndexContext = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `index`'s <script server> block. */
@@ -157,7 +161,8 @@ export type _404Context = {
   cookies: __Cookies;
   htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
-  revalidateTag: (tag: string) => void
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
 };
 
 /** Data returned by `404`'s <script server> block. */

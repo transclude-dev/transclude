@@ -15,7 +15,9 @@
     const form = await request.formData();
     const name = String(form.get('name') ?? '').trim();
 
-    if (name) rename(id, name);
+    // The layout's guard refused a request with no session before this ran, and
+    // the compiler cannot know that. One branch is what makes the two agree.
+    if (id && name) rename(id, name);
 
     return Response.redirect(new URL('/admin/settings', url), 303);
   };
@@ -23,7 +25,7 @@
   export default async ({ cookies }) => {
     const id = await cookies.signed.get('session');
 
-    return { name: find(id)?.name ?? '' };
+    return { name: (id ? find(id)?.name : '') ?? '' };
   };
 </script>
 

@@ -227,6 +227,19 @@
           </td>
         </tr>
         <tr>
+          <td><code>markdown</code></td>
+          <td><code>null</code></td>
+          <td>
+            <code>(source, file) =&gt; html</code>. What makes a
+            <code>.md</code> file under <code>routes/</code> a page. It is
+            converted before anything compiles it, so the page that comes out has
+            a loader, elements and fragments like any other. This package ships
+            no parser, and a <code>.md</code> page without this is an error
+            naming the file. <a href="/docs/markdown">Markdown pages</a> is the
+            rest.
+          </td>
+        </tr>
+        <tr>
           <td><code>sitemap</code></td>
           <td><code>false</code></td>
           <td>

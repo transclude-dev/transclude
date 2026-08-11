@@ -1,0 +1,24 @@
+{
+  "name": "transclude-example-markdown",
+  "private": true,
+  "type": "module",
+  "description": "Markdown pages. A .md file under routes/ is a page, and the elements in it are rendered on the server.",
+  "scripts": {
+    "dev": "transclude-dev",
+    "build": "transclude-build",
+    "start": "transclude-serve",
+    "check": "transclude-check",
+    "test": "node --test \"test/**/*.test.js\"",
+    "preview": "npm run build && npm start",
+    "start:worker": "wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "@transclude/core": "file:../..",
+    "marked": "^18.0.9"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5"
+  }
+}

@@ -1022,12 +1022,35 @@ against.
   action and then replied with whatever `Object(data)` stringifies to instead of
   the 404 the guard exists to send. `__proto__` gave a 500 instead. `regionOf` is
   the one lookup now, own properties only and the value has to be a function.
-- **A literal `${` cannot be written in a template.** There is no escape for it.
-  The compiler reads every one as an interpolation, so `${}` in prose fails with
-  `bad expression "": empty expression` and a line number in the compiled file
-  rather than the source. Anything documenting the syntax has to pass its
-  examples in from the loader, where a JS string can hold them. That is what
-  `docs/` does, and it is why its code samples are data rather than markup.
+- **A literal `${` is written `\${`, and the comment above the scanner said for a
+  long time that it could not be written at all.** The escape is in
+  `splitInterpolations` and has been. A bare `${` is read as an interpolation, so
+  `${}` in prose still fails with `bad expression "": empty expression` and a line
+  number in the compiled file rather than the source. Passing examples in from the
+  loader also works and is what most of `www/` does, because a JS string can hold
+  them without either escape.
+- **The escape was applied to text and not to attributes.** `emitAttrs` took the
+  static branch and wrote `attr.value` rather than the parts
+  `splitInterpolations` had already unescaped, so `title="\${name}"` in the
+  source put a backslash in the page. Text was right the whole time, which is why
+  nobody saw it. If you touch either path, `test/markdown.test.js` asserts both.
+- **Markdown is converted in exactly two readers, and they must not disagree.**
+  `plugin.js`'s `read` compiles the page; `typecheck.js`'s `sourceOf` reads the
+  same page to collect its names. Both go through `sourceOf` in `src/markdown.js`.
+  A third reader that calls `fs.readFileSync` directly type-checks Markdown as
+  HTML, which parses, produces no names, and reports nothing.
+- **A diagnostic in a `.md` page is an offset into the converted HTML.**
+  `bin/check.js` asks `checker.sourceFor(file)` rather than reading disk. Reading
+  disk put the caret under an unrelated word several lines from the mistake, and
+  looked authoritative doing it. A real position needs a source map from the
+  conversion, and the conversion belongs to the app.
+- **A closing script tag inside a `<script server>` block ends it in Markdown
+  too.** This is the ordinary HTML parser rule, and it bites harder here: the
+  rest of the loader renders as prose and the page still builds. `examples/markdown`
+  hit it on the first run, in a comment.
+- **Three places decide what a page file is.** `PAGE_EXTS` in `routes.js`, the
+  watcher in `plugin.js`, and the watcher in `bin/dev.js`. The dev server is a
+  separate program and this is the fifth thing that has to change in two places.
 - **A `file:` dependency does not bring its peers.** npm installs a peer
   dependency alongside a package from the registry, so `npm install @transclude/core`
   gets Vite and TypeScript. It does not do that for `file:..`, which is how both

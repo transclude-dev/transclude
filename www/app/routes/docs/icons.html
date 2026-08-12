@@ -113,6 +113,33 @@
     has to be renamed.
   </p>
 
+  <h2>A sheet ships every icon in it</h2>
+
+  <p>
+    A library is one file, and a page that draws one icon fetches all of them.
+    That is the trade a sprite makes: one request, cached once, however many
+    icons the page shows.
+  </p>
+
+  <p>
+    It stops being a good trade at a few hundred icons. A 24-pixel line icon is
+    roughly 150 to 300 bytes in the sheet. A set of 1,500 is a few hundred
+    kilobytes, fetched by every visitor to draw twelve of them.
+  </p>
+
+  <p>
+    So copy the icons you use rather than the whole set. A downloaded folder is
+    a good way to start and a bad way to ship. Moving a file out of it later
+    changes nothing but the library name in the URL.
+  </p>
+
+  <doc-note label="Nothing prunes this for you" tone="warn">
+    The build writes every file it finds. It cannot work out which icons a page
+    draws. A name can be an expression, a server-rendered route is never
+    prerendered, and markup can arrive from a loader. A sheet is what you put in
+    the directory.
+  </doc-note>
+
   <h2>What the build writes</h2>
 
   <p>

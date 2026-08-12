@@ -183,6 +183,11 @@
 
   ${html(s.loader)}
 
+  <p>
+    A page that reads nothing needs no block at all. Leave it out rather than
+    exporting a loader that returns an empty object.
+  </p>
+
   <doc-note label="Why it is in the page">
     The loader and the markup that reads it change together, so they are one
     file to open and one file to review. The block is compiled into the route

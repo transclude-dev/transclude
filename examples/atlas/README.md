@@ -143,7 +143,19 @@ That is HTML, not an iframe, so the host page's stylesheet reaches it and no
 JavaScript is involved. `/about` includes a record this way and is the proof:
 read its source.
 
-Anywhere that is not a transclude site, fetch `?fragment=record` and insert it.
+Anywhere that is not a transclude site, one script and one tag:
+
+```html
+<script type="module" src="https://atlas.transclude.dev/at-record.js"></script>
+
+<at-record uri="at://did:plc:.../app.bsky.feed.post/3k2j">
+  <a href="https://bsky.app/...">Read this post</a>
+</at-record>
+```
+
+The children are the fallback. They show until the record arrives and they stay
+if it never does, so no page is broken by this element: no script, no network
+and an old browser all leave the link the author wrote.
 
 **The contract is that this URL always answers with something you can put on a
 page.** An embed outlives the record it points at, so a record that is gone gets
@@ -174,6 +186,31 @@ That is the ordinary case on this network, not a failure. `/lexicon/<nsid>` says
 so plainly and names the domains it asked. Records of that type still render,
 field by field, from what they carry.
 
+## The element is light DOM, and hand-written
+
+Two decisions about `app/public/at-record.js` that look like oversights and are
+not.
+
+**No shadow root.** A shadow root would keep the host page's stylesheet out of
+the record, and that stylesheet reaching it is the entire reason this serves HTML
+instead of an iframe. A test asserts the file contains no `attachShadow`, because
+it is a one-line change somebody could make without noticing.
+
+**No framework.** The element is written by hand rather than exported from the
+app that serves it. It fetches a URL and inserts the result; the element runtime
+in `@transclude/core` is four kilobytes and none of it applies. The app's own
+elements are compiled and server-rendered, and this one runs on strangers'
+pages, so they have almost nothing in common but the word "element".
+
+It is 1.8 KB gzipped, and it has to load cross-origin, which is what
+`app/server.js` is for: a module script is fetched in CORS mode however it was
+written in the markup.
+
 ## What is not built yet
 
-The `/embed` route, and `<at-record>`.
+Discovery. `com.atproto.sync.listReposByCollection` against a relay would
+enumerate everyone using a lexicon, and Constellation would give backlinks —
+what records point at this one. That is what turns this from an inspector into a
+map, and it is also what `<lex-field>` needs: cross-highlighting a field on a
+schema page wants live example records on that page, and there is no way to find
+them yet.

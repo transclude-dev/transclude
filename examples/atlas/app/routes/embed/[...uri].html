@@ -122,6 +122,18 @@
 </style>
 
 <div id="record" fragment>
+  <!-- The only styling that travels with an embed, and it is structural rather
+       than decorative. These two tag names mean nothing on a page that never
+       heard of them, so a browser lays them out inline and the record arrives as
+       one run-on line. Everything else is left to the page this lands on, which
+       is the reason for serving HTML instead of an iframe. -->
+  <style>
+    record-card,
+    field-list {
+      display: block;
+    }
+  </style>
+
   <template if="gone">
     <div class="tombstone">
       <p>This record is not available.</p>

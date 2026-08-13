@@ -163,6 +163,7 @@ export type AboutContext = {
 export type AboutData = {
   server: string;
   allow: string;
+  element: string;
   client: string;
 };
 

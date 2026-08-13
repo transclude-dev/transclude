@@ -13,6 +13,11 @@
     allow: ['atlas.transclude.dev'],
   },
 };`,
+    element: `<script type="module" src="https://atlas.transclude.dev/at-record.js"><\/script>
+
+<at-record uri="at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3msqpusnigc2t">
+  <a href="https://bsky.app/profile/bsky.app">Read this post on Bluesky</a>
+</at-record>`,
     client: `const url = 'https://atlas.transclude.dev/embed/' + uri.replace('at://', '');
 const res = await fetch(url + '?fragment=record');
 document.querySelector('#quote').setHTMLUnsafe(await res.text());`,
@@ -94,16 +99,25 @@ document.querySelector('#quote').setHTMLUnsafe(await res.text());`,
 
 <pre><code>${allow}</code></pre>
 
-<p>Anywhere else, fetch the fragment:</p>
+<p>Anywhere else, one script and one tag:</p>
+
+<pre><code>${element}</code></pre>
+
+<p>
+  The children are the fallback. They show until the record arrives and they stay
+  if it never does, so no page is broken by this element: no script, no network
+  and an old browser all leave the link you wrote.
+</p>
+
+<p>Or skip the element and fetch the fragment yourself:</p>
 
 <pre><code>${client}</code></pre>
 
-<h2>What it looks like</h2>
+<h2>Both, side by side</h2>
 
 <p>
-  The block below was included by this page's own server, from
-  <code>/embed/&hellip;#record</code>, while the page rendered. There is no
-  script on this page.
+  This one was included by this page's own server while the page rendered. There
+  is no script involved and the markup is in view-source.
 </p>
 
 <div class="demo">
@@ -112,9 +126,20 @@ document.querySelector('#quote').setHTMLUnsafe(await res.text());`,
   </transclude>
 </div>
 
-<p class="caption">
-  Included at render time. View the source of this page: the markup is there.
+<p>
+  This one is the element. Turn JavaScript off and reload: the link below stays
+  and the rest of the page is unchanged.
 </p>
+
+<div class="demo">
+  <at-record uri="at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3msqpusnigc2t">
+    <a href="/at/did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3msqpusnigc2t">
+      Read this record on atlas
+    </a>
+  </at-record>
+</div>
+
+<script type="module" src="/at-record.js"></script>
 
 <h2>When the record is gone</h2>
 

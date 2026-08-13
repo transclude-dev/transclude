@@ -1,0 +1,299 @@
+<script server>
+  // A schema is a record, so this page is the record view with a different
+  // renderer. It reads the same `getRecord` through the same chain, and the
+  // only thing that makes it a schema page is what it does with the value.
+
+  import { isNsid, nsidAuthorities } from '../../lib/aturi.js';
+  import { recordDef, referencedNsids, resolveLexicon } from '../../lib/lexicon.js';
+  import { createTrace, traceMs } from '../../lib/trace.js';
+
+  export const revalidate = 3600;
+
+  export default async ({ params, response }) => {
+    const trace = createTrace();
+    const nsid = params.nsid;
+
+    if (!isNsid(nsid)) {
+      response.status = 404;
+      return { ...EMPTY, nsid, hops: [], ms: 0, error: `"${nsid}" is not an NSID.` };
+    }
+
+    try {
+      const lexicon = await resolveLexicon(nsid, trace);
+
+      if (!lexicon) {
+        // Nobody published one. This is an ordinary outcome on this network and
+        // the page says so rather than showing an error.
+        response.status = 404;
+        return { ...EMPTY, nsid, hops: trace.hops, ms: traceMs(trace), error: null, searched: nsidAuthorities(nsid) };
+      }
+
+      return {
+        ...EMPTY,
+        nsid,
+        lexicon,
+        defs: Object.entries(lexicon.schema.defs ?? {}).map(([name, def]) => ({ name, def })),
+        properties: propertiesOf(recordDef(lexicon)),
+        needs: referencedNsids(lexicon),
+        hops: trace.hops,
+        ms: traceMs(trace),
+        error: null,
+      };
+    } catch (error) {
+      response.status = 502;
+      return { ...EMPTY, nsid, hops: trace.hops, ms: traceMs(trace), error: error.message };
+    }
+  };
+
+  const EMPTY = {
+    lexicon: null,
+    defs: [],
+    properties: [],
+    needs: [],
+    searched: [],
+    error: null,
+  };
+
+  /**
+   * The field table. Every property of the record, with the constraints the
+   * lexicon put on it, flattened to one row each.
+   */
+  function propertiesOf(def) {
+    if (!def?.properties) return [];
+    const required = new Set(def.required ?? []);
+
+    return Object.entries(def.properties).map(([name, property]) => ({
+      name,
+      required: required.has(name),
+      type: typeOf(property),
+      format: property.format ?? null,
+      description: property.description ?? null,
+      limits: limitsOf(property),
+      ref: refOf(property),
+    }));
+  }
+
+  /** What the schema calls this field, including what an array holds. */
+  function typeOf(property) {
+    if (property.type !== 'array') return property.type;
+    return `array of ${property.items?.type ?? 'unknown'}`;
+  }
+
+  /** Every bound the schema put on a value, as one line. */
+  function limitsOf(property) {
+    const parts = [];
+    const source = property.type === 'array' ? property.items ?? {} : property;
+
+    if (property.type === 'array' && property.maxLength) parts.push(`up to ${property.maxLength} items`);
+    if (source.maxGraphemes) parts.push(`${source.maxGraphemes} graphemes`);
+    else if (source.maxLength && property.type !== 'array') parts.push(`${source.maxLength} bytes`);
+    if (source.maxSize) parts.push(`${Math.round(source.maxSize / 1024)} KB`);
+    if (source.enum) parts.push(source.enum.join(', '));
+    if (source.const !== undefined) parts.push(`always ${source.const}`);
+
+    return parts.join(' · ');
+  }
+
+  /** Which other schemas this field points at. */
+  function refOf(property) {
+    const source = property.type === 'array' ? property.items ?? {} : property;
+    const refs = source.ref ? [source.ref] : (source.refs ?? []);
+    return refs.map((ref) => ({ ref, href: ref.startsWith('#') ? null : `/lexicon/${ref.split('#')[0]}` }));
+  }
+</script>
+
+<title>${nsid} · atlas</title>
+<meta name="description" content="The lexicon for ${nsid}, resolved from the network." />
+
+<style>
+  h1 {
+    font-family: var(--mono);
+    font-size: 1.15rem;
+    word-break: break-all;
+    margin-bottom: 0.4rem;
+  }
+
+  .published {
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin: 0 0 2rem;
+    word-break: break-all;
+  }
+
+  .scroller {
+    overflow-x: auto;
+    margin: 0 0 2rem;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.85rem;
+  }
+  th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+    padding: 0 1rem 0.4rem 0;
+    white-space: nowrap;
+  }
+  td {
+    border-bottom: 1px solid var(--line);
+    padding: 0.5rem 1rem 0.5rem 0;
+    vertical-align: top;
+  }
+  td.name {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  td.type {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .req {
+    color: var(--accent);
+  }
+  .limits {
+    display: block;
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+
+  ul.plain {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .missing {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    background: var(--card);
+    max-width: 44rem;
+  }
+  .missing h1 {
+    font-size: 1.1rem;
+  }
+  .missing p {
+    margin: 0 0 0.6rem;
+  }
+  .missing p:last-child {
+    margin-bottom: 0;
+  }
+
+  details {
+    margin-top: 2rem;
+  }
+  summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  details pre {
+    margin-top: 0.6rem;
+    font-size: 0.75rem;
+    max-height: 34rem;
+  }
+</style>
+
+<template if="error">
+  <div class="missing">
+    <h1 class="mono">${nsid}</h1>
+    <p>${error}</p>
+  </div>
+</template>
+
+<template else-if="!lexicon">
+  <div class="missing">
+    <h1 class="mono">${nsid}</h1>
+    <p>No lexicon is published for this name.</p>
+    <p class="muted">
+      Most record types on this network have no published schema. Records of this
+      type still render, field by field, from what they carry.
+    </p>
+    <p class="muted">
+      Asked: <span each="domain of searched" class="mono">_lexicon.${domain} </span>
+    </p>
+  </div>
+</template>
+
+<template else>
+  <h1>${nsid}</h1>
+  <p class="published">
+    Published by <a href="/did/${lexicon.did}" class="mono">${lexicon.did}</a>
+  </p>
+
+  <div id="schema" fragment>
+    <h2>Fields</h2>
+
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr each="property of properties">
+            <td class="name">
+              ${property.name}<span class="req" if="property.required" title="required">*</span>
+            </td>
+            <td class="type">
+              ${property.type}<template if="property.format">, ${property.format}</template>
+              <span class="limits" if="property.limits">${property.limits}</span>
+            </td>
+            <td>
+              <template if="property.description">${property.description}</template>
+              <span each="entry of property.ref">
+                <a if="entry.href" href="${entry.href}" class="mono">${entry.ref}</a>
+                <span else class="mono muted">${entry.ref}</span>
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="muted" if="!properties.length">
+      This lexicon defines no record. It is a query, a procedure, or a set of
+      types other lexicons point at.
+    </p>
+  </div>
+
+  <template if="needs.length">
+    <h2>Points at</h2>
+    <ul class="plain">
+      <li each="other of needs">
+        <a href="/lexicon/${other}" class="mono">${other}</a>
+      </li>
+    </ul>
+  </template>
+
+  <h2>Definitions</h2>
+  <ul class="plain">
+    <li each="entry of defs"><code>${entry.name}</code> <span class="muted">${entry.def.type}</span></li>
+  </ul>
+
+  <details>
+    <summary>Raw</summary>
+    <pre id="raw" fragment>${JSON.stringify(lexicon.schema, null, 2)}</pre>
+  </details>
+</template>
+
+<template slot="trace">
+  <trace-rail hops="${hops}" ms="${ms}"></trace-rail>
+</template>

@@ -1,0 +1,249 @@
+<script server>
+  // The identity on its own: the document, the keys in it, and for a did:plc
+  // the log of every change ever made to it.
+  //
+  // The audit log is the interesting half. A DID document shows what is true
+  // now. The log shows who rotated a key, when a handle changed, and whether
+  // anything was ever done to this identity by somebody who no longer controls
+  // it.
+
+  import { resolveIdentity } from '../../lib/identity.js';
+  import { createTrace, traceMs } from '../../lib/trace.js';
+  import { cached, TTL } from '../../lib/cache.js';
+
+  export const revalidate = 60;
+
+  export default async ({ params, response }) => {
+    const trace = createTrace();
+
+    try {
+      const identity = await resolveIdentity(params.id, trace);
+      const log = identity.did.startsWith('did:plc:') ? await auditLog(identity.did, trace) : [];
+
+      return {
+        identity,
+        services: servicesOf(identity.doc),
+        keys: keysOf(identity.doc),
+        log,
+        hops: trace.hops,
+        ms: traceMs(trace),
+        error: null,
+      };
+    } catch (error) {
+      response.status = 404;
+      return { identity: null, services: [], keys: [], log: [], hops: trace.hops, ms: traceMs(trace), error: error.message };
+    }
+  };
+
+  /**
+   * Every change made to a did:plc, oldest first. The directory keeps them all,
+   * which is what makes a PLC identity auditable rather than merely current.
+   */
+  async function auditLog(did, trace) {
+    try {
+      const entries = await trace.step('PLC audit', `plc.directory/${did}/log/audit`, () =>
+        cached(`audit:${did}`, TTL.did, async () => {
+          const res = await fetch(`https://plc.directory/${did}/log/audit`);
+          if (!res.ok) throw new Error(`The directory answered ${res.status}.`);
+          return res.json();
+        }),
+      );
+
+      return entries.map(summarize);
+    } catch {
+      // A missing log is not a reason to fail the page. Everything above it
+      // resolved, and the trace already recorded what happened here.
+      return [];
+    }
+  }
+
+  /** One entry of the log, as the page shows it. */
+  const summarize = (entry) => ({
+    at: entry.createdAt ?? null,
+    nullified: Boolean(entry.nullified),
+    handles: (entry.operation?.alsoKnownAs ?? []).map((name) => String(name).replace(/^at:\/\//, '')),
+    pds: entry.operation?.services?.atproto_pds?.endpoint ?? null,
+    cid: entry.cid ?? null,
+  });
+
+  const servicesOf = (doc) =>
+    (doc?.service ?? []).map((service) => ({
+      id: String(service.id ?? '').replace(/^#/, ''),
+      type: service.type ?? '',
+      endpoint: service.serviceEndpoint ?? '',
+    }));
+
+  const keysOf = (doc) =>
+    (doc?.verificationMethod ?? []).map((method) => ({
+      id: String(method.id ?? '').split('#').pop(),
+      type: method.type ?? '',
+      key: method.publicKeyMultibase ?? '',
+    }));
+</script>
+
+<title>${error ? 'Not resolved' : identity.did} · atlas</title>
+
+<style>
+  h1 {
+    font-family: var(--mono);
+    font-size: 1.05rem;
+    word-break: break-all;
+  }
+
+  .handle {
+    margin: 0 0 2rem;
+    font-size: 0.9rem;
+  }
+
+  .scroller {
+    overflow-x: auto;
+    margin: 0 0 2rem;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.82rem;
+  }
+  th {
+    text-align: left;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+    padding: 0 1rem 0.4rem 0;
+    white-space: nowrap;
+  }
+  td {
+    border-bottom: 1px solid var(--line);
+    padding: 0.45rem 1rem 0.45rem 0;
+    vertical-align: top;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    word-break: break-all;
+  }
+
+  tr.nullified td {
+    color: var(--muted);
+    text-decoration: line-through;
+  }
+
+  details {
+    margin-top: 2rem;
+  }
+  summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  details pre {
+    margin-top: 0.6rem;
+    font-size: 0.75rem;
+    max-height: 34rem;
+  }
+
+  .failure {
+    border: 1px solid var(--line);
+    border-left: 3px solid #b4232c;
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    background: var(--card);
+    max-width: 44rem;
+  }
+</style>
+
+<template if="error">
+  <div class="failure">
+    <h1>Not resolved</h1>
+    <p>${error}</p>
+  </div>
+</template>
+
+<template else>
+  <h1>${identity.did}</h1>
+
+  <p class="handle">
+    <a class="mono" href="/at/${identity.handle}" if="identity.handle">${identity.handle}</a>
+    <span class="mono muted" else>no handle claimed</span>
+    <span class="verified" if="identity.verified">· verified</span>
+    <span class="muted" else>· claimed, not confirmed</span>
+  </p>
+
+  <div id="identity" fragment>
+    <h2>Services</h2>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Type</th>
+            <th>Endpoint</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr each="service of services">
+            <td>${service.id}</td>
+            <td>${service.type}</td>
+            <td>${service.endpoint}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Keys</h2>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Type</th>
+            <th>Public key</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr each="key of keys">
+            <td>${key.id}</td>
+            <td>${key.type}</td>
+            <td>${key.key}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <template if="log.length">
+    <h2>History</h2>
+    <p class="muted" style="font-size: .82rem; margin-top: 0">
+      Every change ever made to this identity. A struck-through row was nullified
+      by a later operation, which is what a recovery looks like.
+    </p>
+    <div class="scroller" id="history" fragment>
+      <table>
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Handle</th>
+            <th>PDS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr each="entry of log" class="${entry.nullified ? 'nullified' : ''}">
+            <td>${entry.at ? entry.at.slice(0, 19).replace('T', ' ') : ''}</td>
+            <td>${entry.handles.join(', ')}</td>
+            <td>${entry.pds ?? ''}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </template>
+
+  <details>
+    <summary>Raw</summary>
+    <pre id="raw" fragment>${JSON.stringify(identity.doc, null, 2)}</pre>
+  </details>
+</template>
+
+<template slot="trace">
+  <trace-rail hops="${hops}" ms="${ms}"></trace-rail>
+</template>

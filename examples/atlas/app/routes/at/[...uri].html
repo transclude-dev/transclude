@@ -5,11 +5,13 @@
   //   /at/bsky.app/app.bsky.feed.post           a collection in it
   //   /at/bsky.app/app.bsky.feed.post/3k2j      one record
   //
-  // Phase one renders the JSON. The renderer that reads the lexicon replaces the
-  // <pre> below and nothing else: the loader already returns what it needs.
+  // The lexicon is resolved once per page and reused for every record on it.
+  // A listing of fifty posts costs the same schema lookups as one post.
 
   import { kindOf, parseAtUri } from '../../lib/aturi.js';
   import { resolveIdentity } from '../../lib/identity.js';
+  import { recordDef, referencedNsids, resolveLexicon, resolveMany } from '../../lib/lexicon.js';
+  import { fieldsOf, summaryOf, whenOf } from '../../lib/render.js';
   import { describeRepo, getRecord, listRecords } from '../../lib/xrpc.js';
   import { createTrace, traceMs } from '../../lib/trace.js';
 
@@ -22,23 +24,81 @@
     try {
       const at = parseAtUri(params.uri);
       const identity = await resolveIdentity(at.authority, trace);
-      const data = await read(at, identity, cursor, trace);
+      const view = await read(at, identity, cursor, trace);
 
-      return { at, kind: kindOf(at), identity, data, hops: trace.hops, ms: traceMs(trace), error: null };
+      // The spread comes first. `view` carries the defaults, and these three are
+      // what the route knows that the read did not.
+      return { ...view, at, kind: kindOf(at), identity, hops: trace.hops, ms: traceMs(trace), error: null };
     } catch (error) {
       // The trace is the answer on a failure, so it is returned rather than
       // thrown away. It names the hop that broke and what it was asked.
       response.status = 404;
-      return { at: null, kind: null, identity: null, data: null, hops: trace.hops, ms: traceMs(trace), error: error.message };
+      return { ...EMPTY, hops: trace.hops, ms: traceMs(trace), error: error.message };
     }
   };
 
-  /** The one call each kind of URI needs. */
-  const read = (at, identity, cursor, trace) => {
-    if (at.rkey) return getRecord(identity.pds, identity.did, at.collection, at.rkey, trace);
-    if (at.collection) return listRecords(identity.pds, identity.did, at.collection, { cursor }, trace);
-    return describeRepo(identity.pds, identity.did, trace);
+  // Every key the template reads, so each branch returns the same shape and no
+  // branch has to remember what the others set.
+  const EMPTY = {
+    at: null,
+    kind: null,
+    identity: null,
+    raw: null,
+    fields: [],
+    rows: [],
+    collections: [],
+    schema: false,
+    cursor: null,
   };
+
+  /** The one call each kind of URI needs, and what the page makes of it. */
+  async function read(at, identity, cursor, trace) {
+    const { pds, did } = identity;
+
+    if (!at.collection) {
+      const repo = await describeRepo(pds, did, trace);
+      return { ...EMPTY, raw: repo, collections: repo.collections ?? [] };
+    }
+
+    // Every record in a collection shares one schema, so it is fetched before
+    // the records and passed to each of them. A listing of fifty posts costs the
+    // same lookups as one post.
+    const lexicon = await resolveLexicon(at.collection, trace);
+    const def = recordDef(lexicon);
+
+    // And the schemas that one points at. A post's `reply` is a ref to a ref to
+    // `com.atproto.repo.strongRef`, and without following that the reply renders
+    // as four fields nothing describes.
+    const lexicons = await resolveMany(referencedNsids(lexicon), trace);
+    const ctx = { did, pds, own: lexicon, lexicons };
+
+    if (at.rkey) {
+      const record = await getRecord(pds, did, at.collection, at.rkey, trace);
+      return {
+        ...EMPTY,
+        raw: record,
+        fields: fieldsOf(record.value, def, ctx),
+        schema: Boolean(lexicon),
+      };
+    }
+
+    const page = await listRecords(pds, did, at.collection, { cursor }, trace);
+    return {
+      ...EMPTY,
+      raw: page,
+      schema: Boolean(lexicon),
+      cursor: page.cursor ?? null,
+      rows: (page.records ?? []).map((record) => row(record, def, ctx, at)),
+    };
+  }
+
+  /** One line of a listing. The lexicon decides what stands for the record. */
+  function row(record, def, ctx, at) {
+    const fields = fieldsOf(record.value, def, ctx);
+    const rkey = record.uri.split('/').pop();
+
+    return { rkey, href: `/at/${at.authority}/${at.collection}/${rkey}`, summary: summaryOf(fields), when: whenOf(fields) ?? '' };
+  }
 </script>
 
 <title>${error ? 'Not resolved' : at.uri} · atlas</title>
@@ -47,13 +107,14 @@
   .uri {
     word-break: break-all;
     margin: 0 0 0.25rem;
+    font-size: 1.1rem;
   }
 
   dl.facts {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     gap: 0.3rem 1rem;
-    margin: 0 0 1.75rem;
+    margin: 0 0 2rem;
     font-size: 0.85rem;
   }
   dl.facts dt {
@@ -67,9 +128,33 @@
   ul.collections {
     list-style: none;
     padding: 0;
-    margin: 0 0 1.75rem;
+    margin: 0 0 2rem;
     display: grid;
     gap: 0.35rem;
+  }
+
+  h2 {
+    margin-top: 2rem;
+  }
+
+  details {
+    margin-top: 2rem;
+  }
+  summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  details pre {
+    margin-top: 0.6rem;
+    font-size: 0.75rem;
+    max-height: 34rem;
+  }
+
+  .more {
+    display: inline-block;
+    margin-top: 1rem;
+    font-size: 0.85rem;
   }
 
   .failure {
@@ -95,9 +180,7 @@
   <div class="failure">
     <h1>Not resolved</h1>
     <p>${error}</p>
-    <p class="muted">
-      The trace shows which hop failed. Every step before it worked.
-    </p>
+    <p class="muted">The trace shows which hop failed. Every step before it worked.</p>
   </div>
 </template>
 
@@ -113,23 +196,44 @@
     </dd>
 
     <dt>DID</dt>
-    <dd class="mono">${identity.did}</dd>
+    <dd><a class="mono" href="/did/${identity.did}">${identity.did}</a></dd>
 
     <dt>PDS</dt>
     <dd class="mono">${identity.pds}</dd>
   </dl>
 
+  <!-- A repository: what it holds. -->
   <template if="kind === 'repo'">
     <h2>Collections</h2>
     <ul class="collections">
-      <li each="collection of data.collections">
+      <li each="collection of collections">
         <a href="/at/${at.authority}/${collection}"><code>${collection}</code></a>
       </li>
     </ul>
   </template>
 
-  <h2>Raw</h2>
-  <pre id="raw" fragment>${JSON.stringify(data, null, 2)}</pre>
+  <!-- A collection: one line per record, summarized by its lexicon. -->
+  <template else-if="kind === 'collection'">
+    <h2>Records</h2>
+    <div id="records" fragment>
+      <record-row rows="${rows}"></record-row>
+    </div>
+    <a class="more" if="cursor" href="/at/${at.authority}/${at.collection}?cursor=${cursor}">Next page</a>
+  </template>
+
+  <!-- A record: every field, rendered by what the lexicon says it is. -->
+  <template else>
+    <div id="record" fragment>
+      <record-card uri="${at.uri}" cid="${raw.cid}" collection="${at.collection ?? ''}" schema="${schema}">
+        <field-list fields="${fields}"></field-list>
+      </record-card>
+    </div>
+  </template>
+
+  <details>
+    <summary>Raw</summary>
+    <pre id="raw" fragment>${JSON.stringify(raw, null, 2)}</pre>
+  </details>
 </template>
 
 <template slot="trace">

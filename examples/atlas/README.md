@@ -10,6 +10,47 @@ npm run dev     # http://localhost:1971
 
 Try `/at/bsky.app`.
 
+## The lexicon drives the render
+
+There is no renderer per record type here, and there must not be one. A record
+arrives with a schema that says what each field is, and `app/lib/render.js`
+turns the pair into a list of fields the templates print.
+
+| Lexicon says | Rendered as |
+| --- | --- |
+| `string` | text |
+| `string`, `maxGraphemes` | prose, with a meter showing how much of the limit was used |
+| `string`, `format: at-uri` | a link to `/at/...` |
+| `string`, `format: did` | a link to `/did/...` |
+| `string`, `format: handle` | a link, with the verification state |
+| `string`, `format: datetime` | `<time datetime>`, absolute and in UTC |
+| `string`, `format: uri` | an external link, with its host |
+| `string`, `format: language` | the tag and the language's name |
+| `blob` | the image, or its type and size |
+| `cid-link`, `bytes` | the hash, in mono |
+| `array` of scalars | chips, inline |
+| `ref`, `union`, `array` of objects | followed, and indented under the field |
+| nothing | the value, marked as unschema'd |
+
+Two things follow that a hardcoded renderer does not get:
+
+A record type nobody has seen before renders properly the first time. Nothing in
+`render.js` knows what a post is.
+
+The schema page and the record page share the registry, so a field's
+documentation and a live example of it agree by construction.
+
+## Refs are followed, once
+
+A lexicon rarely says what a field is where it names it. A post's `reply` is a
+ref to `#replyRef`, whose `root` is a ref to `com.atproto.repo.strongRef`, whose
+`uri` is finally a string with a format. Without following those, a reply renders
+as four fields nothing describes.
+
+So the schemas a lexicon points at are resolved once, up front, as a set. A
+listing of fifty posts needs the same three lexicons as one post, and they are
+cached for an hour.
+
 ## One route, three views
 
 An AT-URI names a repository, a collection in it, or one record. The number of
@@ -101,7 +142,12 @@ live network.
 The one thing that cannot be checked this way is whether the real endpoints
 still answer in this shape. That belongs in a check somebody runs on purpose.
 
+## Most record types have no schema
+
+That is the ordinary case on this network, not a failure. `/lexicon/<nsid>` says
+so plainly and names the domains it asked. Records of that type still render,
+field by field, from what they carry.
+
 ## What is not built yet
 
-Phase one resolves and renders JSON. Still to come: the renderer that reads the
-lexicon instead of dumping the record, the `/embed` route, and `<at-record>`.
+The `/embed` route, and `<at-record>`.

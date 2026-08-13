@@ -30,6 +30,23 @@ type __CookieOptions = {
 };
 
 // Declared by the app, in the file each was written in.
+type Field = {
+  name: string;
+  kind: string;
+  text: string;
+  href: string | null;
+  depth: number;
+  required: boolean;
+  description: string | null;
+  meta: Record<string, any>;
+  items: string[];
+};
+type Row = {
+  rkey: string;
+  href: string;
+  summary: string;
+  when: string;
+};
 type Hop = {
   label: string;
   detail: string;
@@ -39,6 +56,20 @@ type Hop = {
   note: string | null;
 };
 type CacheState = 'hit' | 'miss' | 'none';
+type Identity = {
+  did: string;
+  handle: string | null;
+  verified: boolean;
+  pds: string;
+  doc: any;
+};
+type Lexicon = {
+  nsid: string;
+  did: string;
+  uri: string;
+  cid: string;
+  schema: any;
+};
 type AtUri = {
   authority: string;
   collection: string | null;
@@ -46,12 +77,23 @@ type AtUri = {
   href: string;
   uri: string;
 };
-type Identity = {
-  did: string;
-  handle: string | null;
-  verified: boolean;
-  pds: string;
-  doc: any;
+
+/** Properties of `<field-list>`, from its <script properties> block. */
+export type FieldListProps = {
+  fields: Field[];
+};
+
+/** Properties of `<record-card>`, from its <script properties> block. */
+export type RecordCardProps = {
+  uri: string;
+  cid: string;
+  collection: string;
+  schema: boolean;
+};
+
+/** Properties of `<record-row>`, from its <script properties> block. */
+export type RecordRowProps = {
+  rows: Row[];
 };
 
 /** Properties of `<trace-rail>`, from its <script properties> block. */
@@ -118,6 +160,131 @@ export type IndexContext = {
 /** Data returned by `index`'s <script server> block. */
 export type IndexData = {};
 
+/** Route params for `/did/:id`. */
+export type DidIdParams = { id: string };
+
+/** The `ctx` argument of `did-_id`'s <script server> loader. */
+export type DidIdContext = {
+  url: string;
+  params: {
+    id: string
+  };
+  route: {
+    id: string;
+    pattern: string;
+    path: string
+  };
+  layout: {
+    path: string;
+  };
+  request: Request | null;
+  fragment: string | null;
+  action: unknown;
+  response: {
+    status: number;
+    headers: Headers
+  };
+  cookies: __Cookies;
+  htmlAttrs: Record<string, string | boolean | null>;
+  absolute: (path: string) => string;
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
+};
+
+/** Data returned by `did-_id`'s <script server> block. */
+export type DidIdData = __Shape<{
+  identity: Identity;
+  services: any;
+  keys: any;
+  log: any;
+  hops: Hop[];
+  ms: any;
+  error: null;
+}> | __Shape<{
+  identity: null;
+  services: never[];
+  keys: never[];
+  log: never[];
+  hops: Hop[];
+  ms: any;
+  error: any;
+}>;
+
+/** Route params for `/lexicon/:nsid`. */
+export type LexiconNsidParams = { nsid: string };
+
+/** The `ctx` argument of `lexicon-_nsid`'s <script server> loader. */
+export type LexiconNsidContext = {
+  url: string;
+  params: {
+    nsid: string
+  };
+  route: {
+    id: string;
+    pattern: string;
+    path: string
+  };
+  layout: {
+    path: string;
+  };
+  request: Request | null;
+  fragment: string | null;
+  action: unknown;
+  response: {
+    status: number;
+    headers: Headers
+  };
+  cookies: __Cookies;
+  htmlAttrs: Record<string, string | boolean | null>;
+  absolute: (path: string) => string;
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
+};
+
+/** Data returned by `lexicon-_nsid`'s <script server> block. */
+export type LexiconNsidData = __Shape<{
+  nsid: string;
+  hops: Hop[];
+  ms: any;
+  error: null;
+  searched: string[];
+  lexicon: null;
+  defs: never[];
+  properties: never[];
+  needs: never[];
+}> | __Shape<{
+  nsid: string;
+  lexicon: Lexicon;
+  defs: {
+    name: string;
+    def: any;
+  }[];
+  properties: {
+    name: string;
+    required: boolean;
+    type: any;
+    format: any;
+    description: any;
+    limits: string;
+    ref: any;
+  }[];
+  needs: string[];
+  hops: Hop[];
+  ms: any;
+  error: null;
+  searched: never[];
+}> | __Shape<{
+  nsid: string;
+  hops: Hop[];
+  ms: any;
+  error: any;
+  lexicon: null;
+  defs: never[];
+  properties: never[];
+  needs: never[];
+  searched: never[];
+}>;
+
 /** Route params for `/at/:uri{.+}`. */
 export type AtUriRestParams = { uri: string };
 
@@ -154,22 +321,61 @@ export type AtUriRestData = __Shape<{
   at: AtUri;
   kind: string;
   identity: Identity;
-  data: any;
   hops: Hop[];
   ms: any;
   error: null;
+  raw: any;
+  collections: any;
+  fields: never[];
+  rows: never[];
+  schema: boolean;
+  cursor: null;
 }> | __Shape<{
-  at: null;
-  kind: null;
-  identity: null;
-  data: null;
+  at: AtUri;
+  kind: string;
+  identity: Identity;
+  hops: Hop[];
+  ms: any;
+  error: null;
+  raw: any;
+  fields: Field[];
+  schema: boolean;
+  rows: never[];
+  collections: never[];
+  cursor: null;
+}> | __Shape<{
+  at: AtUri;
+  kind: string;
+  identity: Identity;
+  hops: Hop[];
+  ms: any;
+  error: null;
+  raw: any;
+  schema: boolean;
+  cursor: any;
+  rows: any;
+  fields: never[];
+  collections: never[];
+}> | __Shape<{
   hops: Hop[];
   ms: any;
   error: any;
+  at: null;
+  kind: null;
+  identity: null;
+  raw: null;
+  fields: never[];
+  rows: never[];
+  collections: never[];
+  schema: boolean;
+  cursor: null;
 }>;
 
 declare global {
   interface HTMLElementTagNameMap {
+    "field-list": HTMLElement;
+    "record-card": HTMLElement;
+    "record-row": HTMLElement;
     "trace-rail": HTMLElement;
   }
 }

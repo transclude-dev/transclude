@@ -1,0 +1,122 @@
+<script properties>
+  /**
+   * Every hop the page made to render itself, with the time each one took and
+   * whether it came from the cache.
+   *
+   * Light DOM, so the page stylesheet reaches it and it ships no JavaScript. It
+   * renders on the server and never changes after that, which is exactly what a
+   * record of what already happened should do.
+   *
+   * @typedef {import('../lib/trace.js').Hop} Hop
+   */
+
+  export default {
+    /** @type {Hop[]} */
+    hops: [],
+    /** Total across every hop, in milliseconds. */
+    ms: 0,
+  };
+</script>
+
+<style>
+  :scope {
+    display: block;
+    font-size: 0.78rem;
+  }
+
+  h2 {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin: 0 0 0.7rem;
+    font-weight: 600;
+  }
+
+  ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  li {
+    position: relative;
+    padding: 0 0 0.85rem 1rem;
+    border-left: 1px solid var(--line);
+  }
+  li:last-child {
+    border-left-color: transparent;
+    padding-bottom: 0;
+  }
+
+  /* The dot on the rail. `currentColor` so a failed hop colors its own marker. */
+  li::before {
+    content: "";
+    position: absolute;
+    left: -3.5px;
+    top: 0.45em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--line);
+  }
+  li.failed::before {
+    background: currentColor;
+  }
+
+  .label {
+    font-weight: 600;
+  }
+  .failed .label {
+    color: #b4232c;
+  }
+
+  .detail {
+    display: block;
+    color: var(--muted);
+    word-break: break-all;
+  }
+
+  .meta {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .note {
+    display: block;
+    color: #b4232c;
+    margin-top: 0.15rem;
+  }
+
+  .total {
+    margin: 0.8rem 0 0;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* On a narrow screen the rail is a footnote rather than a column, so it
+     collapses to something a thumb can skip. */
+  @media (max-width: 60rem) {
+    :scope {
+      border-top: 1px solid var(--line);
+      padding-top: 1rem;
+      margin-top: 2rem;
+    }
+  }
+</style>
+
+<h2>Resolution</h2>
+
+<ol>
+  <li each="hop of hops" class="${hop.ok ? '' : 'failed'}">
+    <span class="label">${hop.label}</span>
+    <span class="meta"> ${hop.ms}ms<span if="hop.cache !== 'none'"> · ${hop.cache}</span></span>
+    <span class="detail mono">${hop.detail}</span>
+    <span class="note" if="hop.note">${hop.note}</span>
+  </li>
+</ol>
+
+<p class="total" if="hops.length">${hops.length} hops · ${ms}ms</p>
+<p class="total" else>Nothing was resolved.</p>

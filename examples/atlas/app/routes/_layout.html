@@ -1,0 +1,82 @@
+<script server>
+  export default async ({ route }) => ({ path: route.path });
+</script>
+
+<title>atlas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+
+<style>
+  .shell {
+    max-width: 74rem;
+    margin: 0 auto;
+    padding: 1.5rem clamp(1rem, 4vw, 2.5rem) 4rem;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 1.75rem;
+  }
+
+  header a.wordmark {
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+
+  header p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  /* The trace rail is a column on a wide screen and a footnote on a narrow
+     one. It is second in the source either way, so a screen reader and a
+     keyboard reach the content first. */
+  .columns {
+    display: grid;
+    gap: 2.5rem;
+    grid-template-columns: minmax(0, 1fr) 15rem;
+    align-items: start;
+  }
+
+  @media (max-width: 60rem) {
+    .columns {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+    }
+  }
+
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+</style>
+
+<div class="shell">
+  <header>
+    <a class="wordmark" href="/">atlas</a>
+    <p>Read the AT Protocol network.</p>
+  </header>
+
+  <div class="columns">
+    <main>
+      <slot></slot>
+    </main>
+    <aside>
+      <slot name="trace"></slot>
+    </aside>
+  </div>
+
+  <footer>
+    Built with <a href="https://transclude.dev">transclude</a>. Every record here
+    is also a fragment you can embed.
+  </footer>
+</div>

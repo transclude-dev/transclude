@@ -1,0 +1,137 @@
+<script server>
+  // One route for all three views, because one AT-URI names all three things.
+  //
+  //   /at/bsky.app                              a repository
+  //   /at/bsky.app/app.bsky.feed.post           a collection in it
+  //   /at/bsky.app/app.bsky.feed.post/3k2j      one record
+  //
+  // Phase one renders the JSON. The renderer that reads the lexicon replaces the
+  // <pre> below and nothing else: the loader already returns what it needs.
+
+  import { kindOf, parseAtUri } from '../../lib/aturi.js';
+  import { resolveIdentity } from '../../lib/identity.js';
+  import { describeRepo, getRecord, listRecords } from '../../lib/xrpc.js';
+  import { createTrace, traceMs } from '../../lib/trace.js';
+
+  export const revalidate = 30;
+
+  export default async ({ params, url, response }) => {
+    const trace = createTrace();
+    const cursor = new URL(url).searchParams.get('cursor') ?? undefined;
+
+    try {
+      const at = parseAtUri(params.uri);
+      const identity = await resolveIdentity(at.authority, trace);
+      const data = await read(at, identity, cursor, trace);
+
+      return { at, kind: kindOf(at), identity, data, hops: trace.hops, ms: traceMs(trace), error: null };
+    } catch (error) {
+      // The trace is the answer on a failure, so it is returned rather than
+      // thrown away. It names the hop that broke and what it was asked.
+      response.status = 404;
+      return { at: null, kind: null, identity: null, data: null, hops: trace.hops, ms: traceMs(trace), error: error.message };
+    }
+  };
+
+  /** The one call each kind of URI needs. */
+  const read = (at, identity, cursor, trace) => {
+    if (at.rkey) return getRecord(identity.pds, identity.did, at.collection, at.rkey, trace);
+    if (at.collection) return listRecords(identity.pds, identity.did, at.collection, { cursor }, trace);
+    return describeRepo(identity.pds, identity.did, trace);
+  };
+</script>
+
+<title>${error ? 'Not resolved' : at.uri} · atlas</title>
+
+<style>
+  .uri {
+    word-break: break-all;
+    margin: 0 0 0.25rem;
+  }
+
+  dl.facts {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.3rem 1rem;
+    margin: 0 0 1.75rem;
+    font-size: 0.85rem;
+  }
+  dl.facts dt {
+    color: var(--muted);
+  }
+  dl.facts dd {
+    margin: 0;
+    word-break: break-all;
+  }
+
+  ul.collections {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.75rem;
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .failure {
+    border: 1px solid var(--line);
+    border-left: 3px solid #b4232c;
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    background: var(--card);
+    max-width: 44rem;
+  }
+  .failure h1 {
+    font-size: 1.1rem;
+  }
+  .failure p {
+    margin: 0 0 0.5rem;
+  }
+  .failure p:last-child {
+    margin-bottom: 0;
+  }
+</style>
+
+<template if="error">
+  <div class="failure">
+    <h1>Not resolved</h1>
+    <p>${error}</p>
+    <p class="muted">
+      The trace shows which hop failed. Every step before it worked.
+    </p>
+  </div>
+</template>
+
+<template else>
+  <h1 class="uri mono">${at.uri}</h1>
+
+  <dl class="facts">
+    <dt>Handle</dt>
+    <dd>
+      <span class="mono">${identity.handle ?? 'none claimed'}</span>
+      <span class="verified" if="identity.verified">· verified</span>
+      <span class="muted" else>· claimed, not confirmed</span>
+    </dd>
+
+    <dt>DID</dt>
+    <dd class="mono">${identity.did}</dd>
+
+    <dt>PDS</dt>
+    <dd class="mono">${identity.pds}</dd>
+  </dl>
+
+  <template if="kind === 'repo'">
+    <h2>Collections</h2>
+    <ul class="collections">
+      <li each="collection of data.collections">
+        <a href="/at/${at.authority}/${collection}"><code>${collection}</code></a>
+      </li>
+    </ul>
+  </template>
+
+  <h2>Raw</h2>
+  <pre id="raw" fragment>${JSON.stringify(data, null, 2)}</pre>
+</template>
+
+<template slot="trace">
+  <trace-rail hops="${hops}" ms="${ms}"></trace-rail>
+</template>

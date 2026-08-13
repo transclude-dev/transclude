@@ -68,6 +68,7 @@ export const whenOf = (fields) => fields.find((field) => field.kind === 'datetim
  * @property {string} pds  Which server holds it.
  * @property {object|null} [own]  The record's own lexicon, for its local refs.
  * @property {Record<string, object>} [lexicons]  Every other lexicon in hand, by NSID.
+ * @property {Set<string>} [missing]  Written to: schemas this record wanted and did not get.
  */
 
 /**
@@ -107,7 +108,13 @@ export function fieldsOf(value, def, ctx) {
  * them: the containers first, then the shapes, then the string formats.
  */
 function walk(name, rawDef, value, required, depth, ctx, out) {
-  const def = effective(rawDef, value, ctx);
+  const { def, own } = effective(rawDef, value, ctx);
+
+  // Descending into another document changes what `#local` means below this
+  // point. `#image` inside `app.bsky.embed.images` names a def in that file, not
+  // in the record's own lexicon, and resolving it against the wrong one is why
+  // an image's `alt` text used to render as a field nothing described.
+  const inner = own === ctx.own ? ctx : { ...ctx, own };
 
   const base = {
     name,
@@ -125,7 +132,7 @@ function walk(name, rawDef, value, required, depth, ctx, out) {
 
   // ---- containers ---------------------------------------------------------
 
-  if (Array.isArray(value)) return array(name, def, value, required, depth, ctx, out, push);
+  if (Array.isArray(value)) return array(name, def, value, required, depth, inner, out, push);
 
   if (isBlob(value)) return push(blob(value, ctx));
 
@@ -133,7 +140,7 @@ function walk(name, rawDef, value, required, depth, ctx, out) {
 
   if (isBytes(value)) return push({ kind: 'bytes', text: `${byteLength(value.$bytes)} bytes` });
 
-  if (typeof value === 'object') return object(name, def, value, required, depth, ctx, out, push);
+  if (typeof value === 'object') return object(name, def, value, required, depth, inner, out, push);
 
   // ---- scalars ------------------------------------------------------------
 
@@ -154,22 +161,42 @@ function walk(name, rawDef, value, required, depth, ctx, out) {
  *
  * Three sources, in order. A value that carries its own `$type` beats the
  * schema, because a union says what was allowed and the value says what it is.
+ *
+ * Returns the document the def came from as well as the def. Anything nested
+ * inside that value resolves its own `#local` refs against that document, not
+ * against the record's.
+ *
+ * A name this cannot resolve is written into `ctx.missing`. That set is the
+ * whole of what `resolve.js` fetches, and it is why nothing here needs a list of
+ * schemas decided in advance: what a record reaches is discovered by rendering
+ * it, using this function, rather than by a second walk that would have to agree
+ * with this one.
+ *
+ * @returns {{ def: object|null, own: object|null }}
  */
 function effective(def, value, ctx) {
+  const own = ctx.own ?? null;
+
   const type = typeof value?.$type === 'string' ? value.$type : null;
   if (type) {
-    const found = ctx.lexicons?.[type.split('#')[0]];
-    if (found) return defIn(found, type) ?? def;
+    const nsid = type.split('#')[0];
+    const found = ctx.lexicons?.[nsid];
+    if (found) return { def: defIn(found, type) ?? def, own: found };
+    ctx.missing?.add(nsid);
   }
 
   const ref = typeof def?.ref === 'string' ? def.ref : null;
-  if (!ref) return def;
+  if (!ref) return { def, own };
 
   // A local ref costs nothing: the def is in the document already in hand.
-  if (ref.startsWith('#')) return localDef(ref, ctx.own) ?? def;
+  if (ref.startsWith('#')) return { def: localDef(ref, own) ?? def, own };
 
-  const found = ctx.lexicons?.[ref.split('#')[0]];
-  return found ? defIn(found, ref) ?? def : def;
+  const nsid = ref.split('#')[0];
+  const found = ctx.lexicons?.[nsid];
+  if (found) return { def: defIn(found, ref) ?? def, own: found };
+
+  ctx.missing?.add(nsid);
+  return { def, own };
 }
 
 // ---- containers -----------------------------------------------------------

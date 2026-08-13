@@ -18,8 +18,8 @@
 
   import { kindOf, parseAtUri } from '../../lib/aturi.js';
   import { resolveIdentity } from '../../lib/identity.js';
-  import { recordDef, referencedNsids, resolveLexicon, resolveMany } from '../../lib/lexicon.js';
-  import { fieldsOf } from '../../lib/render.js';
+  import { recordDef, resolveLexicon } from '../../lib/lexicon.js';
+  import { fieldsFor } from '../../lib/resolve.js';
   import { getRecord } from '../../lib/xrpc.js';
   import { createTrace } from '../../lib/trace.js';
 
@@ -70,14 +70,13 @@
     const { pds, did } = identity;
 
     const lexicon = await resolveLexicon(at.collection, trace);
-    const lexicons = await resolveMany(referencedNsids(lexicon), trace);
     const record = await getRecord(pds, did, at.collection, at.rkey, trace);
 
     return {
       raw: record,
       schema: Boolean(lexicon),
       uri: at.uri,
-      fields: fieldsOf(record.value, recordDef(lexicon), { did, pds, own: lexicon, lexicons }),
+      fields: await fieldsFor(record.value, recordDef(lexicon), { did, pds, own: lexicon }, trace),
     };
   }
 

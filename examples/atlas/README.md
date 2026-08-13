@@ -40,16 +40,49 @@ A record type nobody has seen before renders properly the first time. Nothing in
 The schema page and the record page share the registry, so a field's
 documentation and a live example of it agree by construction.
 
-## Refs are followed, once
+## Refs are followed, but only where a record goes
 
 A lexicon rarely says what a field is where it names it. A post's `reply` is a
 ref to `#replyRef`, whose `root` is a ref to `com.atproto.repo.strongRef`, whose
 `uri` is finally a string with a format. Without following those, a reply renders
 as four fields nothing describes.
 
-So the schemas a lexicon points at are resolved once, up front, as a set. A
-listing of fifty posts needs the same three lexicons as one post, and they are
-cached for an hour.
+Following every ref a lexicon *declares* is the obvious way to do that, and it is
+wrong. `app.bsky.feed.post` declares nine, and an ordinary post — text, langs,
+reply, createdAt — reaches exactly one. That was twenty-seven requests spent to
+use three, on every cold render, against other people's servers.
+
+So `app/lib/resolve.js` renders the record, reads which schemas the renderer
+wanted and could not find, fetches those, and renders again. No second traversal
+decides what is needed: the pass that discovers is the same code as the pass that
+renders, so the two cannot disagree.
+
+A `#local` ref inside a fetched document resolves against **that** document.
+Getting this wrong is subtle and the symptom is quiet: `#item` in
+`app.bsky.embed.images` resolved against the post's lexicon instead, so an
+image's `alt` text rendered as a field nothing described.
+
+## The request budget
+
+Cloudflare's free plan allows fifty subrequests per request. That is the ceiling
+this app is built to, and it is why the section above exists.
+
+Cold, with nothing cached:
+
+| Page | Requests |
+| --- | --- |
+| `/at/<repo>` | 3 |
+| `/did/<id>` | 4 |
+| `/at/<repo>/<collection>` | 6 |
+| `/at/<repo>/<collection>/<rkey>` | 13 |
+| `/lexicon/<nsid>` | 15 |
+
+A listing fetches no referenced schemas at all. Its summary is the first prose
+field and the first date, both top level, so following a ref would fetch a
+nested schema fifty times over to render a sentence that never uses one.
+
+The trace rail counts these. If a page starts creeping toward fifty, it says so
+before a visitor finds out.
 
 ## One route, three views
 

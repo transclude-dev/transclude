@@ -6,8 +6,8 @@
   import { isNsid, nsidAuthorities } from '../../lib/aturi.js';
   import { reposUsing } from '../../lib/discover.js';
   import { resolveIdentity } from '../../lib/identity.js';
-  import { recordDef, referencedNsids, resolveLexicon, resolveMany } from '../../lib/lexicon.js';
-  import { fieldsOf } from '../../lib/render.js';
+  import { recordDef, referencedNsids, resolveLexicon } from '../../lib/lexicon.js';
+  import { fieldsFor } from '../../lib/resolve.js';
   import { listRecords } from '../../lib/xrpc.js';
   import { createTrace, traceMs, traceRows } from '../../lib/trace.js';
 
@@ -88,8 +88,6 @@
     const def = recordDef(lexicon);
     if (!def) return null;
 
-    const lexicons = await resolveMany(referencedNsids(lexicon), trace);
-
     for (const did of users.slice(0, TRIES)) {
       try {
         const identity = await resolveIdentity(did, trace);
@@ -101,7 +99,7 @@
         return {
           uri: record.uri,
           href: `/at/${did}/${nsid}/${rkey}`,
-          fields: fieldsOf(record.value, def, { did, pds: identity.pds, own: lexicon, lexicons }),
+          fields: await fieldsFor(record.value, def, { did, pds: identity.pds, own: lexicon }, trace),
         };
       } catch {
         // This repository did not work out. The next one might.

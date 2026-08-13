@@ -16,6 +16,56 @@ export default (app) => {
 It runs before anything that serves bytes, so a guard there covers prerendered
 pages and public files.
 
+## Hono's documentation
+
+Hono publishes its documentation in a form an agent can read. Fetch it rather
+than recall it. The dependency is `hono@^4`, and it moves.
+
+| URL | Size | What it holds |
+| --- | --- | --- |
+| `https://hono.dev/llms.txt` | 6 KB | An index. Every page, one line each. |
+| `https://hono.dev/llms-small.txt` | 190 KB | The core: routing, the `Context`, middleware, the helpers. |
+| `https://hono.dev/llms-full.txt` | 360 KB | All of it, a page per built-in middleware. |
+
+Read `llms.txt` and follow the one link the question needs. The other two are
+whole manuals, and a question about `cors` does not need one.
+
+### What this framework already answers
+
+Most of Hono's surface has an answer here, and reaching past it is the common
+mistake. A route registered by hand answers requests. The build, the sitemap
+and `npm run check` never see it.
+
+| In Hono | Here |
+| --- | --- |
+| `app.get('/notes', …)` | `app/routes/notes.html` |
+| `c.req.param('id')` | `params.id` in the loader |
+| `c.req.query('q')` | `new URL(url).searchParams` |
+| `c.req.formData()` | `request.formData()` in a verb export |
+| `getCookie(c, 'theme')` | `ctx.cookies` |
+| `csrf()` | on by default, `csrf` in the config |
+| `secureHeaders()` for a policy | `csp` in the config |
+| `trimTrailingSlash()` | `trailingSlash` in the config |
+| `compress()`, `etag()` | both are built in, per response and at rest |
+| `serveStatic()` | `app/public/` |
+| `c.executionCtx.waitUntil(p)` | `ctx.after(p)` |
+| `c.html()`, `hono/html`, `hono/jsx` | a page is an `.html` file |
+| `hono/ssg` | `npm run build` |
+
+Hono's `Context` reaches an app in one place, the middleware in `app/server.js`.
+A loader, an action and an endpoint are handed `ctx`, which belongs to this
+framework and carries no `c`. Reading a form should not cost an author a
+router's API.
+
+### What is still Hono's
+
+`app` in `app/server.js` is a real Hono instance, so its built-in middleware
+works unchanged: `cors`, `basicAuth`, `bearerAuth`, `logger`, `bodyLimit`,
+`ipRestriction`, `requestId`, `timeout`, `timing`. So do the helpers `accepts`,
+`conninfo` and `streaming`.
+
+`app.request()` in a test is Hono's too. See [Testing](#testing).
+
 ## Cookies
 
 `ctx.cookies` reads and writes.

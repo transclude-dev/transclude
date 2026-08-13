@@ -1,0 +1,226 @@
+<script properties>
+  /**
+   * A record's fields, as `lib/render.js` worked them out.
+   *
+   * One element for the whole list rather than one per field. A light element
+   * with props carries them as a JSON attribute, so ten elements would carry
+   * the same data ten times. This one carries it once.
+   *
+   * Light DOM and no behavior block, so nothing is shipped to the browser.
+   *
+   * @typedef {import('../lib/render.js').Field} Field
+   */
+
+  export default {
+    /** @type {Field[]} */
+    fields: [],
+  };
+</script>
+
+<style>
+  :scope {
+    display: block;
+  }
+
+  dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: minmax(6rem, 12rem) minmax(0, 1fr);
+    gap: 0.1rem 1.25rem;
+    font-size: 0.88rem;
+  }
+
+  @media (max-width: 34rem) {
+    dl {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0 0;
+    }
+    dd {
+      margin-bottom: 0.75rem;
+    }
+  }
+
+  dt {
+    color: var(--muted);
+    padding: 0.3rem 0 0.3rem calc(var(--depth, 0) * 0.9rem);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    word-break: break-all;
+  }
+
+  dd {
+    margin: 0;
+    padding: 0.3rem 0;
+    min-width: 0;
+    word-wrap: break-word;
+  }
+
+  /* A field the lexicon requires, marked where the name is rather than in a
+     column of its own. */
+  dt .req {
+    color: var(--accent);
+  }
+
+  /* Set by the schema page while a field's name is hovered in the table. The
+     rule lives here because this element owns the row it lights up. */
+  [data-lit] {
+    background: color-mix(in oklab, var(--accent) 12%, transparent);
+    border-radius: 3px;
+  }
+
+  /* A field no lexicon described. Not an error, and not the same as a field
+     that was described and is empty. */
+  dt.unschemad::after {
+    content: " ?";
+    color: var(--muted);
+  }
+
+  .prose {
+    white-space: pre-wrap;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .chips li {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.05rem 0.55rem;
+    font-size: 0.78rem;
+    font-family: var(--mono);
+  }
+
+  .group {
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  /* The grapheme meter. The schema says how long this field may be, so the
+     page can show how much of it was used. */
+  .meter {
+    display: inline-block;
+    width: 4rem;
+    height: 3px;
+    background: var(--line);
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+    overflow: hidden;
+  }
+  .meter span {
+    display: block;
+    height: 100%;
+    background: var(--muted);
+  }
+
+  img {
+    max-width: min(100%, 22rem);
+    height: auto;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .note {
+    display: block;
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+
+  pre {
+    font-size: 0.75rem;
+    margin: 0.2rem 0;
+  }
+
+  time {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+  }
+</style>
+
+<dl>
+  <template each="f of fields">
+    <!-- `data-field` is how the schema page finds this row when somebody
+         hovers the field's name in the table above it. `data-depth` keeps that
+         from also matching a nested field that happens to share the name. -->
+    <dt
+      style="--depth: ${f.depth}"
+      class="${f.kind === 'unknown' ? 'unschemad' : ''}"
+      data-field="${f.name}"
+      data-depth="${f.depth}"
+    >
+      ${f.name}<span class="req" if="f.required" title="required">*</span>
+    </dt>
+
+    <dd data-field="${f.name}" data-depth="${f.depth}">
+      <!-- One branch per row of the registry. Adding a lexicon format means
+           adding one branch here and one in `lib/render.js`, and nothing else
+           moves. The chain is unbroken on purpose: an `if` between two of these
+           would start a second chain, and every `else-if` after it would bind
+           to the wrong one. -->
+      <template if="f.kind === 'prose'">
+        <span class="prose">${f.text}</span>
+        <span class="meter" title="${f.meta.graphemes} of ${f.meta.maxGraphemes} graphemes">
+          <span style="width: ${Math.min(100, Math.round(f.meta.ratio * 100))}%"></span>
+        </span>
+      </template>
+
+      <a class="mono" else-if="f.kind === 'at-uri'" href="${f.href}">${f.text}</a>
+      <a class="mono" else-if="f.kind === 'did'" href="${f.href}">${f.text}</a>
+      <a class="mono" else-if="f.kind === 'handle'" href="${f.href}">${f.text}</a>
+      <a class="mono" else-if="f.kind === 'nsid'" href="${f.href}">${f.text}</a>
+
+      <template else-if="f.kind === 'uri'">
+        <a href="${f.href}" rel="noopener nofollow ugc">${f.text}</a>
+        <span class="note" if="f.meta.host">${f.meta.host}</span>
+      </template>
+
+      <template else-if="f.kind === 'datetime'">
+        <time datetime="${f.meta.datetime}">${f.text}</time>
+      </template>
+
+      <template else-if="f.kind === 'language'">
+        <span class="mono">${f.text}</span>
+        <span class="note" if="f.meta.name">${f.meta.name}</span>
+      </template>
+
+      <template else-if="f.kind === 'list'">
+        <ul class="chips">
+          <li each="item of f.items">${item}</li>
+        </ul>
+      </template>
+
+      <template else-if="f.kind === 'image'">
+        <img src="${f.href}" alt="" loading="lazy" />
+        <span class="note">${f.text} · served by the PDS that holds it</span>
+      </template>
+
+      <template else-if="f.kind === 'blob'">
+        <a href="${f.href}" rel="noopener">${f.text}</a>
+      </template>
+
+      <span class="mono" else-if="f.kind === 'cid'">${f.text}</span>
+      <span class="mono" else-if="f.kind === 'bytes'">${f.text}</span>
+      <span class="mono" else-if="f.kind === 'number'">${f.text}</span>
+      <span class="mono" else-if="f.kind === 'boolean'">${f.text}</span>
+      <span class="mono muted" else-if="f.kind === 'null'">null</span>
+
+      <template else-if="f.kind === 'group'">
+        <a class="group mono" if="f.href" href="${f.href}">${f.text}</a>
+        <span class="group mono" else>${f.text}</span>
+      </template>
+
+      <pre else-if="f.kind === 'raw'">${f.text}</pre>
+
+      <span else>${f.text}</span>
+
+      <span class="note" if="f.description">${f.description}</span>
+    </dd>
+  </template>
+</dl>

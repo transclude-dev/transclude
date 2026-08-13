@@ -1,0 +1,82 @@
+<script properties>
+  /**
+   * A collection listing, and the live examples on a schema page. One element
+   * for the whole list, so the rows are serialized once.
+   *
+   * @typedef {object} Row
+   * @property {string} rkey
+   * @property {string} href
+   * @property {string} summary  The first readable field, worked out by the lexicon.
+   * @property {string} when  Empty when the record carries no date.
+   */
+
+  export default {
+    /** @type {Row[]} */
+    rows: [],
+  };
+</script>
+
+<style>
+  :scope {
+    display: block;
+  }
+
+  ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.2rem 1rem;
+    align-items: baseline;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  a {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+
+  .summary {
+    grid-column: 1 / -1;
+    color: var(--muted);
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  time {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  p.empty {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin: 0;
+  }
+</style>
+
+<ol if="rows.length">
+  <li each="row of rows" key="row.rkey">
+    <a href="${row.href}">${row.rkey}</a>
+    <time if="row.when" datetime="${row.when}">${row.when.slice(0, 10)}</time>
+    <span class="summary" if="row.summary">${row.summary}</span>
+  </li>
+</ol>
+
+<p class="empty" else>This collection is empty.</p>

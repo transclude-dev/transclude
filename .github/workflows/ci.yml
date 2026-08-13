@@ -36,9 +36,14 @@ jobs:
         with:
           node-version: 22
 
-      # Eleven packages, eleven installs. `npm ci` reads one manifest, and the nine
-      # examples and the site are separate projects that depend on this one by
-      # path.
+      # Thirteen packages, thirteen installs. `npm ci` reads one manifest, and the
+      # eleven examples and the site are separate projects that depend on this one
+      # by path.
+      #
+      # Every example `test:examples` runs has to be listed here. `markdown` was
+      # not, from the day it shipped: its suite ran with no dependencies
+      # installed and nothing built, so every test that asks the built app for a
+      # URL skipped, and the job stayed green while covering none of it.
       - run: npm ci
       - run: npm ci --prefix examples/showcase
       - run: npm ci --prefix examples/todomvc
@@ -49,6 +54,8 @@ jobs:
       - run: npm ci --prefix examples/auth
       - run: npm ci --prefix examples/live
       - run: npm ci --prefix examples/elements
+      - run: npm ci --prefix examples/markdown
+      - run: npm ci --prefix examples/atlas
       - run: npm ci --prefix www
 
       - run: npm test
@@ -64,6 +71,8 @@ jobs:
       - run: npm run build --prefix examples/auth
       - run: npm run build --prefix examples/live
       - run: npm run build --prefix examples/elements
+      - run: npm run build --prefix examples/markdown
+      - run: npm run build --prefix examples/atlas
       - run: npm run test:examples
 
       # The site is built before it is tested: two of those tests read what the

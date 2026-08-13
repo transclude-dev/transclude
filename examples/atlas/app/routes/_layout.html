@@ -1,0 +1,128 @@
+<script server>
+  // An embed is served without the shell. It goes on somebody else's page, and
+  // a navigation bar for this site would be an advertisement stapled to their
+  // article.
+  //
+  // The check is here rather than in a layout of its own because layouts nest:
+  // a second one under `embed/` would render inside this shell, not instead of
+  // it. One `if` in the one file that draws the chrome is the whole of it.
+  export default async ({ route }) => ({
+    path: route.path,
+    bare: route.path.startsWith('/embed/'),
+  });
+</script>
+
+<title>atlas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+
+<style>
+  .shell {
+    max-width: 74rem;
+    margin: 0 auto;
+    padding: 1.5rem clamp(1rem, 4vw, 2.5rem) 4rem;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 1.75rem;
+  }
+
+  header a.wordmark {
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+
+  header p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+    flex: 1;
+  }
+
+  header a.about {
+    font-size: 0.8rem;
+  }
+
+  /* The trace rail is a column on a wide screen and a footnote on a narrow
+     one. It is second in the source either way, so a screen reader and a
+     keyboard reach the content first. */
+  /* The rail's width lives on the rail, not on the column, and the column is
+     `auto`. So a page that fills no trace — the home page, /about — leaves a
+     column of zero rather than holding fifteen empty rems open beside itself.
+     
+     `:not(:has(aside > *))` says this more directly and was written first. It
+     survives into the served HTML and is then dropped by the CSS pipeline before
+     a browser parses it, so the rule was in view-source and in no stylesheet. */
+  .columns {
+    display: grid;
+    gap: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  aside > * {
+    width: 15rem;
+    margin-left: 2.5rem;
+  }
+
+  @media (max-width: 60rem) {
+    .columns {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    aside > * {
+      width: auto;
+      margin-left: 0;
+    }
+  }
+
+  /* An embed gets room to breathe on a direct visit and nothing else. */
+  .bare {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 1.5rem clamp(1rem, 4vw, 2rem);
+  }
+
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+</style>
+
+<template if="bare">
+  <div class="bare">
+    <slot></slot>
+  </div>
+</template>
+
+<template else>
+  <div class="shell">
+    <header>
+      <a class="wordmark" href="/">atlas</a>
+      <p>Read the AT Protocol network.</p>
+      <a class="about" href="/about">About</a>
+    </header>
+
+    <div class="columns">
+      <main>
+        <slot></slot>
+      </main>
+      <aside>
+        <slot name="trace"></slot>
+      </aside>
+    </div>
+
+    <footer>
+      Built with <a href="https://transclude.dev">transclude</a>. Every record
+      here is also a fragment you can embed.
+    </footer>
+  </div>
+</template>

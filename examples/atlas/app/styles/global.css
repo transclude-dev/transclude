@@ -1,0 +1,114 @@
+/* Five values, cool, and one accent held back for a single job.
+ *
+ * The rule that decides most of this file: anything the network assigned is set
+ * in mono. DIDs, CIDs, NSIDs, record keys and host names are machine addresses,
+ * and they should not look like prose. Everything a person wrote is set in the
+ * UI face. A reader can tell the two apart without being told.
+ *
+ * The accent belongs to one distinction only: a handle the DID confirmed,
+ * against a handle it merely claimed. Spend it anywhere else and the page stops
+ * being able to say that. */
+
+:root {
+  --page: #f7f8fa;
+  --card: #ffffff;
+  --ink: #1b1e24;
+  --muted: #6b7280;
+  --line: #dee2e8;
+  --accent: #0f6f66;
+
+  --ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #14171c;
+    --card: #1b1f26;
+    --ink: #e6e9ee;
+    --muted: #8d95a3;
+    --line: #2b313a;
+    --accent: #4fd1c5;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--ui);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  margin: 0 0 0.5rem;
+  font-weight: 620;
+  letter-spacing: -0.011em;
+}
+
+h1 {
+  font-size: 1.5rem;
+}
+h2 {
+  font-size: 1.05rem;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--line);
+}
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+code,
+pre,
+.mono {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  font-variant-ligatures: none;
+}
+
+pre {
+  overflow-x: auto;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* The one place the accent is allowed. */
+.verified {
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

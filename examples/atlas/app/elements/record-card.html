@@ -1,0 +1,71 @@
+<script properties>
+  /**
+   * The frame around one record: what it is, where it lives, and whether a
+   * schema was found for it. The fields go in the slot, so this element carries
+   * only strings and the field data is serialized once, by `<field-list>`.
+   */
+  export default {
+    uri: '',
+    cid: '',
+    collection: '',
+    /** Whether a lexicon was found. A record without one still renders. */
+    schema: false,
+  };
+</script>
+
+<style>
+  :scope {
+    display: block;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.15rem 1.25rem;
+  }
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 0.9rem;
+    padding-bottom: 0.8rem;
+    margin-bottom: 0.9rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .uri {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    word-break: break-all;
+    margin: 0;
+    flex: 1 1 20rem;
+  }
+
+  .badge {
+    font-size: 0.72rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.05rem 0.6rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .cid {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    word-break: break-all;
+    margin: 0.9rem 0 0;
+  }
+</style>
+
+<header>
+  <p class="uri">${uri}</p>
+  <a class="badge" if="schema" href="/lexicon/${collection}">${collection}</a>
+  <span class="badge" else title="No lexicon was published for this record type">
+    ${collection} · no schema
+  </span>
+</header>
+
+<slot></slot>
+
+<p class="cid">${cid}</p>

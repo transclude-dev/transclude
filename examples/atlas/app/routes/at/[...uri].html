@@ -1,0 +1,269 @@
+<script server>
+  // One route for all three views, because one AT-URI names all three things.
+  //
+  //   /at/bsky.app                              a repository
+  //   /at/bsky.app/app.bsky.feed.post           a collection in it
+  //   /at/bsky.app/app.bsky.feed.post/3k2j      one record
+  //
+  // The lexicon is resolved once per page and reused for every record on it.
+  // A listing of fifty posts costs the same schema lookups as one post.
+
+  import { kindOf, parseAtUri } from '../../lib/aturi.js';
+  import { backlinks } from '../../lib/discover.js';
+  import { resolveIdentity } from '../../lib/identity.js';
+  import { recordDef, resolveLexicon } from '../../lib/lexicon.js';
+  import { fieldsOf, summaryOf, whenOf } from '../../lib/render.js';
+  import { fieldsFor } from '../../lib/resolve.js';
+  import { describeRepo, getRecord, listRecords } from '../../lib/xrpc.js';
+  import { createTrace, traceMs, traceRows } from '../../lib/trace.js';
+
+  export const revalidate = 30;
+
+  export default async ({ params, url, response }) => {
+    const trace = createTrace();
+    const cursor = new URL(url).searchParams.get('cursor') ?? undefined;
+
+    try {
+      const at = parseAtUri(params.uri);
+      const identity = await resolveIdentity(at.authority, trace);
+      const view = await read(at, identity, cursor, trace);
+
+      // The spread comes first. `view` carries the defaults, and these three are
+      // what the route knows that the read did not.
+      return { ...view, at, kind: kindOf(at), identity, hops: traceRows(trace),
+        requests: trace.hops.length, ms: traceMs(trace), error: null };
+    } catch (error) {
+      // The trace is the answer on a failure, so it is returned rather than
+      // thrown away. It names the hop that broke and what it was asked.
+      response.status = 404;
+      return { ...EMPTY, hops: traceRows(trace),
+        requests: trace.hops.length, ms: traceMs(trace), error: error.message };
+    }
+  };
+
+  // Every key the template reads, so each branch returns the same shape and no
+  // branch has to remember what the others set.
+  const EMPTY = {
+    at: null,
+    kind: null,
+    identity: null,
+    raw: null,
+    fields: [],
+    rows: [],
+    collections: [],
+    schema: false,
+    cursor: null,
+    links: [],
+  };
+
+  /** The one call each kind of URI needs, and what the page makes of it. */
+  async function read(at, identity, cursor, trace) {
+    const { pds, did } = identity;
+
+    if (!at.collection) {
+      const repo = await describeRepo(pds, did, trace);
+      return { ...EMPTY, raw: repo, collections: repo.collections ?? [] };
+    }
+
+    // Every record in a collection shares one schema, so it is fetched before
+    // the records and passed to each of them. A listing of fifty posts costs the
+    // same lookup as one post.
+    const lexicon = await resolveLexicon(at.collection, trace);
+    const def = recordDef(lexicon);
+    const base = { did, pds, own: lexicon };
+
+    if (at.rkey) {
+      const record = await getRecord(pds, did, at.collection, at.rkey, trace);
+      return {
+        ...EMPTY,
+        raw: record,
+        // Fetches the schemas this record turns out to reach, and no others.
+        fields: await fieldsFor(record.value, def, base, trace),
+        schema: Boolean(lexicon),
+        // Who points at this record. An index answers this, not the network.
+        links: await backlinks(record.uri, trace),
+      };
+    }
+
+    const page = await listRecords(pds, did, at.collection, { cursor }, trace);
+    return {
+      ...EMPTY,
+      raw: page,
+      schema: Boolean(lexicon),
+      cursor: page.cursor ?? null,
+      rows: (page.records ?? []).map((record) => row(record, def, base, at)),
+    };
+  }
+
+  /**
+   * One line of a listing. The lexicon decides what stands for the record.
+   *
+   * No referenced schemas, and none are fetched: a summary is the first prose or
+   * text field and the first date, all of them top level, described by the
+   * record's own lexicon. Following refs here would fetch a nested schema for
+   * fifty records to render a sentence that never uses one.
+   */
+  function row(record, def, base, at) {
+    const fields = fieldsOf(record.value, def, base);
+    const rkey = record.uri.split('/').pop();
+
+    return { rkey, href: `/at/${at.authority}/${at.collection}/${rkey}`, summary: summaryOf(fields), when: whenOf(fields) ?? '' };
+  }
+</script>
+
+<title>${error ? 'Not resolved' : at.uri} · atlas</title>
+
+<style>
+  .uri {
+    word-break: break-all;
+    margin: 0 0 0.25rem;
+    font-size: 1.1rem;
+  }
+
+  dl.facts {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.3rem 1rem;
+    margin: 0 0 2rem;
+    font-size: 0.85rem;
+  }
+  dl.facts dt {
+    color: var(--muted);
+  }
+  dl.facts dd {
+    margin: 0;
+    word-break: break-all;
+  }
+
+  ul.collections {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem;
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  h2 {
+    margin-top: 2rem;
+  }
+
+  details {
+    margin-top: 2rem;
+  }
+  summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  details pre {
+    margin-top: 0.6rem;
+    font-size: 0.75rem;
+    max-height: 34rem;
+  }
+
+  .from-index {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin: 0 0 0.8rem;
+    max-width: 52ch;
+  }
+
+  .more {
+    display: inline-block;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+  }
+
+  .failure {
+    border: 1px solid var(--line);
+    border-left: 3px solid #b4232c;
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    background: var(--card);
+    max-width: 44rem;
+  }
+  .failure h1 {
+    font-size: 1.1rem;
+  }
+  .failure p {
+    margin: 0 0 0.5rem;
+  }
+  .failure p:last-child {
+    margin-bottom: 0;
+  }
+</style>
+
+<template if="error">
+  <div class="failure">
+    <h1>Not resolved</h1>
+    <p>${error}</p>
+    <p class="muted">The trace shows which hop failed. Every step before it worked.</p>
+  </div>
+</template>
+
+<template else>
+  <h1 class="uri mono">${at.uri}</h1>
+
+  <dl class="facts">
+    <dt>Handle</dt>
+    <dd>
+      <span class="mono">${identity.handle ?? 'none claimed'}</span>
+      <span class="verified" if="identity.verified">· verified</span>
+      <span class="muted" else>· claimed, not confirmed</span>
+    </dd>
+
+    <dt>DID</dt>
+    <dd><a class="mono" href="/did/${identity.did}">${identity.did}</a></dd>
+
+    <dt>PDS</dt>
+    <dd class="mono">${identity.pds}</dd>
+  </dl>
+
+  <!-- A repository: what it holds. -->
+  <template if="kind === 'repo'">
+    <h2>Collections</h2>
+    <ul class="collections">
+      <li each="collection of collections">
+        <a href="/at/${at.authority}/${collection}"><code>${collection}</code></a>
+      </li>
+    </ul>
+  </template>
+
+  <!-- A collection: one line per record, summarized by its lexicon. -->
+  <template else-if="kind === 'collection'">
+    <h2>Records</h2>
+    <div id="records" fragment>
+      <record-row rows="${rows}"></record-row>
+    </div>
+    <a class="more" if="cursor" href="/at/${at.authority}/${at.collection}?cursor=${cursor}">Next page</a>
+  </template>
+
+  <!-- A record: every field, rendered by what the lexicon says it is. -->
+  <template else>
+    <div id="record" fragment>
+      <record-card uri="${at.uri}" cid="${raw.cid}" collection="${at.collection ?? ''}" schema="${schema}">
+        <field-list fields="${fields}"></field-list>
+      </record-card>
+    </div>
+
+    <template if="links.length">
+      <h2>Points here</h2>
+      <p class="from-index">
+        Counted by <a href="https://constellation.microcosm.blue">Constellation</a>,
+        which crawled the network for them. No single repository knows this.
+      </p>
+      <div id="links" fragment>
+        <link-list links="${links}"></link-list>
+      </div>
+    </template>
+  </template>
+
+  <details>
+    <summary>Raw</summary>
+    <pre id="raw" fragment>${JSON.stringify(raw, null, 2)}</pre>
+  </details>
+</template>
+
+<template slot="trace">
+  <trace-rail hops="${hops}" ms="${ms}" requests="${requests}"></trace-rail>
+</template>

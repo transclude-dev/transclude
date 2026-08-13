@@ -3,6 +3,12 @@
 
   export default async () => ({
     s: await all({
+      embed: [
+        `<transclude src="https://atlas.transclude.dev/embed/did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3msqpusnigc2t#record">
+  <p>The record could not be read just now.</p>
+</transclude>`,
+        'html',
+      ],
       run: [
         `git clone https://github.com/transclude-dev/transclude.git
 cd transclude && npm install
@@ -16,7 +22,8 @@ npm run includes   # http://localhost:1966
 npm run auth       # http://localhost:1967
 npm run live       # http://localhost:1968
 npm run elements   # http://localhost:1969
-npm run markdown   # http://localhost:1970`,
+npm run markdown   # http://localhost:1970
+npm run atlas      # http://localhost:1971`,
         'shell',
       ],
     }),
@@ -79,6 +86,11 @@ npm run markdown   # http://localhost:1970`,
           <td><a href="#live">Live</a></td>
           <td>Server-sent events into a fragment</td>
           <td><a href="https://live.transclude.dev">live</a></td>
+        </tr>
+        <tr>
+          <td><a href="#atlas">Atlas</a></td>
+          <td>A fragment another site embeds, styled by the page it lands on</td>
+          <td><a href="https://atlas.transclude.dev">atlas</a></td>
         </tr>
         <tr>
           <td><a href="#markdown">Markdown</a></td>
@@ -220,6 +232,42 @@ npm run markdown   # http://localhost:1970`,
     <code>markdown</code> in the config is a function from source to HTML. This
     package ships none, so the flavor, the extensions and the highlighter are
     decisions you make in one file.
+  </doc-note>
+
+  <h2 id="atlas">Atlas</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/atlas"
+      >examples/atlas</a
+    >
+    reads the AT Protocol network. Give it a handle or an
+    <code>at://</code> URI and it shows the record, rendered from the schema its
+    author published.
+  </p>
+
+  <p>
+    It is here for what happens next. Every record is a fragment, so
+    <code>/embed/&lt;uri&gt;</code> serves one on its own, and another site puts
+    it on a page:
+  </p>
+
+  ${html(s.embed)}
+
+  <p>
+    That is HTML, not an iframe. The host page's stylesheet reaches it, so the
+    record takes their typeface and their colors. No script runs on either side.
+  </p>
+
+  <p>
+    The same fragment answers <code>?fragment=record</code> for anything that
+    fetches. <code>at-record.js</code> is a custom element doing that in fifty
+    lines, and it needs nothing from this framework.
+  </p>
+
+  <doc-note label="One route, three views">
+    An <code>at://</code> URI names a repository, a collection or one record, and
+    the number of parts decides which. So <code>at/[...uri].html</code> answers
+    all three. Read it for a loader that is a list of calls and nothing else.
   </doc-note>
 
   <h2 id="search">Search</h2>

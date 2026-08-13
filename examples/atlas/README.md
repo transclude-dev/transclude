@@ -206,11 +206,31 @@ It is 1.8 KB gzipped, and it has to load cross-origin, which is what
 `app/server.js` is for: a module script is fetched in CORS mode however it was
 written in the markup.
 
-## What is not built yet
+## Two things here are not the network
 
-Discovery. `com.atproto.sync.listReposByCollection` against a relay would
-enumerate everyone using a lexicon, and Constellation would give backlinks —
-what records point at this one. That is what turns this from an inspector into a
-map, and it is also what `<lex-field>` needs: cross-highlighting a field on a
-schema page wants live example records on that page, and there is no way to find
-them yet.
+Everything else in this app reads the AT Protocol directly: a DID document from
+the directory that holds it, a record from the server that holds it. Two
+questions cannot be answered that way, because no single repository knows the
+answer.
+
+- **Who uses this lexicon.** A relay indexes every repository, so it can say.
+- **What points at this record.** [Constellation](https://constellation.microcosm.blue)
+  crawls for backlinks, so it can say.
+
+Both appear in the trace under their own names, and both are optional: a page
+that cannot reach them renders without them. That distinction is the point.
+Every other number on a page can be checked against the thing itself. These two
+cannot, so the page says where they came from.
+
+## The one interaction worth JavaScript
+
+A schema page shows the field table and a real record of that type, read while
+the page rendered. Hover a field name in the table and that field lights up in
+the record.
+
+They are the same thing seen twice, and nothing static can say so. Everything
+else here works with JavaScript off, and so does this: the table and the record
+are both still there, minus one convenience.
+
+It is a plain `<script>` in the page rather than an element, because it exists on
+one page and would wrap the whole of it.

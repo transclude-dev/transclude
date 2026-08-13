@@ -61,6 +61,13 @@
     color: var(--accent);
   }
 
+  /* Set by the schema page while a field's name is hovered in the table. The
+     rule lives here because this element owns the row it lights up. */
+  [data-lit] {
+    background: color-mix(in oklab, var(--accent) 12%, transparent);
+    border-radius: 3px;
+  }
+
   /* A field no lexicon described. Not an error, and not the same as a field
      that was described and is empty. */
   dt.unschemad::after {
@@ -139,11 +146,19 @@
 
 <dl>
   <template each="f of fields">
-    <dt style="--depth: ${f.depth}" class="${f.kind === 'unknown' ? 'unschemad' : ''}">
+    <!-- `data-field` is how the schema page finds this row when somebody
+         hovers the field's name in the table above it. `data-depth` keeps that
+         from also matching a nested field that happens to share the name. -->
+    <dt
+      style="--depth: ${f.depth}"
+      class="${f.kind === 'unknown' ? 'unschemad' : ''}"
+      data-field="${f.name}"
+      data-depth="${f.depth}"
+    >
       ${f.name}<span class="req" if="f.required" title="required">*</span>
     </dt>
 
-    <dd>
+    <dd data-field="${f.name}" data-depth="${f.depth}">
       <!-- One branch per row of the registry. Adding a lexicon format means
            adding one branch here and one in `lib/render.js`, and nothing else
            moves. The chain is unbroken on purpose: an `if` between two of these

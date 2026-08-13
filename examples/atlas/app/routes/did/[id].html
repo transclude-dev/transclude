@@ -7,6 +7,7 @@
   // anything was ever done to this identity by somebody who no longer controls
   // it.
 
+  import { backlinks } from '../../lib/discover.js';
   import { resolveIdentity } from '../../lib/identity.js';
   import { createTrace, traceMs } from '../../lib/trace.js';
   import { cached, TTL } from '../../lib/cache.js';
@@ -20,18 +21,23 @@
       const identity = await resolveIdentity(params.id, trace);
       const log = identity.did.startsWith('did:plc:') ? await auditLog(identity.did, trace) : [];
 
+      // A follow points at a DID, not at an at:// URI, so this is the target
+      // that finds them.
+      const links = await backlinks(identity.did, trace);
+
       return {
         identity,
         services: servicesOf(identity.doc),
         keys: keysOf(identity.doc),
         log,
+        links,
         hops: trace.hops,
         ms: traceMs(trace),
         error: null,
       };
     } catch (error) {
       response.status = 404;
-      return { identity: null, services: [], keys: [], log: [], hops: trace.hops, ms: traceMs(trace), error: error.message };
+      return { identity: null, services: [], keys: [], log: [], links: [], hops: trace.hops, ms: traceMs(trace), error: error.message };
     }
   };
 
@@ -129,6 +135,13 @@
     text-decoration: line-through;
   }
 
+  .from-index {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin: 0 0 0.8rem;
+    max-width: 52ch;
+  }
+
   details {
     margin-top: 2rem;
   }
@@ -211,6 +224,17 @@
       </table>
     </div>
   </div>
+
+  <template if="links.length">
+    <h2>Points here</h2>
+    <p class="from-index">
+      Counted by <a href="https://constellation.microcosm.blue">Constellation</a>,
+      which crawled the network for them. No single repository knows this.
+    </p>
+    <div id="links" fragment>
+      <link-list links="${links}"></link-list>
+    </div>
+  </template>
 
   <template if="log.length">
     <h2>History</h2>

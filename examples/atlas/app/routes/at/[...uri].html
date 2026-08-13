@@ -9,6 +9,7 @@
   // A listing of fifty posts costs the same schema lookups as one post.
 
   import { kindOf, parseAtUri } from '../../lib/aturi.js';
+  import { backlinks } from '../../lib/discover.js';
   import { resolveIdentity } from '../../lib/identity.js';
   import { recordDef, referencedNsids, resolveLexicon, resolveMany } from '../../lib/lexicon.js';
   import { fieldsOf, summaryOf, whenOf } from '../../lib/render.js';
@@ -49,6 +50,7 @@
     collections: [],
     schema: false,
     cursor: null,
+    links: [],
   };
 
   /** The one call each kind of URI needs, and what the page makes of it. */
@@ -79,6 +81,8 @@
         raw: record,
         fields: fieldsOf(record.value, def, ctx),
         schema: Boolean(lexicon),
+        // Who points at this record. An index answers this, not the network.
+        links: await backlinks(record.uri, trace),
       };
     }
 
@@ -149,6 +153,13 @@
     margin-top: 0.6rem;
     font-size: 0.75rem;
     max-height: 34rem;
+  }
+
+  .from-index {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin: 0 0 0.8rem;
+    max-width: 52ch;
   }
 
   .more {
@@ -228,6 +239,17 @@
         <field-list fields="${fields}"></field-list>
       </record-card>
     </div>
+
+    <template if="links.length">
+      <h2>Points here</h2>
+      <p class="from-index">
+        Counted by <a href="https://constellation.microcosm.blue">Constellation</a>,
+        which crawled the network for them. No single repository knows this.
+      </p>
+      <div id="links" fragment>
+        <link-list links="${links}"></link-list>
+      </div>
+    </template>
   </template>
 
   <details>

@@ -41,6 +41,12 @@ type Field = {
   meta: Record<string, any>;
   items: string[];
 };
+type Backlink = {
+  collection: string;
+  path: string;
+  count: number;
+  href: string;
+};
 type Row = {
   rkey: string;
   href: string;
@@ -81,6 +87,11 @@ type AtUri = {
 /** Properties of `<field-list>`, from its <script properties> block. */
 export type FieldListProps = {
   fields: Field[];
+};
+
+/** Properties of `<link-list>`, from its <script properties> block. */
+export type LinkListProps = {
+  links: Backlink[];
 };
 
 /** Properties of `<record-card>`, from its <script properties> block. */
@@ -235,6 +246,7 @@ export type DidIdData = __Shape<{
   services: any;
   keys: any;
   log: any;
+  links: Backlink[];
   hops: Hop[];
   ms: any;
   error: null;
@@ -243,6 +255,7 @@ export type DidIdData = __Shape<{
   services: never[];
   keys: never[];
   log: never[];
+  links: never[];
   hops: Hop[];
   ms: any;
   error: any;
@@ -291,6 +304,8 @@ export type LexiconNsidData = __Shape<{
   defs: never[];
   properties: never[];
   needs: never[];
+  users: never[];
+  example: null;
 }> | __Shape<{
   nsid: string;
   lexicon: Lexicon;
@@ -308,6 +323,12 @@ export type LexiconNsidData = __Shape<{
     ref: any;
   }[];
   needs: string[];
+  users: string[];
+  example: {
+    uri: any;
+    href: string;
+    fields: Field[];
+  } | null;
   hops: Hop[];
   ms: any;
   error: null;
@@ -322,6 +343,8 @@ export type LexiconNsidData = __Shape<{
   properties: never[];
   needs: never[];
   searched: never[];
+  users: never[];
+  example: null;
 }>;
 
 /** Route params for `/at/:uri{.+}`. */
@@ -370,6 +393,7 @@ export type AtUriRestData = __Shape<{
   rows: never[];
   schema: boolean;
   cursor: null;
+  links: never[];
 }> | __Shape<{
   at: AtUri;
   kind: string;
@@ -380,6 +404,7 @@ export type AtUriRestData = __Shape<{
   raw: any;
   fields: Field[];
   schema: boolean;
+  links: Backlink[];
   rows: never[];
   collections: never[];
   cursor: null;
@@ -396,6 +421,7 @@ export type AtUriRestData = __Shape<{
   rows: any;
   fields: never[];
   collections: never[];
+  links: never[];
 }> | __Shape<{
   hops: Hop[];
   ms: any;
@@ -409,6 +435,7 @@ export type AtUriRestData = __Shape<{
   collections: never[];
   schema: boolean;
   cursor: null;
+  links: never[];
 }>;
 
 /** Route params for `/embed/:uri{.+}`. */
@@ -465,6 +492,7 @@ export type EmbedUriRestData = __Shape<{
 declare global {
   interface HTMLElementTagNameMap {
     "field-list": HTMLElement;
+    "link-list": HTMLElement;
     "record-card": HTMLElement;
     "record-row": HTMLElement;
     "trace-rail": HTMLElement;

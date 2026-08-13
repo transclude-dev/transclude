@@ -29,6 +29,11 @@ export const TTL = {
   // A record is the thing the visitor came to see. Cache it long enough to
   // absorb a page reload and no longer.
   record: 30_000,
+  // An index's answer. Longer than a record, because these are counts over
+  // millions of repositories and nobody reads them to the digit. It is also the
+  // politest number here: these two services are somebody else's, and this app
+  // can send a lot of traffic at them.
+  discovery: 10 * 60_000,
 };
 
 /** @type {Map<string, { value: unknown, expires: number }>} */

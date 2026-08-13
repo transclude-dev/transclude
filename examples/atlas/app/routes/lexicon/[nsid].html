@@ -4,7 +4,11 @@
   // only thing that makes it a schema page is what it does with the value.
 
   import { isNsid, nsidAuthorities } from '../../lib/aturi.js';
-  import { recordDef, referencedNsids, resolveLexicon } from '../../lib/lexicon.js';
+  import { reposUsing } from '../../lib/discover.js';
+  import { resolveIdentity } from '../../lib/identity.js';
+  import { recordDef, referencedNsids, resolveLexicon, resolveMany } from '../../lib/lexicon.js';
+  import { fieldsOf } from '../../lib/render.js';
+  import { listRecords } from '../../lib/xrpc.js';
   import { createTrace, traceMs } from '../../lib/trace.js';
 
   export const revalidate = 3600;
@@ -28,6 +32,12 @@
         return { ...EMPTY, nsid, hops: trace.hops, ms: traceMs(trace), error: null, searched: nsidAuthorities(nsid) };
       }
 
+      // Who uses it, and one record that does. Both come from an index rather
+      // than from the network itself, and both are optional: a page that cannot
+      // reach them renders without them.
+      const users = await reposUsing(nsid, 12, trace);
+      const example = await sample(nsid, lexicon, users, trace);
+
       return {
         ...EMPTY,
         nsid,
@@ -35,6 +45,8 @@
         defs: Object.entries(lexicon.schema.defs ?? {}).map(([name, def]) => ({ name, def })),
         properties: propertiesOf(recordDef(lexicon)),
         needs: referencedNsids(lexicon),
+        users,
+        example,
         hops: trace.hops,
         ms: traceMs(trace),
         error: null,
@@ -51,8 +63,50 @@
     properties: [],
     needs: [],
     searched: [],
+    users: [],
+    example: null,
     error: null,
   };
+
+  /** How many repositories to try before giving up on finding an example. */
+  const TRIES = 3;
+
+  /**
+   * One real record of this type, rendered by this lexicon.
+   *
+   * A schema page that shows only the definition asks the reader to imagine what
+   * a record looks like. This is the same field registry the record view uses,
+   * so what they see here is what they will see there.
+   *
+   * The first repository the relay names may be unreachable, or may have
+   * deleted everything. Three tries, then the page does without.
+   */
+  async function sample(nsid, lexicon, users, trace) {
+    const def = recordDef(lexicon);
+    if (!def) return null;
+
+    const lexicons = await resolveMany(referencedNsids(lexicon), trace);
+
+    for (const did of users.slice(0, TRIES)) {
+      try {
+        const identity = await resolveIdentity(did, trace);
+        const page = await listRecords(identity.pds, did, nsid, { limit: 1 }, trace);
+        const record = page.records?.[0];
+        if (!record) continue;
+
+        const rkey = record.uri.split('/').pop();
+        return {
+          uri: record.uri,
+          href: `/at/${did}/${nsid}/${rkey}`,
+          fields: fieldsOf(record.value, def, { did, pds: identity.pds, own: lexicon, lexicons }),
+        };
+      } catch {
+        // This repository did not work out. The next one might.
+      }
+    }
+
+    return null;
+  }
 
   /**
    * The field table. Every property of the record, with the constraints the
@@ -166,6 +220,32 @@
     font-size: 0.75rem;
   }
 
+  .hint {
+    font-size: 0.8rem;
+    margin: 0 0 0.8rem;
+  }
+
+  .example {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.15rem 1.25rem;
+  }
+
+  .source {
+    font-size: 0.75rem;
+    margin: 0.6rem 0 2rem;
+    word-break: break-all;
+  }
+
+  td.name[data-lights] {
+    cursor: default;
+  }
+  td.name[data-lights]:hover,
+  td.name[data-lights]:focus-visible {
+    color: var(--accent);
+  }
+
   ul.plain {
     list-style: none;
     padding: 0;
@@ -249,7 +329,7 @@
         </thead>
         <tbody>
           <tr each="property of properties">
-            <td class="name">
+            <td class="name" data-lights="${property.name}" tabindex="0">
               ${property.name}<span class="req" if="property.required" title="required">*</span>
             </td>
             <td class="type">
@@ -274,6 +354,31 @@
     </p>
   </div>
 
+  <template if="example">
+    <h2>A record of this type</h2>
+    <p class="muted hint">
+      Real, and read just now. Hover a field name in the table above to find it
+      here.
+    </p>
+    <div class="example" id="example" fragment>
+      <field-list fields="${example.fields}"></field-list>
+    </div>
+    <p class="source"><a href="${example.href}" class="mono">${example.uri}</a></p>
+  </template>
+
+  <template if="users.length">
+    <h2>Used by</h2>
+    <p class="muted hint">
+      Repositories carrying this collection, as a relay saw them. Not a count of
+      everyone.
+    </p>
+    <ul class="plain">
+      <li each="did of users">
+        <a href="/at/${did}" class="mono">${did}</a>
+      </li>
+    </ul>
+  </template>
+
   <template if="needs.length">
     <h2>Points at</h2>
     <ul class="plain">
@@ -292,6 +397,48 @@
     <summary>Raw</summary>
     <pre id="raw" fragment>${JSON.stringify(lexicon.schema, null, 2)}</pre>
   </details>
+
+  <!-- The one interaction on this site worth real JavaScript: a field's name in
+       the table, and that field in the live record, are the same thing seen
+       twice, and nothing static can say so.
+       
+       A plain script rather than an element. It exists on this page only and it
+       would wrap the whole page, which is not what an element is for. With
+       JavaScript off the table and the record are both still there, which is
+       the whole page minus one convenience. -->
+  <script type="module">
+    const page = document.currentScript?.parentNode ?? document;
+    const example = document.getElementById('example');
+
+    if (example) {
+      let lit = [];
+
+      const clear = () => {
+        for (const node of lit) node.removeAttribute('data-lit');
+        lit = [];
+      };
+
+      const light = (name) => {
+        clear();
+        // Depth 0 only. A nested field can share a name with a top-level one,
+        // and lighting both would point at the wrong row.
+        // The backslash below is required. This script sits in a page, and the
+        // page compiler reads a dollar sign followed by a brace as its own
+        // interpolation before a browser ever sees the file. Writing that pair
+        // in this comment breaks the build too, which is how it was found.
+        lit = [...example.querySelectorAll(`[data-field="\${name}"][data-depth="0"]`)];
+        for (const node of lit) node.setAttribute('data-lit', '');
+      };
+
+      for (const cell of document.querySelectorAll('[data-lights]')) {
+        const name = cell.dataset.lights;
+        cell.addEventListener('pointerenter', () => light(name));
+        cell.addEventListener('focus', () => light(name));
+        cell.addEventListener('pointerleave', clear);
+        cell.addEventListener('blur', clear);
+      }
+    }
+  </script>
 </template>
 
 <template slot="trace">

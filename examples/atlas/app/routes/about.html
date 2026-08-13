@@ -1,0 +1,145 @@
+<script server>
+  // Not written to a file at build time. The record below is fetched while this
+  // page renders, so a prerendered copy would be a snapshot of whatever the
+  // network said on the machine that ran the build.
+  export const prerender = false;
+
+  export default async () => ({
+    server: `<transclude src="https://atlas.transclude.dev/embed/did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3msqpusnigc2t#record">
+  <p>The record could not be read just now.</p>
+</transclude>`,
+    allow: `export default {
+  proxy: {
+    allow: ['atlas.transclude.dev'],
+  },
+};`,
+    client: `const url = 'https://atlas.transclude.dev/embed/' + uri.replace('at://', '');
+const res = await fetch(url + '?fragment=record');
+document.querySelector('#quote').setHTMLUnsafe(await res.text());`,
+  });
+</script>
+
+<title>About · atlas</title>
+<meta name="description" content="What atlas is, and how to put a record on your own page." />
+
+<style>
+  .lede {
+    max-width: 52ch;
+    color: var(--muted);
+    margin: 0 0 2.5rem;
+  }
+
+  h2 {
+    margin-top: 2.5rem;
+  }
+
+  p,
+  li {
+    max-width: 60ch;
+  }
+
+  pre {
+    font-size: 0.75rem;
+  }
+
+  .demo {
+    margin: 1.25rem 0 0.75rem;
+  }
+
+  .caption {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+  }
+</style>
+
+<h1>About</h1>
+
+<p class="lede">
+  Every repository on the AT Protocol is public. This reads them, renders each
+  record from the schema its own author published, and shows the path it took to
+  get there.
+</p>
+
+<h2>Every view has a URL of its own</h2>
+
+<p>
+  A record page is a page. It is also a fragment, which means the record on it
+  answers to an address by itself:
+</p>
+
+<ul>
+  <li><code>/at/&lt;uri&gt;</code> — the record, in this site</li>
+  <li><code>/embed/&lt;uri&gt;</code> — the same record, with no navigation</li>
+  <li><code>/embed/&lt;uri&gt;?fragment=record</code> — that markup and nothing else</li>
+</ul>
+
+<p>
+  All three come from one template, so an embed can never disagree with the page
+  it came from.
+</p>
+
+<h2>Putting one on your page</h2>
+
+<p>
+  This is HTML, not an iframe. Your stylesheet reaches it, it selects and copies
+  like the rest of your text, and it needs no JavaScript.
+</p>
+
+<p>On another <a href="https://transclude.dev">transclude</a> site, the server does it:</p>
+
+<pre><code>${server}</code></pre>
+
+<p>with the host named once, in your config:</p>
+
+<pre><code>${allow}</code></pre>
+
+<p>Anywhere else, fetch the fragment:</p>
+
+<pre><code>${client}</code></pre>
+
+<h2>What it looks like</h2>
+
+<p>
+  The block below was included by this page's own server, from
+  <code>/embed/&hellip;#record</code>, while the page rendered. There is no
+  script on this page.
+</p>
+
+<div class="demo">
+  <transclude src="/embed/did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.post/3msqpusnigc2t#record">
+    <p class="muted">The record could not be read just now.</p>
+  </transclude>
+</div>
+
+<p class="caption">
+  Included at render time. View the source of this page: the markup is there.
+</p>
+
+<h2>When the record is gone</h2>
+
+<p>
+  An embed outlives the record it points at. A post from last year should not
+  leave a hole in an article, so <code>/embed/</code> always answers with
+  something you can put on a page: the record if it is there, and a note saying
+  what was asked for and what happened to it if it is not.
+</p>
+
+<h2>Limits</h2>
+
+<ul>
+  <li>Read only. This writes nothing and asks you to sign in to nothing.</li>
+  <li>
+    Media is linked to the server that holds it, never copied here. Images on a
+    record page come from its author's PDS.
+  </li>
+  <li>
+    Cached for five minutes, and served stale for a day after that while it
+    refreshes. Embeds send other people's readers at other people's servers, and
+    that is the part of this to be careful with.
+  </li>
+  <li>
+    <code>did:plc</code> and <code>did:web</code> resolve. Other DID methods say
+    so rather than guessing.
+  </li>
+</ul>

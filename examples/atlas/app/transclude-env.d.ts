@@ -129,6 +129,41 @@ export type RootLayoutContext = {
 /** Data returned by `root/_layout.html`. */
 export type RootLayoutData = {
   path: string;
+  bare: boolean;
+};
+
+/** The `ctx` argument of `about`'s <script server> loader. */
+export type AboutContext = {
+  url: string;
+  params: {};
+  route: {
+    id: string;
+    pattern: string;
+    path: string
+  };
+  layout: {
+    path: string;
+    bare: boolean;
+  };
+  request: Request | null;
+  fragment: string | null;
+  action: unknown;
+  response: {
+    status: number;
+    headers: Headers
+  };
+  cookies: __Cookies;
+  htmlAttrs: Record<string, string | boolean | null>;
+  absolute: (path: string) => string;
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
+};
+
+/** Data returned by `about`'s <script server> block. */
+export type AboutData = {
+  server: string;
+  allow: string;
+  client: string;
 };
 
 /** The `ctx` argument of `index`'s <script server> loader. */
@@ -142,6 +177,7 @@ export type IndexContext = {
   };
   layout: {
     path: string;
+    bare: boolean;
   };
   request: Request | null;
   fragment: string | null;
@@ -176,6 +212,7 @@ export type DidIdContext = {
   };
   layout: {
     path: string;
+    bare: boolean;
   };
   request: Request | null;
   fragment: string | null;
@@ -226,6 +263,7 @@ export type LexiconNsidContext = {
   };
   layout: {
     path: string;
+    bare: boolean;
   };
   request: Request | null;
   fragment: string | null;
@@ -301,6 +339,7 @@ export type AtUriRestContext = {
   };
   layout: {
     path: string;
+    bare: boolean;
   };
   request: Request | null;
   fragment: string | null;
@@ -369,6 +408,57 @@ export type AtUriRestData = __Shape<{
   collections: never[];
   schema: boolean;
   cursor: null;
+}>;
+
+/** Route params for `/embed/:uri{.+}`. */
+export type EmbedUriRestParams = { uri: string };
+
+/** The `ctx` argument of `embed-_uri_rest`'s <script server> loader. */
+export type EmbedUriRestContext = {
+  url: string;
+  params: {
+    uri: string
+  };
+  route: {
+    id: string;
+    pattern: string;
+    path: string
+  };
+  layout: {
+    path: string;
+    bare: boolean;
+  };
+  request: Request | null;
+  fragment: string | null;
+  action: unknown;
+  response: {
+    status: number;
+    headers: Headers
+  };
+  cookies: __Cookies;
+  htmlAttrs: Record<string, string | boolean | null>;
+  absolute: (path: string) => string;
+  revalidateTag: (tag: string) => void;
+  after: (work: Promise<unknown>) => void
+};
+
+/** Data returned by `embed-_uri_rest`'s <script server> block. */
+export type EmbedUriRestData = __Shape<{
+  gone: null;
+  raw: any;
+  schema: boolean;
+  uri: any;
+  fields: Field[];
+  at: AtUri;
+  identity: Identity;
+}> | __Shape<{
+  uri: string;
+  gone: any;
+  at: null;
+  identity: null;
+  raw: null;
+  fields: never[];
+  schema: boolean;
 }>;
 
 declare global {

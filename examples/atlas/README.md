@@ -120,14 +120,40 @@ the first reader's network cost again.
 
 ## Every view is also a fragment
 
-The raw block carries an `id` and a `fragment` attribute, so it has a URL:
+A block with an `id` and a `fragment` attribute has a URL of its own:
 
 ```
 GET /at/bsky.app?fragment=raw
 ```
 
 That returns the `<pre>` and nothing else, from the same markup that renders it
-in the page. This is what the embed route is built on.
+in the page.
+
+## Embedding is the point
+
+`/embed/<uri>` serves one record with no navigation, open to any origin:
+
+```html
+<transclude src="https://atlas.transclude.dev/embed/did:plc:.../app.bsky.feed.post/3k2j#record">
+  <p>The record could not be read just now.</p>
+</transclude>
+```
+
+That is HTML, not an iframe, so the host page's stylesheet reaches it and no
+JavaScript is involved. `/about` includes a record this way and is the proof:
+read its source.
+
+Anywhere that is not a transclude site, fetch `?fragment=record` and insert it.
+
+**The contract is that this URL always answers with something you can put on a
+page.** An embed outlives the record it points at, so a record that is gone gets
+a tombstone and a 200, not a 404. A 404 would make `<transclude>` fall through
+to the author's fallback, and their reader would never learn a record had been
+there.
+
+Cached for five minutes, and served stale for a day while it refreshes. Embeds
+send other people's readers at other people's servers, and that header is what
+protects them.
 
 ## Tests
 

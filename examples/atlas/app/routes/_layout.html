@@ -1,5 +1,15 @@
 <script server>
-  export default async ({ route }) => ({ path: route.path });
+  // An embed is served without the shell. It goes on somebody else's page, and
+  // a navigation bar for this site would be an advertisement stapled to their
+  // article.
+  //
+  // The check is here rather than in a layout of its own because layouts nest:
+  // a second one under `embed/` would render inside this shell, not instead of
+  // it. One `if` in the one file that draws the chrome is the whole of it.
+  export default async ({ route }) => ({
+    path: route.path,
+    bare: route.path.startsWith('/embed/'),
+  });
 </script>
 
 <title>atlas</title>
@@ -32,6 +42,11 @@
     margin: 0;
     font-size: 0.8rem;
     color: var(--muted);
+    flex: 1;
+  }
+
+  header a.about {
+    font-size: 0.8rem;
   }
 
   /* The trace rail is a column on a wide screen and a footnote on a narrow
@@ -51,6 +66,13 @@
     }
   }
 
+  /* An embed gets room to breathe on a direct visit and nothing else. */
+  .bare {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 1.5rem clamp(1rem, 4vw, 2rem);
+  }
+
   footer {
     margin-top: 3rem;
     padding-top: 1rem;
@@ -60,23 +82,32 @@
   }
 </style>
 
-<div class="shell">
-  <header>
-    <a class="wordmark" href="/">atlas</a>
-    <p>Read the AT Protocol network.</p>
-  </header>
-
-  <div class="columns">
-    <main>
-      <slot></slot>
-    </main>
-    <aside>
-      <slot name="trace"></slot>
-    </aside>
+<template if="bare">
+  <div class="bare">
+    <slot></slot>
   </div>
+</template>
 
-  <footer>
-    Built with <a href="https://transclude.dev">transclude</a>. Every record here
-    is also a fragment you can embed.
-  </footer>
-</div>
+<template else>
+  <div class="shell">
+    <header>
+      <a class="wordmark" href="/">atlas</a>
+      <p>Read the AT Protocol network.</p>
+      <a class="about" href="/about">About</a>
+    </header>
+
+    <div class="columns">
+      <main>
+        <slot></slot>
+      </main>
+      <aside>
+        <slot name="trace"></slot>
+      </aside>
+    </div>
+
+    <footer>
+      Built with <a href="https://transclude.dev">transclude</a>. Every record
+      here is also a fragment you can embed.
+    </footer>
+  </div>
+</template>

@@ -277,6 +277,14 @@ element name. `card.html` is not, and the file is dropped.
 **`<transclude>` has no self-closing form.** `<transclude src="#a" />` is read
 as an open tag and the rest of the page becomes its fallback content.
 
+**`app.get()` in `app/server.js` is not how a route is made.** The `app` there
+is a real Hono instance and accepts one, but the directory tree is the route
+table, and a handler registered by hand is invisible to the build, the sitemap
+and `npm run check`. Middleware is what belongs in that file. Most of Hono's
+API has an answer here already, and
+[references/server.md](references/server.md) has the line between the two next
+to Hono's own documentation for agents.
+
 **Middleware does not run during the build.** A page gated only by
 `app/server.js` is prerendered to a file and served by any static host. Declare
 the paths so the build knows:
@@ -305,6 +313,6 @@ directly. It is the object the whole chain holds.
 - [references/fragments.md](references/fragments.md) — fragments, includes and
   transclusion
 - [references/server.md](references/server.md) — cookies, middleware, security,
-  config, deployment
+  config, caching, deployment, and where Hono's own docs are
 
 Full documentation: https://transclude.dev/docs

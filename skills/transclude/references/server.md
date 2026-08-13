@@ -47,6 +47,7 @@ and `npm run check` never see it.
 | `secureHeaders()` for a policy | `csp` in the config |
 | `trimTrailingSlash()` | `trailingSlash` in the config |
 | `compress()`, `etag()` | both are built in, per response and at rest |
+| `cache()` | `export const revalidate` |
 | `serveStatic()` | `app/public/` |
 | `c.executionCtx.waitUntil(p)` | `ctx.after(p)` |
 | `c.html()`, `hono/html`, `hono/jsx` | a page is an `.html` file |
@@ -154,6 +155,7 @@ Source is JavaScript with JSDoc. Do not convert it to TypeScript.
 | `sitemap` | `false` | `{ hostname }` mounts `/sitemap.xml`. |
 | `feed` | `false` | `{ hostname, title, items }` mounts a feed. |
 | `proxy` | `false` | `{ allow: [...] }` for cross-site includes. |
+| `cache` | — | Where a page held by `revalidate` is kept. A bounded map in this process by default. |
 | `precache` | `false` | `true` writes `/precache.json`. |
 | `onError` | `null` | `(error, { request, url, method })` per failed request. |
 
@@ -198,6 +200,81 @@ skipped. Deployed, the URL is a 404. Publishing is deleting the line.
 
 `prerender` is read off the page, never off its layouts. A layout that reads a
 cookie makes every page under it request-dependent, and nothing says so.
+
+## Holding a render
+
+Between a file written once and a render on every request, there is a page held
+for a while.
+
+```js
+// app/routes/notes.html
+export const prerender = false;
+export const revalidate = 3600;
+```
+
+The number is seconds. Inside that window a request is answered from the store
+and the loader does not run. Past it the held page goes out immediately and a
+fresh one renders behind the response, so nobody waits for a re-render. One
+render happens at a time per URL, however many requests arrive together.
+
+The key is the path and the query, because a page reading `?q=` renders
+differently for each one. A rebuild that throws leaves the held page where it is,
+and the error goes to `onError` with the request that started it.
+
+Three things hold nothing:
+
+- **`npm run dev`.** The dev server renders every request and keeps nothing
+  between them. A window has no effect there at all.
+- **A page the build wrote to a file.** The static handler answers before the
+  route handler that holds anything, so the window never runs. Adding
+  `prerender = false` puts the page back on the path that has one, which is why
+  the example above carries both lines.
+- **A fragment.** `?fragment=list` is rendered on demand, for every route,
+  prerendered or not.
+
+**What is never held:** a page that read a cookie, set a header, answered with a
+`Response`, or has a status outside 2xx. A shared store holding any of those
+hands one visitor's page, or one visitor's `Set-Cookie`, to the next. It is the
+same rule the build uses to decide a route can be a file.
+
+### Tags
+
+Seconds say when a page may be out of date. A tag says when it is.
+
+```js
+// app/routes/notes.html
+export const prerender = false;
+export const revalidate = { seconds: 3600, tags: ['notes'] };
+
+export default async () => ({ notes: await notes.all() });
+```
+
+```js
+// app/routes/api/notes.js
+export const POST = async ({ request, revalidateTag }) => {
+  await notes.add(await request.json());
+
+  // Every held page carrying this tag is dropped. The next request for one
+  // renders it again.
+  revalidateTag('notes');
+
+  return new Response(null, { status: 204 });
+};
+```
+
+`ctx.revalidateTag` belongs where the change was written, which is an action or
+an endpoint: whatever made the change is what says it happened. A prerendered
+page's loader calling it stops the build, since a build holds nothing yet to
+drop.
+
+`revalidate` takes a number of seconds, or `{ seconds, tags }`. Anything else
+throws when the app starts. `revalidate: '1h'` would otherwise hold forever or
+not at all, and say nothing either way.
+
+The default store is a bounded map in this process. That is right for one server
+and wrong for several: each holds its own copy, and `revalidateTag` reaches one
+of them. `cache` in the config takes anything with the same `get`, `set`,
+`delete` and `deleteByTag`.
 
 ## Runtimes
 

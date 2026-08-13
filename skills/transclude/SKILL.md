@@ -313,6 +313,6 @@ directly. It is the object the whole chain holds.
 - [references/fragments.md](references/fragments.md) — fragments, includes and
   transclusion
 - [references/server.md](references/server.md) — cookies, middleware, security,
-  config, deployment, and where Hono's own docs are
+  config, caching, deployment, and where Hono's own docs are
 
 Full documentation: https://transclude.dev/docs

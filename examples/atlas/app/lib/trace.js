@@ -24,6 +24,12 @@
  */
 
 /**
+ * A hop as the rail shows it: one line, with how many times it happened.
+ *
+ * @typedef {Hop & { count: number }} Row
+ */
+
+/**
  * @typedef {object} Trace
  * @property {Hop[]} hops
  * @property {<T>(label: string, detail: string, fn: () => Promise<{ value: T, cache: CacheState }>) => Promise<T>} step
@@ -67,6 +73,43 @@ const elapsed = (started) => Math.round(performance.now() - started);
 
 /** Total time across every hop. The number the trace rail shows at the top. */
 export const traceMs = (trace) => trace.hops.reduce((total, hop) => total + hop.ms, 0);
+
+/**
+ * The hops, with exact repeats folded into one line carrying a count.
+ *
+ * Several lexicons share a namespace, so resolving the six schemas an
+ * `app.bsky.feed.post` points at asks `_lexicon.embed.bsky.app` six times. Every
+ * one after the first is a cache hit costing nothing, and six identical lines
+ * bury the eight that say something.
+ *
+ * Folded, not dropped. The count is shown, the times are added up, and a hop
+ * that failed never merges with one that worked.
+ *
+ * @param {Trace} trace
+ * @returns {Row[]}
+ */
+export function traceRows(trace) {
+  /** @type {Row[]} */
+  const rows = [];
+  const seen = new Map();
+
+  for (const hop of trace.hops) {
+    const key = `${hop.label}\u0000${hop.detail}\u0000${hop.ok}`;
+    const found = seen.get(key);
+
+    if (found) {
+      found.count += 1;
+      found.ms += hop.ms;
+      continue;
+    }
+
+    const row = { ...hop, count: 1 };
+    seen.set(key, row);
+    rows.push(row);
+  }
+
+  return rows;
+}
 
 /** A hop nothing caches. Wraps a bare value in the shape `step` expects. */
 export const uncached = async (fn) => ({ value: await fn(), cache: /** @type {CacheState} */ ('none') });

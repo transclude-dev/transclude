@@ -53,6 +53,9 @@ type Row = {
   summary: string;
   when: string;
 };
+type Row_2 = Hop & {
+  count: number;
+};
 type Hop = {
   label: string;
   detail: string;
@@ -109,8 +112,9 @@ export type RecordRowProps = {
 
 /** Properties of `<trace-rail>`, from its <script properties> block. */
 export type TraceRailProps = {
-  hops: Hop[];
+  hops: Row_2[];
   ms: number;
+  requests: number;
 };
 
 /** The `ctx` argument of `root/_layout.html`'s loader. */
@@ -247,7 +251,8 @@ export type DidIdData = __Shape<{
   keys: any;
   log: any;
   links: Backlink[];
-  hops: Hop[];
+  hops: Row_2[];
+  requests: number;
   ms: any;
   error: null;
 }> | __Shape<{
@@ -256,7 +261,8 @@ export type DidIdData = __Shape<{
   keys: never[];
   log: never[];
   links: never[];
-  hops: Hop[];
+  hops: Row_2[];
+  requests: number;
   ms: any;
   error: any;
 }>;
@@ -296,7 +302,8 @@ export type LexiconNsidContext = {
 /** Data returned by `lexicon-_nsid`'s <script server> block. */
 export type LexiconNsidData = __Shape<{
   nsid: string;
-  hops: Hop[];
+  hops: Row_2[];
+  requests: number;
   ms: any;
   error: null;
   searched: string[];
@@ -329,13 +336,15 @@ export type LexiconNsidData = __Shape<{
     href: string;
     fields: Field[];
   } | null;
-  hops: Hop[];
+  hops: Row_2[];
+  requests: number;
   ms: any;
   error: null;
   searched: never[];
 }> | __Shape<{
   nsid: string;
-  hops: Hop[];
+  hops: Row_2[];
+  requests: number;
   ms: any;
   error: any;
   lexicon: null;
@@ -384,7 +393,8 @@ export type AtUriRestData = __Shape<{
   at: AtUri;
   kind: string;
   identity: Identity;
-  hops: Hop[];
+  hops: Row_2[];
+  requests: number;
   ms: any;
   error: null;
   raw: any;
@@ -398,7 +408,8 @@ export type AtUriRestData = __Shape<{
   at: AtUri;
   kind: string;
   identity: Identity;
-  hops: Hop[];
+  hops: Row_2[];
+  requests: number;
   ms: any;
   error: null;
   raw: any;
@@ -412,7 +423,8 @@ export type AtUriRestData = __Shape<{
   at: AtUri;
   kind: string;
   identity: Identity;
-  hops: Hop[];
+  hops: Row_2[];
+  requests: number;
   ms: any;
   error: null;
   raw: any;
@@ -423,7 +435,8 @@ export type AtUriRestData = __Shape<{
   collections: never[];
   links: never[];
 }> | __Shape<{
-  hops: Hop[];
+  hops: Row_2[];
+  requests: number;
   ms: any;
   error: any;
   at: null;

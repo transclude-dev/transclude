@@ -7,14 +7,16 @@
    * renders on the server and never changes after that, which is exactly what a
    * record of what already happened should do.
    *
-   * @typedef {import('../lib/trace.js').Hop} Hop
+   * @typedef {import('../lib/trace.js').Row} Row
    */
 
   export default {
-    /** @type {Hop[]} */
+    /** @type {Row[]} */
     hops: [],
     /** Total across every hop, in milliseconds. */
     ms: 0,
+    /** Requests actually made. More than the lines below, when any repeated. */
+    requests: 0,
   };
 </script>
 
@@ -112,11 +114,15 @@
 <ol>
   <li each="hop of hops" class="${hop.ok ? '' : 'failed'}">
     <span class="label">${hop.label}</span>
-    <span class="meta"> ${hop.ms}ms<span if="hop.cache !== 'none'"> · ${hop.cache}</span></span>
+    <span class="meta">
+      <span if="hop.count > 1">&times;${hop.count} · </span>${hop.ms}ms<span
+        if="hop.cache !== 'none'"
+      > · ${hop.cache}</span>
+    </span>
     <span class="detail mono">${hop.detail}</span>
     <span class="note" if="hop.note">${hop.note}</span>
   </li>
 </ol>
 
-<p class="total" if="hops.length">${hops.length} hops · ${ms}ms</p>
+<p class="total" if="hops.length">${requests} requests · ${ms}ms</p>
 <p class="total" else>Nothing was resolved.</p>

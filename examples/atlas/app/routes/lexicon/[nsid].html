@@ -9,7 +9,7 @@
   import { recordDef, referencedNsids, resolveLexicon, resolveMany } from '../../lib/lexicon.js';
   import { fieldsOf } from '../../lib/render.js';
   import { listRecords } from '../../lib/xrpc.js';
-  import { createTrace, traceMs } from '../../lib/trace.js';
+  import { createTrace, traceMs, traceRows } from '../../lib/trace.js';
 
   export const revalidate = 3600;
 
@@ -19,7 +19,7 @@
 
     if (!isNsid(nsid)) {
       response.status = 404;
-      return { ...EMPTY, nsid, hops: [], ms: 0, error: `"${nsid}" is not an NSID.` };
+      return { ...EMPTY, nsid, hops: [], requests: 0, ms: 0, error: `"${nsid}" is not an NSID.` };
     }
 
     try {
@@ -29,7 +29,8 @@
         // Nobody published one. This is an ordinary outcome on this network and
         // the page says so rather than showing an error.
         response.status = 404;
-        return { ...EMPTY, nsid, hops: trace.hops, ms: traceMs(trace), error: null, searched: nsidAuthorities(nsid) };
+        return { ...EMPTY, nsid, hops: traceRows(trace),
+        requests: trace.hops.length, ms: traceMs(trace), error: null, searched: nsidAuthorities(nsid) };
       }
 
       // Who uses it, and one record that does. Both come from an index rather
@@ -47,13 +48,15 @@
         needs: referencedNsids(lexicon),
         users,
         example,
-        hops: trace.hops,
+        hops: traceRows(trace),
+        requests: trace.hops.length,
         ms: traceMs(trace),
         error: null,
       };
     } catch (error) {
       response.status = 502;
-      return { ...EMPTY, nsid, hops: trace.hops, ms: traceMs(trace), error: error.message };
+      return { ...EMPTY, nsid, hops: traceRows(trace),
+        requests: trace.hops.length, ms: traceMs(trace), error: error.message };
     }
   };
 
@@ -442,5 +445,5 @@
 </template>
 
 <template slot="trace">
-  <trace-rail hops="${hops}" ms="${ms}"></trace-rail>
+  <trace-rail hops="${hops}" ms="${ms}" requests="${requests}"></trace-rail>
 </template>

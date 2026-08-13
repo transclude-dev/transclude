@@ -9,7 +9,7 @@
 
   import { backlinks } from '../../lib/discover.js';
   import { resolveIdentity } from '../../lib/identity.js';
-  import { createTrace, traceMs } from '../../lib/trace.js';
+  import { createTrace, traceMs, traceRows } from '../../lib/trace.js';
   import { cached, TTL } from '../../lib/cache.js';
 
   export const revalidate = 60;
@@ -31,13 +31,15 @@
         keys: keysOf(identity.doc),
         log,
         links,
-        hops: trace.hops,
+        hops: traceRows(trace),
+        requests: trace.hops.length,
         ms: traceMs(trace),
         error: null,
       };
     } catch (error) {
       response.status = 404;
-      return { identity: null, services: [], keys: [], log: [], links: [], hops: trace.hops, ms: traceMs(trace), error: error.message };
+      return { identity: null, services: [], keys: [], log: [], links: [], hops: traceRows(trace),
+        requests: trace.hops.length, ms: traceMs(trace), error: error.message };
     }
   };
 
@@ -269,5 +271,5 @@
 </template>
 
 <template slot="trace">
-  <trace-rail hops="${hops}" ms="${ms}"></trace-rail>
+  <trace-rail hops="${hops}" ms="${ms}" requests="${requests}"></trace-rail>
 </template>

@@ -122,15 +122,157 @@
 </style>
 
 <div id="record" fragment>
-  <!-- The only styling that travels with an embed, and it is structural rather
-       than decorative. These two tag names mean nothing on a page that never
-       heard of them, so a browser lays them out inline and the record arrives as
-       one run-on line. Everything else is left to the page this lands on, which
-       is the reason for serving HTML instead of an iframe. -->
+  <!-- The styling that travels with an embed.
+
+       An element's CSS is hoisted into the pages that render it, and a page that
+       receives this markup at runtime never rendered it. So nothing about
+       `record-card` or `field-list` is known where this lands, and without the
+       rules below a record arrives as an unstyled definition list: no columns,
+       no nesting, and `display: inline` on both tag names.
+
+       What is here is structure, plus a restrained default that inherits.
+       No font-family, no font-size on the record's own text, no background, and
+       every color is `currentColor`. So an embed takes the host page's type and
+       palette and looks like it belongs there, which is the reason for serving
+       HTML rather than an iframe. Element selectors only, so a host overrides
+       any of it with a single class. -->
   <style>
     record-card,
     field-list {
       display: block;
+    }
+
+    record-card {
+      border: 1px solid color-mix(in oklab, currentColor 18%, transparent);
+      border-radius: 10px;
+      padding: 1rem 1.15rem;
+    }
+
+    record-card > header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.3rem 0.9rem;
+      padding-bottom: 0.7rem;
+      margin-bottom: 0.8rem;
+      border-bottom: 1px solid color-mix(in oklab, currentColor 14%, transparent);
+    }
+
+    record-card .uri,
+    record-card .cid {
+      font-family: ui-monospace, monospace;
+      font-size: 0.8em;
+      opacity: 0.7;
+      word-break: break-all;
+      margin: 0;
+      flex: 1 1 18rem;
+    }
+    record-card .cid {
+      font-size: 0.72em;
+      margin-top: 0.9rem;
+    }
+
+    record-card .badge {
+      font-size: 0.72em;
+      border: 1px solid color-mix(in oklab, currentColor 18%, transparent);
+      border-radius: 999px;
+      padding: 0.05rem 0.6rem;
+      opacity: 0.75;
+      white-space: nowrap;
+    }
+
+    /* The two-column field grid, and the indent that carries nesting. Without
+       these the record is legible but says nothing about its own shape. */
+    field-list dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: minmax(5rem, 11rem) minmax(0, 1fr);
+      gap: 0.1rem 1.25rem;
+    }
+
+    field-list dt {
+      font-family: ui-monospace, monospace;
+      font-size: 0.8em;
+      opacity: 0.65;
+      padding: 0.3rem 0 0.3rem calc(var(--depth, 0) * 0.9rem);
+      word-break: break-all;
+    }
+
+    field-list dd {
+      margin: 0;
+      padding: 0.3rem 0;
+      min-width: 0;
+      word-wrap: break-word;
+    }
+
+    field-list .prose {
+      white-space: pre-wrap;
+    }
+
+    field-list .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    field-list .chips li {
+      border: 1px solid color-mix(in oklab, currentColor 18%, transparent);
+      border-radius: 999px;
+      padding: 0.05rem 0.55rem;
+      font-size: 0.78em;
+    }
+
+    field-list .note,
+    field-list .group {
+      display: block;
+      font-size: 0.75em;
+      opacity: 0.6;
+    }
+    field-list .group {
+      display: inline;
+      font-family: ui-monospace, monospace;
+    }
+
+    field-list .meter {
+      display: inline-block;
+      width: 4rem;
+      height: 3px;
+      background: color-mix(in oklab, currentColor 18%, transparent);
+      border-radius: 2px;
+      vertical-align: middle;
+      margin-left: 0.5rem;
+      overflow: hidden;
+    }
+    field-list .meter > span {
+      display: block;
+      height: 100%;
+      background: currentColor;
+      opacity: 0.5;
+    }
+
+    field-list img {
+      max-width: min(100%, 22rem);
+      height: auto;
+      border-radius: 6px;
+      display: block;
+    }
+
+    field-list .mono,
+    field-list time {
+      font-family: ui-monospace, monospace;
+      font-size: 0.85em;
+    }
+
+    @media (max-width: 34rem) {
+      field-list dl {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+      }
+      field-list dd {
+        margin-bottom: 0.7rem;
+      }
     }
   </style>
 

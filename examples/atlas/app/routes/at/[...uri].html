@@ -14,7 +14,7 @@
   import { recordDef, referencedNsids, resolveLexicon, resolveMany } from '../../lib/lexicon.js';
   import { fieldsOf, summaryOf, whenOf } from '../../lib/render.js';
   import { describeRepo, getRecord, listRecords } from '../../lib/xrpc.js';
-  import { createTrace, traceMs } from '../../lib/trace.js';
+  import { createTrace, traceMs, traceRows } from '../../lib/trace.js';
 
   export const revalidate = 30;
 
@@ -29,12 +29,14 @@
 
       // The spread comes first. `view` carries the defaults, and these three are
       // what the route knows that the read did not.
-      return { ...view, at, kind: kindOf(at), identity, hops: trace.hops, ms: traceMs(trace), error: null };
+      return { ...view, at, kind: kindOf(at), identity, hops: traceRows(trace),
+        requests: trace.hops.length, ms: traceMs(trace), error: null };
     } catch (error) {
       // The trace is the answer on a failure, so it is returned rather than
       // thrown away. It names the hop that broke and what it was asked.
       response.status = 404;
-      return { ...EMPTY, hops: trace.hops, ms: traceMs(trace), error: error.message };
+      return { ...EMPTY, hops: traceRows(trace),
+        requests: trace.hops.length, ms: traceMs(trace), error: error.message };
     }
   };
 
@@ -259,5 +261,5 @@
 </template>
 
 <template slot="trace">
-  <trace-rail hops="${hops}" ms="${ms}"></trace-rail>
+  <trace-rail hops="${hops}" ms="${ms}" requests="${requests}"></trace-rail>
 </template>

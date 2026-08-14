@@ -1,10 +1,16 @@
-# Lints the other two workflows.
+# Lints everything in `.github`.
 #
 # A workflow file is the one place in this repository where a mistake hands
 # someone else the credentials. zizmor reads for that class of mistake: a script
 # that interpolates a branch name into a shell command, an action pinned to a
 # tag that can be moved, a job holding a permission it does not use. The rules
 # are at https://docs.zizmor.sh/audits/.
+#
+# `dependabot.yml` is audited too, so point a local run at `.github` and not at
+# `.github/workflows`. The narrower path passes while this one fails, which is
+# how the missing dependabot cooldown reached main:
+#
+#   docker run --rm -v "$(pwd):/repo:ro" ghcr.io/zizmorcore/zizmor:latest /repo/.github
 
 name: check-workflows
 

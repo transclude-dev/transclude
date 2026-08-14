@@ -14,6 +14,12 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # A version has to be a week old before a pull request offers it. Most
+    # malicious releases are pulled well inside that: the median takedown is 14
+    # hours. What it costs is a week between a real fix and the offer of it, and
+    # a bump can still be made by hand on the day it is needed.
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns: ['*']
@@ -23,6 +29,11 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    # As above. `.npmrc` sets `min-release-age=3` for what an install resolves,
+    # which is the stricter gate of the two: this one only decides when a pull
+    # request appears, and nothing installs from it until it is merged.
+    cooldown:
+      default-days: 7
     groups:
       # One pull request for everything that should not need reading.
       safe:

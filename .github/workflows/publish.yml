@@ -10,6 +10,14 @@
 # signs provenance from it: the published package carries a verifiable link back
 # to this workflow, this commit and this repository. Nothing to rotate, and
 # nothing in the repository's secrets that could publish on its own.
+#
+# Three jobs, because only one of them may hold `id-token: write`. Anything that
+# runs in a job with that permission can publish, and the tests install the
+# framework, the demo and the site: hundreds of packages, any of which could ask
+# npm for a release. So `test` installs and holds no identity, `publish` holds
+# the identity and installs nothing, and `release` writes the page with
+# `contents: write` and no identity at all. Every action is pinned to a commit,
+# because a tag can be moved to point at other code.
 
 name: publish
 
@@ -17,7 +25,7 @@ on:
   push:
     tags: ['v*']
 
-  # The same job, started by hand, for when the tag push does not start it.
+  # The same jobs, started by hand, for when the tag push does not start them.
   #
   #   gh workflow run publish.yml --ref v0.8.1
   #
@@ -30,42 +38,39 @@ on:
   # version from `GITHUB_REF_NAME`, which is whichever ref this was started on,
   # and the check that the tag and the manifests agree is what catches the
   # mistake: dispatched from `main` it compares `main` against `0.8.1` and stops
-  # before anything is published.
+  # before anything is staged.
   workflow_dispatch:
 
 jobs:
-  publish:
+  test:
     runs-on: ubuntu-latest
     permissions:
-      # `write` for the release page at the end. Nothing here pushes a commit.
-      contents: write
-      id-token: write
+      contents: read
 
     steps:
-      # `fetch-depth: 0` and `fetch-tags`, because the release notes are the tag's
-      # own message. A shallow checkout of a tag gives the commit and not the tag
-      # object, so `%(contents)` comes back empty and the release page is blank.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
-          fetch-tags: true
+          persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      # No cache, in a workflow a tag starts. A cache is written by whatever ran
+      # last and read by whatever runs next, so a poisoned entry from an earlier
+      # run would reach the tree this release is cut from. Slower, and the only
+      # thing it costs is time.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
-
-      # The npm bundled with Node 22 predates OIDC publishing. Without this the
-      # publish falls back to looking for a token that is deliberately not here.
-      - run: npm install -g npm@latest
+          package-manager-cache: false
 
       # Three packages, three installs. `npm ci` reads one manifest, and the
       # demo and the docs are separate projects that depend on this one by path.
       # Without theirs, their tests cannot resolve `@transclude/core` and fail
       # for a reason that has nothing to do with the release.
-      - run: npm ci
-      - run: npm ci --prefix examples/showcase
-      - run: npm ci --prefix www
+      #
+      # `--ignore-scripts` because a dependency's install script runs arbitrary
+      # code, and nothing here needs one.
+      - run: npm ci --ignore-scripts
+      - run: npm ci --prefix examples/showcase --ignore-scripts
+      - run: npm ci --prefix www --ignore-scripts
 
       # The same order `bin/release.js` runs, so a tag that was cut properly
       # passes here and a tag pushed by hand is caught.
@@ -77,8 +82,32 @@ jobs:
       - run: npm run build --prefix www
       - run: npm test --prefix www
 
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      # A shallow checkout of the tag, and no `fetch-tags`. The release notes
+      # need the tag object, and they are read in the job below. This one reads
+      # the two manifests and the files each package ships.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Node 26 for the npm it carries. `npm stage` arrived in npm 11.19, and
+      # the npm bundled with Node 22 is older than that. Installing a newer npm
+      # here instead would put a registry download inside the one job that can
+      # publish, which is the thing this split exists to prevent.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 26
+          package-manager-cache: false
+
       # The tag says what version this is. A tag that disagrees with the
-      # manifests would publish something nobody asked for.
+      # manifests would stage something nobody asked for.
       - name: The tag and the manifests agree
         run: |
           tag="${GITHUB_REF_NAME#v}"
@@ -90,21 +119,43 @@ jobs:
             fi
           done
 
-      # Core first: the dependency `@transclude/create` writes into a new
-      # project names it by version, so it has to exist by the time anyone
-      # runs the CLI.
-      - name: Publish @transclude/core
-        run: npm publish --access public
+      # `stage publish`, not `publish`. Both packages deny plain `npm publish`,
+      # so this run cannot release anything on its own: it uploads the tarball
+      # and stops. The version goes live when a human approves it on npmjs.com
+      # with their second factor, which is the step a stolen CI run cannot fake.
+      #
+      # No `npm ci` above, and none here. The tarball is the tree the tag points
+      # at, filtered by `files`, and neither package builds anything first.
+      - name: Stage @transclude/core
+        run: npm stage publish --access public --ignore-scripts
 
-      - name: Publish @transclude/create
-        run: npm publish --access public
+      - name: Stage @transclude/create
+        run: npm stage publish --access public --ignore-scripts
         working-directory: create
 
-      # After both publishes, because the notes say `npm install @transclude/core`
-      # and a release page announcing a version the registry does not have yet is
-      # wrong for however long the publish takes. The cost of this order is that a
-      # publish which succeeds and then fails here leaves no page, which is what
-      # `--verify-tag` and a re-run are for: the notes are in the tag either way.
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      # `write` for the release page. Nothing here pushes a commit, and nothing
+      # here can talk to npm.
+      contents: write
+
+    steps:
+      # `fetch-depth: 0` and `fetch-tags`, because the release notes are the tag's
+      # own message. A shallow checkout of a tag gives the commit and not the tag
+      # object, so `%(contents)` comes back empty and the release page is blank.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      # The page goes up while both packages are still staged, so it names a
+      # version the registry does not serve yet. That gap is the approval, and it
+      # lasts as long as it takes to press the button. The alternative is a
+      # release page that only appears after a human acts, which means a tag with
+      # no notes for anyone reading GitHub in the meantime.
       - name: The release page
         env:
           GH_TOKEN: ${{ github.token }}

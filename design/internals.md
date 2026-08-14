@@ -518,10 +518,25 @@ against.
   errors, the page is just missing its structure, and a tag is immutable by the
   time anyone reads it. `test/release.test.js` runs the default against real git
   first, so the day that stops being true the flag stops being justified.
-- **The publish checkout is not shallow.** `%(contents)` reads the tag object,
-  and a shallow checkout of a tag gives the commit without it. The notes come
-  back empty and the release page is blank, which looks like the notes were never
-  written. `fetch-depth: 0` and `fetch-tags` in `publish.yml` are load-bearing.
+- **The `release` job's checkout is not shallow.** `%(contents)` reads the tag
+  object, and a shallow checkout of a tag gives the commit without it. The notes
+  come back empty and the release page is blank, which looks like the notes were
+  never written. `fetch-depth: 0` and `fetch-tags` in `publish.yml` are
+  load-bearing, in that job. The other two jobs read files rather than tag
+  objects and stay shallow.
+- **One job in `publish.yml` holds `id-token: write`, and it installs nothing.**
+  That permission mints the identity npm accepts in place of a token, so
+  everything running beside it can publish. The tests install the framework, the
+  demo and the site, which is hundreds of packages that would each get the same
+  reach. So `test` installs and holds no identity, `publish` holds the identity
+  and runs `npm stage publish` against a tree it never ran an install into, and
+  `release` writes the page with `contents: write`. Merging any two of them back
+  together undoes the whole arrangement, and nothing would fail to warn you.
+- **`stage publish` stages, and a human publishes.** Both packages deny plain
+  `npm publish` at the registry, so a green run does not put a version on npm. It
+  waits in Staged Packages until someone approves it with their second factor.
+  The release page goes up before that approval, so for as long as it takes to
+  press the button GitHub names a version the registry does not serve.
 - **A repeated `view-transition-name` is a compile error, because the browser's
   answer is silence.** The name has to be unique in the document, and a browser
   that finds two runs no transition rather than reporting one. `emitAttrs` checks

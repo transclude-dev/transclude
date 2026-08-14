@@ -61,21 +61,45 @@ jobs:
           node-version: 22
           package-manager-cache: false
 
-      # Three packages, three installs. `npm ci` reads one manifest, and the
-      # demo and the docs are separate projects that depend on this one by path.
-      # Without theirs, their tests cannot resolve `@transclude/core` and fail
-      # for a reason that has nothing to do with the release.
+      # A package per install. `npm ci` reads one manifest, and every example and
+      # the docs are separate projects that depend on this one by path. Without
+      # theirs, their tests cannot resolve `@transclude/core` and fail for a
+      # reason that has nothing to do with the release.
       #
       # `--ignore-scripts` because a dependency's install script runs arbitrary
       # code, and nothing here needs one.
       - run: npm ci --ignore-scripts
-      - run: npm ci --prefix examples/showcase --ignore-scripts
+
+      # Read rather than listed, the way `bin/release.js` reads it, so an example
+      # added to the repository is covered by the next release without anyone
+      # remembering this file. This job used to install `showcase` and no other,
+      # then run all eleven suites against ten uninstalled projects.
+      - name: Every example
+        run: |
+          for dir in examples/*/; do
+            [ -f "$dir/package.json" ] || continue
+            npm ci --prefix "$dir" --ignore-scripts
+          done
+
       - run: npm ci --prefix www --ignore-scripts
 
       # The same order `bin/release.js` runs, so a tag that was cut properly
       # passes here and a tag pushed by hand is caught.
       - run: npm test
+
+      # Built before tested, and that order is the gate rather than a nicety:
+      # every example's tests ask the built app for URLs and skip when there is
+      # nothing to ask. Without this a release passes with all of them skipped,
+      # which is a green tick over nothing.
+      - name: Every example, built
+        run: |
+          for dir in examples/*/; do
+            [ -f "$dir/package.json" ] || continue
+            npm run build --prefix "$dir"
+          done
+
       - run: npm run test:examples
+
       - run: npm run check --prefix www
       # Before the docs tests: two of them read what the build wrote, and skip
       # when there is nothing to read.

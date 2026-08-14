@@ -40,43 +40,37 @@ jobs:
         with:
           node-version: 22
 
-      # Thirteen packages, thirteen installs. `npm ci` reads one manifest, and the
-      # eleven examples and the site are separate projects that depend on this one
-      # by path.
-      #
-      # Every example `test:examples` runs has to be listed here. `markdown` was
-      # not, from the day it shipped: its suite ran with no dependencies
-      # installed and nothing built, so every test that asks the built app for a
-      # URL skipped, and the job stayed green while covering none of it.
+      # A package per install. `npm ci` reads one manifest, and the eleven
+      # examples and the site are separate projects that depend on this one by
+      # path.
       - run: npm ci
-      - run: npm ci --prefix examples/showcase
-      - run: npm ci --prefix examples/todomvc
-      - run: npm ci --prefix examples/blog
-      - run: npm ci --prefix examples/search
-      - run: npm ci --prefix examples/htmx
-      - run: npm ci --prefix examples/includes
-      - run: npm ci --prefix examples/auth
-      - run: npm ci --prefix examples/live
-      - run: npm ci --prefix examples/elements
-      - run: npm ci --prefix examples/markdown
-      - run: npm ci --prefix examples/atlas
+
+      # Read rather than listed, the way `bin/release.js` reads it, so an example
+      # added to the repository is covered without anyone remembering this file.
+      # The list used to be written out by hand and `markdown` was missing from
+      # the day it shipped: its suite ran with no dependencies installed and
+      # nothing built, so every test that asks the built app for a URL skipped,
+      # and the job stayed green while covering none of it.
+      - name: Every example
+        run: |
+          for dir in examples/*/; do
+            [ -f "$dir/package.json" ] || continue
+            npm ci --prefix "$dir"
+          done
+
       - run: npm ci --prefix www
 
       - run: npm test
 
       # The examples are built before they are tested: their tests ask the built
       # app for URLs, and skip when there is nothing to ask.
-      - run: npm run build --prefix examples/showcase
-      - run: npm run build --prefix examples/todomvc
-      - run: npm run build --prefix examples/blog
-      - run: npm run build --prefix examples/search
-      - run: npm run build --prefix examples/htmx
-      - run: npm run build --prefix examples/includes
-      - run: npm run build --prefix examples/auth
-      - run: npm run build --prefix examples/live
-      - run: npm run build --prefix examples/elements
-      - run: npm run build --prefix examples/markdown
-      - run: npm run build --prefix examples/atlas
+      - name: Every example, built
+        run: |
+          for dir in examples/*/; do
+            [ -f "$dir/package.json" ] || continue
+            npm run build --prefix "$dir"
+          done
+
       - run: npm run test:examples
 
       # The site is built before it is tested: two of those tests read what the

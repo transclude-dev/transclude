@@ -6,25 +6,35 @@
       whole: [
         `export default {
   appDir: 'app',
-  routesDir: 'routes',
-  elementsDir: 'elements',
-  iconsDir: 'icons',
-  publicDir: 'public',
-  stylesheet: 'app/styles/global.css',
-
-  strict: false,
-  fragmentParam: 'fragment',
-  lang: 'en',
-  watchElements: false,
-  fragmentHeader: null,
-  csrf: true,
-  trailingSlash: 'never',
+  // Undefined is a bounded map in this process. A store with \`get\`, \`set\`,
+  // \`delete\` and \`deleteByTag\` is how several servers share held pages.
+  cache: undefined,
+  canonical: false,
   cookieSecret: globalThis.process?.env?.COOKIE_SECRET ?? null,
-
-  port: 1960,
-  proxy: false,
+  csp: false,
+  csrf: true,
+  elementsDir: 'elements',
+  feed: false,
+  fragmentHeader: null,
+  fragmentParam: 'fragment',
+  iconsDir: 'icons',
+  lang: 'en',
+  markdown: null,
+  metadataBase: 'https://acme.com',
+  onError: null,
   outDir: 'dist',
+  port: 1960,
+  precache: false,
+  proxy: false,
+  publicDir: 'public',
+  routesDir: 'routes',
+  sitemap: false,
+  speculate: false,
+  strict: false,
+  stylesheet: 'app/styles/global.css',
+  trailingSlash: 'never',
   typesFile: 'app/transclude-env.d.ts',
+  watchElements: false,
 };`,
         'js',
       ],
@@ -39,7 +49,7 @@
   heading="Configuration"
   lede="transclude.config.js says where everything in your app lives."
 >
-  <p>An unknown key throws.</p>
+  <p>An unknown key is ignored, so a misspelled one is silent.</p>
 
   <div class="scroller">
     <table>
@@ -57,9 +67,16 @@
           <td>Where the app lives, relative to the project root.</td>
         </tr>
         <tr>
-          <td><code>elementsDir</code></td>
-          <td><code>'elements'</code></td>
-          <td>Custom elements. Relative to <code>appDir</code>.</td>
+          <td><code>cache</code></td>
+          <td>—</td>
+          <td>
+            Where a page held by
+            <a href="/docs/production">revalidate</a> is kept. The default is a
+            bounded map in this process. Anything with the same
+            <code>get</code>, <code>set</code>, <code>delete</code> and
+            <code>deleteByTag</code> works, which is how more than one server
+            shares one.
+          </td>
         </tr>
         <tr>
           <td><code>canonical</code></td>
@@ -87,23 +104,25 @@
           </td>
         </tr>
         <tr>
-          <td><code>cache</code></td>
-          <td>—</td>
-          <td>
-            Where a page held by
-            <a href="/docs/production">revalidate</a> is kept. The default is a
-            bounded map in this process. Anything with the same
-            <code>get</code>, <code>set</code>, <code>delete</code> and
-            <code>deleteByTag</code> works, which is how more than one server
-            shares one.
-          </td>
-        </tr>
-        <tr>
           <td><code>csrf</code></td>
           <td><code>true</code></td>
           <td>
             <code>false</code> to turn it off, or an object passed to
             <code>hono/csrf</code>.
+          </td>
+        </tr>
+        <tr>
+          <td><code>elementsDir</code></td>
+          <td><code>'elements'</code></td>
+          <td>Custom elements. Relative to <code>appDir</code>.</td>
+        </tr>
+        <tr>
+          <td><code>feed</code></td>
+          <td><code>false</code></td>
+          <td>
+            <code>{ hostname, title, items }</code> mounts a feed and writes it
+            into the build. See
+            <a href="/docs/feeds">sitemap and feeds</a>.
           </td>
         </tr>
         <tr>
@@ -123,12 +142,36 @@
           </td>
         </tr>
         <tr>
+          <td><code>iconsDir</code></td>
+          <td><code>'icons'</code></td>
+          <td>
+            One SVG file per icon, compiled into <code>/icons.svg</code> as a
+            sprite of <code>&lt;symbol&gt;</code>s. Relative to
+            <code>appDir</code>. Point a <code>&lt;use&gt;</code> at one by file
+            name: <code>&lt;use href="/icons.svg#check"&gt;</code> draws
+            <code>icons/check.svg</code>.
+          </td>
+        </tr>
+        <tr>
           <td><code>lang</code></td>
           <td><code>'en'</code></td>
           <td>
             The <code>lang</code> on <code>&lt;html&gt;</code> for every page. A
             page or <a href="/docs/layouts">layout</a> writing
             <code>&lt;html lang="cy"&gt;</code> wins over it.
+          </td>
+        </tr>
+        <tr>
+          <td><code>markdown</code></td>
+          <td><code>null</code></td>
+          <td>
+            <code>(source, file) =&gt; html</code>. What makes a
+            <code>.md</code> file under <code>routes/</code> a page. It is
+            converted before anything compiles it, so the page that comes out has
+            a loader, elements and fragments like any other. This package ships
+            no parser, and a <code>.md</code> page without this is an error
+            naming the file. <a href="/docs/markdown">Markdown pages</a> is the
+            rest.
           </td>
         </tr>
         <tr>
@@ -140,18 +183,18 @@
           </td>
         </tr>
         <tr>
+          <td><code>onError</code></td>
+          <td><code>null</code></td>
+          <td>
+            <code>(error, { request, url, method })</code> for every request that
+            fails. The 500 page ships either way, and a reporter that throws is
+            caught. Without one, the error is logged.
+          </td>
+        </tr>
+        <tr>
           <td><code>outDir</code></td>
           <td><code>'dist'</code></td>
           <td>Where the build writes.</td>
-        </tr>
-        <tr>
-          <td><code>feed</code></td>
-          <td><code>false</code></td>
-          <td>
-            <code>{ hostname, title, items }</code> mounts a feed and writes it
-            into the build. See
-            <a href="/docs/feeds">sitemap and feeds</a>.
-          </td>
         </tr>
         <tr>
           <td><code>port</code></td>
@@ -160,15 +203,6 @@
             What <code>npm run dev</code> and <code>npm start</code> both listen
             on. <code>PORT</code> in the environment wins, so a host that assigns
             one needs no edit.
-          </td>
-        </tr>
-        <tr>
-          <td><code>onError</code></td>
-          <td><code>null</code></td>
-          <td>
-            <code>(error, { request, url, method })</code> for every request that
-            fails. The 500 page ships either way, and a reporter that throws is
-            caught. Without one, the error is logged.
           </td>
         </tr>
         <tr>
@@ -192,27 +226,6 @@
           </td>
         </tr>
         <tr>
-          <td><code>watchElements</code></td>
-          <td><code>false</code></td>
-          <td>
-            Puts a script on every page that defines and styles an element
-            arriving in a swap. Worth it when
-            <a href="/docs/fragments">fragments</a> bring in elements the page did not
-            render.
-          </td>
-        </tr>
-        <tr>
-          <td><code>iconsDir</code></td>
-          <td><code>'icons'</code></td>
-          <td>
-            One SVG file per icon, compiled into <code>/icons.svg</code> as a
-            sprite of <code>&lt;symbol&gt;</code>s. Relative to
-            <code>appDir</code>. Point a <code>&lt;use&gt;</code> at one by file
-            name: <code>&lt;use href="/icons.svg#check"&gt;</code> draws
-            <code>icons/check.svg</code>.
-          </td>
-        </tr>
-        <tr>
           <td><code>publicDir</code></td>
           <td><code>'public'</code></td>
           <td>
@@ -226,6 +239,14 @@
           <td>Pages and endpoints. Relative to <code>appDir</code>.</td>
         </tr>
         <tr>
+          <td><code>sitemap</code></td>
+          <td><code>false</code></td>
+          <td>
+            <code>{ hostname }</code> mounts <code>/sitemap.xml</code> and writes
+            it into the build. See <a href="/docs/feeds">sitemap and feeds</a>.
+          </td>
+        </tr>
+        <tr>
           <td><code>speculate</code></td>
           <td><code>false</code></td>
           <td>
@@ -235,27 +256,6 @@
             run. A server-rendered route may only be prefetched, because its
             loader may read a cookie. <code>{ eagerness, exclude }</code> for the
             rest.
-          </td>
-        </tr>
-        <tr>
-          <td><code>markdown</code></td>
-          <td><code>null</code></td>
-          <td>
-            <code>(source, file) =&gt; html</code>. What makes a
-            <code>.md</code> file under <code>routes/</code> a page. It is
-            converted before anything compiles it, so the page that comes out has
-            a loader, elements and fragments like any other. This package ships
-            no parser, and a <code>.md</code> page without this is an error
-            naming the file. <a href="/docs/markdown">Markdown pages</a> is the
-            rest.
-          </td>
-        </tr>
-        <tr>
-          <td><code>sitemap</code></td>
-          <td><code>false</code></td>
-          <td>
-            <code>{ hostname }</code> mounts <code>/sitemap.xml</code> and writes
-            it into the build. See <a href="/docs/feeds">sitemap and feeds</a>.
           </td>
         </tr>
         <tr>
@@ -283,6 +283,16 @@
           <td><code>typesFile</code></td>
           <td><code>'app/transclude-env.d.ts'</code></td>
           <td>Where the generated declarations go.</td>
+        </tr>
+        <tr>
+          <td><code>watchElements</code></td>
+          <td><code>false</code></td>
+          <td>
+            Puts a script on every page that defines and styles an element
+            arriving in a swap. Worth it when
+            <a href="/docs/fragments">fragments</a> bring in elements the page did not
+            render.
+          </td>
         </tr>
       </tbody>
     </table>

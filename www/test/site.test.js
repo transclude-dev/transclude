@@ -309,6 +309,28 @@ test('the documented defaults are the defaults', () => {
   assert.deepEqual(wrong, []);
 });
 
+test('the config page lists every key alphabetically, in both places', () => {
+  // Two lists of the same keys, so a new one lands at the end of whichever the
+  // author was looking at. `canonical` went into the table and not the sample,
+  // and by then the sample was eight keys short. Neither drift showed up in the
+  // test above, which reads the table and never the sample.
+  const page = fs.readFileSync(path.join(docs, 'config.html'), 'utf8');
+
+  const table = [...page.matchAll(/<tr>\s*<td><code>(\w+)<\/code><\/td>/g)].map(([, key]) => key);
+  assert.notEqual(table.length, 0, 'the table was found and parsed');
+
+  const alphabetical = [...table].sort((a, b) => a.localeCompare(b, 'en'));
+  assert.deepEqual(table, alphabetical, 'the table is out of order');
+
+  // The sample is what a reader copies, so a key absent from it is a key they
+  // never meet. It is sorted too, which is what makes the two comparable at all.
+  const from = page.indexOf('export default {');
+  const whole = page.slice(from, page.indexOf('};', from));
+  const sample = [...whole.matchAll(/^ {2}(\w+):/gm)].map(([, key]) => key);
+
+  assert.deepEqual(sample, alphabetical, 'the sample and the table name different keys');
+});
+
 test('the ports the examples page lists are the ports they run on', () => {
   // Each example has its own port so they can run at once, and the page is
   // where anyone reads which. A config moving and the page not is silent: the

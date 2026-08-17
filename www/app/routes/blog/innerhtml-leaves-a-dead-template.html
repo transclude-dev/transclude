@@ -1,0 +1,181 @@
+<script server>
+  import { all } from '../../lib/code.js';
+
+  // Not finished. `npm run dev` serves this; the build leaves it out.
+  export const draft = true;
+
+  export default async () => ({
+    s: await all({
+      fragment: [
+        `<!-- GET /notes?fragment=list -->
+<ul id="list">
+  <li>
+    <note-card>
+      <template shadowrootmode="open">
+        <style>
+          article { border: 1px solid; padding: 0.5rem; }
+        </style>
+        <article><slot></slot></article>
+      </template>
+      Two liters of milk.
+    </note-card>
+  </li>
+</ul>`,
+        'html',
+      ],
+
+      swap: [
+        `const response = await fetch('/notes?fragment=list');
+
+document.querySelector('#notes').innerHTML = await response.text();`,
+        'js',
+      ],
+
+      fixed: [
+        `const response = await fetch('/notes?fragment=list');
+
+document.querySelector('#notes').setHTMLUnsafe(await response.text());`,
+        'js',
+      ],
+
+      check: [
+        `notes.innerHTML = markup;
+notes.querySelector('note-card').shadowRoot;        // null
+
+notes.setHTMLUnsafe(markup);
+notes.querySelector('note-card').shadowRoot;        // #shadow-root`,
+        'js',
+      ],
+
+      bare: [
+        `<!-- GET /notes?fragment=list, with no shadow root in it -->
+<ul id="list">
+  <li>
+    <note-card>Two liters of milk.</note-card>
+  </li>
+</ul>`,
+        'html',
+      ],
+    }),
+  });
+</script>
+
+<title>innerHTML leaves a dead template · transclude</title>
+<meta
+  name="description"
+  content="Swap markup into a live page and every declarative shadow root inside it lands as an inert template. The component is in the DOM, the style never applies, and nothing throws."
+/>
+
+<article>
+  <h1>innerHTML leaves a dead template</h1>
+
+  <p>
+    A declarative shadow root is markup. It arrives in the response, the parser
+    reads it, and the component is styled and correct before any JavaScript
+    runs. That is the whole appeal of it.
+  </p>
+
+  <p>
+    Then you swap a piece of the page, and the same markup does nothing.
+  </p>
+
+  <h2>What the server sends</h2>
+
+  ${html(s.fragment)}
+
+  <p>
+    One element, on its own URL, with a component inside it. Ask for that on a
+    full page load and the browser gives <code>note-card</code> a shadow root
+    built from the template. The border is drawn and the slot is filled.
+  </p>
+
+  <h2>What the swap does to it</h2>
+
+  ${html(s.swap)}
+
+  <p>
+    Two lines, and the card is dead. <code>note-card</code> is in the DOM. So is
+    the <code>&lt;template&gt;</code>, sitting inside it as an ordinary element
+    that renders nothing. <code>card.shadowRoot</code> is
+    <code>null</code>. The style never applies, and the text meant for the slot
+    sits in the page with no <code>&lt;article&gt;</code> around it.
+  </p>
+
+  <p>
+    Nothing throws. The console stays empty. The markup in devtools is the
+    markup you sent, which is what makes this one expensive to find.
+  </p>
+
+  <h2>The parser decides, not the markup</h2>
+
+  <p>
+    Declarative shadow roots are a parser feature, and each way into the parser
+    chooses whether to honor them. A page load honors them.
+    <code>innerHTML</code> does not. <code>DOMParser.parseFromString</code> does
+    not. Anything built on either inherits that answer.
+  </p>
+
+  <p>
+    The choice is not in the template. There is nothing you can add to the
+    response that turns it on.
+  </p>
+
+  <h2>One method fixes it</h2>
+
+  ${html(s.fixed)}
+
+  <p>
+    Same request, same markup. <code>setHTMLUnsafe()</code> parses with
+    declarative shadow roots allowed, and
+    <code>Document.parseHTMLUnsafe()</code> does the same for a whole document.
+    Both landed in Chrome, Safari and Firefox during 2024.
+  </p>
+
+  <p>
+    The name stops people, and it should not. <code>Unsafe</code> names the
+    sanitizing, not the shadow roots. It is the same amount of unsafe as the
+    <code>innerHTML</code> you already wrote.
+  </p>
+
+  ${html(s.check)}
+
+  <h2>The version that does not depend on the swapper</h2>
+
+  <p>
+    You do not always own the code that swaps. htmx, Turbo and anything else
+    holding the fetch parse the response their own way. You find out which way
+    by testing it.
+  </p>
+
+  <p>
+    So send a fragment with no shadow root in it.
+  </p>
+
+  ${html(s.bare)}
+
+  <p>
+    The element arrives as a tag and its attributes.
+    <code>connectedCallback</code> finds no shadow root, attaches one and
+    paints. That paint goes through <code>setHTMLUnsafe</code>, so a component
+    nested inside this one gets its root too.
+  </p>
+
+  <p>
+    Nothing is lost by leaving it out. A declarative shadow root buys a correct
+    first paint, and a fragment arrives long after first paint. That is why this
+    framework strips it from a fragment and ships the element bare.
+  </p>
+
+  <h2>What to check today</h2>
+
+  <p>
+    Find every <code>innerHTML =</code> whose right side came from the server.
+    Swap one piece that has a custom element in it, then read
+    <code>shadowRoot</code> on that element.
+  </p>
+
+  <p>
+    If it is null, that component has been dead since the first swap, and
+    nothing was ever going to say so.
+  </p>
+</article>

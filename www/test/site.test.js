@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 // `fileURLToPath`, not `url.pathname`: a space in the project path stays
 // percent-encoded in the second one.
@@ -307,6 +307,26 @@ test('the documented defaults are the defaults', () => {
   }
 
   assert.deepEqual(wrong, []);
+});
+
+test('the config page names every key the framework accepts, and no other', async () => {
+  // `withDefaults` refuses a key it does not know, so its set is the whole
+  // vocabulary. A key added to the code and not the page is undiscoverable, and a
+  // key on the page and not in the code now throws for anyone who copies it.
+  const source = path.join(root, '..', 'node_modules', '@transclude', 'core', 'src', 'defaults.js');
+  if (!fs.existsSync(source)) return; // not installed: nothing to compare against
+
+  // By path rather than by name: `defaults.js` is not in the package's exports.
+  const { KEYS } = await import(pathToFileURL(source).href);
+
+  const page = fs.readFileSync(path.join(docs, 'config.html'), 'utf8');
+  const table = [...page.matchAll(/<tr>\s*<td><code>(\w+)<\/code><\/td>/g)].map(([, key]) => key);
+
+  assert.deepEqual(
+    table.slice().sort(),
+    [...KEYS].sort(),
+    'the table and the keys the framework accepts are different lists',
+  );
 });
 
 test('the config page lists every key alphabetically, in both places', () => {

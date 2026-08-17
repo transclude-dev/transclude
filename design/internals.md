@@ -798,6 +798,18 @@ against.
   `frameworkHead` is that level, and `canonical: true` puts its `<link>` there
   for the same reason. Anything else the shell ever writes belongs in that
   function rather than in the template below it.
+- **A config key lives in two lists, and only one of them is checked against.**
+  `withDefaults` refuses a key it does not know, and `KEYS` is what it knows:
+  `DEFAULTS` plus `UNDEFAULTED`. A key with a default needs no second entry,
+  because `KEYS` derives from `DEFAULTS`. A key with no default — `feed`, `cache`,
+  `port`, anything whose absence has to mean something other than a value — is
+  real only because `UNDEFAULTED` names it. Add one and forget that list and the
+  key is refused as a typo, which is the same failure as never adding it, worn as
+  an error message. The site's own suite compares the documented table against
+  `KEYS`, so a key added to neither list and no page fails there too. The check
+  itself replaced a silent loss: `stylesheeet` for `stylesheet` took a site's
+  whole stylesheet away and said nothing, and the config page claimed this throw
+  for months before anything did it.
 - **`canonical: true` is refused in `withDefaults`, not at the render.** Four
   places render a page: two in `app.js`, one in `bin/dev.js`, one in
   `bin/build.js`. Only the first three hold a request whose origin `absolute()`

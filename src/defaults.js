@@ -47,6 +47,31 @@ export const DEFAULTS = {
 };
 
 /**
+ * Keys a config may set that have no default, listed so the check below does not
+ * read them as typos.
+ *
+ * A key is here when leaving it out has to mean something other than a value.
+ * There is no feed to write down as the default feed, and no store to write down
+ * as the default `cache`: absent is how an app says it wants neither.
+ */
+const UNDEFAULTED = [
+  'cache',
+  'cookieSecret',
+  'feed',
+  'fragmentHeader',
+  'metadataBase',
+  'onError',
+  'port',
+  'precache',
+  'proxy',
+  'sitemap',
+  'watchElements',
+];
+
+/** Every key `transclude.config.js` may set. */
+export const KEYS = new Set([...Object.keys(DEFAULTS), ...UNDEFAULTED]);
+
+/**
  * A config with every default filled in.
  *
  * A key the author wrote wins, including one written as `null` or `false`. Only
@@ -58,6 +83,18 @@ export const DEFAULTS = {
  * @throws when `canonical` is on and there is no origin to build a URL from
  */
 export function withDefaults(config = {}) {
+  // A key nothing reads is a line the author believes is doing something. The
+  // failure it replaces is silent and expensive: `stylesheeet` cost a site its
+  // whole stylesheet and said nothing, because an ignored key looks exactly like
+  // a key that worked.
+  const unknown = Object.keys(config).filter((key) => !KEYS.has(key));
+  if (unknown.length) {
+    throw new Error(
+      `[transclude] transclude.config.js sets ${unknown.join(', ')}, which nothing reads. ` +
+        `The keys are ${[...KEYS].sort().join(', ')}.`,
+    );
+  }
+
   const merged = { ...DEFAULTS, ...config };
 
   // Refused here because there are four places that render a page and only two of

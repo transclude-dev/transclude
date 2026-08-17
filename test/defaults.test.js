@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DEFAULTS, withDefaults } from '../src/defaults.js';
+import { DEFAULTS, KEYS, withDefaults } from '../src/defaults.js';
 import { createApp } from '../src/app.js';
 
 // ---- the merge -------------------------------------------------------------
@@ -32,6 +32,61 @@ test('a key the author wrote wins, including a falsy one', () => {
 test('no config at all is all the defaults', () => {
   assert.deepEqual(withDefaults(), DEFAULTS);
   assert.deepEqual(withDefaults(undefined), DEFAULTS);
+});
+
+// ---- a key nothing reads ---------------------------------------------------
+//
+// An ignored key looks exactly like a key that worked, and the cost is not
+// theoretical: `stylesheeet` for `stylesheet` takes a site's whole stylesheet
+// away and says nothing. The docs claimed this throw for a long time before
+// anything did.
+
+test('a key nothing reads is refused, and named', () => {
+  assert.throws(
+    () => withDefaults({ stylesheeet: 'app/styles/global.css' }),
+    /stylesheeet, which nothing reads/,
+  );
+});
+
+test('the refusal lists the keys there are, because the reader is looking for one', () => {
+  try {
+    withDefaults({ nope: 1 });
+    assert.fail('an unknown key was accepted');
+  } catch (error) {
+    // The whole set, so a misspelling is corrected by reading rather than by
+    // searching the site.
+    for (const key of ['stylesheet', 'metadataBase', 'canonical', 'cache']) {
+      assert.match(error.message, new RegExp(`\\b${key}\\b`), `the message left out ${key}`);
+    }
+  }
+});
+
+test('every key with a default is a key that may be set', () => {
+  // Two lists, and the second is the one a config is checked against. A key
+  // added to `DEFAULTS` alone would be filled in and then refused.
+  for (const key of Object.keys(DEFAULTS)) {
+    assert.ok(KEYS.has(key), `${key} has a default and would be refused`);
+  }
+});
+
+test('a key with no default is still a key that may be set', () => {
+  // These are the ones the check exists to get wrong: nothing fills them in, so
+  // nothing but this list says they are real.
+  assert.doesNotThrow(() =>
+    withDefaults({
+      cache: { get() {}, set() {}, delete() {}, deleteByTag() {} },
+      cookieSecret: 's',
+      feed: { hostname: 'https://acme.com', title: 'Acme', items: () => [] },
+      fragmentHeader: 'HX-Target',
+      metadataBase: 'https://acme.com',
+      onError: () => {},
+      port: 3000,
+      precache: true,
+      proxy: { allow: ['acme.com'] },
+      sitemap: { hostname: 'https://acme.com' },
+      watchElements: true,
+    }),
+  );
 });
 
 // ---- where it is applied ---------------------------------------------------

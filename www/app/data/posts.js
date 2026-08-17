@@ -20,6 +20,13 @@
 /** @type {Post[]} */
 export const posts = [
   {
+    slug: 'todomvc-with-no-javascript',
+    title: 'TodoMVC with no JavaScript',
+    summary:
+      'Seven actions through one POST handler, and the row being edited kept in the URL where a reload cannot lose it.',
+    date: new Date('2026-08-17'),
+  },
+  {
     slug: 'two-templates-one-thing',
     title: 'Your page and your partial are two templates',
     summary:

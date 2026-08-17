@@ -207,6 +207,7 @@ async function render(route, { url, params }) {
     stylesheet,
     csp: config.csp,
     lang: config.lang,
+    canonical: config.canonical,
     speculate: speculateRules,
     include,
   });

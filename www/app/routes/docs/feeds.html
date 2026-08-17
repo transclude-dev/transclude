@@ -41,6 +41,10 @@ export default {
 };`,
         'js',
       ],
+      discovery: [
+        `<link rel="alternate" type="application/rss+xml" title="Acme" href="/feed.xml" />`,
+        'html',
+      ],
       atom: [
         `feed: {
   hostname: 'https://acme.com',
@@ -128,6 +132,17 @@ export default {
     build that changes nothing writes the same bytes. A feed whose items have no
     dates can set <code>updated</code> itself.
   </doc-note>
+
+  <h3>Telling a reader it is there</h3>
+
+  <p>
+    A feed reader looks for a <code>&lt;link&gt;</code> in the page, and nothing
+    here writes one: the config holds the feed's title, and which pages should
+    advertise it is yours to decide. Put it in the
+    <a href="/docs/layouts">layout</a> over whatever the feed covers.
+  </p>
+
+  ${html(s.discovery)}
 
   <h2>Where they end up</h2>
 

@@ -69,7 +69,9 @@ export function baseApp(options = {}) {
    * So 'never' means strict routing plus a 301 to the one URL, and every
    * URL this framework generates is already that form: `routes/about.html` is
    * `/about`. 'ignore' is the loose router, which answers both with 200. Two URLs
-   * for one page, and nothing emits <link rel="canonical">.
+   * for one page, which is what `canonical: true` in the config answers: the
+   * loose router hands `c.req.path` over with the slash already gone, so the URL
+   * the tag names is the one form either way.
    *
    * `alwaysRedirect` matters because Hono's default only redirects a request that
    * already 404'd, and a catch-all route answers before it can. `/docs/intro/`

@@ -358,6 +358,7 @@ export function createApp({
                 stylesheet: manifest.stylesheet,
                 csp: config.csp,
                 lang: config.lang,
+                canonical: config.canonical,
                 // Written by the build and carried here, so a server-rendered
                 // page says the same thing about speculation that a file does.
                 speculate: manifest.speculate ?? null,
@@ -429,6 +430,7 @@ export function createApp({
             stylesheet: manifest.stylesheet,
             csp: config.csp,
             lang: config.lang,
+            canonical: config.canonical,
             speculate: manifest.speculate ?? null,
             include,
           });

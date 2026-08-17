@@ -795,6 +795,19 @@ against.
   to be inside the first 1024 bytes and is not something to override. Found by
   generating a project with the new CLI and reading the output, which is the
   first time anything here rendered a page that writes its own viewport.
+  `frameworkHead` is that level, and `canonical: true` puts its `<link>` there
+  for the same reason. Anything else the shell ever writes belongs in that
+  function rather than in the template below it.
+- **`canonical: true` is refused in `withDefaults`, not at the render.** Four
+  places render a page: two in `app.js`, one in `bin/dev.js`, one in
+  `bin/build.js`. Only the first three hold a request whose origin `absolute()`
+  could fall back to, so a canonical URL built without `metadataBase` would be a
+  localhost URL in dev and a thrown error in the build. `withDefaults` runs on
+  every path into the framework, which is what makes it the one place that can
+  refuse both halves the same way. The URL itself is built in `renderRoute`, from
+  `ctx.route.path`, so the four callers pass a flag rather than each computing
+  one. Under `trailingSlash: 'ignore'` that path already has its trailing slash
+  stripped by Hono's loose router, so the tag names the one form without asking.
 - **Two packages, and `@transclude/create` depends on neither.** Scaffolding six
   files should not download a compiler, so the CLI carries its own copy of the
   templates and names `@transclude/core` in what it writes rather than importing

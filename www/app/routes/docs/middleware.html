@@ -107,9 +107,18 @@ export default (app) => {
         </tr>
         <tr>
           <td><code>'ignore'</code></td>
-          <td>Both URLs return 200, and neither is canonical.</td>
+          <td>Both URLs return 200.</td>
         </tr>
       </tbody>
     </table>
   </div>
+
+  <p>
+    <code>'ignore'</code> leaves one page reachable at two URLs, so say which one
+    counts: <code>canonical: true</code> in the
+    <a href="/docs/config">config</a> writes
+    <code>&lt;link rel="canonical"&gt;</code> on every page. The loose router
+    hands the path over with the trailing slash already gone, so the tag names
+    the same URL either way.
+  </p>
 </doc-page>

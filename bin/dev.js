@@ -191,6 +191,7 @@ const renderPage = async (route, c, status = null, extra = {}) => {
     stylesheet: config.stylesheet ? `/${config.stylesheet}` : null,
     csp: config.csp,
     lang: config.lang,
+    canonical: config.canonical,
     include,
   });
   // A loader answered for itself: a redirect, or something that is not a page.

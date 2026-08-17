@@ -178,6 +178,23 @@ const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
 const escapeAttr = (value) => String(value).replace(/[&<>"]/g, (c) => ESCAPES[c]);
 
 /**
+ * The head the framework writes, as the outermost level of the merge.
+ *
+ * Through `mergeHead` rather than beside it, so a page or a layout writing its
+ * own `viewport` or `canonical` replaces this one instead of shipping a second
+ * copy. `charset` is not here: it has to be inside the first 1024 bytes, and it
+ * is not something to override.
+ *
+ * @param {string|null} canonical the page's own URL, absolute, or null for none
+ * @returns {string} one level's worth of head markup
+ */
+function frameworkHead(canonical) {
+  const tags = ['<meta name="viewport" content="width=device-width, initial-scale=1">'];
+  if (canonical) tags.push(`<link rel="canonical" href="${escapeAttr(canonical)}">`);
+  return tags.join('\n');
+}
+
+/**
  * `<html …>`, with `lang` first and whatever a loader added after it.
  *
  * Values are escaped, because the reason this exists is putting a preference on
@@ -239,7 +256,8 @@ function openTag(tag, attrs) {
  *
  * @param {object} page a compiled page module
  * @param {object} ctx the request context
- * @param {object} [options] `clientEntry`, `stylesheet`, `csp`, `lang`, `include`
+ * @param {object} [options] `clientEntry`, `stylesheet`, `csp`, `lang`, `include`,
+ *   `canonical`
  * @returns {Promise<string|Response>} a Response when a loader answered for itself
  */
 export async function renderRoute(page, ctx, options = {}) {
@@ -266,7 +284,18 @@ export async function renderRoute(page, ctx, options = {}) {
     if (mod !== page) inherited = { ...inherited, ...data };
   }
 
-  const html = renderDocument(chain, datas, options);
+  // The config's `canonical` is a yes or no; the document's is the URL. Turned
+  // into one here because this is the layer that holds the request, and because
+  // the four callers that render a page would otherwise each compute it.
+  //
+  // `route.path` and not the request's URL: a canonical URL names the page, so a
+  // query parameter has no place in it. That the path is already free of a
+  // trailing slash is Hono's doing under `trailingSlash: 'ignore'`, which is the
+  // setting that makes this option worth having.
+  const html = renderDocument(chain, datas, {
+    ...options,
+    canonical: options.canonical ? ctx.absolute(ctx.route.path) : null,
+  });
 
   // After the document exists, because the policy is built from what it inlined.
   // A prerendered page runs this once at build time and carries the result.
@@ -598,13 +627,15 @@ export function methodsOf(page) {
  * @param {object[]} chain the compiled modules, outermost first
  * @param {object[]} datas one per level, in the same order
  * @param {{ clientEntry?: string|null, stylesheet?: string|null, lang?: string,
- *   speculate?: string|null }} [options]
+ *   speculate?: string|null, canonical?: string|null }} [options] `canonical` is
+ *   the URL itself, already absolute. `renderRoute` is what turns the config's
+ *   yes-or-no into one, because this function sees no request.
  * @returns {string} the document, starting at `<!doctype html>`
  */
 export function renderDocument(
   chain,
   datas,
-  { clientEntry, stylesheet, lang = 'en', speculate = null } = {},
+  { clientEntry, stylesheet, lang = 'en', speculate = null, canonical = null } = {},
 ) {
   // Each level renders to a slot map and hands it to the level above, so a page
   // can fill more than one hole in its layout.
@@ -624,13 +655,10 @@ export function renderDocument(
   }
 
   // Everything else accumulates outermost first, so a page's <meta> comes last
-  // and a page's <style> can override a layout's.
-  // The framework's own defaults go through the merge as the outermost level, so
-  // a page or a layout writing its own `viewport` replaces this one instead of
-  // shipping beside it. `charset` is not here: it has to be inside the first
-  // 1024 bytes and is not something to override.
+  // and a page's <style> can override a layout's. The framework's own head is the
+  // outermost level; `frameworkHead` says what is in it and why.
   const [defaults, ...rest] = mergeHead([
-    '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    frameworkHead(canonical),
     ...chain.map((mod, i) => mod.renderHead(datas[i])),
   ]);
   const head = rest.filter(Boolean);

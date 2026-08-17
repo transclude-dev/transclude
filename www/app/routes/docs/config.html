@@ -62,6 +62,17 @@
           <td>Custom elements. Relative to <code>appDir</code>.</td>
         </tr>
         <tr>
+          <td><code>canonical</code></td>
+          <td><code>false</code></td>
+          <td>
+            <code>true</code> writes
+            <code>&lt;link rel="canonical"&gt;</code> on every page, naming that
+            page's own URL. It needs <code>metadataBase</code>, and says so if it
+            is missing. A page or <a href="/docs/layouts">layout</a> writing its
+            own replaces it.
+          </td>
+        </tr>
+        <tr>
           <td><code>cookieSecret</code></td>
           <td><code>null</code></td>
           <td>Signs cookies. Without one, <code>cookies.signed</code> throws.</td>

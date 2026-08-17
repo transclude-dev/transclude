@@ -34,6 +34,11 @@ export const DEFAULTS = {
   csrf: true,
   csp: false,
   speculate: false,
+  // `<link rel="canonical">` on every page, pointing at the page's own URL. Off
+  // by default because a page mounted at a second URL on purpose would get a
+  // wrong one, and a wrong canonical is worse than none: it hands the ranking to
+  // the other URL.
+  canonical: false,
   // `(source, file) => html`, and a `.md` page under `routes/` without one is an
   // error naming the file. This package ships no Markdown parser: which flavor
   // and which extensions are the app's to pick, the same way `cache` is a store
@@ -50,7 +55,22 @@ export const DEFAULTS = {
  *
  * @param {object} [config] whatever `transclude.config.js` exported
  * @returns {object} the same keys, plus the ones it did not mention
+ * @throws when `canonical` is on and there is no origin to build a URL from
  */
 export function withDefaults(config = {}) {
-  return { ...DEFAULTS, ...config };
+  const merged = { ...DEFAULTS, ...config };
+
+  // Refused here because there are four places that render a page and only two of
+  // them could fall back to a request's origin. Left to the render, `canonical`
+  // would work in dev and throw in the build, which is the dev-and-production
+  // disagreement this file exists to stop.
+  if (merged.canonical && !merged.metadataBase) {
+    throw new Error(
+      `[transclude] \`canonical: true\` needs \`metadataBase\`, which is the origin the ` +
+        `URL is built from. A request's own origin is the wrong one twice: behind a proxy ` +
+        `it is the internal address, and a prerendered page has no request at all.`,
+    );
+  }
+
+  return merged;
 }

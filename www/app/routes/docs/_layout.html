@@ -3,14 +3,13 @@
 
   // The nav lives here rather than in each page, so a new page is one file and
   // one line. `route.path` marks the current link.
-  export default async ({ route, absolute }) => {
+  export default async ({ route }) => {
     const data = {
     // What these pages are documentation of. `after v0.6.0` when the deploy is
     // ahead of the release, which it is for most of the time between two.
     versionHref,
     versionLabel,
     path: route.path,
-    canonical: absolute(route.path),
     sections: [
       {
         title: 'Start',
@@ -87,7 +86,6 @@
 </script>
 
 <title>transclude</title>
-<link rel="canonical" href="${canonical}" />
 
 <!-- No `og:description` here. Every page carries `<meta name="description">`,
      which is what a crawler reads when this is absent, and a second copy of the

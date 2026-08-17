@@ -64,6 +64,11 @@ export default {
   // behind a proxy, and there is no request at all while prerendering.
   metadataBase: 'https://transclude.dev',
 
+  // `<link rel="canonical">` on every page. The docs layout used to write this
+  // one line for the pages under it, which left the landing page and the blog
+  // without one.
+  canonical: true,
+
   // Fonts and favicon. Copied, not compiled.
   publicDir: 'public',
 

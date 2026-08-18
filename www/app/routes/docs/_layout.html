@@ -265,6 +265,23 @@
     font-size: 0.8rem;
   }
 
+  /* The bar wants 468px to hold the wordmark, three links and the button, and
+     a phone gives 390. The two links that leave the site go, and the footer
+     below carries them instead. What is left needs 283px, so it clears a 320px
+     screen. This bar was already over the edge before the button joined it. */
+  @media (max-width: 34rem) {
+    .topbar-inner {
+      gap: 1rem;
+      padding: 0 1rem;
+    }
+    .ends {
+      gap: 1rem;
+    }
+    .outbound {
+      display: none;
+    }
+  }
+
   @media (max-width: 56rem) {
     .shell {
       grid-template-columns: minmax(0, 1fr);
@@ -289,8 +306,10 @@
          documentation, and both of these leave it. -->
     <div class="ends">
       <a class="repo" href="/blog">Writing</a>
-      <a class="repo" href="https://github.com/transclude-dev/transclude">Source</a>
-      <a class="repo" href="https://bsky.app/profile/transclude.dev" rel="me">Bluesky</a>
+      <a class="repo outbound" href="https://github.com/transclude-dev/transclude">Source</a>
+      <a class="repo outbound" href="https://bsky.app/profile/transclude.dev" rel="me"
+        >Bluesky</a
+      >
       <theme-toggle></theme-toggle>
     </div>
   </div>
@@ -312,6 +331,10 @@
     </nav>
 
     <footer>
+      <a href="https://github.com/transclude-dev/transclude">Source</a>
+      &middot;
+      <a href="https://bsky.app/profile/transclude.dev" rel="me">Bluesky</a>
+      <br />
       <a href="${versionHref}">${versionLabel}</a>
       &middot;
       <a href="https://github.com/transclude-dev/transclude/blob/main/LICENSE">MIT</a>

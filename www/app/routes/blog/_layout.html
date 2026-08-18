@@ -44,8 +44,15 @@
   .logo .hash {
     color: var(--link);
   }
-  .topbar a.here {
+  /* Takes the free space, so the link and the button sit at the end together. */
+  .ends {
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .topbar a.here {
     font-size: 0.8rem;
     color: var(--muted);
     text-decoration: none;
@@ -103,7 +110,10 @@
 <header class="topbar">
   <div class="topbar-inner">
     <a class="logo" href="/"><span class="hash">#</span>transclude</a>
-    <a class="here" href="/blog">Writing</a>
+    <div class="ends">
+      <a class="here" href="/blog">Writing</a>
+      <theme-toggle></theme-toggle>
+    </div>
   </div>
 </header>
 

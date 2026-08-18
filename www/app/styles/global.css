@@ -40,23 +40,30 @@
 }
 
 :root {
+  /* Light first, dark second, in every `light-dark()` below. The declaration
+     that decides which one applies is this one: `light dark` means the system
+     picks, and the two rules under it let the reader pick instead. It also
+     themes what CSS cannot reach, which is the scrollbar, the caret and the
+     controls the browser draws itself. */
+  color-scheme: light dark;
+
   --sans: "Inter Variable", system-ui, sans-serif;
   --serif: "Noto Serif Variable", Georgia, serif;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
 
-  --link: #0000ee;
+  --link: light-dark(#0000ee, #b8cfff);
 
-  --ground: #fcfcfd;
-  --surface: #f4f4f8;
-  --sunken: #efeff5;
-  --ink: #14141a;
-  --muted: #55555f;
-  --rule: #e3e3eb;
-  --note-bg: #eef0ff;
-  --note-rule: #b9c2f5;
-  --warn-bg: #fff6e8;
-  --warn-rule: #e8cfa0;
-  --warn-ink: #704700;
+  --ground: light-dark(#fcfcfd, #0b0b0f);
+  --surface: light-dark(#f4f4f8, #14141b);
+  --sunken: light-dark(#efeff5, #101017);
+  --ink: light-dark(#14141a, #e9e9f1);
+  --muted: light-dark(#55555f, #d8d8df);
+  --rule: light-dark(#e3e3eb, #232330);
+  --note-bg: light-dark(#eef0ff, #12162a);
+  --note-rule: light-dark(#b9c2f5, #2f3866);
+  --warn-bg: light-dark(#fff6e8, #241c0d);
+  --warn-rule: light-dark(#e8cfa0, #4d3c1c);
+  --warn-ink: light-dark(#704700, #f2d6a6);
 
   /* The prose type. `--measure` is in `ch`, so anything that wants to line up
      with a line of text has to be set in the same font at the same size. */
@@ -66,21 +73,15 @@
   --radius: 6px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --link: #b8cfff;
-    --ground: #0b0b0f;
-    --surface: #14141b;
-    --sunken: #101017;
-    --ink: #e9e9f1;
-    --muted: #d8d8df;
-    --rule: #232330;
-    --note-bg: #12162a;
-    --note-rule: #2f3866;
-    --warn-bg: #241c0d;
-    --warn-rule: #4d3c1c;
-    --warn-ink: #f2d6a6;
-  }
+/* The whole theme toggle, on the CSS side. `theme-toggle.html` writes the
+   attribute and `_layout.html` puts it there before the first paint. Neither
+   knows a color, and nothing here knows how the reader chose. */
+:root[data-appearance="light"] {
+  color-scheme: light;
+}
+
+:root[data-appearance="dark"] {
+  color-scheme: dark;
 }
 
 *,
@@ -181,14 +182,7 @@ pre code {
    surface; only the tokens come from GitHub. */
 .shiki,
 .shiki span {
-  color: var(--shiki-light);
-}
-
-@media (prefers-color-scheme: dark) {
-  .shiki,
-  .shiki span {
-    color: var(--shiki-dark);
-  }
+  color: light-dark(var(--shiki-light), var(--shiki-dark));
 }
 
 /* A directory listing. The comment column is part of the content, so the

@@ -43,6 +43,7 @@
   .bar nav {
     margin-left: auto;
     display: flex;
+    align-items: center;
     gap: 1.5rem;
   }
   .bar nav a {
@@ -53,6 +54,36 @@
   .bar nav a:hover,
   .bar nav a[aria-current] {
     color: var(--ink);
+  }
+
+  /* Four links, a wordmark and a button want 572px. The two that leave the site
+     go first: the landing page footer already lists both, and these pages are
+     the landing page and the error pages. */
+  @media (max-width: 40rem) {
+    .bar-inner {
+      gap: 1rem;
+      padding: 0 1rem;
+    }
+    .bar nav {
+      gap: 1rem;
+    }
+    .outbound {
+      display: none;
+    }
+  }
+
+  /* What is left still wants 391px, which a 390px phone does not have. Below
+     this the links take a row of their own and the bar grows to two. */
+  @media (max-width: 28rem) {
+    .bar-inner {
+      flex-wrap: wrap;
+      height: auto;
+      padding: 0.9rem 1rem;
+    }
+    .bar nav {
+      width: 100%;
+      margin-left: 0;
+    }
   }
 
   .column {
@@ -68,8 +99,9 @@
     <nav>
       <a href="/docs" aria-current="${here === 'docs' ? 'page' : false}">Documentation</a>
       <a href="/blog" aria-current="${here === 'blog' ? 'page' : false}">Writing</a>
-      <a href="https://github.com/transclude-dev/transclude">Source</a>
-      <a href="https://bsky.app/profile/transclude.dev" rel="me">Bluesky</a>
+      <a class="outbound" href="https://github.com/transclude-dev/transclude">Source</a>
+      <a class="outbound" href="https://bsky.app/profile/transclude.dev" rel="me">Bluesky</a>
+      <theme-toggle></theme-toggle>
     </nav>
   </div>
 </div>

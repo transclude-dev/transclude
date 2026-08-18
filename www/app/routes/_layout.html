@@ -15,6 +15,47 @@
   });
 </script>
 
+<!-- The theme, and the only script this site sends. It runs before the body
+     parses, because a theme applied after it has already been seen.
+
+     `data-appearance` is the theme on screen, light or dark, and it is the whole
+     of what CSS reads. The reader's choice is a separate thing and lives in
+     `localStorage`: `light`, `dark`, or absent, where absent means follow the
+     system. So there are three states and the button in the bar draws two.
+
+     Every click changes the theme on screen. The stored choice is dropped
+     whenever storing nothing is what produces the theme being asked for, which
+     is how a reader gets back to the system preference without a third button
+     saying so. The system is read at the click and never listened to, so a
+     laptop going dark at sunset does not quietly undo a choice.
+
+     The listener is on the document rather than on the button, so the element
+     ships no script of its own and the page loads no runtime.
+
+     The mailed copy of a newsletter issue inherits this, the way it inherits the
+     sharing card above. Seven hundred dead bytes there: a mail client runs no
+     script, and most of them strip the tag before it is ever read. -->
+<script head>
+  {
+    const root = document.documentElement;
+    const system = () => (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const chosen = localStorage.getItem('theme');
+
+    root.dataset.appearance = chosen === 'light' || chosen === 'dark' ? chosen : system();
+
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('theme-toggle')) return;
+
+      const next = root.dataset.appearance === 'dark' ? 'light' : 'dark';
+
+      if (next === system()) localStorage.removeItem('theme');
+      else localStorage.setItem('theme', next);
+
+      root.dataset.appearance = next;
+    });
+  }
+</script>
+
 <!-- `/favicon.ico` is requested with no link tag at all, so it needs none. These
      two do. The SVG carries its own dark-mode rule, since nothing on the page
      styles a file the browser fetches on its own. -->

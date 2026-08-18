@@ -43,6 +43,7 @@
   .bar nav {
     margin-left: auto;
     display: flex;
+    align-items: center;
     gap: 1.5rem;
   }
   .bar nav a {
@@ -70,6 +71,7 @@
       <a href="/blog" aria-current="${here === 'blog' ? 'page' : false}">Writing</a>
       <a href="https://github.com/transclude-dev/transclude">Source</a>
       <a href="https://bsky.app/profile/transclude.dev" rel="me">Bluesky</a>
+      <theme-toggle></theme-toggle>
     </nav>
   </div>
 </div>

@@ -1,0 +1,56 @@
+<style>
+  /* One button, two states, three behaviors. The button shows the theme you are
+     reading in. Clicking it gives you the other one. The state it never draws is
+     "follow the system", which `_layout.html` reaches on its own. */
+  :scope {
+    display: inline-flex;
+  }
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    padding: 0;
+    font-size: 0.95rem;
+    color: var(--muted);
+    background: none;
+    border: 0;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
+  button:hover {
+    color: var(--ink);
+    background: var(--surface);
+  }
+
+  /* The span is the styling hook. A light element nested inside another one is
+     outside its scope, so a class on `<svg-icon>` is unreachable from here. */
+  span {
+    display: inline-flex;
+  }
+
+  /* Which of the two shows. `:scope` is written out because both rules name an
+     ancestor: inside `@scope` a selector without it is read as a descendant of
+     this element, and `:root` is not one. */
+  :root[data-appearance="dark"] :scope .sun,
+  :root[data-appearance="light"] :scope .moon {
+    display: none;
+  }
+
+  /* No attribute means the script in `_layout.html` did not run. A button that
+     changes nothing does not belong in the bar. */
+  :root:not([data-appearance]) :scope {
+    display: none;
+  }
+</style>
+
+<!-- The name says what the button does and never changes. A name that flipped
+     would have to be written by script, and the icon already says which theme
+     you are in. -->
+<button type="button" aria-label="Change theme">
+  <span class="sun"><svg-icon name="sun"></svg-icon></span>
+  <span class="moon"><svg-icon name="moon"></svg-icon></span>
+</button>

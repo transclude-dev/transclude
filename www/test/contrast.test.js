@@ -39,14 +39,16 @@ function contrast(text, background) {
   return s > -0.1 ? 0 : Math.abs((s + 0.027) * 100);
 }
 
-/** Reads a token out of the stylesheet, from the light or the dark block. */
+/**
+ * Reads a token out of the stylesheet. Every color is one `light-dark()` pair,
+ * light first, so both themes come off the same line.
+ */
 function token(name, theme) {
-  const dark = css.slice(css.indexOf('prefers-color-scheme: dark'));
-  const source = theme === 'dark' ? dark : css.slice(0, css.indexOf('prefers-color-scheme: dark'));
-  const found = source.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i'));
+  const pair = `light-dark\\((#[0-9a-f]{6}),\\s*(#[0-9a-f]{6})\\)`;
+  const found = css.match(new RegExp(`--${name}:\\s*${pair}`, 'i'));
 
-  assert.ok(found, `--${name} not found in the ${theme} palette`);
-  return found[1];
+  assert.ok(found, `--${name} is not a light-dark() pair`);
+  return theme === 'dark' ? found[2] : found[1];
 }
 
 // Body text wants 90, everything else that is read wants 75, and code tokens

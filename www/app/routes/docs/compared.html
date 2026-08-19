@@ -80,8 +80,10 @@ export default function MyMessage({ html, state }) {
   ${html(s.astro)}
 
   <p>
-    This framework has no islands. A piece of the page is a URL, the server
-    renders it, and what comes back is markup.
+    An <a href="/docs/elements">element</a> with behavior is an island by
+    another name: server-rendered markup that a definition upgrades in the
+    browser. The default is different. A piece of the page that changes is a
+    URL, the server renders it, and what comes back is markup.
   </p>
 
   ${html(s.here)}
@@ -257,7 +259,7 @@ export default function MyMessage({ html, state }) {
           <td>Enhance</td>
         </tr>
         <tr>
-          <td>Any element to be a URL, and no runtime shipped</td>
+          <td>Any element to be a URL, and JavaScript only where you add behavior</td>
           <td>this</td>
         </tr>
       </tbody>

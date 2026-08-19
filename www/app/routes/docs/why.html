@@ -73,13 +73,13 @@
   <p>
     Here the server returns the HTML. There is no second copy of the state,
     because there is no second application. The docs site you are reading ships
-    zero bytes of JavaScript.
+    one inline script, which applies the theme.
   </p>
 
   <h2>Hypermedia</h2>
 
   <p>
-    The page is the state of your app, and links and forms are what change it.
+    The page is the state of your app, and links and forms change it.
     Follow a link and you have the next state. Nothing on the client had to know
     what the link meant beforehand.
   </p>
@@ -145,7 +145,7 @@
     <strong>Nothing grows on the client.</strong> A page ships JavaScript only
     for the elements it renders, and only when one of them has behavior. The
     fiftieth feature does not make the first page slower, because there is no
-    bundle for it to land in. This site ships none at all.
+    bundle for it to land in. This site's elements ship none at all.
   </p>
 
   <doc-note label="What it does not answer" tone="warn">

@@ -118,8 +118,8 @@ ${html(s.page)}
   </p>
 
   <p>
-    Your folder structure is your routing. A page responds to GET, and its loader is
-    given the URL, the path parameters and the cookies. Export
+    Your folder structure is your routing. A page responds to GET, and its
+    loader receives the URL, the path parameters and the cookies. Export
     <code>POST</code> from the same file to handle a form. Put a
     <code>.js</code> file beside it and it becomes an API endpoint. Hono runs
     the server.
@@ -127,7 +127,7 @@ ${html(s.page)}
 
   <p>
     It is HTML-first and hypermedia-driven. The markup the server sends is the
-    state of your app, and links and forms are what change it. If that idea is
+    state of your app, and links and forms change it. If that idea is
     new to you, <a href="https://hypermedia.systems/">Hypermedia Systems</a> is
     a good place to start.
   </p>
@@ -156,8 +156,9 @@ ${html(s.page)}
   <div class="cell">
     <h2>Light DOM by default</h2>
     <p>
-      An element renders into your page's own DOM. Your CSS reaches it and it
-      ships no JavaScript. Opt in to a shadow root when you want one.
+      An element renders into your page's own DOM. Your CSS reaches it, and one
+      without behavior ships no JavaScript. Opt in to a shadow root when you
+      want one.
     </p>
   </div>
   <div class="cell">

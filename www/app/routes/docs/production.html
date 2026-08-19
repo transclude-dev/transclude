@@ -10,6 +10,38 @@ npm start        # serves dist/ on 1960`,
       ],
       prerender: ['export const prerender = false;', 'js'],
 
+      speculate: [
+        `// transclude.config.js
+export default {
+  speculate: true,
+};`,
+        'js',
+      ],
+
+      speculateOut: [
+        `<script type="speculationrules">
+{
+  "prerender": [{
+    "where": { "or": [{ "href_matches": "/" }, { "href_matches": "/about" }] },
+    "eagerness": "moderate"
+  }],
+  "prefetch": [{
+    "where": { "or": [{ "href_matches": "/people/*" }] },
+    "eagerness": "moderate"
+  }]
+}
+<\/script>`,
+        'html',
+      ],
+
+      speculateOpts: [
+        `speculate: {
+  eagerness: 'conservative',
+  exclude: ['/docs/*'],
+},`,
+        'js',
+      ],
+
       revalidate: [`export const revalidate = 3600;`, 'js'],
 
       precacheOn: [`// transclude.config.js
@@ -358,9 +390,6 @@ export const POST = async ({ request, revalidateTag }) => {
     other time, which is how a shared layout can skip the part that needs a
     visitor.
   </doc-note>
-
-  <p>
-  </p>
 
   <p>
     In production the error is logged and kept out of the page. In dev you get

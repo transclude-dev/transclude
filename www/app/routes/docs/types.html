@@ -90,6 +90,16 @@
     package's <code>editor/</code> directory.
   </p>
 
+  <p>
+    A VS Code extension in the package's <code>editor/vscode</code> directory
+    starts that server for any workspace with a
+    <code>transclude.config.js</code>. It also highlights
+    <code>${'$'}{…}</code> as the expression it is. The server comes from your
+    project's own installed
+    package, so the diagnostics match the version you build with. Its README
+    says how to package and install it.
+  </p>
+
   <doc-note label="An existing project adds it by hand">
     The setting is scaffolded, not applied by the framework, so a project made
     before this needs the file written. The symptom is

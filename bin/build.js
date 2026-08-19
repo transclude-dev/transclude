@@ -18,7 +18,7 @@ import transclude from '../src/plugin.js';
 import { loadProject } from '../src/project.js';
 import { renderRoute, urlFor } from '../src/document.js';
 import { prerenderContext, refusePrerender } from '../src/prerender.js';
-import { isGated, readGated } from '../src/gate.js';
+import { isGated, readGated, unmatched } from '../src/gate.js';
 import { feed, feedPath } from '../src/feed.js';
 import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
@@ -170,6 +170,11 @@ manifest.routes = manifest.routes.filter((route) => !isDraft(route));
  * string. A prerendered file is one file for every URL that resolves to it, so
  * `?q=` cannot change it.
  */
+// Every URL `paths()` named, before the gate. The covers-nothing check below
+// asks whether each gated entry could match anything, and a URL a gate held
+// back is exactly a matched one, so the list has to be taken before filtering.
+const namedByPaths = [];
+
 async function urlsFor(route) {
   if (pages[route.id]?.prerender === false) return [];
   if (!route.params.length) {
@@ -180,11 +185,12 @@ async function urlsFor(route) {
   if (typeof paths !== 'function') return [];
 
   const listed = (await paths()) ?? [];
-  return listed
-    .map((params) => ({ url: urlFor(route, params), params }))
-    // Matched per URL, not per route: `/notes/[id]` can be open while
-    // `/notes/secret` is not, and the pattern is the same for both.
-    .filter(({ url }) => !isGated(url, gated));
+  const named = listed.map((params) => ({ url: urlFor(route, params), params }));
+  for (const { url } of named) namedByPaths.push(url);
+
+  // Matched per URL, not per route: `/notes/[id]` can be open while
+  // `/notes/secret` is not, and the pattern is the same for both.
+  return named.filter(({ url }) => !isGated(url, gated));
 }
 
 /**
@@ -235,6 +241,42 @@ for (const route of manifest.routes) {
     continue;
   }
   for (const target of urls) targets.push({ route, target });
+}
+
+// ---- gated entries that cover nothing ---------------------------------------
+//
+// A typo in `gated` fails open: the entry matches nothing, the page it meant to
+// hold back is written, and the build reports a success. So every entry has to
+// cover something that exists: a page or endpoint pattern, a URL `paths()`
+// named, or a public file, which the gate also guards at runtime.
+{
+  const publicDir = config.publicDir ? path.join(root, config.appDir, config.publicDir) : null;
+  const files = [];
+  const walk = (dir, at) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) walk(path.join(dir, entry.name), `${at}${entry.name}/`);
+      else files.push(`${at}${entry.name}`);
+    }
+  };
+  if (publicDir && fs.existsSync(publicDir)) walk(publicDir, '/');
+
+  const missed = unmatched(gated, {
+    patterns: [
+      ...manifest.routes.map((route) => route.pattern),
+      // A gated draft is a declared intent, not a typo.
+      ...drafts.map((route) => route.pattern),
+      ...manifest.endpoints.map((route) => route.pattern),
+    ],
+    urls: [...namedByPaths, ...files],
+  });
+
+  if (missed.length) {
+    throw new Error(
+      `[transclude] "gated" in app/server.js has ${missed.map((entry) => `"${entry}"`).join(', ')}, ` +
+        `which matches no route, no URL a paths() names, and no public file. ` +
+        `An entry that covers nothing fails open: the page it meant to hold back is written and served.`,
+    );
+  }
 }
 
 if (manifest.notFound) {

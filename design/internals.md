@@ -1119,8 +1119,9 @@ against.
   prerendered" and then served by any static host. A layout guard is caught
   because the build runs layout loaders and a guard reads a cookie. Nothing runs
   `app/server.js`. `export const gated` is the declaration, `src/gate.js` is the
-  matcher, and `readGated` refuses anything that is not a list of paths: every
-  mistake here fails open.
+  matcher, and every mistake here fails open, so both mistakes are refused:
+  `readGated` takes anything that is not a list of paths, and the build takes an
+  entry that covers no route, no URL a `paths()` names, and no public file.
 - **`gated` reaches the runtime through `routes.json`, not through a second
   config key.** `sitemapEntries` reads `manifest.gated`, which is how the written
   sitemap and the `/sitemap.xml` route leave out the same URLs. Two lists would

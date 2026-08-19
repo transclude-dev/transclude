@@ -12,7 +12,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isGated, readGated } from '../src/gate.js';
+import { coversPattern, isGated, readGated, unmatched } from '../src/gate.js';
 import { sitemapEntries } from '../src/sitemap.js';
 
 // ---- matching -------------------------------------------------------------
@@ -56,6 +56,43 @@ test('an entry that is not a path is refused, and is named', () => {
   assert.throws(() => readGated(['premium']), /"premium"/);
   assert.throws(() => readGated(['/ok', 42]), /42/);
   assert.throws(() => readGated(['/ok', null]), /null/);
+});
+
+// ---- entries that cover nothing ---------------------------------------------
+
+test('an entry covers a pattern some URL of which it would gate', () => {
+  assert.equal(coversPattern('/premium', '/premium'), true);
+  assert.equal(coversPattern('/premium', '/premiums'), false);
+  assert.equal(coversPattern('/premium/*', '/premium'), true);
+  assert.equal(coversPattern('/premium', '/premium/notes'), false);
+
+  // One URL of a dynamic route, which is the shape the sitemap tests use.
+  assert.equal(coversPattern('/notes/secret', '/notes/:id'), true);
+  assert.equal(coversPattern('/notes/secret/extra', '/notes/:id'), false);
+  assert.equal(coversPattern('/notes/*', '/notes/:id'), true);
+
+  // The boundary is a segment, the same as isGated.
+  assert.equal(coversPattern('/api/*', '/api/weather'), true);
+  assert.equal(coversPattern('/api/*', '/api'), true);
+  assert.equal(coversPattern('/apiary', '/api/:name'), false);
+
+  // A brace parameter can span the rest of the path.
+  assert.equal(coversPattern('/docs/guide/intro', '/docs/:path{.+}'), true);
+  assert.equal(coversPattern('/docs/*', '/docs/:path{.+}'), true);
+  // `{.+}` needs at least one character, so the bare prefix gates no URL of it.
+  assert.equal(coversPattern('/docs', '/docs/:path{.+}'), false);
+});
+
+test('unmatched names the entries with nothing to cover', () => {
+  const site = {
+    patterns: ['/', '/premium', '/notes/:id', '/api/weather'],
+    urls: ['/notes/secret', '/report.pdf'],
+  };
+
+  assert.deepEqual(unmatched(['/premium', '/notes/secret', '/api/*', '/report.pdf'], site), []);
+  assert.deepEqual(unmatched(['/premuim'], site), ['/premuim']);
+  assert.deepEqual(unmatched(['/premium', '/premuim', '/nope/*'], site), ['/premuim', '/nope/*']);
+  assert.deepEqual(unmatched([], site), []);
 });
 
 // ---- the sitemap ----------------------------------------------------------

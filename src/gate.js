@@ -37,11 +37,68 @@ export function isGated(url, patterns = []) {
 }
 
 /**
+ * Whether an entry could gate some URL of a route.
+ *
+ * A pattern is Hono's spelling: `/notes/:id` takes one segment, and a brace
+ * parameter like `/docs/:path{.+}` can take the rest of the path. This asks
+ * about possibility, not fact: `/notes/secret` covers `/notes/:id` whether or
+ * not `paths()` ever names it, and a brace parameter is taken to match
+ * anything, so an unsure answer errs toward covered rather than refused.
+ *
+ * @param {string} entry one gated path
+ * @param {string} pattern a route pattern
+ * @returns {boolean}
+ */
+export function coversPattern(entry, pattern) {
+  const rest = entry.endsWith('/*');
+  const entrySegs = (rest ? entry.slice(0, -2) : entry).split('/').slice(1);
+  const patternSegs = pattern.split('/').slice(1);
+
+  for (let i = 0; i < patternSegs.length; i++) {
+    // The entry ran out. `/api/*` still covers whatever follows; `/api` does not.
+    if (i >= entrySegs.length) return rest;
+
+    const seg = patternSegs[i];
+    if (seg.startsWith(':')) {
+      if (seg.includes('{')) return true;
+      continue;
+    }
+    if (seg !== entrySegs[i]) return false;
+  }
+
+  // The pattern ran out. An entry asking for more segments than the route's
+  // URLs have covers none of them.
+  return rest || entrySegs.length === patternSegs.length;
+}
+
+/**
+ * The gated entries that cover nothing.
+ *
+ * A typo in `gated` fails open: the entry matches nothing, the page it meant to
+ * hold back is written, and the build reports a success. So the build asks
+ * whether each entry could ever match, and refuses the ones that could not.
+ *
+ * @param {string[]} gated
+ * @param {{ patterns?: string[], urls?: string[] }} site every route pattern,
+ *   and every concrete URL the build knows: what `paths()` named, and the
+ *   public files, which the gate also guards at runtime
+ * @returns {string[]} the entries with nothing to cover
+ */
+export function unmatched(gated, { patterns = [], urls = [] }) {
+  return gated.filter(
+    (entry) =>
+      !patterns.some((pattern) => coversPattern(entry, pattern)) &&
+      !urls.some((url) => isGated(url, [entry])),
+  );
+}
+
+/**
  * The declaration, or a refusal naming what is wrong with it.
  *
- * Checked rather than trusted, because every mistake here fails open. A typo
- * matches nothing, the page is written, and the build says it prerendered a page
- * that was supposed to need paying for.
+ * Checked rather than trusted, because a mistake here fails open: the page is
+ * written, and the build says it prerendered a page that was supposed to need
+ * paying for. This refuses the wrong shape. `unmatched` catches the typo that
+ * is still a path.
  *
  * @param {unknown} gated whatever `app/server.js` exported
  * @returns {string[]}

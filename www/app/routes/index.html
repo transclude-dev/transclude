@@ -3,9 +3,9 @@
   import { versionHref, versionLabel } from "../lib/version.js";
 
   // `fragment` names the fragment this request wants, or null for the document.
-  // Asking for `demo` needs none of the highlighting below, and skipping it is
-  // not only faster: the highlighter compiles WebAssembly, which workerd
-  // refuses at runtime, so the page renders there because of this line.
+  // Asking for `demo` needs none of the highlighting below, so a live fragment
+  // render skips it. The highlighter used to compile WebAssembly, which workerd
+  // refuses at runtime, and this line was what kept the page rendering there.
   export default async ({ fragment }) => {
     if (fragment) return {};
 

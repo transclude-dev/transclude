@@ -658,12 +658,13 @@ against.
   share none with a second instance, and a 500 naming `cookieSecret` is better than
   finding that out later.
 - **A prerendered page hides what its loader needs.** The www site highlights its
-  code samples with shiki, which compiles WebAssembly, and workerd
+  code samples with shiki, which at the time compiled WebAssembly, and workerd
   refuses that at runtime. Every page still answered, because a prerendered page
   is bytes and never runs its loader in production. The one URL that renders
   live, `/?fragment=demo`, returned 500. So "it works on workerd" is a claim
-  about the routes that render there, not about the build, and the landing
-  page's loader now returns early when `ctx.fragment` is set.
+  about the routes that render there, not about the build. Two fixes hold: the
+  landing page's loader returns early when `ctx.fragment` is set, and shiki now
+  runs on its JavaScript regex engine, so nothing compiles Wasm at all.
 - **The core has no `node:` imports and no Node-only globals, and both are tested.**
   `app.js` is given bytes, hashing and compression. `production.js` is the Node
   wiring. An import creeping in would be caught by the import graph test. A global

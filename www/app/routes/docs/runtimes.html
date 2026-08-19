@@ -113,10 +113,10 @@ export default async () => {
   <doc-note label="A loader runs wherever the page does" tone="warn">
     <code>workerd</code> refuses to compile WebAssembly at runtime. A loader that reaches
     something built on it fails there and nowhere else. This site hit exactly
-    that. Its syntax highlighter compiles Wasm, so every prerendered page was
-    fine and the one URL that renders live returned 500. A prerendered page never
-    runs its loader in production, which is what hides this until something asks
-    for a fragment.
+    that. Its highlighter compiled Wasm, so every prerendered page was fine and
+    the one URL that renders live returned 500. The highlighter runs on a
+    JavaScript engine now. A prerendered page never runs its loader in
+    production, which is what hides this until something asks for a fragment.
   </doc-note>
 
   <p>

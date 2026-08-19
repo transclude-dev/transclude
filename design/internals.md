@@ -762,19 +762,23 @@ against.
   than the order the caller listed them: removing a marker shifts every line
   already noted below it, silently, one per marker, and the first test passed
   only because it listed them in file order.
-- **The production bundle does not map, and it is not our map that is wrong.**
-  Measured on Vite 8.1.5 with rolldown 1.1.5: the `load` hook returns a valid map
-  for every page, twenty-four times on the docs site, counted with a probe, and
-  `dist/server/entry.js.map` lists two sources, the runtime and the app's own
-  `.js`. No `.html` at all. The same map is consumed correctly by Vite in dev, so
-  it decodes; returning it as an object rather than a JSON string changes
-  nothing, and so does making `sources` relative rather than absolute. Page
-  modules are `\0`-prefixed virtual ids, which is the standard convention and the
-  likeliest reason they are skipped: there is no file behind them.
-  `sourcemap: true` on the SSR build is therefore *worse* than off, because a
-  page frame then resolves to whichever neighboring module's range covers it and
-  a throw in `colophon.html` reported `app/lib/code.js:81` with full confidence.
-  It stays off. Dev is verified and is where a template is written.
+- **The `\0` prefix was what kept the production bundle from mapping.** The
+  suspicion in an earlier version of this entry, confirmed on Vite 8.2.1:
+  rolldown leaves `\0`-prefixed ids out of the map it composes, so
+  `dist/server/entry.js.map` listed no `.html` at all while the `load` hook
+  returned a valid map for every page. The ids now carry no prefix,
+  `sourcemap: true` is on for the SSR build, and every page and layout is a
+  source, loader lines included. Three traps around it are load-bearing. The
+  `// @ts-nocheck` banner is prepended after the bundle is written, so the
+  build shifts the map one line to match, or every position is off by one. A
+  failure's stack is resolved by `src/stack.js`, exactly, not by Node: Node's
+  consumer takes the nearest earlier mapping when a position has none, and in
+  a bundle that can be another file, which is how a throw in `colophon.html`
+  was once reported as `app/lib/code.js:81` with full confidence. And the dev
+  URL is the prefix's other half: `clientEntryUrl` said `__x00__`, Vite's
+  spelling of `\0`, and with unprefixed ids that URL was a 404 on every page
+  that ships JS, in dev only. The map costs `dist/server` an `entry.js.map`
+  about the size of `entry.js`; nothing serves it.
 - **A preload hint is set on the way out, never on `ctx.response`.** A header on
   that object is one of the things that makes a page too personal to cache, so
   writing the `Link` there would turn every page in the app into a miss.

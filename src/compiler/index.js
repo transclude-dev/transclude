@@ -400,6 +400,7 @@ const MARK = {
   body: '/*@transclude:body*/',
   head: '/*@transclude:head*/',
   title: '/*@transclude:title*/',
+  server: '/*@transclude:server*/',
 };
 
 /**
@@ -451,10 +452,13 @@ export function compilePage(
   });
   assertIncludesResolve(template.regionIncludes, template.regions);
 
+  const serverAt = serverLines(blocks, server);
+
   const code = `
 ${runtimeImport(runtime)}
 ${componentImports(template.components)}
 ${layoutImports(layouts)}
+${MARK.server}
 ${server.code}
 
 export const css = ${JSON.stringify(blocks.styles.join('\n').trim())};
@@ -500,7 +504,9 @@ ${slotBodies(template)}
 }
 `;
 
-  const mapped = withMap(code, template, source, sourcePath ?? `${filename}.html`);
+  const mapped = withMap(code, template, source, sourcePath ?? `${filename}.html`, [
+    { marker: MARK.server, at: serverAt },
+  ]);
 
   return {
     code: mapped.code,
@@ -508,6 +514,23 @@ ${slotBodies(template)}
     warnings: template.warnings,
     components: template.components.map((c) => c.tag),
   };
+}
+
+/**
+ * The source line behind each line of the compiled loader.
+ *
+ * `bindDefaultExport` rewrites the export in place, so line i of the block's
+ * code is line `blocks.server.line + i` of the file. A page with no loader
+ * maps nothing: the placeholder is the compiler's own line.
+ *
+ * @param {object} blocks what `splitBlocks` returned
+ * @param {{ code: string }} server the bound loader
+ * @returns {number[]} one source line per line of `server.code`
+ */
+function serverLines(blocks, server) {
+  if (!blocks.server) return [];
+  const start = blocks.server.line ?? 1;
+  return server.code.split('\n').map((_, i) => start + i);
 }
 
 /**
@@ -521,10 +544,13 @@ ${slotBodies(template)}
  * @param {object} template what `compileFragment` returned
  * @param {string} source the original `.html`
  * @param {string} filename how it should be named in a stack
+ * @param {Array<{ marker: string, at: (number|null)[] }>} [extra] blocks the
+ *   template does not know about, which today is the loader
  * @returns {{ code: string, map: string|null }}
  */
-function withMap(code, template, source, filename) {
+function withMap(code, template, source, filename, extra = []) {
   const blocks = [
+    ...extra,
     { marker: MARK.body, at: template.at?.body ?? [] },
     { marker: MARK.head, at: template.at?.head ?? [] },
     { marker: MARK.title, at: template.at?.title ?? [] },
@@ -548,10 +574,16 @@ function withMap(code, template, source, filename) {
  *
  * @param {string} source
  * @param {{ id: string, components?: Map<string, string>,
- *   shadowTags?: Set<string>, runtime: string }} options
- * @returns {{ code: string, warnings: string[], components: string[] }}
+ *   shadowTags?: Set<string>, runtime: string,
+ *   sourcePath?: string|null }} options
+ * @returns {{ code: string, map: string|null, warnings: string[],
+ *   components: string[] }} the module, a line-level map or null when there is
+ *   nothing to map, the warnings, and the tags it used
  */
-export function compileLayout(source, { id, components = new Map(), shadowTags = new Set(), runtime }) {
+export function compileLayout(
+  source,
+  { id, components = new Map(), shadowTags = new Set(), runtime, sourcePath = null },
+) {
   const blocks = splitBlocks(source);
   const where = `${id}/_layout.html <script server>`;
   const headWhere = `${id}/_layout.html <script head>`;
@@ -577,9 +609,12 @@ export function compileLayout(source, { id, components = new Map(), shadowTags =
     warnings.push('no <slot>, so nothing rendered inside this layout would appear');
   }
 
+  const serverAt = serverLines(blocks, server);
+
   const code = `
 ${runtimeImport(runtime)}
 ${componentImports(template.components)}
+${MARK.server}
 ${server.code}
 
 export const css = ${JSON.stringify(blocks.styles.join('\n').trim())};
@@ -594,6 +629,7 @@ export async function load(ctx) {
 
 export function renderTitle(__d) {
   let __o = '';
+${MARK.title}
 ${indent(template.title)}
   return __o;
 }
@@ -608,6 +644,7 @@ export function renderBodyAttrs(__d) {
 
 export function renderHead(__d) {
   let __o = '';
+${MARK.head}
 ${indent(template.head)}
   return __o;
 }
@@ -621,7 +658,11 @@ ${slotBodies(template)}
 export default { css, headScript, elements, hasTitle, load, renderTitle, renderHead, renderHtmlAttrs, renderBodyAttrs, render };
 `;
 
-  return { code, warnings, components: template.components.map((c) => c.tag) };
+  const mapped = withMap(code, template, source, sourcePath ?? `${id}/_layout.html`, [
+    { marker: MARK.server, at: serverAt },
+  ]);
+
+  return { code: mapped.code, map: mapped.map, warnings, components: template.components.map((c) => c.tag) };
 }
 
 /**

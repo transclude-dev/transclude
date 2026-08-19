@@ -9,6 +9,7 @@
     "start": "node --env-file-if-exists=.env node_modules/.bin/transclude-serve",
     "check": "transclude-check",
     "test": "node --test \"test/**/*.test.js\"",
+    "test:browser": "node scripts/browser.js",
     "preview": "npm run build && npm start",
     "start:bun": "bun node_modules/@transclude/core/bin/serve.bun.js",
     "start:deno": "deno run -A --env-file node_modules/@transclude/core/bin/serve.deno.js",

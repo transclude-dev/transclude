@@ -6,6 +6,14 @@
 // be driven here without setup. Posting the results back needs neither: open
 // /check?report in any browser and the run appears in the server log.
 
+// The last report this process received, so a driver can read the outcome
+// rather than scrape a log. One slot, not a list: everything that reads this
+// runs one browser at a time, and the newest run is the one that counts.
+let last = null;
+
+/** The last report, or 204 while no browser has reported yet. */
+export const GET = () => (last ? Response.json(last) : new Response(null, { status: 204 }));
+
 /** @param {{ request: Request }} ctx */
 export const POST = async ({ request }) => {
   const report = await request.json().catch(() => null);
@@ -14,12 +22,14 @@ export const POST = async ({ request }) => {
   }
 
   const { agent = 'unknown', passed = 0, total = 0, failed = [], crash = null, moveBefore } = report;
+  last = { agent, passed, total, failed: Array.isArray(failed) ? failed : [], crash, moveBefore };
+
   const mark = crash || passed !== total ? 'FAIL' : 'ok';
   const path = moveBefore === undefined ? '' : `  moveBefore: ${moveBefore}`;
 
   console.log(`\n[checks] ${mark}  ${passed}/${total}${path}  ${agent}`);
   if (crash) console.log(`  crashed: ${crash}`);
-  for (const one of Array.isArray(failed) ? failed : []) {
+  for (const one of last.failed) {
     console.log(`  x ${one.name}\n    ${one.why}`);
   }
 

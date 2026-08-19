@@ -66,6 +66,14 @@ running an app.
   needs neither, so `open -a Safari 'http://localhost:1961/check?report'` and read
   the log. It also reports a crash, which is the difference between a browser that
   failed and a browser that never ran the page.
+- **`npm run test:browser` is the same report, read by a machine.**
+  `scripts/browser.js` serves the built app on 1971, opens `/check?report` in
+  headless Chrome, and reads the outcome from `GET /api/checks`, which holds the
+  last report this process received. No driver protocol and no dependency: the
+  page already posts, so the script only has to ask. CI runs it on every push,
+  which is what the checks lacked: they ran when somebody remembered to open the
+  page. Not 1961, because a dev server left running would answer the health check
+  and the report would describe source rather than the build.
 - **Vite warns about a public file it does not own.** `transformIndexHtml` warms
   up every `<script type="module" src>` in the served HTML, so a `<script head
   src="/theme.js">` logs `Failed to load url /theme.js. Does the file exist?` on

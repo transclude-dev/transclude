@@ -2,6 +2,7 @@
 // runs at build time and the browser gets plain markup.
 
 import { createHighlighter } from 'shiki';
+import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
 
 /** @type {Awaited<ReturnType<typeof createHighlighter>> | null} */
 let highlighter = null;
@@ -10,6 +11,10 @@ async function ready() {
   highlighter ??= await createHighlighter({
     themes: ['github-light-high-contrast', 'github-dark-high-contrast'],
     langs: ['html', 'js', 'json', 'css', 'shell'],
+    // The JavaScript engine, not the default one. The default is Oniguruma
+    // compiled to Wasm, and workerd refuses to compile Wasm at runtime, so a
+    // live render that reached this file returned 500 there and nowhere else.
+    engine: createJavaScriptRegexEngine(),
   });
   return highlighter;
 }

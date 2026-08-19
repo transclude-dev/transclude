@@ -74,6 +74,14 @@ export async function all(samples) {
   const out = {};
 
   for (const [name, value] of Object.entries(samples)) {
+    // A bare string is highlighted as HTML, and HTML opens with a tag. A bare
+    // sample that does not has lost its language tag, and the wrong grammar
+    // paints it one flat color, which reads as working output. Refuse it.
+    if (typeof value === 'string' && !value.trimStart().startsWith('<')) {
+      throw new Error(
+        `the sample "${name}" has no language and does not read as HTML. Tag it: [source, 'js'].`,
+      );
+    }
     const [source, lang] = Array.isArray(value) ? value : [value, 'html'];
     out[name] = await code(source, /** @type {any} */ (lang));
   }

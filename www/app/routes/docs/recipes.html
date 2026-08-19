@@ -94,7 +94,8 @@
   <button name="intent" value="delete">Delete</button>
 </form>`,
 
-      endpoint: `// app/routes/api/people.js  ->  /api/people
+      endpoint: [
+        `// app/routes/api/people.js  ->  /api/people
 import { people } from '../../data/people.js';
 
 export const GET = () => Response.json(people);
@@ -104,6 +105,8 @@ export const POST = async ({ request }) => {
   people.push(body);
   return Response.json(body, { status: 201 });
 };`,
+        'js',
+      ],
 
       cookie: [
         `export default async ({ cookies }) => ({

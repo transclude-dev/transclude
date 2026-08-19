@@ -201,3 +201,61 @@ test('no marker survives into the module', () => {
   const { code } = compilePage('<p>${x}</p>', { runtime: RUNTIME, filename: 'p.html' });
   assert.doesNotMatch(code, /@transclude:/);
 });
+
+// ---- the loader ---------------------------------------------------------------
+
+import { compileLayout } from '../src/compiler/index.js';
+
+test('a loader that throws maps the stack back to its line', async () => {
+  // The throw is on line 4 of the file, inside <script server>. Before the
+  // loader joined the map, a build failure here named the page and nothing else.
+  const source = [
+    '<script server>',
+    '  export default async () => {',
+    '    const list = null;',
+    '    return { n: list.length };',
+    '  };',
+    '</scr' + 'ipt>',
+    '',
+    '<h1>${n}</h1>',
+  ].join('\n');
+
+  const { code, map: json } = compilePage(source, { runtime: RUNTIME, filename: 'notes.html' });
+
+  const mod = await import(`data:text/javascript,${encodeURIComponent(code)}`);
+  try {
+    await mod.load({});
+    assert.fail('the loader did not throw');
+  } catch (error) {
+    const frame = error.stack.split('\n').find((line) => /data:text/.test(line));
+    const generated = Number(frame.match(/:(\d+):\d+\)?$/)[1]);
+    assert.equal(sourceLineOf(json, generated), 4);
+  }
+});
+
+test('a layout loader that throws maps the same way', async () => {
+  const source = [
+    '<script server>',
+    '  export default async () => {',
+    '    const user = undefined;',
+    '    return { name: user.name };',
+    '  };',
+    '</scr' + 'ipt>',
+    '',
+    '<slot></slot>',
+  ].join('\n');
+
+  const { code, map: json } = compileLayout(source, { id: 'docs', runtime: RUNTIME });
+
+  assert.ok(json, 'a layout with a loader carries a map');
+
+  const mod = await import(`data:text/javascript,${encodeURIComponent(code)}`);
+  try {
+    await mod.load({});
+    assert.fail('the loader did not throw');
+  } catch (error) {
+    const frame = error.stack.split('\n').find((line) => /data:text/.test(line));
+    const generated = Number(frame.match(/:(\d+):\d+\)?$/)[1]);
+    assert.equal(sourceLineOf(json, generated), 4);
+  }
+});

@@ -28,6 +28,7 @@ import { buildSprite, readLibraries, refuseSpriteClash, spritePath } from '../sr
 import { PRECACHE_PATH, precacheDocument, precacheList } from '../src/precache.js';
 import { speculateSettings, speculationRules } from '../src/speculate.js';
 import { pool } from '../src/pool.js';
+import { mappedFrames } from '../src/stack.js';
 import { precompress } from '../src/compress.js';
 
 const { root, config } = await loadProject();
@@ -104,6 +105,10 @@ await build({
   build: {
     outDir: `${config.outDir}/server`,
     emptyOutDir: true,
+    // The map that lets a prerender failure name the .html line. The bundler
+    // composes it from what the plugin's load hook returns, which is why the
+    // virtual ids carry no '\0' prefix: rolldown leaves '\0' modules out.
+    sourcemap: true,
     // `ssr: true` rather than a path: Vite resolves a string entry against the
     // project root before any plugin sees it, which a virtual id cannot survive.
     ssr: true,
@@ -119,6 +124,15 @@ await build({
 // about generated code. The banner is what keeps it out of that program.
 const entry = path.join(dist, 'server/entry.js');
 fs.writeFileSync(entry, `// @ts-nocheck\n${fs.readFileSync(entry, 'utf8')}`);
+
+// The banner is one more line the map does not know about, so every position
+// it reports would be off by one, in the direction that names the wrong line
+// with full confidence. One empty group in front keeps every mapping true.
+if (fs.existsSync(`${entry}.map`)) {
+  const shifted = JSON.parse(fs.readFileSync(`${entry}.map`, 'utf8'));
+  shifted.mappings = `;${shifted.mappings}`;
+  fs.writeFileSync(`${entry}.map`, JSON.stringify(shifted));
+}
 
 // ---- prerender ------------------------------------------------------------
 
@@ -313,9 +327,26 @@ if (config.feed) {
 }
 
 if (failures.length) {
+  // Where each failure happened, in the author's file. The bundle's map is
+  // read exactly: a frame on a line the map says nothing about adds no
+  // position, rather than a neighbor's line with full confidence. The first
+  // mapped frame outside the runtime is the author's, because a throw that
+  // starts inside the runtime belongs to whatever line called it.
+  const mapFile = `${entry}.map`;
+  const bundleMap = fs.existsSync(mapFile) ? JSON.parse(fs.readFileSync(mapFile, 'utf8')) : null;
+  const positionOf = (error) => {
+    if (!bundleMap || typeof error?.stack !== 'string') return null;
+    const frames = mappedFrames(error.stack, 'server/entry.js', bundleMap);
+    const frame = frames.find((one) => !one.source.includes('/runtime/'));
+    if (!frame) return null;
+    const file = path.resolve(path.dirname(mapFile), frame.source);
+    return `${path.relative(root, file)}:${frame.line}`;
+  };
+
   console.error(`\n${failures.length} page${failures.length === 1 ? '' : 's'} failed to render:`);
   for (const failure of failures) {
-    console.error(`  ${failure.url}\n    ${failure.error.message}`);
+    const at = positionOf(failure.error);
+    console.error(`  ${failure.url}\n    ${failure.error.message}${at ? `\n    at ${at}` : ''}`);
   }
   process.exitCode = 1;
 }

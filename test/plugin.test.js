@@ -35,7 +35,7 @@ test('one plugin answers for the virtual modules', async () => {
   const only = transclude({ appDir: 'app' });
   await resolve(root, [only]);
 
-  assert.equal(only.resolveId(SERVER_ENTRY), '\0' + SERVER_ENTRY);
+  assert.equal(only.resolveId(SERVER_ENTRY), SERVER_ENTRY);
 });
 
 test('a second registration is inert', async () => {
@@ -47,9 +47,9 @@ test('a second registration is inert', async () => {
   const [first, second] = [transclude({ appDir: 'app' }), transclude({ appDir: 'app' })];
   await resolve(root, [first, second]);
 
-  assert.equal(first.resolveId(SERVER_ENTRY), '\0' + SERVER_ENTRY);
+  assert.equal(first.resolveId(SERVER_ENTRY), SERVER_ENTRY);
   assert.equal(second.resolveId(SERVER_ENTRY), null, 'the second instance still claimed the entry');
-  assert.equal(second.load('\0' + SERVER_ENTRY), null, 'the second instance still compiled it');
+  assert.equal(second.load(SERVER_ENTRY), null, 'the second instance still compiled it');
 });
 
 test('nothing shipped registers the plugin itself', async () => {

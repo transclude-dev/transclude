@@ -241,18 +241,24 @@ export default function transclude({
 
     resolveId(id, importer) {
       if (duplicate) return null;
-      if (id === SERVER_ENTRY || id === ELEMENTS_ENTRY) return '\0' + id;
+      // No '\0' prefix, on purpose. The convention marks a virtual id, and
+      // rolldown leaves '\0' modules out of the map it composes for a bundle,
+      // so `dist/server/entry.js.map` listed no page at all and a prerender
+      // failure could name no .html. Measured on Vite 8.2.1: with the prefix,
+      // no page is a source; without it, every page is. Resolution still ends
+      // here, because this hook answers for these ids before anything else.
+      if (id === SERVER_ENTRY || id === ELEMENTS_ENTRY) return id;
       if (
         id.startsWith(P_COMPONENT) ||
         id.startsWith(P_PAGE) ||
         id.startsWith(P_CLIENT) ||
         id.startsWith(P_LAYOUT)
       ) {
-        return '\0' + id;
+        return id;
       }
       // A virtual module has no directory, so Vite cannot resolve `../data/x.js`
       // on its own. The block was authored in a real file; use that file's dir.
-      if (importer?.startsWith('\0virtual:transclude-') && /^\.\.?\//.test(id)) {
+      if (importer?.startsWith('virtual:transclude-') && /^\.\.?\//.test(id)) {
         const source = origin.get(importer);
         if (source) return path.resolve(path.dirname(source), id);
       }
@@ -261,8 +267,8 @@ export default function transclude({
 
     load(id) {
       if (duplicate) return null;
-      if (!id.startsWith('\0virtual:transclude-')) return null;
-      const virt = id.slice(1);
+      if (!id.startsWith('virtual:transclude-')) return null;
+      const virt = id;
 
       // Every element in the app, not only the ones some page renders: a
       // fragment can name any of them, and which one it names is a runtime fact.
@@ -335,9 +341,16 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
         const file = layouts.get(layoutId);
         if (!file) throw new Error(`[transclude] no layout "${layoutId}"`);
         origin.set(id, file);
-        const out = compileLayout(read(file), { id: layoutId, components, shadowTags, runtime });
+        // `sourcePath` absolute for the same reason as the page's below.
+        const out = compileLayout(read(file), {
+          id: layoutId,
+          components,
+          shadowTags,
+          runtime,
+          sourcePath: file,
+        });
         report(`${layoutId} layout`, out.warnings);
-        return out.code;
+        return out.map ? { code: out.code, map: out.map } : out.code;
       }
 
       if (virt.startsWith(P_PAGE)) {
@@ -387,7 +400,7 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
 
         scan();
         for (const mod of server.moduleGraph.idToModuleMap.values()) {
-          if (mod.id?.startsWith('\0virtual:transclude-')) server.moduleGraph.invalidateModule(mod);
+          if (mod.id?.startsWith('virtual:transclude-')) server.moduleGraph.invalidateModule(mod);
         }
         const hot = server.hot ?? server.ws;
         hot?.send({ type: 'full-reload' });
@@ -401,11 +414,15 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
 /**
  * Browser URL for a virtual module id.
  *
+ * No `__x00__`, because the ids carry no '\0' prefix. That encoding is Vite's
+ * spelling of the prefix in a URL, and with it here the browser asked for a
+ * module the graph no longer holds, on every page that ships JS, in dev only.
+ *
  * @param {string} page the route id
  * @returns {string} the URL Vite serves its entry from
  */
 export function clientEntryUrl(page) {
-  return `/@id/__x00__${P_CLIENT}${page}`;
+  return `/@id/${P_CLIENT}${page}`;
 }
 
 /**

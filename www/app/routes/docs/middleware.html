@@ -78,9 +78,9 @@ export default (app) => {
 
   <p>
     A path matches itself. <code>/api/*</code> matches that path and everything
-    under it. An entry that is not a path fails the build. A misspelled one is
-    still a path, so it fails open: the file gets written, and the build reports
-    a success.
+    under it. An entry that is not a path fails the build. So does one that
+    covers no route, URL or public file: a misspelled path would otherwise fail
+    open, with the file written and the build reporting a success.
   </p>
 
   <doc-note label="A layout guard is already caught" tone="warn">

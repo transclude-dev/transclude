@@ -579,6 +579,17 @@ against.
   is in this repository's `.vscode/settings.json` and is scaffolded into new
   projects, because `transclude-check` and the language server in `editor/` are
   the two things that read these files the way the compiler does.
+- **The extension looked for a package that does not exist.** Its server lookup
+  said `node_modules/transclude/editor/server.js`, and the package is
+  `@transclude/core`, so the server was found only inside this repository,
+  through the fallback, and the extension worked for exactly the people who did
+  not need it. Nothing errored anywhere: a lookup that finds nothing is an
+  extension that quietly does nothing. `test/editor.test.js` pins the path to
+  the name in `package.json`, and pins `editor` into the publish list, which is
+  the same failure from the other side. To package it:
+  `cd editor/vscode && npm install && npx @vscode/vsce package`. Publishing
+  needs a Marketplace publisher whose id matches `publisher` in its
+  `package.json`, and `npx ovsx publish` covers Open VSX.
 - **The sprite is written after the public copy and before anything that reads
   `dist/public`.** The asset module a worker imports, the precache list and
   precompression each build themselves by walking that directory. Written earlier

@@ -1,4 +1,4 @@
-// Starts the language server for workspaces that look like an transclude
+// Starts the language server for workspaces that look like a transclude
 // project. Anything else is left alone. The grammar is harmless everywhere, and
 // the checker only makes sense where transclude.config.js exists.
 
@@ -18,10 +18,13 @@ function activate(context) {
   const root = folder.uri.fsPath;
   if (!fs.existsSync(path.join(root, 'transclude.config.js'))) return;
 
-  // Installed, the server is in the package. In the framework's own repo it is
-  // beside this file. Try both rather than assume a layout.
+  // Installed, the server is in the package, which is @transclude/core: the
+  // unscoped name pointed at a package that does not exist, so the server was
+  // found only inside the framework's own repository. In that repository it is
+  // beside this file. Try both rather than assume a layout, and a test pins the
+  // first path to the name in package.json.
   const server = [
-    path.join(root, 'node_modules/transclude/editor/server.js'),
+    path.join(root, 'node_modules/@transclude/core/editor/server.js'),
     path.join(root, 'editor/server.js'),
   ].find((file) => fs.existsSync(file));
   if (!server) return;

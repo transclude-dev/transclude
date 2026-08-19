@@ -22,3 +22,6 @@ release-notes.md
 # `design/internals.md`, which is where a contributor looks for it.
 .claude/
 CLAUDE.md
+
+# vsce output, built from editor/vscode when someone packages the extension
+*.vsix

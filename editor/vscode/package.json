@@ -3,18 +3,42 @@
   "displayName": "transclude",
   "description": "Diagnostics, hovers and highlighting for transclude .html files",
   "version": "0.1.0",
+  "publisher": "transclude",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/transclude-dev/transclude.git",
+    "directory": "editor/vscode"
+  },
+  "keywords": [
+    "transclude",
+    "html",
+    "hypermedia",
+    "language-server"
+  ],
   "private": true,
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["Programming Languages"],
-  "activationEvents": ["onLanguage:html"],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:html"
+  ],
   "main": "./extension.js",
   "contributes": {
     "grammars": [
       {
         "scopeName": "transclude.injection",
         "path": "./syntaxes/transclude.injection.json",
-        "injectTo": ["text.html.basic", "text.html.derivative"],
-        "embeddedLanguages": { "meta.embedded.expression.transclude": "javascript" }
+        "injectTo": [
+          "text.html.basic",
+          "text.html.derivative"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.expression.transclude": "javascript"
+        }
       }
     ],
     "configuration": {
@@ -28,5 +52,7 @@
       }
     }
   },
-  "dependencies": { "vscode-languageclient": "^9.0.1" }
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
 }

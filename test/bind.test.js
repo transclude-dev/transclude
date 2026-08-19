@@ -600,6 +600,62 @@ test('a partial gets no bindings at all, it is never repainted', async () => {
   assert.deepEqual(mod.volatile, []);
 });
 
+// ---- the light half -------------------------------------------------------
+//
+// A light element rebuilds nothing, so its `if`, its `each` and its `<slot>` are
+// markup the server settled and nothing here holds. What still has to be true is
+// that the walk reaches the nodes after one of them, and how wide one of them is
+// only the anchors around it say. The rule at the top of this file judges these
+// too: after update, the DOM is what a full render would have produced.
+
+const lightSource = (markup, defaults) =>
+  `${props(defaults)}${markup}<script>host.id;</script>`;
+
+async function lightTransition(source, before, after, slots = {}) {
+  const mod = await load(source, { shadow: false });
+  const rendered = (data) => parseDom(mod.render(mod.coerce(data), slots));
+
+  const root = rendered(before);
+  mod.update(mod.bind(root, mod.coerce(before)), mod.coerce(after));
+  return { mod, actual: serialize(root), expected: serialize(rendered(after)) };
+}
+
+test('a light element writes into the nodes after a block', async () => {
+  // Three items, so a walk that counted the block as one node would land four
+  // nodes short and write the name into a list row.
+  const { actual, expected } = await lightTransition(
+    lightSource('<p each="t of [1, 2, 3]">\${t}</p><span>\${name}</span>', { name: '' }),
+    { name: 'Ada' },
+    { name: 'Grace' },
+  );
+  assert.equal(actual, expected);
+});
+
+test('a block that rendered nothing is stepped over too', async () => {
+  // The anchors are all there is of it, which is the case an index cannot cover
+  // from either side.
+  const { actual, expected } = await lightTransition(
+    lightSource('<p if="false">gone</p><span>\${name}</span>', { name: '' }),
+    { name: 'Ada' },
+    { name: 'Grace' },
+  );
+  assert.equal(actual, expected);
+});
+
+test('what the caller slotted in is stepped over, not counted', async () => {
+  // A `<slot>` in a light element is a compile-time hole: one node in the
+  // template, however many the caller passed in the document. Counting wrote the
+  // element's own text into the caller's markup and left its own untouched.
+  const { actual, expected } = await lightTransition(
+    lightSource('<slot></slot><span>\${name}</span>', { name: '' }),
+    { name: 'Ada' },
+    { name: 'Grace' },
+    { default: '<i>a</i><i>b</i>' },
+  );
+  assert.equal(actual, expected);
+  assert.match(actual, /<i>a<\/i><i>b<\/i>/, 'the slotted markup was written into');
+});
+
 // ---- reaching into a child component --------------------------------------
 
 /** The child's module cannot be imported here, so the emitted code is the claim. */

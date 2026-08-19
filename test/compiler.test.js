@@ -498,6 +498,35 @@ test('an element with no behavior is not held to it, since it never re-renders',
   assert.ok(elementOf(source).code, 'a markup-only element should still compile');
 });
 
+test('a name read after a block still binds, because the walk steps over one', () => {
+  // The block is rendered once and never rebuilt, which makes what the block
+  // itself reads volatile and nothing else. A name after it is written in place
+  // like any other. Before this, the walk stopped at the block and every name
+  // from there to the end of the template was called structural.
+  const { code } = elementOf(withScript('<p if="true">fixed</p><span>${name}</span>', 'name: ""'));
+  assert.match(code, /export const volatile = \[\]/);
+  assert.match(code, /__afterBlock/, 'the walk did not step over the block');
+});
+
+test('what the block itself reads is still refused, and still names shadow', () => {
+  assert.throws(
+    () => elementOf(withScript('<p if="true">${name}</p>', 'name: ""')),
+    /does not own its own children/,
+  );
+  assert.throws(
+    () => elementOf(withScript('<p if="name">fixed</p>', 'name: ""')),
+    /export const shadow = true/,
+  );
+});
+
+test('an element that can never update pays for no anchors', () => {
+  // The fence is for the walk. Markup that ships nothing has no walk, so the
+  // anchors would be bytes on every page that renders it.
+  const markupOnly = '<script properties>export default {};</script><li each="t of [1, 2]">x</li>';
+  assert.doesNotMatch(elementOf(markupOnly).code, /<!--\[-->/);
+  assert.match(elementOf(withScript('<li each="t of [1, 2]">x</li>')).code, /<!--\[-->/);
+});
+
 test('state is held to the same structural rule as a prop', () => {
   // The guard reads what the template could not bind, whatever its name came
   // from. State getting a pass here would be a light element rebuilding.

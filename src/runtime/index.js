@@ -309,6 +309,20 @@ function closingAnchor(open) {
 }
 
 /**
+ * The node after a block nobody bound.
+ *
+ * A light element renders its blocks once and never rebuilds them, so it holds
+ * no state for one. The walk that finds every node after it still has to get
+ * past it, and how wide it is only the anchors say.
+ *
+ * @param {Comment} open the opening anchor
+ * @returns {Node|null}
+ */
+export function afterBlock(open) {
+  return closingAnchor(open)?.nextSibling ?? null;
+}
+
+/**
  * An item spans one node or, where it renders several, the region between its
  * own anchors. Everything downstream works on the range, so a single-element
  * item is just the case where first and last are the same node.

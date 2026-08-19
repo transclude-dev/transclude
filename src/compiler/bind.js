@@ -69,6 +69,7 @@ class Bindgen {
     components = new Map(),
     shadowTags = new Set(),
     blockOf = new Map(),
+    anchoredOf = new Set(),
     refs = new Map(),
   } = {}) {
     this.components = components;
@@ -76,6 +77,10 @@ class Bindgen {
     // Which tree node owns which compiled block. Sharing the map is what keeps
     // this pass and the renderer from drifting apart over the same tree.
     this.blockOf = blockOf;
+    // The blocks the renderer fenced in anchors, which is more of them than it
+    // compiled. Shared for the same reason, and read for one question: is this a
+    // block the walk can step over.
+    this.anchoredOf = anchoredOf;
     // tag -> the local name the renderer imported that component under.
     this.refs = refs;
     this.frames = [new Frame(new Scope())];
@@ -165,6 +170,11 @@ class Bindgen {
     }
   }
 
+  /** A `<slot>` the renderer fenced, which is a light element's and never a shadow one's. */
+  isHole(node) {
+    return node.tagName === 'slot' && this.anchoredOf.has(node);
+  }
+
   abandon(slot) {
     if (slot.kind === 'text') {
       for (const node of slot.nodes) this.giveUpText(node.value);
@@ -208,14 +218,36 @@ class Bindgen {
       if (slot.kind === 'block') {
         const ref = this.bindBlock(slot, here);
         if (ref === null) {
-          for (const rest of rendered.slice(i)) this.abandon(rest);
-          this.frame.gaveUp = true;
-          return;
+          // A light element's block: rendered once and never rebuilt. What it
+          // read is volatile and its nodes are nothing to hold, but its anchors
+          // are in the markup, so the walk goes on past it. A block without them
+          // has no past it, and nothing after it binds.
+          if (!this.anchoredOf.has(slot.nodes[0])) {
+            for (const rest of rendered.slice(i)) this.abandon(rest);
+            this.frame.gaveUp = true;
+            return;
+          }
+          this.abandon(slot);
         }
         // Past a block the node count is not knowable, so addressing becomes
         // relative from here on.
         cursor = cursor ?? this.cursor();
-        this.locate(`${cursor} = __b[${ref}].end.nextSibling;`);
+        const past = ref === null ? `__afterBlock(${here})` : `__b[${ref}].end.nextSibling`;
+        this.locate(`${cursor} = ${past};`);
+        continue;
+      }
+
+      // A light element's `<slot>` is a compile-time hole holding the caller's
+      // markup, which is fenced for the same reason a block is. Nothing in it is
+      // ours to write, and the walk steps over it to reach what follows.
+      //
+      // The tag is asked for, not just the set: a branch arrives at its own part
+      // bare, with its directive already consumed, so a block's node reaches here
+      // as an ordinary element and is in the set too.
+      if (slot.kind === 'element' && this.isHole(slot.nodes[0])) {
+        this.abandon(slot);
+        cursor = cursor ?? this.cursor();
+        this.locate(`${cursor} = __afterBlock(${here});`);
         continue;
       }
 

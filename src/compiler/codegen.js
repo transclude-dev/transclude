@@ -98,6 +98,7 @@ export function compileFragment(nodes, opts = {}) {
     at,
     blockDefs: gen.blockDefs.join('\n'),
     blockOf: gen.blockOf,
+    anchoredOf: gen.anchoredOf,
     slots: Object.fromEntries(slots.map(([name, out]) => [name, out.code])),
     regions: Object.fromEntries(regions.map(([name, out]) => [name, out.code])),
     regionIncludes: gen.regionIncludes,
@@ -129,13 +130,16 @@ class Codegen {
     // `blocks` on, an `if` or `each` compiles to its own module-scope function,
     // and a `__fragment` passed from render would not be in scope inside it.
     this.fragments = fragments;
-    // With `blocks` on, `if` and `each` at the top level compile to their own
-    // function and are wrapped in comment anchors, so an update can re-render
-    // one region instead of the whole shadow root. Only an element is ever
-    // updated, so nothing else pays for the anchors.
-    this.blocks = blocks && !layout;
+    // With `blocks` on, every `if` and `each` is wrapped in comment anchors, so
+    // whatever binds this markup can find where one ends. Only an element is ever
+    // updated, so nothing else pays for them.
+    this.blocks = blocks;
     this.blockDefs = [];
     this.blockOf = new Map();
+    // Every block that got anchors, whether or not it also got a function. The
+    // binding pass reads it the way it reads `blockOf`: to know that a block it
+    // cannot bind is still one it can step over.
+    this.anchoredOf = new Set();
     this.inBlock = 0;
     // The loop variables in scope, outermost first, two per level. A block
     // inside a loop renders from them, so its function has to take them.
@@ -360,12 +364,23 @@ class Codegen {
   }
 
   /**
-   * True where a structural block is addressable on its own. Anchors nest and
-   * the runtime counts depth, and a block inside a loop takes that loop's
-   * variables as arguments, so nesting is not a reason to give up on either.
+   * True where a block is wrapped in anchors, which is where anything binds this
+   * markup at all. Anchors nest and the runtime counts depth, so nesting is not a
+   * reason to give up.
+   */
+  anchored() {
+    return this.blocks && this.inHead === 0;
+  }
+
+  /**
+   * True where a block also compiles to a function of its own, which is what
+   * re-rendering one region rather than the whole root needs. Not in a layout,
+   * and a light element is compiled as one: `<slot>` there is a compile-time hole
+   * reading `__slots`, a parameter of `render` that a module-scope block function
+   * would not have. A light element rebuilds nothing anyway.
    */
   standalone() {
-    return this.blocks && this.inHead === 0;
+    return this.anchored() && !this.layout;
   }
 
   /** Flat list of the loop variables in scope, outermost first. */
@@ -382,6 +397,7 @@ class Codegen {
     const id = this.blockDefs.length;
     const params = ['__d', ...args].join(', ');
     this.blockOf.set(node, id);
+    this.anchoredOf.add(node);
     this.blockDefs.push(
       `const __blk${id} = { ${extra}html: (${params}) => { let __o = '';\n${joinOut(body).code}\nreturn __o; } };`,
     );
@@ -400,7 +416,16 @@ class Codegen {
       this.emitBlock(chain[0].node, out, body, '', args);
       return;
     }
+    // Emitted where it stands, and still fenced. The markup is rendered once and
+    // nothing will replace it, but the anchors are how a walk gets to the nodes
+    // after it: what a branch renders is only known once the data is.
+    const fenced = this.anchored();
+    if (fenced) {
+      this.anchoredOf.add(chain[0].node);
+      this.s(out, ANCHOR_OPEN);
+    }
     this.emitBranches(chain, out, scope, topLevel);
+    if (fenced) this.s(out, ANCHOR_CLOSE);
   }
 
   emitBranches(chain, out, scope, topLevel) {
@@ -537,6 +562,7 @@ class Codegen {
       const id = this.blockDefs.length;
       this.blockDefs.push('');
       this.blockOf.set(el, id);
+      this.anchoredOf.add(el);
 
       // A <template each> renders several nodes per item, so an item is a
       // region rather than a node and needs anchors of its own to be found.
@@ -562,7 +588,15 @@ class Codegen {
       return;
     }
 
+    // The same fence an inline `if` gets, and for the same reason: how many nodes
+    // the loop produces is a question only the data answers.
+    const fenced = this.anchored();
+    if (fenced) {
+      this.anchoredOf.add(el);
+      this.s(out, ANCHOR_OPEN);
+    }
     this.emitEachBody(el, out, scope, topLevel);
+    if (fenced) this.s(out, ANCHOR_CLOSE);
   }
 
   /** `list`, `key` and `item`. One loop, taken apart so it can be reconciled. */
@@ -653,13 +687,24 @@ class Codegen {
       const filled = `__slots[${JSON.stringify(name)}]`;
       const fallback = childrenOf(el);
 
-      if (!fallback.length) {
-        this.c(out, `__o += ${filled} ?? '';`);
-        return;
+      // The caller's markup, and how many nodes it is only this render knows. So
+      // it is fenced like a block, and for the same reason: nothing that binds
+      // this markup afterwards can count its way past it.
+      const fenced = this.anchored();
+      if (fenced) {
+        this.anchoredOf.add(el);
+        this.s(out, ANCHOR_OPEN);
       }
-      this.c(out, `if (${filled}) { __o += ${filled}; } else {`);
-      this.emitChildren(fallback, out, scope);
-      this.c(out, `}`);
+
+      if (fallback.length) {
+        this.c(out, `if (${filled}) { __o += ${filled}; } else {`);
+        this.emitChildren(fallback, out, scope);
+        this.c(out, `}`);
+      } else {
+        this.c(out, `__o += ${filled} ?? '';`);
+      }
+
+      if (fenced) this.s(out, ANCHOR_CLOSE);
       return;
     }
 

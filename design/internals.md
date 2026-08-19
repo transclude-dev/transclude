@@ -252,11 +252,32 @@ against.
   slotted markup sits among them and the page's script may hold them. So an `if`
   or an `each` over a value that changes is a compile error naming `shadow`. The
   guard reads `bindings.volatile`, which is what the compiler could *not* bind:
-  with a boundary the same `each` compiles to a block with anchors and is written
+  with a boundary the same `each` compiles to a block of its own and is written
   rather than rebuilt, so a shadow element's list is not volatile at all. Removing
   the guard failed no test until one was written for it. State is held to the same
   rule, because a volatile name is whatever the template read and not where the
   value came from.
+- **Both halves fence a block. Only the shadow half compiles one.** `anchored()`
+  and `standalone()` in `codegen.js` are two questions, and they were one until
+  the answers had to differ. A light element is compiled as a layout, where
+  `<slot>` is a compile-time hole reading `__slots`, a parameter of `render` that
+  a module-scope block function would not have. So its blocks stay inline, which
+  is `standalone()`. The walk that binds the nodes *after* a block still has to
+  know where the block ends, and only the anchors say, which is `anchored()`.
+  While the two were one, everything from the first `if` to the end of a light
+  element's template was volatile, so `<p if="true">fixed</p><span>${name}</span>`
+  was refused over a name the block never read.
+- **A `<slot>` is as wide as the caller says.** It is fenced for the reason a
+  block is. A light element's slot renders what was passed to it, which is no
+  nodes or twenty, and the binder counted it as one: with two nodes slotted in,
+  the update wrote the element's own text into the caller's second node and left
+  its own alone. Nothing failed, because no test slotted markup into an element
+  that also bound something after the slot.
+- **The tag tells a fenced hole from a bare block.** `anchoredOf` holds both, and
+  a branch reaches its own part *bare*, with its directive already consumed, so a
+  block's node arrives at the walk as an ordinary element and is in that set.
+  `isHole` asks for `<slot>` as well. Asking the set alone steps over every shadow
+  branch instead of binding it, which is 17 tests.
 - **State is behavior, so it defines the element.** Nothing observes state: its
   accessor is what schedules the write, the way an attribute change does for a
   prop. So a light element with a `<script state>` block and no `<script>` at all
@@ -856,7 +877,7 @@ against.
   shipped to everyone. Nothing failed, and the attribute was stripped as a
   directive on the way, so the source did not show it either. `hoistTargetOf`
   picks the buffer in `emitChildren`, before the chain is emitted, and
-  `standalone()` is off inside `<head>` because nothing there is ever re-rendered
+  `anchored()` is off inside `<head>` because nothing there is ever re-rendered
   and the block anchors would be comments nobody looks for. A chain mixing a
   hoisted tag with an ordinary one has no single buffer, so it is refused, and so
   is a directive on `<title>`: which level's title wins is settled at compile

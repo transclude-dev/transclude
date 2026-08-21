@@ -276,7 +276,7 @@ export default (app) => {
     <code>curl -X POST /api/people</code> sends no content type, so it is
     refused with 403 before reaching your handler. Add
     <code>-H 'content-type: application/json'</code> and the same request gets
-    through. This is the usual reason an endpoint looks broken when it is tested
+    through. This is the usual reason an endpoint looks broken when you test it
     by hand.
   </doc-note>
 

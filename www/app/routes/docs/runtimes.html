@@ -120,8 +120,10 @@ export default async () => {
   </doc-note>
 
   <p>
-    The Node, Bun and Deno adapters come from the package and only listen.
-    <code>worker.js</code> belongs to the app, and this is all of it.
+    The Node, Bun and Deno adapters come from the package and only listen. On
+    Node, a stop signal drains first: the listener closes, work in flight
+    finishes, and the process leaves. <code>worker.js</code> belongs to the
+    app, and this is all of it.
   </p>
 
   ${html(s.entry)}

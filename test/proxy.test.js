@@ -293,6 +293,17 @@ test('the outline says what the cleaning took out', async () => {
 });
 
 // ---- caching ---------------------------------------------------------------
+test('a proxy key nothing reads throws, naming it and every key there is', async () => {
+  // `maxage` for `maxAge` fell back to the default and said nothing, which
+  // reads exactly like the setting working. The config's own keys already
+  // refuse this by name; these get the same treatment.
+  const { fetch } = fakeFetch({});
+
+  await assert.rejects(
+    () => readForeign('https://source.example/x', { ...ALLOW, maxage: 5 }, { fetch }),
+    /`proxy` sets maxage.*maxAge/,
+  );
+});
 
 test('several fragments from one page cost one request', async () => {
   // The reason the document is cached rather than the fragment. Without the
@@ -437,7 +448,9 @@ test('the app mounts it, and the injected resolver reaches it', async () => {
     config: {
       csrf: false,
       trailingSlash: 'never',
-      proxy: { allow: ['source.example'], fetch: undefined },
+      // This once carried `fetch: undefined`, which nothing has ever read:
+      // a fake fetch travels through `deps`. The key check refused it.
+      proxy: { allow: ['source.example'] },
     },
     lookup: async (host) => (asked.push(host), null),
     manifest: { routes: [], endpoints: [] },

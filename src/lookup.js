@@ -24,7 +24,7 @@ import { blockedAddress } from './address.js';
  * this is defense behind it.
  *
  * @param {{ resolver?: object }} [deps] injected so a test needs no DNS
- * @returns {(hostname: string) => Promise<string[]>} every address the name answers with
+ * @returns {(hostname: string) => Promise<string|null>} why the name is refused, or null
  */
 export function nodeLookup({ resolver = dns } = {}) {
   return async (hostname) => {

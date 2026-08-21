@@ -730,3 +730,73 @@ test('interpolating into a data block is still refused', () => {
     /written to the page as code/,
   );
 });
+
+// ---- expressions the grammar does allow ------------------------------------
+//
+// `/docs/decisions` says the grammar is small on purpose: no assignment, no
+// arrow functions, no object literals. It does not say no ternary, and a
+// ternary is what a template reaches for to pick between two words. It worked
+// and nothing checked it, which is the shape a refusal added by accident would
+// have had.
+
+test('a ternary picks between two values in text', () => {
+  assert.equal(render('<p>${count ? "many" : "none"}</p>', { count: 3 }), '<p>many</p>');
+  assert.equal(render('<p>${count ? "many" : "none"}</p>', { count: 0 }), '<p>none</p>');
+});
+
+test('a ternary works in an attribute, and is escaped like any other value', () => {
+  assert.equal(
+    render('<p class="${open ? \'is-open\' : \'is-shut\'}">x</p>', { open: true }),
+    '<p class="is-open">x</p>',
+  );
+  assert.equal(
+    render('<p title="${label ? label : \'none\'}">x</p>', { label: 'a & b' }),
+    '<p title="a &amp; b">x</p>',
+  );
+});
+
+test('a ternary nests inside a loop and reads the item', () => {
+  assert.equal(
+    render('<li each="n of nums">${n ? "y" : "n"}</li>', { nums: [1, 0] }),
+    '<li>y</li><li>n</li>',
+  );
+});
+
+test('a loop inside a loop reads the name from the one around it', () => {
+  // The scope chain, walked past the immediate parent. Both names are in scope
+  // in the inner element, and the outer one is two links up from it.
+  assert.equal(
+    render('<ul each="row of rows"><li each="cell of row.cells">${row.name}:${cell}</li></ul>', {
+      rows: [{ name: 'a', cells: [1, 2] }],
+    }),
+    '<ul><li>a:1</li><li>a:2</li></ul>',
+  );
+});
+
+// ---- expressions it refuses ------------------------------------------------
+//
+// Each of these is a message somebody reads while their build is failing, so
+// the words are part of the behavior.
+
+test('two expressions where one was expected says which mistake to look for', () => {
+  assert.throws(() => compile('<p>${a; b}</p>'), /single expression, found several/);
+  assert.throws(() => compile('<p>${a, b}</p>'), /single expression, found several/);
+});
+
+test('this is refused, and says so rather than compiling to something', () => {
+  assert.throws(() => compile('<p>${this.name}</p>'), /`this` is not available in templates/);
+});
+
+test('an unterminated interpolation is named, not left to the parser', () => {
+  assert.throws(() => compile('<p>${a</p>'), /unterminated \$\{ \.\.\. \} interpolation/);
+});
+
+test('a construct the parser has no grammar for is refused before emit sees it', () => {
+  // An arrow, an object literal and an assignment are all rejected by the
+  // parser, so the message names the character rather than the node. `emit`'s
+  // own `unsupported expression node` line is behind that: it handles every
+  // kind jsep produces today, and is there for the one a future jsep adds.
+  assert.throws(() => compile('<p>${() => 1}</p>'), /bad expression/);
+  assert.throws(() => compile('<p>${({ a: 1 })}</p>'), /bad expression/);
+  assert.throws(() => compile('<p>${a = 1}</p>'), /bad expression/);
+});

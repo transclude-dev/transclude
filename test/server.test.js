@@ -470,6 +470,24 @@ test('production.js exports an app and nothing runtime-specific runs on import',
     assert.equal(typeof mod.app?.fetch, 'function');
     assert.equal(typeof mod.summary, 'function');
     assert.equal(typeof mod.noBuild, 'boolean');
+
+    // What three adapters print, so it lives here rather than growing a copy in
+    // each of them. With no build there is nothing to count, and saying so is
+    // the useful answer: the numbers are what tell you the server is reading
+    // `dist` and not your source.
+    const lines = [];
+    const wrote = console.log;
+    console.log = (line) => lines.push(String(line));
+    try {
+      mod.summary(1960);
+    } finally {
+      console.log = wrote;
+    }
+
+    assert.equal(lines[0], 'http://localhost:1960');
+    assert.match(lines.join('\n'), /prerendered\s+0 pages, 0 KB/);
+    assert.match(lines.join('\n'), /assets\s+0 files, 0 KB/);
+    assert.match(lines.join('\n'), /on demand\s+none/);
   } finally {
     process.chdir(was);
     fs.rmSync(dir, { recursive: true, force: true });

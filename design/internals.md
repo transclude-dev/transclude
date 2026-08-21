@@ -156,6 +156,15 @@ against.
   imported and nothing can build its context and look. It reads the files with
   comments stripped, since the first version was satisfied by prose containing
   the word "after".
+- **The check ran one direction, and the type promised a field for three
+  weeks.** `ctx.htmlAttrs` stayed in `contextLiteral` after the commit that
+  removed the feature, so every generated project's type said the field existed
+  and every read of it was `undefined` that type-checked clean. The shape test
+  only asked whether the literal held everything the servers build, never
+  whether it held more. It asks both now, and the twelfth field it blessed on
+  the way is `layout`: real, typed, spread in by `document.js` per loader
+  rather than built in `contextFor`, and documented on the routing page's
+  context table with the other eleven.
 - **The dev server mounts its own routes, so `createApp` is not the only list.**
   `bin/dev.js` builds a Hono app with `baseApp` and registers what it needs.
   Anything `createApp` mounts from config has to be added there too, or it works

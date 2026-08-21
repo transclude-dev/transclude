@@ -100,7 +100,42 @@ test('the prerender context refuses rather than omits', () => {
   // file has no request. It still has to be present: absent, a loader fails
   // with `x is not a function`, which names neither the page nor the fix.
   const source = read('src/prerender.js');
-  const missing = CONTEXT.filter((key) => key !== 'layout' && !declares(source, key));
+  const missing = CONTEXT.filter((key) => !declares(source, key));
 
   assert.deepEqual(missing, [], `prerenderContext is missing: ${missing.join(', ')}`);
+});
+
+test('the type promises nothing the runtime does not provide', () => {
+  // The other direction, which the three tests above cannot see: a field in
+  // the literal that nothing builds type-checks fine and is undefined at
+  // runtime. `ctx.htmlAttrs` sat there for three weeks after the feature it
+  // described was removed, and every generated project inherited the promise.
+  //
+  // A text check, like the rest of this file. The nested names are the keys of
+  // the blessed shapes: route's three, response's two, the `${name}` the params
+  // type writes per parameter, and the argument names of the function fields.
+  const source = read('src/typecheck.js');
+  const at = source.indexOf('const contextLiteral');
+  const end = source.indexOf('\n\n', at);
+  const literal = source.slice(at, end === -1 ? undefined : end);
+
+  const allowed = new Set([
+    ...CONTEXT,
+    'layout',
+    'id', 'pattern', 'path', 'status', 'headers', 'name',
+    'tag', 'work',
+  ]);
+  const phantom = [...literal.matchAll(/(\w+):/g)]
+    .map(([, key]) => key)
+    .filter((key) => !allowed.has(key));
+
+  assert.deepEqual(phantom, [], `the type names fields nothing provides: ${phantom.join(', ')}`);
+});
+
+test('layout is spread in at load time, and the type knows it', () => {
+  // The twelfth field. It is not in `contextFor`, because the render adds it
+  // per loader: each one reads what the chain above it returned. So the
+  // provider is `document.js`, which the three lists above cannot see.
+  assert.match(read('src/document.js'), /layout: inherited/);
+  assert.match(read('src/typecheck.js'), /layout: \$\{layoutType\}/);
 });

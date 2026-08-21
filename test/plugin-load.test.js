@@ -316,3 +316,58 @@ test('an older Vite is reached through ws rather than hot', async () => {
 
   assert.deepEqual(sent, [{ type: 'full-reload' }]);
 });
+
+// ---- resolving an import written inside a page -----------------------------
+
+test('the virtual ids are claimed and nothing else is', async () => {
+  const plugin = await project({ 'app/routes/index.html': '<h1>Home</h1>\n' });
+
+  assert.equal(plugin.resolveId(ELEMENTS_ENTRY), ELEMENTS_ENTRY);
+  assert.equal(plugin.resolveId('virtual:transclude-component/x'), 'virtual:transclude-component/x');
+  assert.equal(plugin.resolveId('virtual:transclude-layout/root'), 'virtual:transclude-layout/root');
+  assert.equal(plugin.resolveId('virtual:transclude-client/index'), 'virtual:transclude-client/index');
+  assert.equal(plugin.resolveId('hono'), null);
+});
+
+test("a relative import in a loader resolves against the page's own directory", async () => {
+  // A virtual module has no directory, so Vite cannot resolve `../data/notes.js`
+  // on its own: it would look beside a module that is not on disk. The block was
+  // authored in a real file, and that file's directory is the one that answers.
+  const plugin = await project({
+    'app/data/notes.js': 'export const notes = [];\n',
+    'app/routes/deep/index.html':
+      "<script server>import { notes } from '../../data/notes.js';\nexport default () => ({ notes });</script>\n<p>x</p>\n",
+  });
+
+  // `load` is what records where a virtual module was written, so the page has
+  // to be compiled before its imports can be resolved.
+  plugin.load('virtual:transclude-page/deep-index');
+
+  assert.equal(
+    plugin.resolveId('../../data/notes.js', 'virtual:transclude-page/deep-index'),
+    path.join(plugin.root, 'app', 'data', 'notes.js'),
+  );
+});
+
+test('a relative import is only resolved for a module that was compiled', async () => {
+  // Nothing has been loaded, so there is no file to resolve against and the
+  // answer is Vite's to make rather than a path guessed from the root.
+  const plugin = await project({ 'app/routes/index.html': '<h1>Home</h1>\n' });
+
+  assert.equal(plugin.resolveId('../data/notes.js', 'virtual:transclude-page/index'), null);
+});
+
+test('a bare specifier from a virtual module is left to Vite', async () => {
+  const plugin = await project({
+    'app/routes/index.html': "<script server>export default () => ({});</script>\n<p>x</p>\n",
+  });
+  plugin.load('virtual:transclude-page/index');
+
+  assert.equal(plugin.resolveId('hono', 'virtual:transclude-page/index'), null);
+});
+
+test('a relative import from an ordinary file is not this plugin s business', async () => {
+  const plugin = await project({ 'app/routes/index.html': '<h1>Home</h1>\n' });
+
+  assert.equal(plugin.resolveId('./notes.js', '/app/lib/index.js'), null);
+});

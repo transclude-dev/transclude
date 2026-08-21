@@ -329,6 +329,39 @@ test('the config page names every key the framework accepts, and no other', asyn
   );
 });
 
+test('the documented context is the context', () => {
+  // The routing page's table is the reference for `ctx`, and it had drifted:
+  // `after` and `revalidateTag` were documented on other pages and missing
+  // here, and `layout` was real, typed and documented nowhere. The type
+  // literal in `typecheck.js` is what every project's editor believes, so the
+  // table is held to it.
+  const source = path.join(root, '..', 'node_modules', '@transclude', 'core', 'src', 'typecheck.js');
+  if (!fs.existsSync(source)) return; // not installed: nothing to compare against
+
+  const code = fs.readFileSync(source, 'utf8');
+  const at = code.indexOf('const contextLiteral');
+  const literal = code.slice(at, code.indexOf('\n\n', at));
+
+  // The nested names are the keys of the literal's inner shapes and the
+  // argument names of its function fields, not fields of `ctx`.
+  const nested = new Set(['id', 'pattern', 'path', 'status', 'headers', 'name', 'tag', 'work']);
+  const fields = [...literal.matchAll(/(\w+):/g)]
+    .map(([, key]) => key)
+    .filter((key) => !nested.has(key));
+  assert.ok(fields.length > 0, 'contextLiteral was found and parsed');
+
+  const page = fs.readFileSync(path.join(docs, 'routing.html'), 'utf8');
+  const section = page.slice(page.indexOf('The context'));
+  const table = section.slice(0, section.indexOf('</table>'));
+  const documented = [...table.matchAll(/<td><code>(\w+)<\/code><\/td>/g)].map(([, key]) => key);
+
+  assert.deepEqual(
+    documented.slice().sort(),
+    fields.slice().sort(),
+    'the table and the context a loader is handed are different lists',
+  );
+});
+
 test('the config page lists every key alphabetically, in both places', () => {
   // Two lists of the same keys, so a new one lands at the end of whichever the
   // author was looking at. `canonical` went into the table and not the sample,

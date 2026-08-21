@@ -84,7 +84,8 @@
 
   <p>
     Each one loads its own data, and each gets its own
-    <code>&lt;slot&gt;</code> filled by whatever is below it.
+    <code>&lt;slot&gt;</code> filled by whatever is below it. A loader also
+    reads what the chain above it returned, as <code>ctx.layout</code>.
   </p>
 
   <h2>A layout can respond on its own</h2>

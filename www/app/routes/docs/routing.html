@@ -218,12 +218,26 @@
           <td>What this page's action returned, if one ran.</td>
         </tr>
         <tr>
+          <td><code>after</code></td>
+          <td>
+            Takes a promise the reader does not wait for. See
+            <a href="/docs/runtimes">runtimes</a>.
+          </td>
+        </tr>
+        <tr>
           <td><code>cookies</code></td>
           <td>Read and write, signed or plain.</td>
         </tr>
         <tr>
           <td><code>fragment</code></td>
           <td>The fragment asked for, or <code>null</code>.</td>
+        </tr>
+        <tr>
+          <td><code>layout</code></td>
+          <td>
+            What the loaders above this one returned, merged. See
+            <a href="/docs/layouts">layouts</a>.
+          </td>
         </tr>
         <tr>
           <td><code>params</code></td>
@@ -239,6 +253,13 @@
         <tr>
           <td><code>response</code></td>
           <td>The status and headers for the response.</td>
+        </tr>
+        <tr>
+          <td><code>revalidateTag</code></td>
+          <td>
+            Drops every held page carrying a tag. See
+            <a href="/docs/production">the production build</a>.
+          </td>
         </tr>
         <tr>
           <td><code>route</code></td>

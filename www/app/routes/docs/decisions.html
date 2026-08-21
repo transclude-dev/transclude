@@ -160,22 +160,22 @@
       turns out to be silent, which is what both breaking releases were. Expect
       it to keep growing.
     </li>
-    <li>
-      <strong>The context a loader is handed.</strong> Fields have been added in
-      three of the last four releases. Nothing has been taken away, and that is
-      the intent rather than a promise.
-    </li>
-    <li>
-      <strong><code>transclude.config.js</code> keys.</strong> An unknown key
-      throws, so a rename is loud rather than silent, and a test checks the
-      <a href="/docs/config">table</a> against what the code reads.
-    </li>
   </ul>
+
+  <p>
+    The context a loader is handed and the config keys are settled ahead of
+    <code>1.0</code>. A field or key may still be added. None will be renamed
+    or removed without a major, and tests pin both documented tables to the
+    code.
+  </p>
 
   <doc-note label="What a version number means here">
     A patch fixes something. A minor may add a refusal, which is the shape a
-    break takes. Nothing removes a documented field without a major, and there
-    has not been one.
+    break takes. That rule holds at <code>1.0</code> and after: a refusal
+    rejects only code that was already not doing what it looked like it did.
+    Every release that adds one names it at the top of its notes, with the
+    change to make. Nothing renames or removes a documented field or key
+    without a major, and there has not been one.
   </doc-note>
 
   <h2>What it does not do</h2>

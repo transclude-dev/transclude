@@ -303,7 +303,7 @@ export function createChecker({
     `route: { id: string; pattern: string; path: string }; ` +
     `layout: ${layoutType}; request: Request | null; fragment: string | null; ` +
     `action: unknown; response: { status: number; headers: Headers }; ` +
-    `cookies: __Cookies; htmlAttrs: Record<string, string | boolean | null>; ` +
+    `cookies: __Cookies; ` +
     `absolute: (path: string) => string; revalidateTag: (tag: string) => void; ` +
     `after: (work: Promise<unknown>) => void }`;
 

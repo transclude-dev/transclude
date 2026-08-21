@@ -367,6 +367,13 @@ export const POST = async ({ request, revalidateTag }) => {
           <td><code>public, max-age=0, must-revalidate</code></td>
         </tr>
         <tr>
+          <td>Server-rendered pages</td>
+          <td>
+            The same, and <code>private, no-cache</code> once the render reads a
+            cookie or sets a header
+          </td>
+        </tr>
+        <tr>
           <td>The 500 page</td>
           <td><code>no-store</code>, and no ETag</td>
         </tr>

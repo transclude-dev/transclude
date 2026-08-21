@@ -411,6 +411,20 @@ test('the hint is not a header on the page, so the page is still cacheable', asy
   assert.equal(renders, 1, 'the preload header made the page uncacheable');
 });
 
+test('a shareable render says public, and a personal one says private', async () => {
+  // Both leave through `sendRendered`. `public` on a page that read a cookie
+  // is an explicit grant to shared caches: a conforming one revalidates and
+  // misses on the ETag, but a CDN whose edge rule skips revalidation would
+  // hand one visitor's page to the next.
+  const open = await pageApp().request('http://x/');
+  assert.equal(open.headers.get('cache-control'), 'public, max-age=0, must-revalidate');
+
+  const personal = await pageApp({
+    load: async ({ cookies }) => ({ theme: cookies.get('theme') ?? 'auto' }),
+  }).request('http://x/');
+  assert.equal(personal.headers.get('cache-control'), 'private, no-cache');
+});
+
 // ---- the author's own files ------------------------------------------------
 //
 // Against a real listener, not `app.request()`. `serveStatic` writes its headers

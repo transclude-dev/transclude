@@ -35,6 +35,11 @@ import { withDefaults } from './defaults.js';
 
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 const REVALIDATE = 'public, max-age=0, must-revalidate';
+// What a personal render says instead. `public` is an explicit grant, and a
+// page that read a cookie is one visitor's. A conforming shared cache would
+// revalidate and miss on the ETag anyway; this is for the CDN whose edge rule
+// skips revalidation and would hand one visitor's page to the next.
+const PERSONAL = 'private, no-cache';
 
 // One per process rather than one per render. It holds no state between calls.
 const encoder = new TextEncoder();
@@ -529,7 +534,10 @@ export function createApp({
     const etag = encoding ? `${base.slice(0, -1)}-${encoding}"` : base;
 
     c.header('Vary', varyOn);
-    c.header('Cache-Control', REVALIDATE);
+    // The same test that gates the held-page store. A shareable render is
+    // anyone's; a personal one has to say so, or a cache told `public` would
+    // be within its rights to believe it.
+    c.header('Cache-Control', ctx && !isShareable(html, ctx) ? PERSONAL : REVALIDATE);
     c.header('ETag', etag);
 
     // Whatever the loaders put on `ctx.response`, after the defaults above so a

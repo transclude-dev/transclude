@@ -74,6 +74,14 @@ if (flash) cookies.delete('flash');`,
     </table>
   </div>
 
+  <p>
+    The write defaults are <code>Path=/</code>, <code>HttpOnly</code>,
+    <code>SameSite=Lax</code>, and <code>Secure</code> when the request came
+    over TLS. Any option you pass wins. <code>sameSite: 'None'</code> without
+    <code>secure: true</code> is refused, because every browser drops that pair
+    silently.
+  </p>
+
   <h2>Signing</h2>
 
   <p>

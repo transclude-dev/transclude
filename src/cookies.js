@@ -170,5 +170,18 @@ function overTls(request) {
  * turns the whole thing off. Set it yourself to override either way.
  */
 function withDefaults(options, request) {
-  return { path: '/', httpOnly: true, sameSite: 'Lax', secure: overTls(request), ...options };
+  const merged = { path: '/', httpOnly: true, sameSite: 'Lax', secure: overTls(request), ...options };
+
+  // Every browser drops this pair, silently, so writing it is never right.
+  // `None` is for a cookie sent cross-site, and those are Secure-only
+  // everywhere. Refused here rather than left to the browser, because a cookie
+  // that never arrives reads exactly like a bug somewhere else.
+  if (String(merged.sameSite).toLowerCase() === 'none' && !merged.secure) {
+    throw new Error(
+      `[transclude] a cookie with \`sameSite: 'None'\` needs \`secure: true\`. Every ` +
+        `browser drops the pair without it, silently. Set both, or use 'Lax'.`,
+    );
+  }
+
+  return merged;
 }

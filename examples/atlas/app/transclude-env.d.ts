@@ -70,14 +70,14 @@ type Identity = {
   handle: string | null;
   verified: boolean;
   pds: string;
-  doc: any;
+  doc: object;
 };
 type Lexicon = {
   nsid: string;
   did: string;
   uri: string;
   cid: string;
-  schema: any;
+  schema: object;
 };
 type AtUri = {
   authority: string;
@@ -135,7 +135,6 @@ export type RootLayoutContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -168,7 +167,6 @@ export type AboutContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -203,7 +201,6 @@ export type IndexContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -238,7 +235,6 @@ export type DidIdContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -293,7 +289,6 @@ export type LexiconNsidContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -382,7 +377,6 @@ export type AtUriRestContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -397,13 +391,13 @@ export type AtUriRestData = __Shape<{
   requests: number;
   ms: any;
   error: null;
-  raw: any;
-  collections: any;
   fields: never[];
   rows: never[];
   schema: boolean;
   cursor: null;
   links: never[];
+  raw: any;
+  collections: any;
 }> | __Shape<{
   at: AtUri;
   kind: string;
@@ -412,13 +406,13 @@ export type AtUriRestData = __Shape<{
   requests: number;
   ms: any;
   error: null;
+  rows: never[];
+  collections: never[];
+  cursor: null;
   raw: any;
   fields: Field[];
   schema: boolean;
   links: Backlink[];
-  rows: never[];
-  collections: never[];
-  cursor: null;
 }> | __Shape<{
   at: AtUri;
   kind: string;
@@ -427,13 +421,13 @@ export type AtUriRestData = __Shape<{
   requests: number;
   ms: any;
   error: null;
+  fields: never[];
+  collections: never[];
+  links: never[];
   raw: any;
   schema: boolean;
   cursor: any;
   rows: any;
-  fields: never[];
-  collections: never[];
-  links: never[];
 }> | __Shape<{
   hops: Row_2[];
   requests: number;
@@ -477,7 +471,6 @@ export type EmbedUriRestContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -485,13 +478,13 @@ export type EmbedUriRestContext = {
 
 /** Data returned by `embed-_uri_rest`'s <script server> block. */
 export type EmbedUriRestData = __Shape<{
+  at: AtUri;
+  identity: Identity;
   gone: null;
   raw: any;
   schema: boolean;
   uri: any;
   fields: Field[];
-  at: AtUri;
-  identity: Identity;
 }> | __Shape<{
   uri: string;
   gone: any;

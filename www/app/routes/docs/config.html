@@ -196,9 +196,12 @@
           <td><code>onError</code></td>
           <td><code>null</code></td>
           <td>
-            <code>(error, { request, url, method })</code> for every request that
-            fails. The 500 page ships either way, and a reporter that throws is
-            caught. Without one, the error is logged.
+            <code>(error, { request, url, method, route, phase })</code> for
+            every request that fails. <code>route</code> names the matched route
+            and its params, and <code>phase</code> says which work failed: page,
+            fragment, action, endpoint, after or revalidate. The 500 page ships
+            either way, and a reporter that throws is caught. Without one, the
+            error is logged.
           </td>
         </tr>
         <tr>

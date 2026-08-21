@@ -264,17 +264,24 @@ const handleAction = async (route, c) => {
     : sendFragment(route, c, region, extra);
 };
 
-const onError = (c, err) => {
+const onError = (c, err, at = null) => {
   // Before anything reads the stack: Vite's transform means the raw one points
   // at generated code, and a reporter given that is worse than none.
   vite.ssrFixStacktrace(err);
   console.error(err);
 
-  // The same seam production has, so a reporter is exercised while you are the
-  // one looking at it rather than first on a live site.
+  // The same seam production has, with the same shape, so a reporter is
+  // exercised while you are the one looking at it rather than first on a live
+  // site. A field dev left null would read as a production bug later.
   if (typeof config.onError === 'function') {
     try {
-      config.onError(err, { request: c.req.raw, url: c.req.url, method: c.req.method });
+      config.onError(err, {
+        request: c.req.raw,
+        url: c.req.url,
+        method: c.req.method,
+        route: at ? { id: at.route.id, pattern: at.route.pattern, params: c.req.param() } : null,
+        phase: at?.phase ?? null,
+      });
     } catch (failed) {
       console.error('[transclude] onError itself threw:', failed);
     }
@@ -389,7 +396,7 @@ async function buildApp() {
         const fragment = fragmentOf(c);
         return fragment === null ? await renderPage(route, c) : await sendFragment(route, c, fragment);
       } catch (err) {
-        return onError(c, err);
+        return onError(c, err, { route, phase: fragmentOf(c) === null ? 'page' : 'fragment' });
       }
     });
 
@@ -400,7 +407,7 @@ async function buildApp() {
       try {
         return await handleAction(route, c);
       } catch (err) {
-        return onError(c, err);
+        return onError(c, err, { route, phase: 'action' });
       }
     });
   }
@@ -422,7 +429,7 @@ async function buildApp() {
           Allow: endpointMethods(mod).join(', '),
         });
       } catch (err) {
-        return onError(c, err);
+        return onError(c, err, { route, phase: 'endpoint' });
       }
     });
   }
@@ -432,7 +439,7 @@ async function buildApp() {
     try {
       return await renderPage(notFound, c, 404);
     } catch (err) {
-      return onError(c, err);
+      return onError(c, err, { route: notFound, phase: 'page' });
     }
   });
 

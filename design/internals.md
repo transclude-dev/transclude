@@ -91,7 +91,10 @@ against.
   name.** The 7 package exports two names from its main entry; the compiler is
   a Go child process behind `typescript/unstable/sync`, and `typecheck.js` is
   the one file in `src/` that imports it, so a move in a 7.x minor is one file
-  to follow. Four differences crossed the port. A diagnostic's chained reasons
+  to follow. The import and its shape are both checked by `refuseMovedAPI`,
+  because a renamed flag is the quiet break: an undefined bit ORs into
+  `TYPE_FORMAT` as nothing and types print wrong without a word. The refusal
+  names what moved and the pinned version that held still. Four differences crossed the port. A diagnostic's chained reasons
   arrive structured rather than flattened, so `flatten` joins them, or every
   "not assignable" loses its because. Qualified type names print
   single-quoted, so `QUALIFIED` accepts either quote. Union order in a message

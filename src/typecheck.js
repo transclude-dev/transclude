@@ -33,10 +33,56 @@ if (!/^7\./.test(tsVersion)) {
   );
 }
 
-// The 7.x API: a Go compiler as a child process, spoken to synchronously. It is
-// exported under `unstable` and this file is the one place that imports it, so
-// a move in a 7.x minor is one file to follow.
-const { API, DiagnosticCategory, NodeBuilderFlags } = await import('typescript/unstable/sync');
+// The 7.x API: a Go compiler as a child process, spoken to synchronously. It
+// is exported under `unstable`, which is the API's own warning, so the import
+// and the shape are both checked rather than trusted. A 7.x minor may move the
+// subpath, which fails loudly with the wrong name, or rename a flag, which
+// does not fail at all: an undefined bit ORs into TYPE_FORMAT as nothing and
+// types print wrong without a word. Either way the refusal names what moved
+// and the version that held still.
+const TESTED = '7.0.2';
+
+/**
+ * The unstable module, or the refusal naming what moved.
+ *
+ * Exported for its test, which is the only way to falsify a failure that needs
+ * a TypeScript that does not exist yet.
+ *
+ * @param {object|null} unstable what importing `typescript/unstable/sync` gave
+ * @param {string} version the TypeScript that gave it
+ * @returns {object} the module, once its shape holds
+ * @throws when the subpath or a name this file drives is gone
+ */
+export function refuseMovedAPI(unstable, version) {
+  const missing = ['API', 'DiagnosticCategory', 'NodeBuilderFlags'].filter(
+    (name) => !unstable?.[name],
+  );
+  for (const flag of [
+    'NoTruncation',
+    'InTypeAlias',
+    'UseFullyQualifiedType',
+    'UseSingleQuotesForStringLiteralType',
+  ]) {
+    // Only once the enum itself is there: a missing enum already says enough.
+    if (unstable?.NodeBuilderFlags && typeof unstable.NodeBuilderFlags[flag] !== 'number') {
+      missing.push(`NodeBuilderFlags.${flag}`);
+    }
+  }
+
+  if (missing.length) {
+    throw new Error(
+      `[transclude] TypeScript ${version} moved the unstable API this checker drives: ` +
+        `${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} gone. ` +
+        `Pin the version that held still: npm install -D typescript@${TESTED}`,
+    );
+  }
+  return unstable;
+}
+
+const { API, DiagnosticCategory, NodeBuilderFlags } = refuseMovedAPI(
+  await import('typescript/unstable/sync').catch(() => null),
+  tsVersion,
+);
 
 /**
  * Annotations are optional, so `noImplicitAny` is off: an unannotated parameter

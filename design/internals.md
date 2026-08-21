@@ -87,6 +87,20 @@ against.
   wrong in every component without a `<script state>` block and nothing failed.
 - **The shim is `.js` on purpose.** JSDoc `@type` is honored in `.js` and
   ignored in `.ts`. Do not "clean it up" into TypeScript.
+- **`transclude-check` drives TypeScript 7, and refuses anything else by
+  name.** The 7 package exports two names from its main entry; the compiler is
+  a Go child process behind `typescript/unstable/sync`, and `typecheck.js` is
+  the one file in `src/` that imports it, so a move in a 7.x minor is one file
+  to follow. Four differences crossed the port. A diagnostic's chained reasons
+  arrive structured rather than flattened, so `flatten` joins them, or every
+  "not assignable" loses its because. Qualified type names print
+  single-quoted, so `QUALIFIED` accepts either quote. Union order in a message
+  is the compiler's, not the source's: `Response | Promise<Response>` prints
+  reversed, and three tests assert 7's order. And a `let x = null` that a
+  closure reads is no longer an evolving type, which is how the showcase's
+  checks endpoint earned an annotation 5.9 never asked for. The compiler being
+  a child process is why `createChecker` has `dispose` and `bin/check.js`
+  calls it: without that, the exit waits on an orphan.
 - **A shim diagnostic that does not map is dropped.** An error landing in
   generated scaffolding disappears. A check that passes very quietly usually means
   the position did not map, not that the code is right. This happened for real.

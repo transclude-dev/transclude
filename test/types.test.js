@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import ts from 'typescript';
+import { checkAlone } from '../src/typecheck.js';
 
 import { emitTypes } from '../src/compiler/types.js';
 
@@ -21,19 +21,10 @@ function diagnose(source) {
   const file = path.join(dir, 'transclude-env.d.ts');
   fs.writeFileSync(file, source);
 
-  // The same options `bin/check.js` uses, so this test and that guard agree
-  // about what the file is allowed to name.
-  const program = ts.createProgram([file], {
-    noEmit: true,
-    skipLibCheck: false,
-    types: [],
-    target: ts.ScriptTarget.ESNext,
-    lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
-  });
-
-  return [...program.getSyntacticDiagnostics(), ...program.getSemanticDiagnostics()].map((d) =>
-    ts.flattenDiagnosticMessageText(d.messageText, ' '),
-  );
+  // The guard itself, not a copy of its options: `checkAlone` is what
+  // `bin/check.js` runs over the emitted file, so this test and that guard
+  // cannot disagree about what the file is allowed to name.
+  return checkAlone(file).map((diagnostic) => diagnostic.message);
 }
 
 const page = (fields) => ({ pages: [{ id: 'index', pattern: '/', params: [], ...fields }] });

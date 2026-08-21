@@ -466,12 +466,12 @@ test('a handler that returns nothing is an error', () => {
   // TypeScript reports this at the annotation, which is generated text. With an
   // unmapped position the diagnostic was dropped and this passed quietly.
   const [diagnostic] = endpointErrors('export const GET = () => {};');
-  assert.match(diagnostic.message, /not assignable to type 'Response \| Promise<Response>'/);
+  assert.match(diagnostic.message, /not assignable to type 'Promise<Response> \| Response'/);
 });
 
 test('a handler that returns a bare object is an error', () => {
   const [diagnostic] = endpointErrors('export const POST = () => ({ ok: true });');
-  assert.match(diagnostic.message, /not assignable to type 'Response \| Promise<Response>'/);
+  assert.match(diagnostic.message, /not assignable to type 'Promise<Response> \| Response'/);
 });
 
 test('the error points into the real file, not into the shim', () => {
@@ -517,7 +517,7 @@ test('an async handler is fine, since a Promise<Response> satisfies it', () => {
 
 test('export function GET counts as much as export const GET', () => {
   const [diagnostic] = endpointErrors('export function GET() { return { no: 1 }; }');
-  assert.match(diagnostic.message, /not assignable to type 'Response \| Promise<Response>'/);
+  assert.match(diagnostic.message, /not assignable to type 'Promise<Response> \| Response'/);
 });
 
 test("an endpoint's ctx has no layout, because nothing renders", () => {

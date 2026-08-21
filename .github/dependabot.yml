@@ -40,13 +40,6 @@ updates:
         patterns: ['*']
         update-types: [minor, patch]
     ignore:
-      # `src/typecheck.js` uses the TypeScript compiler API, and 7.x moved it:
-      # `ts.TypeFormatFlags` is undefined there, so the module does not load at
-      # all. That is a port rather than a bump. Tracked separately; take this
-      # entry out when it is done.
-      - dependency-name: typescript
-        update-types: [version-update:semver-major]
-
       # `@types/node` majors track Node majors, so this is a description of the
       # runtime rather than a dependency, and nothing checks that the
       # description is true. Ahead of `engines.node` it green-lights an API that

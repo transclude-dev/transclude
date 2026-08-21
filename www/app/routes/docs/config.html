@@ -102,7 +102,11 @@
         <tr>
           <td><code>cookieSecret</code></td>
           <td><code>null</code></td>
-          <td>Signs cookies. Without one, <code>cookies.signed</code> throws.</td>
+          <td>
+            Signs cookies. Without one, <code>cookies.signed</code> throws. An
+            empty string is refused at startup, because it is a secret that
+            supplies nothing.
+          </td>
         </tr>
         <tr>
           <td><code>csp</code></td>
@@ -196,9 +200,12 @@
           <td><code>onError</code></td>
           <td><code>null</code></td>
           <td>
-            <code>(error, { request, url, method })</code> for every request that
-            fails. The 500 page ships either way, and a reporter that throws is
-            caught. Without one, the error is logged.
+            <code>(error, { request, url, method, route, phase })</code> for
+            every request that fails. <code>route</code> names the matched route
+            and its params, and <code>phase</code> says which work failed: page,
+            fragment, action, endpoint, after or revalidate. The 500 page ships
+            either way, and a reporter that throws is caught. Without one, the
+            error is logged.
           </td>
         </tr>
         <tr>

@@ -225,7 +225,7 @@ export function createApp({
       revalidateTag: cache.revalidateTag,
       // Reported through `report`, so work that fails after the reader is gone
       // is not quieter than work that fails in front of them.
-      after: afterFor(c, (error) => report(error, c)),
+      after: afterFor(c, (error) => report(error, c, { route, phase: 'after' })),
       ...extra,
     };
   };
@@ -321,7 +321,7 @@ export function createApp({
         if (html === null) return c.text(`no fragment "${region}"`, 404);
         return sendRendered(c, html, ctx);
       } catch (err) {
-        return internalError(c, err);
+        return internalError(c, err, { route, phase: 'fragment' });
       }
     });
 
@@ -374,7 +374,7 @@ export function createApp({
         if (html instanceof Response) return withEnvelope(html, ctx);
         return sendRendered(c, html, ctx);
       } catch (err) {
-        return internalError(c, err);
+        return internalError(c, err, { route, phase: 'action' });
       }
     });
   }
@@ -396,7 +396,7 @@ export function createApp({
           Allow: endpointMethods(mod).join(', '),
         });
       } catch (err) {
-        return internalError(c, err);
+        return internalError(c, err, { route, phase: 'endpoint' });
       }
     });
   }
@@ -455,7 +455,7 @@ export function createApp({
         // workerd stops the rebuild when this response is sent, and the entry it
         // leaves in the in-flight map answers every later request with a dead
         // promise.
-        const after = afterFor(c, (error) => report(error, c));
+        const after = afterFor(c, (error) => report(error, c, { route, phase: 'revalidate' }));
         const html = await cache.read(cacheKey(c.req.url), window, render, after);
 
         // A miss rendered through the cache, and that render can answer with a
@@ -467,7 +467,7 @@ export function createApp({
         const ctx = last ? last.ctx : contextFor(route, c);
         return sendRendered(c, html, ctx, preload);
       } catch (err) {
-        return internalError(c, err);
+        return internalError(c, err, { route, phase: 'page' });
       }
     });
   }
@@ -480,19 +480,28 @@ export function createApp({
    * `console.error` is the default and not much of one: a real site sends this
    * to something that can page a person. `onError` is that seam, and it is given
    * the request as well, because an error with no URL and no method is most of
-   * the way to useless.
+   * the way to useless. `route` and `phase` say where: the reader starts at the
+   * loader of `people/[slug]` with `slug: 'ada'` rather than at a URL to
+   * re-derive that from. The phases are page, fragment, action, endpoint,
+   * after and revalidate.
    *
    * It is called inside a `try`. A reporter that throws would otherwise replace
    * the error being reported, which is the one failure mode a reporting hook
    * must not have.
    */
-  function report(err, c) {
+  function report(err, c, at = null) {
     if (typeof config.onError !== 'function') {
       console.error(err);
       return;
     }
     try {
-      config.onError(err, { request: c.req.raw, url: c.req.url, method: c.req.method });
+      config.onError(err, {
+        request: c.req.raw,
+        url: c.req.url,
+        method: c.req.method,
+        route: at ? { id: at.route.id, pattern: at.route.pattern, params: c.req.param() } : null,
+        phase: at?.phase ?? null,
+      });
     } catch (failed) {
       console.error(err);
       console.error('[transclude] onError itself threw:', failed);
@@ -500,8 +509,8 @@ export function createApp({
   }
 
   /** Every `catch` above. One place decides what a failed request looks like. */
-  function internalError(c, err) {
-    report(err, c);
+  function internalError(c, err, at = null) {
+    report(err, c, at);
     // No ETag and no Cache-Control: nothing about a failure should be stored or
     // revalidated, and the same bytes would be sent for an unrelated one next time.
     if (!errorPage) return c.text('Internal error', 500);

@@ -102,7 +102,11 @@
         <tr>
           <td><code>cookieSecret</code></td>
           <td><code>null</code></td>
-          <td>Signs cookies. Without one, <code>cookies.signed</code> throws.</td>
+          <td>
+            Signs cookies. Without one, <code>cookies.signed</code> throws. An
+            empty string is refused at startup, because it is a secret that
+            supplies nothing.
+          </td>
         </tr>
         <tr>
           <td><code>csp</code></td>

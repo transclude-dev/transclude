@@ -45,7 +45,9 @@ export function cookiesOf(request, response, secret = null) {
     // `typeof` along the way said `string`, and the config carried it all the
     // way here. The only thing that said otherwise was the length. Reading
     // "needs a secret" while looking at a secret that is plainly set sends you
-    // hunting through the wiring instead of the value.
+    // hunting through the wiring instead of the value. `withDefaults` refuses
+    // the empty string at boot now; this stays for a `cookiesOf` reached
+    // without it.
     if (typeof secret === 'string') {
       throw new Error(
         `[transclude] ${what} needs a secret, and \`cookieSecret\` is set to an ` +

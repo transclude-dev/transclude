@@ -41,6 +41,14 @@ test('no config at all is all the defaults', () => {
 // away and says nothing. The docs claimed this throw for a long time before
 // anything did.
 
+test('an empty cookieSecret is refused at boot, not at the first signed cookie', () => {
+  // The lazy throw in `cookiesOf` fires in production, at request time, days
+  // after the deploy that broke it. This one fires where CI can see it.
+  assert.throws(() => withDefaults({ cookieSecret: '' }), /empty string.*wrangler/s);
+  assert.equal(withDefaults({ cookieSecret: null }).cookieSecret, null);
+  assert.equal(withDefaults({ cookieSecret: 's3cret' }).cookieSecret, 's3cret');
+});
+
 test('a key nothing reads is refused, and named', () => {
   assert.throws(
     () => withDefaults({ stylesheeet: 'app/styles/global.css' }),

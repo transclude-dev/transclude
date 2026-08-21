@@ -266,6 +266,7 @@ test('a styles value nobody recognizes throws rather than quietly keeping them',
   );
 });
 
+
 test('the index is built after cleaning, so it names nothing that was removed', async () => {
   // Indexing first would list `gone` and then fail to resolve it.
   const source = '<h2 id="a">A</h2><iframe id="gone"></iframe>';
@@ -276,6 +277,19 @@ test('the index is built after cleaning, so it names nothing that was removed', 
   ).json();
 
   assert.deepEqual(body.fragments.map((f) => f.id), ['a']);
+});
+
+test('the outline says what the cleaning took out', async () => {
+  // `sanitize` kept the list from the start and nothing read it. This is where
+  // an operator does: ask the document question, with no id.
+  const source = '<h2 id="a">A</h2><script>x()</script><p onclick="y()">b</p>';
+  const { fetch } = fakeFetch({ 'https://source.example/x': html(source) });
+
+  const body = await (
+    await proxyHandler(ALLOW, { fetch })(request('url=https://source.example/x'))
+  ).json();
+
+  assert.deepEqual(body.removed, ['script', '@onclick']);
 });
 
 // ---- caching ---------------------------------------------------------------

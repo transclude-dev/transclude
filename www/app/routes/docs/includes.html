@@ -100,7 +100,7 @@
 
 { "url": "…", "fragments": [
   { "id": "reference", "implicit": false, "tag": "h2", "rank": 2, "kind": "heading-run", "text": "Reference" }
-] }`,
+], "removed": ["script", "@onclick"] }`,
         'text',
       ],
     }),
@@ -367,7 +367,10 @@
 
   ${html(s.request)}
 
-  <p>With no <code>id</code>, the answer is the document's outline.</p>
+  <p>
+    With no <code>id</code>, the answer is the document's outline, and what the
+    cleaning removed.
+  </p>
 
   ${html(s.outline)}
 

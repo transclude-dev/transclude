@@ -289,10 +289,12 @@ export function proxyHandler(options = {}, deps = {}) {
     try {
       const entry = await readForeign(url, config, { ...deps, store });
 
-      // No id is a question about the document rather than a piece of it.
+      // No id is a question about the document rather than a piece of it, so
+      // the answer also says what the cleaning took out. The list was already
+      // kept for exactly this; nothing read it until here.
       if (!id) {
         const { listFragments } = await import('./extract.js');
-        return json(200, { url, fragments: listFragments(entry.doc) });
+        return json(200, { url, fragments: listFragments(entry.doc), removed: entry.removed });
       }
 
       const found = resolveFragment(entry.doc, id);

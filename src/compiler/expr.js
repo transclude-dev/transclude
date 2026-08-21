@@ -55,14 +55,6 @@ export class Scope {
     }
     return null;
   }
-
-  // Used for the shadowing warning: does an *enclosing* scope already bind this?
-  outerHas(name) {
-    for (let s = this.parent; s; s = s.parent) {
-      if (s.vars.has(name)) return true;
-    }
-    return false;
-  }
 }
 
 /**

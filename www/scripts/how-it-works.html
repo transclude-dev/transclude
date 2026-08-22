@@ -603,7 +603,7 @@
         <div class="files">${s.files
           .map(
             (f) =>
-              `<button type="button" class="where" data-file="${f}" data-line="1">${f.replace('src/', '')} <span style="color:var(--faint)">${D.modules[f].split('\n').length}</span></button>`,
+              `<button type="button" class="where" data-file="${f}" data-line="1">${f.replace('src/', '')} <span style="color:var(--faint)">${D.modules[f].length}</span></button>`,
           )
           .join('')}</div>
       </div>`,

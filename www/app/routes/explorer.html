@@ -1,0 +1,429 @@
+<script server>
+  import { compiled, compiledTags, files, modules, shared, source, sourceTags, stages } from '../lib/source.js';
+
+  /** Each line with the block it belongs to, so picking one shows the other. */
+  const pane = (lines, ranges) =>
+    lines.map((html, i) => ({
+      html,
+      tag: ranges
+        .filter(([from, to]) => i + 1 >= from && i + 1 <= to)
+        .flatMap(([, , names]) => names)
+        .join(' '),
+    }));
+
+  // Grouped by which clock the module runs on. Objects rather than tuples: a
+  // mixed tuple widens to `string | Function` and `npm run check` then refuses
+  // to call the one that is a function.
+  const GROUPS = [
+    {
+      title: 'The compiler',
+      blurb: 'Build time. Turns a file into a module.',
+      holds: (f) => f.startsWith('src/compiler/'),
+    },
+    {
+      title: 'The request',
+      blurb: 'Per request. The app, the document, and what a route is.',
+      holds: (f) =>
+        ['src/app.js', 'src/server.js', 'src/document.js', 'src/routes.js', 'src/cookies.js',
+         'src/include.js', 'src/proxy.js', 'src/address.js', 'src/lookup.js', 'src/negotiate.js',
+         'src/gate.js', 'src/rewrite.js', 'src/extract.js'].includes(f),
+    },
+    {
+      title: 'The build',
+      blurb: 'What is written to dist, and what refuses to be.',
+      holds: (f) =>
+        ['src/prerender.js', 'src/plugin.js', 'src/precache.js', 'src/icons.js', 'src/sitemap.js',
+         'src/feed.js', 'src/speculate.js', 'src/markdown.js', 'src/typecheck.js', 'src/csp.js'].includes(f),
+    },
+    {
+      title: 'The browser',
+      blurb: 'The only code that ships, and only when an element needs it.',
+      holds: (f) => f.startsWith('src/runtime/'),
+    },
+  ];
+
+  const BLOCKS = [
+    ['loader', 'The loader becomes two exports. `export default` is rewritten to a const the module can call, and load() wraps it, so a page with no loader answers the same shape as a page with one.'],
+    ['action', 'A verb export passes through as it was written. The server calls it before the render, and only for a request that is not a GET.'],
+    ['title', 'A title is lifted out of the body. It becomes renderTitle(), and hasTitle tells the layout above whether this page already answered.'],
+    ['style', 'A style block leaves the markup and becomes a css export the document collects, so the same block written twice is sent once.'],
+    ['markup', 'Markup becomes string concatenation. each is a real for loop, and every interpolation is wrapped in __e(), which escapes. That is why a value carrying a tag arrives as text.'],
+    ['fragment', 'Look at both places it lit up. The ul produced regions.list and the body of render, from one walk over one template.'],
+  ];
+
+  const ASKS = [
+    ['GET /notes', 'load, render, renderTitle, css', 'The document. The loader runs, render turns what it returned into markup, and the title and styles are collected into a head this page never wrote by hand.'],
+    ['GET /notes?fragment=list', 'load, regions.list', 'The list, alone. Same loader, then regions.list instead of render. No head, no layout, no second template.'],
+    ['POST /notes', 'POST, load, render', 'The action, then the page. POST runs first and answers with a 303, so the browser lands on a GET and a reload repeats the navigation rather than the write.'],
+    ['transclude src="/notes#list"', 'load, regions.list, includes', 'The same list, inside another page. Resolved on the server before that page renders. This route\'s loaders run and its layouts do not.'],
+  ];
+
+  export default async () => {
+    const claimed = new Set();
+    const groups = GROUPS.map(({ title, blurb, holds }) => {
+      const named = files.filter((f) => holds(f) && !claimed.has(f));
+      named.forEach((f) => claimed.add(f));
+      return { title, blurb, files: named.map((f) => ({ file: f, lines: modules[f].length })) };
+    });
+    groups.push({
+      title: 'The rest',
+      blurb: 'Wiring, adapters and the smaller pieces.',
+      files: files.filter((f) => !claimed.has(f)).map((f) => ({ file: f, lines: modules[f].length })),
+    });
+
+    return {
+      shared,
+      source: pane(source, sourceTags),
+      compiled: pane(compiled, compiledTags),
+      build: stages.filter((s) => s.phase === 'compile'),
+      serve: stages.filter((s) => s.phase === 'request'),
+      fate: stages.find((s) => s.phase === 'build'),
+      groups,
+      blocks: BLOCKS.map(([tag, said]) => ({ tag, said })),
+      asks: ASKS.map(([label, lit, said]) => ({ label, lit, said })),
+      total: files.length,
+      lines: files.reduce((n, f) => n + modules[f].length, 0),
+    };
+  };
+</script>
+
+<title>How transclude works · transclude</title>
+<meta
+  name="description"
+  content="One page traced from source to response, with every stage opening the module that does the work."
+/>
+<link rel="canonical" href="https://transclude.dev/explorer" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="How transclude works" />
+<meta
+  property="og:description"
+  content="One page traced from source to response, with every stage opening the module that does the work."
+/>
+
+<style>
+  .x-lede {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    line-height: 1.6;
+    color: var(--muted);
+    max-width: 36em;
+  }
+
+  .x-panes {
+    display: grid;
+    gap: 1px;
+    grid-template-columns: 1fr 1fr;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  @media (max-width: 58rem) {
+    .x-panes { grid-template-columns: 1fr; }
+  }
+  .x-pane { background: var(--ground); min-width: 0; }
+  .x-pane > h3 {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--surface);
+    border-bottom: 1px solid var(--rule);
+    margin: 0;
+    padding: 0.5rem 0.85rem;
+  }
+  .x-pane pre {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    overflow: auto;
+    /* The compiled module is 84 lines. Left to grow, the chips that drive it
+       ended up below the fold, so the control and the thing it controls were
+       never on screen together. */
+    max-height: 26rem;
+  }
+  .x-pane code { display: block; padding: 0.8rem 0; font-size: 0.76rem; line-height: 1.65; }
+
+  .x-line { display: block; padding: 0 0.85rem; }
+  .x-line[data-tag] { cursor: pointer; }
+  .x-line[data-tag]:hover { background: var(--surface); }
+  .x-line.on { background: var(--note-bg); box-shadow: inset 2px 0 0 var(--link); }
+
+  .x-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0 0 0.9rem; padding: 0; list-style: none; }
+  .x-chip {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 0.26rem 0.6rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--ground);
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .x-chip[aria-pressed='true'] { background: var(--note-bg); border-color: var(--link); color: var(--ink); }
+  .x-chip:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+
+  .x-said { font-family: var(--serif); font-size: 0.98rem; line-height: 1.65; color: var(--muted); margin: 1rem 0 2rem; max-width: 46em; }
+  .x-said[hidden] { display: none; }
+
+  .x-stages { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; }
+  .x-stage { background: var(--ground); padding: 0.8rem 1rem; display: grid; grid-template-columns: 2rem 1fr auto; gap: 0.35rem 0.85rem; align-items: baseline; }
+  @media (max-width: 42rem) { .x-stage { grid-template-columns: 2rem 1fr; } }
+  .x-stage .n { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+  .x-stage h3 { font-size: 0.94rem; margin: 0; }
+  .x-stage p { grid-column: 2; margin: 0; font-family: var(--serif); font-size: 0.9rem; line-height: 1.55; color: var(--muted); }
+  .x-stage a.where { font-family: var(--mono); font-size: 0.74rem; white-space: nowrap; }
+
+  .x-files { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0 0; padding: 0; list-style: none; }
+  .x-files a {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    padding: 0.24rem 0.55rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .x-files a:hover { border-color: var(--link); color: var(--link); }
+  .x-files .n { color: var(--muted); }
+
+  .x-asks { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+  .x-ask {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--ground);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .x-ask[aria-pressed='true'] { background: var(--note-bg); border-color: var(--link); font-weight: 600; }
+  .x-ask:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+  .x-answer { border: 1px solid var(--rule); border-radius: var(--radius); padding: 0.9rem 1.1rem; }
+  .x-answer[hidden] { display: none; }
+  .x-answer p { margin: 0.5rem 0 0; font-family: var(--serif); font-size: 0.96rem; line-height: 1.6; color: var(--muted); }
+  .x-answer .lit { font-family: var(--mono); font-size: 0.78rem; color: var(--ink); }
+
+</style>
+
+<site-shell here="docs">
+  <h1>How transclude works</h1>
+
+  <p class="x-lede">
+    One page, traced from the file you write to the bytes a browser gets.
+    Nothing here is written down twice. The compiled module below is the real
+    output for the file beside it, and every stage opens the code that does the
+    work.
+  </p>
+
+  <h2>The file</h2>
+
+  <p>
+    <code>app/routes/notes.html</code> answers <code>/notes</code>. Pick a block
+    to see what it became.
+  </p>
+
+  <ul class="x-chips" id="chips">
+    <li each="one of blocks">
+      <button
+        type="button"
+        class="x-chip"
+        aria-pressed="false"
+        data-tag="${one.tag}"
+        data-said="${one.said}"
+      >
+        ${one.tag}
+      </button>
+    </li>
+  </ul>
+
+  <div class="x-panes" id="panes">
+    <div class="x-pane">
+      <h3>app/routes/notes.html</h3>
+      <pre><code class="shiki"><span
+            class="x-line"
+            each="line of source"
+            data-tag="${line.tag || false}"
+            >${html(line.html)}</span></code></pre>
+    </div>
+    <div class="x-pane">
+      <h3>the module it compiles to</h3>
+      <pre><code class="shiki"><span
+            class="x-line"
+            each="line of compiled"
+            data-tag="${line.tag || false}"
+            >${html(line.html)}</span></code></pre>
+    </div>
+  </div>
+
+  <p class="x-said" id="said" hidden></p>
+
+  <doc-note label="One template, two answers">
+    The <code>&lt;ul&gt;</code> produced <code>regions.list</code> and the body
+    of <code>render</code>. ${shared} of those lines are identical, character
+    for character, and the build checks that before this page is written. The
+    document and the fragment cannot disagree, because there is one of them.
+  </doc-note>
+
+  <h2 id="stages">Compiling it</h2>
+
+  <p>This runs once, at build time. Nobody is waiting.</p>
+
+  <div class="x-stages">
+    <div class="x-stage" each="stage, i of build">
+      <span class="n">${i + 1 < 10 ? '0' : ''}${i + 1}</span>
+      <h3>${stage.title}</h3>
+      <a class="where" href="/source/${stage.file}#L${stage.line}"
+        >${stage.file.slice(4)}:${stage.line}</a
+      >
+      <p>${stage.blurb}</p>
+    </div>
+  </div>
+
+  <h2>What the build decides</h2>
+
+  <p>
+    The build runs each loader once. A page that reads nothing about the request
+    becomes a file. One that reads a cookie, sets a header or answers with a
+    <code>Response</code> cannot be one file for every visitor. The build names
+    it, says what it did, and exits non-zero.
+  </p>
+
+  <p>
+    <a href="/source/${fate.file}#L${fate.line}">${fate.file.slice(4)}:${fate.line}</a>
+    is where that is decided.
+  </p>
+
+  <h2>Answering a request</h2>
+
+  <p>
+    Everything above the route table runs for every request, one that ends at a
+    file included.
+  </p>
+
+  <div class="x-stages">
+    <div class="x-stage" each="stage, i of serve">
+      <span class="n">${i + 1 < 10 ? '0' : ''}${i + 1}</span>
+      <h3>${stage.title}</h3>
+      <a class="where" href="/source/${stage.file}#L${stage.line}"
+        >${stage.file.slice(4)}:${stage.line}</a
+      >
+      <p>${stage.blurb}</p>
+    </div>
+  </div>
+
+  <h2>The same module, four ways</h2>
+
+  <p>
+    Four requests, one compiled module. Each reads a different part of it.
+  </p>
+
+  <ul class="x-asks" id="asks">
+    <li each="one of asks">
+      <button
+        type="button"
+        class="x-ask"
+        aria-pressed="false"
+        data-lit="${one.lit}"
+        data-said="${one.said}"
+      >
+        ${one.label}
+      </button>
+    </li>
+  </ul>
+
+  <div class="x-answer" id="answer" hidden>
+    <span class="lit" id="lit"></span>
+    <p id="answer-said"></p>
+  </div>
+
+  <h2>All of it</h2>
+
+  <p>
+    Every module in <code>src/</code>, ${total} files and ${lines} lines. Each
+    one is a page, so a link to it is a link anyone can follow.
+  </p>
+
+  <doc-note label="Each of those marks its code as a fragment">
+    <a href="/source/src/document.js">src/document.js</a> is the page.
+    <a href="/source/src/document.js?fragment=code">The same URL with
+    <code>?fragment=code</code></a> is the listing on its own, from the markup
+    the page already holds. Open both and read one inside the other.
+  </doc-note>
+
+  <div each="group of groups" style="margin-top: 1.5rem">
+    <h3>${group.title}</h3>
+    <p style="margin: 0.2rem 0 0; font-size: 0.92rem">${group.blurb}</p>
+    <ul class="x-files">
+      <li each="one of group.files">
+        <a href="/source/${one.file}" data-file="${one.file}"
+          >${one.file.slice(4)} <span class="n">${one.lines}</span></a
+        >
+      </li>
+    </ul>
+  </div>
+
+</site-shell>
+
+
+<script>
+  // Everything this needs is already in the page. A client block takes no
+  // interpolation, so what it says arrives on a data attribute rather than
+  // being written in here twice.
+  const said = document.getElementById('said');
+  const lines = document.querySelectorAll('.x-line');
+  const chips = document.querySelectorAll('.x-chip');
+
+  let picked = null;
+
+  function pick(tag, from) {
+    picked = picked === tag ? null : tag;
+    for (const line of lines) {
+      const has = (line.dataset.tag ?? '').split(' ').includes(picked);
+      line.classList.toggle('on', Boolean(picked) && has);
+    }
+    for (const chip of chips) chip.setAttribute('aria-pressed', String(chip.dataset.tag === picked));
+    said.textContent = picked ? from.dataset.said : '';
+    said.hidden = !picked;
+
+    // The panes scroll, so a block can be picked while both of its halves are
+    // out of view. Bring the first line of each into it.
+    if (!picked) return;
+    for (const pane of document.querySelectorAll('.x-pane pre')) {
+      const first = pane.querySelector('.x-line.on');
+      if (first) pane.scrollTop = first.offsetTop - pane.offsetTop - 8;
+    }
+  }
+
+  for (const chip of chips) chip.addEventListener('click', () => pick(chip.dataset.tag, chip));
+
+  // Clicking the code picks the same block the chip would.
+  document.getElementById('panes').addEventListener('click', (event) => {
+    const line = event.target.closest('.x-line[data-tag]');
+    if (!line) return;
+    const tag = line.dataset.tag.split(' ')[0];
+    pick(tag, [...chips].find((chip) => chip.dataset.tag === tag));
+  });
+
+  const answer = document.getElementById('answer');
+  const lit = document.getElementById('lit');
+  const answerSaid = document.getElementById('answer-said');
+  const asks = document.querySelectorAll('.x-ask');
+
+  for (const ask of asks) {
+    ask.addEventListener('click', () => {
+      for (const other of asks) other.setAttribute('aria-pressed', String(other === ask));
+      lit.textContent = ask.dataset.lit;
+      answerSaid.textContent = ask.dataset.said;
+      answer.hidden = false;
+    });
+  }
+
+</script>

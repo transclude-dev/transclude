@@ -169,6 +169,22 @@ describe('the explorer reads without JavaScript', () => {
   assert.match(html, /<script type="module" src="\/assets\/explorer-[^"]+\.js">/);
 });
 
+describe('the peek is a dialog, and the platform does the rest', () => {
+  // `showModal` brings the focus trap, Escape, the inert background and the
+  // focus restore. Hand-rolling those is the version of this that is quietly
+  // unusable with a keyboard.
+  const html = explorer();
+  const body = html.slice(html.indexOf('</head>'));
+
+  assert.match(body, /<dialog class="x-peek" id="peek"/);
+  assert.match(body, /aria-labelledby="peek-name"/, 'the dialog has no accessible name');
+  assert.match(html, /\.x-peek::backdrop/, 'the backdrop is unstyled, so it is invisible in one theme');
+  // In the top layer, so it belongs to the document rather than to the column.
+  assert.ok(body.indexOf('</site-shell>') < body.indexOf('<dialog'), 'the dialog is inside the shell');
+  // A peek is not for reading 700 lines, so it says where the real page is.
+  assert.match(body, /id="peek-whole"/, 'no way out of the dialog to the page itself');
+});
+
 describe('nothing on the explorer rendered a value that was not there', () => {
   const text = explorer().replace(/<[^>]*>/g, ' ');
 

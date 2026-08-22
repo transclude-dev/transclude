@@ -211,12 +211,48 @@
   .x-answer p { margin: 0.5rem 0 0; font-family: var(--serif); font-size: 0.96rem; line-height: 1.6; color: var(--muted); }
   .x-answer .lit { font-family: var(--mono); font-size: 0.78rem; color: var(--ink); }
 
-  .x-drawer:not([hidden]) { display: block; margin-top: 1rem; }
-  .x-drawer { border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; }
-  .x-drawer header { display: flex; gap: 1rem; align-items: center; background: var(--surface); border-bottom: 1px solid var(--rule); padding: 0.5rem 0.85rem; }
-  .x-drawer h3 { font-family: var(--mono); font-size: 0.85rem; margin: 0; }
-  .x-drawer .shut { font: inherit; font-family: var(--mono); font-size: 0.78rem; margin-left: auto; background: var(--ground); color: var(--ink); border: 1px solid var(--rule); border-radius: var(--radius); padding: 0.22rem 0.55rem; cursor: pointer; }
-  .x-drawer .held { max-height: 32rem; overflow: auto; }
+  /* A dialog rather than a panel under the index. The index is 48 names long,
+     so opening the first one used to scroll the page away from where the
+     reader was. `showModal` also brings the focus trap, Escape, the inert
+     background and the focus restore, none of which is worth hand-writing. */
+  .x-peek {
+    width: min(64rem, calc(100vw - 2rem));
+    max-height: calc(100vh - 4rem);
+    padding: 0;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--ground);
+    color: var(--ink);
+    overflow: hidden;
+  }
+  .x-peek::backdrop { background: rgb(0 0 0 / 0.5); }
+  .x-peek[open] { display: flex; flex-direction: column; }
+  .x-peek header {
+    display: flex;
+    gap: 0.75rem 1rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border-bottom: 1px solid var(--rule);
+    padding: 0.6rem 0.9rem;
+  }
+  .x-peek h2 { font-family: var(--mono); font-size: 0.9rem; margin: 0; word-break: break-word; }
+  .x-peek .whole { font-family: var(--mono); font-size: 0.78rem; margin-left: auto; }
+  .x-peek .shut {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    background: var(--ground);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 0.22rem 0.6rem;
+    cursor: pointer;
+  }
+  .x-peek .shut:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+  .x-peek .held { overflow: auto; padding: 0.75rem; }
+  .x-peek .held .listing { border: 0; background: none; }
+  .x-peek .waiting { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); padding: 1rem; margin: 0; }
 </style>
 
 <site-shell here="docs">
@@ -369,14 +405,18 @@
     </ul>
   </div>
 
-  <div class="x-drawer" id="drawer" hidden>
-    <header>
-      <h3 id="drawer-name"></h3>
-      <button type="button" class="shut" id="shut">Close</button>
-    </header>
-    <div class="held" id="held"></div>
-  </div>
 </site-shell>
+
+<!-- Outside the shell, because a modal dialog is in the top layer and belongs
+     to the document rather than to the column it was opened from. -->
+<dialog class="x-peek" id="peek" aria-labelledby="peek-name">
+  <header>
+    <h2 id="peek-name"></h2>
+    <a class="whole" id="peek-whole" href="/explorer">Open the page</a>
+    <button type="button" class="shut" id="shut" autofocus>Close</button>
+  </header>
+  <div class="held" id="held"></div>
+</dialog>
 
 <script>
   // Everything this needs is already in the page. A client block takes no
@@ -432,46 +472,54 @@
   }
 
   // Every module is already a page. This asks that page for its code and
-  // nothing else, which is the fragment it marks, and puts it below rather
-  // than navigating. Without this the same link still works.
-  const drawer = document.getElementById('drawer');
+  // nothing else, which is the fragment it marks, and shows it without leaving
+  // the index. Without this the same link still opens the page.
+  const peek = document.getElementById('peek');
   const held = document.getElementById('held');
-  const name = document.getElementById('drawer-name');
+  const name = document.getElementById('peek-name');
+  const whole = document.getElementById('peek-whole');
 
-  async function show(file, link) {
+  async function show(file, href) {
     name.textContent = file;
-    held.textContent = 'Reading…';
-    drawer.hidden = false;
-    drawer.scrollIntoView({ block: 'nearest' });
+    whole.href = href;
+    held.innerHTML = '<p class="waiting">Reading\u2026</p>';
+    peek.showModal();
 
     try {
-      const answered = await fetch(`/source/${file}?fragment=code`);
+      const answered = await fetch(`${href}?fragment=code`);
       if (!answered.ok) throw new Error(String(answered.status));
       // `setHTMLUnsafe`, not `innerHTML`: a fragment may carry a declarative
       // shadow root, and innerHTML leaves one as an inert template.
       held.setHTMLUnsafe(await answered.text());
     } catch {
-      held.textContent = '';
-      const fallback = document.createElement('p');
-      fallback.style.padding = '0.85rem';
-      fallback.append('That did not load. ');
+      held.innerHTML = '<p class="waiting"></p>';
+      held.firstChild.append('That did not load. Try ');
       const straight = document.createElement('a');
-      straight.href = link.href;
-      straight.textContent = `Open ${file}`;
-      fallback.append(straight);
-      held.append(fallback);
+      straight.href = href;
+      straight.textContent = file;
+      held.firstChild.append(straight, ' on its own page.');
     }
   }
 
   document.addEventListener('click', (event) => {
     const link = event.target.closest('.x-files a[data-file]');
+    // A modified click is the reader asking for a tab, and the href is real.
     if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
     event.preventDefault();
-    show(link.dataset.file, link);
+    show(link.dataset.file, link.getAttribute('href'));
   });
 
-  document.getElementById('shut').addEventListener('click', () => {
-    drawer.hidden = true;
+  document.getElementById('shut').addEventListener('click', () => peek.close());
+
+  // Clicking the backdrop is a click on the dialog itself: the header and the
+  // listing are children, so anything landing on the element is outside them.
+  peek.addEventListener('click', (event) => {
+    if (event.target === peek) peek.close();
+  });
+
+  // Dropped on close, so the next open cannot flash the last file's code and
+  // so 700 lines are not held for a reader who has moved on.
+  peek.addEventListener('close', () => {
     held.textContent = '';
   });
 </script>

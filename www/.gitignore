@@ -4,3 +4,6 @@ app/transclude-env.d.ts
 
 # Written by scripts/write-version.js on every dev, build and check.
 app/lib/version.js
+
+# Written by scripts/source-data.js on every dev, build and check.
+app/lib/source.js

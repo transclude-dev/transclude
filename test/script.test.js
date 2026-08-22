@@ -1,11 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import * as acorn from 'acorn';
+
 import {
   ScriptError,
   assertModule,
   assertNoCollisions,
   bindDefaultExport,
+  planLift,
   toFunctionBody,
 } from '../src/compiler/script.js';
 
@@ -209,4 +212,94 @@ test('page client entries keep their imports and top-level await', () => {
   const code = assertModule([at(`import a from 'a';\nawait a();`)], 'x');
   assert.match(code, /import a from 'a';/);
   assert.match(code, /await a\(\);/);
+});
+
+// ---- what a lifted member reaches for --------------------------------------
+//
+// `planLift` answers two questions about `export const prototype`: which other
+// top-level statements have to come with it, and whether it reads anything that
+// exists once per element. The second is what makes `host` inside a member a
+// compile error instead of a bug found later.
+//
+// Scopes are tracked rather than ignored. A member with its own `host` in hand
+// is not reaching for the element, and reporting it as one would be an error
+// about code that is correct. Every binding form below is a way to have one.
+
+const parse = (code) => acorn.parse(code, { ecmaVersion: 'latest', sourceType: 'module' });
+const lift = (code) => planLift(parse(code), 'prototype');
+
+test('a member reading host is caught', () => {
+  const plan = lift('export const prototype = { open() { host.hidden = false; } };');
+
+  assert.deepEqual(plan.reaches, ['host']);
+});
+
+test('a member is not caught for a name it declares itself', () => {
+  const plan = lift('export const prototype = { open() { const host = this; host.hidden = false; } };');
+
+  assert.deepEqual(plan.reaches, []);
+});
+
+test('a loop variable named host is the loop s, not the element', () => {
+  const forOf = lift('export const prototype = { all() { for (const host of this.items) host.reset(); } };');
+  const classic = lift('export const prototype = { all() { for (let host = 0; host < 2; host++) void host; } };');
+  const forIn = lift('export const prototype = { all() { for (const host in this.map) void host; } };');
+
+  assert.deepEqual(forOf.reaches, []);
+  assert.deepEqual(classic.reaches, []);
+  assert.deepEqual(forIn.reaches, []);
+});
+
+test('a loop still reaches for what it reads from outside itself', () => {
+  const plan = lift('export const prototype = { all() { for (const row of host.rows) void row; } };');
+
+  assert.deepEqual(plan.reaches, ['host']);
+});
+
+test('a caught error named signal is the error, not the AbortSignal', () => {
+  const plan = lift(
+    'export const prototype = { go() { try { this.run(); } catch (signal) { void signal; } } };',
+  );
+
+  assert.deepEqual(plan.reaches, []);
+});
+
+test('a named class expression binds its own name inside itself', () => {
+  // The name of a class expression is in scope in the class body and nowhere
+  // else. So the first reads the class and the second reads the element, and
+  // the same word means two things one line apart.
+  const inside = lift(
+    'export const prototype = { make() { return class host { self() { return host; } }; } };',
+  );
+  const outside = lift('export const prototype = { make() { const C = class host {}; return host; } };');
+
+  assert.deepEqual(inside.reaches, []);
+  assert.deepEqual(outside.reaches, ['host']);
+});
+
+test('a class still reaches for what its body reads', () => {
+  const plan = lift('export const prototype = { make() { return class extends host.Base {}; } };');
+
+  assert.deepEqual(plan.reaches, ['host']);
+});
+
+test('a statement a member depends on is lifted with it', () => {
+  // `label` is read by the member, so the member cannot be moved onto the class
+  // without it. The dependency is transitive: `label` reads `prefix`.
+  const plan = lift(
+    "const prefix = 'a';\nconst label = prefix + 'b';\nexport const prototype = { name() { return label; } };",
+  );
+
+  assert.equal(plan.deps.length, 2);
+  assert.ok(plan.reads.has('label'));
+});
+
+test('an import is not a name the member reaches for', () => {
+  const plan = lift("import { format } from './fmt.js';\nexport const prototype = { at() { return format(1); } };");
+
+  assert.deepEqual(plan.reaches, []);
+});
+
+test('a file with no prototype export has nothing to plan', () => {
+  assert.equal(lift('const x = 1;'), null);
 });

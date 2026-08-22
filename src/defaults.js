@@ -97,6 +97,19 @@ export function withDefaults(config = {}) {
 
   const merged = { ...DEFAULTS, ...config };
 
+  // Set but empty is refused at boot rather than at the first signed cookie,
+  // because that first read happens in production, at request time, days after
+  // the deploy that broke it. It happened: `wrangler secret put` took a blank
+  // line, so the binding existed and carried nothing. `null` stays fine, since
+  // that is how an app says it signs nothing.
+  if (merged.cookieSecret === '') {
+    throw new Error(
+      `[transclude] \`cookieSecret\` is an empty string. Whatever supplies it handed ` +
+        `over nothing: on a worker that is usually a \`wrangler secret put\` that took ` +
+        `a blank line. Set a real secret, or \`null\` for none.`,
+    );
+  }
+
   // Refused here because there are four places that render a page and only two of
   // them could fall back to a request's origin. Left to the render, `canonical`
   // would work in dev and throw in the build, which is the dev-and-production

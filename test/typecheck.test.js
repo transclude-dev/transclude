@@ -572,3 +572,156 @@ test('the unstable API is checked by shape, and the refusal names what moved', a
     /NodeBuilderFlags\.InTypeAlias is gone.*typescript@7\.0\.2/s,
   );
 });
+
+// ---- describe(), which is what transclude-env.d.ts is written from ---------
+//
+// `types.test.js` covers the emitter and passes it shapes by hand. This is the
+// half that produces them: a real language service over a real app, so the
+// types are the ones tsc inferred rather than the ones a test made up.
+
+/** Everything `describe()` found, keyed by id, so an assertion can name one. */
+const by = (list, key = 'id') => Object.fromEntries(list.map((one) => [one[key], one]));
+
+test('a page describes its data, its context and its route params', () => {
+  const { checker } = project({
+    'app/routes/blog/[slug].html':
+      "<script server>export default ({ params }) => ({ slug: params.slug, hits: 2 });</script><p>${slug}</p>",
+  });
+
+  const page = by(checker.describe().pages)['blog-_slug'];
+
+  assert.deepEqual(page.params, ['slug']);
+  assert.equal(page.pattern, '/blog/:slug');
+  assert.match(page.type, /slug: string/);
+  assert.match(page.type, /hits: number/);
+});
+
+test('a page with no loader still describes, with no data', () => {
+  // A page that reads nothing needs no block, and the emitted file still has to
+  // name a type for it. Leaving it out would give the page's own shim nothing
+  // to check against.
+  const { checker } = project({ 'app/routes/index.html': '<h1>Home</h1>' });
+
+  const page = by(checker.describe().pages).index;
+
+  assert.ok(page, 'the page was left out entirely');
+  assert.deepEqual(page.params, []);
+});
+
+test('a layout describes its own data', () => {
+  const { checker } = project({
+    'app/routes/_layout.html': "<script server>export default () => ({ site: 'x' });</script><slot></slot>",
+    'app/routes/index.html': '<h1>Home</h1>',
+  });
+
+  const layout = by(checker.describe().layouts).root;
+
+  assert.match(layout.type, /site: string/);
+});
+
+test('a light element is a partial and a shadow one is a component', () => {
+  // They are described apart because nothing about a shadow root applies to a
+  // light element, and the emitted file gives each a different tag name map
+  // entry.
+  const { checker } = project({
+    'app/routes/index.html': '<h1>Home</h1>',
+    'app/elements/plain-note.html':
+      "<p>${text}</p><script properties>export default { text: '' };</script>",
+    'app/elements/boxed-card.html':
+      '<article><slot></slot></article><script properties>export const shadow = true;\nexport default { open: false };</script>',
+  });
+
+  const described = checker.describe();
+
+  assert.deepEqual(
+    described.partials.map((one) => one.tag),
+    ['plain-note'],
+  );
+  assert.deepEqual(
+    described.components.map((one) => one.tag),
+    ['boxed-card'],
+  );
+});
+
+// ---- names the app declared ------------------------------------------------
+
+test('a type the app declared is carried by value, not by name', () => {
+  // A `@typedef` is reachable from the file it was written in and nowhere else,
+  // and one written in an .html file has no module to be imported from. So the
+  // emitted file needs the shape, and `describe` is what expands it.
+  const { checker } = project({
+    'app/data/posts.js':
+      '/** @typedef {{ title: string, draft: boolean }} Post */\n/** @type {Post[]} */\nexport const posts = [];\n',
+    'app/routes/index.html':
+      "<script server>import { posts } from '../data/posts.js';\nexport default () => ({ posts });</script><p>x</p>",
+  });
+
+  const described = checker.describe();
+  const post = by(described.types, 'name').Post;
+
+  assert.ok(post, `Post was never expanded: ${described.types.map((t) => t.name).join(', ')}`);
+  assert.match(post.type, /title: string/);
+  assert.match(post.type, /draft: boolean/);
+  // The page names it rather than repeating the shape, which is the whole point
+  // of expanding it once.
+  assert.match(by(described.pages).index.type, /Post/);
+});
+
+test('two files each declaring a Post get two names', () => {
+  // One name cannot mean two shapes. The second is renamed rather than
+  // overwriting the first, which would give one page the other page's type and
+  // still compile.
+  const { checker } = project({
+    'app/data/posts.js':
+      '/** @typedef {{ title: string }} Post */\n/** @type {Post[]} */\nexport const posts = [];\n',
+    'app/data/drafts.js':
+      '/** @typedef {{ slug: number }} Post */\n/** @type {Post[]} */\nexport const drafts = [];\n',
+    'app/routes/index.html':
+      "<script server>import { posts } from '../data/posts.js';\nexport default () => ({ posts });</script><p>x</p>",
+    'app/routes/drafts.html':
+      "<script server>import { drafts } from '../data/drafts.js';\nexport default () => ({ drafts });</script><p>x</p>",
+  });
+
+  const types = by(checker.describe().types, 'name');
+
+  assert.ok(types.Post, 'the first Post was never expanded');
+  assert.ok(types.Post_2, `the second Post did not get its own name: ${Object.keys(types).join(', ')}`);
+  assert.notEqual(types.Post.type, types.Post_2.type);
+});
+
+test('a type naming itself terminates', () => {
+  // `byKey` is written before the expansion is resolved, so the second visit
+  // returns the name already chosen. Take that line out and this test does not
+  // fail, it hangs, which is the shape the bug would have had in `npm run
+  // check` on any app with a tree in it.
+  const { checker } = project({
+    'app/data/tree.js':
+      '/** @typedef {{ label: string, children: Node[] }} Node */\n/** @type {Node} */\nexport const tree = { label:4 === 4 ? "a" : "b", children: [] };\n',
+    'app/routes/index.html':
+      "<script server>import { tree } from '../data/tree.js';\nexport default () => ({ tree });</script><p>x</p>",
+  });
+
+  const types = by(checker.describe().types, 'name');
+
+  assert.ok(types.Node, 'Node was never expanded');
+  assert.match(types.Node.type, /children: Node\[\]/);
+});
+
+test('what the compiler declares for itself is left to the emitted file', () => {
+  // `__Cookies` and the rest are written from `ambient.js`, so a copy expanded
+  // here would sit in the file under a name nothing reads. This pins the
+  // outcome; the `AMBIENT_NAMES` guard that produces it has no separate effect
+  // to break, because those names are not exported by any file to expand from.
+  const { checker } = project({
+    'app/routes/index.html':
+      '<script server>export default ({ cookies }) => ({ seen: cookies.get("seen") });</script><p>x</p>',
+  });
+
+  const described = checker.describe();
+
+  assert.match(by(described.pages).index.context, /__Cookies/);
+  assert.deepEqual(
+    described.types.filter((one) => one.name.startsWith('__')),
+    [],
+  );
+});

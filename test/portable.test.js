@@ -380,3 +380,125 @@ test('the resolver is not in the core, because one runtime has no resolver', () 
   const source = fs.readFileSync(path.join(src, 'lookup.js'), 'utf8');
   assert.match(source, /node:dns/, 'lookup.js no longer resolves anything');
 });
+
+/** The config `inMemory` uses, with whatever this test needs added to it. */
+const configWith = (over = {}) => ({
+  csrf: false,
+  trailingSlash: 'never',
+  fragmentParam: 'fragment',
+  cookieSecret: 's',
+  ...over,
+});
+
+// ---- a method the route does not answer ------------------------------------
+//
+// `/docs/endpoints` promises a 405 with an `Allow` header naming the verbs the
+// file does export. A unit test covered the function that works the list out;
+// nothing asked the app for the response, so the header the docs promise was
+// never read back off one.
+
+test('an endpoint answers 405 with the verbs it does export', async () => {
+  const out = await inMemory({
+    endpoints: {
+      'api-ping': { GET: () => Response.json({ ok: true }), DELETE: () => new Response(null, { status: 204 }) },
+    },
+  }).request('http://x/api/ping', { method: 'POST' });
+
+  assert.equal(out.status, 405);
+  // Sorted or not, both have to be named. A caller reads this header to find
+  // out what to send instead.
+  const allowed = out.headers.get('Allow').split(',').map((verb) => verb.trim());
+  assert.ok(allowed.includes('GET'), `Allow was "${out.headers.get('Allow')}"`);
+  assert.ok(allowed.includes('DELETE'), `Allow was "${out.headers.get('Allow')}"`);
+  assert.match(await out.text(), /POST not allowed/);
+});
+
+test('a page answers 405 for a verb it does not export', async () => {
+  const out = await inMemory().request('http://x/', { method: 'POST' });
+
+  assert.equal(out.status, 405);
+  assert.ok(out.headers.has('Allow'), 'no Allow header, so a caller learns nothing');
+});
+
+// ---- which work threw ------------------------------------------------------
+//
+// `phase` is documented as one of page, fragment, action, endpoint, after or
+// revalidate. Two of the six were tested. These are the two an app hits by
+// writing ordinary code that throws.
+
+const quiet = async (fn) => {
+  const real = console.error;
+  console.error = () => {};
+  try {
+    return await fn();
+  } finally {
+    console.error = real;
+  }
+};
+
+test('an endpoint that throws is reported as the endpoint phase', async () => {
+  const seen = [];
+  const app = inMemory({
+    config: configWith({ onError: (err, ctx) => seen.push({ err, ctx }) }),
+    endpoints: {
+      'api-ping': {
+        GET: () => {
+          throw new Error('the store is down');
+        },
+      },
+    },
+  });
+
+  const out = await quiet(() => app.request('http://x/api/ping'));
+
+  assert.equal(out.status, 500);
+  assert.equal(seen.length, 1);
+  assert.match(seen[0].err.message, /the store is down/);
+  assert.equal(seen[0].ctx.phase, 'endpoint');
+  assert.equal(seen[0].ctx.route.id, 'api-ping');
+});
+
+test('an action that throws is reported as the action phase', async () => {
+  // Not the page phase. The render that follows an action never ran, so an
+  // operator told "page" would start reading the wrong half of the file.
+  const seen = [];
+  const app = inMemory({
+    config: configWith({ onError: (err, ctx) => seen.push({ err, ctx }) }),
+    pages: {
+      index: pageOf({
+        POST: async () => {
+          throw new Error('the write failed');
+        },
+      }),
+    },
+  });
+
+  const out = await quiet(() => app.request('http://x/', { method: 'POST' }));
+
+  assert.equal(out.status, 500);
+  assert.equal(seen.length, 1);
+  assert.match(seen[0].err.message, /the write failed/);
+  assert.equal(seen[0].ctx.phase, 'action');
+});
+
+// ---- the two files for machines --------------------------------------------
+
+test('the sitemap is mounted where the config says it is', async () => {
+  // `sitemap.test.js` covers what the XML says. This covers that the app hands
+  // it out at all, and with the content type a crawler reads it by.
+  const app = inMemory({ config: configWith({ sitemap: { hostname: 'https://x.example' } }) });
+
+  const out = await app.request('http://x/sitemap.xml');
+  const xml = await out.text();
+
+  assert.equal(out.status, 200);
+  assert.match(out.headers.get('Content-Type'), /application\/xml/);
+  assert.match(xml, /<urlset/);
+  assert.match(xml, /https:\/\/x\.example\//);
+});
+
+test('with no sitemap configured the URL is not a route', async () => {
+  const out = await inMemory().request('http://x/sitemap.xml');
+
+  assert.equal(out.status, 404);
+});

@@ -90,13 +90,17 @@ test('every event handler attribute is dropped, whatever it is called', () => {
   assert.equal(removed.filter((r) => r.startsWith('@on')).length, 3);
 });
 
-test('a javascript: URL is emptied wherever it appears', () => {
-  const { html } = clean(
+test('a javascript: URL takes its attribute with it', () => {
+  // Removed rather than emptied: `href=""` names the page the fragment lands
+  // in, and `action=""` submits to it, neither of which the source wrote.
+  const { html, removed } = clean(
     '<a href="javascript:alert(1)">x</a><img src="javascript:alert(2)">' +
       '<form action="javascript:alert(3)"></form>',
   );
 
   assert.doesNotMatch(html, /javascript:/);
+  assert.doesNotMatch(html, /href=|src=|action=/);
+  assert.deepEqual(removed, ['@href', '@src', '@action']);
 });
 
 test('a data: URL survives on an image and nowhere else', () => {
@@ -107,6 +111,7 @@ test('a data: URL survives on an image and nowhere else', () => {
 
   assert.match(html, new RegExp(png.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.doesNotMatch(html, /data:text\/html/);
+  assert.doesNotMatch(html, /<a href/, 'the refused attribute stayed, emptied');
 });
 
 test('ordinary content is left alone', () => {

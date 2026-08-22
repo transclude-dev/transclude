@@ -153,7 +153,7 @@ test('the docs content comes before the nav in the document', () => {
 // The voice, in `design/voice.md`. Two of its rules are mechanical, so they are
 // checked rather than remembered. The prose of a page is its paragraphs, its
 // notes and its lede; a table cell and a code sample are not prose.
-function prose(source) {
+function prose(source, { code = true } = {}) {
   // The markup, which is the file minus its script blocks. Code samples live in
   // template literals inside `<script server>`, and a sample is not prose.
   //
@@ -174,6 +174,10 @@ function prose(source) {
 
   return found.map((text) =>
     text
+      // A `<code>` span holds an identifier, not prose. Dropping it is how a
+      // page can name the `regions` export without tripping the word check
+      // below, which is about the word for the idea rather than the symbol.
+      .replace(code ? /(?!)/ : /<code[^>]*>[\s\S]*?<\/code>/g, ' ')
       .replace(/<[^>]+>/g, '')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
@@ -248,7 +252,7 @@ test('the word is fragment, never region', () => {
   // Code keeps its own names; only what a reader sees is checked.
   const found = [];
   for (const [name, source] of pages()) {
-    for (const paragraph of prose(source)) {
+    for (const paragraph of prose(source, { code: false })) {
       if (/\bregions?\b/i.test(paragraph)) found.push(`${name}: ${paragraph.slice(0, 60)}…`);
     }
   }

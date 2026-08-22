@@ -8,6 +8,15 @@ export default {
   csp: true,
 };`, 'js'],
       report: [`csp: { reportOnly: true },`, 'js'],
+      headers: [`// app/server.js
+export default (app) => {
+  app.use('*', async (c, next) => {
+    await next();
+    c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    c.header('Permissions-Policy', 'camera=(), geolocation=(), microphone=()');
+    c.header('Referrer-Policy', 'no-referrer');
+  });
+};`, 'js'],
       custom: [`csp: {
   directives: {
     'default-src': ["'self'"],
@@ -213,4 +222,22 @@ export default {
   </p>
 
   ${html(s.report)}
+
+  <h2>The headers left to you</h2>
+
+  <p>
+    The framework sets what it can judge for every app: the policy above, and
+    <code>X-Content-Type-Options: nosniff</code> on every response. Three more
+    are worth having and refuse something an app may want, so they are yours to
+    set in <a href="/docs/middleware">app/server.js</a>.
+  </p>
+
+  ${html(s.headers)}
+
+  <p>
+    <code>Strict-Transport-Security</code> commits every visitor to HTTPS for a
+    year. <code>Permissions-Policy</code> turns platform features off, so name
+    only the ones your app never uses. <code>Referrer-Policy</code> tightens a
+    browser default that already strips the path cross-origin.
+  </p>
 </doc-page>

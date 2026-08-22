@@ -872,7 +872,10 @@ against.
   `KEYS`, so a key added to neither list and no page fails there too. The check
   itself replaced a silent loss: `stylesheeet` for `stylesheet` took a site's
   whole stylesheet away and said nothing, and the config page claimed this throw
-  for months before anything did it.
+  for months before anything did it. `settings` in `src/proxy.js` refuses the
+  proxy's own keys the same way, its `KEYS` being `DEFAULTS` plus `lookup`. Its
+  first run caught `fetch: undefined` in this repository's own test suite, a
+  key nothing had ever read.
 - **`canonical: true` is refused in `withDefaults`, not at the render.** Four
   places render a page: two in `app.js`, one in `bin/dev.js`, one in
   `bin/build.js`. Only the first three hold a request whose origin `absolute()`

@@ -71,6 +71,25 @@ test('set writes a Set-Cookie with defaults worth having', () => {
   assert.match(header, /SameSite=Lax/);
 });
 
+test("sameSite 'None' without secure is refused, whatever the casing", () => {
+  // Every browser drops the pair silently, so a cookie written this way never
+  // arrives and reads like a bug somewhere else. The refusal names the fix.
+  const { cookies } = setup();
+
+  assert.throws(() => cookies.set('x', '1', { sameSite: 'None' }), /needs `secure: true`/);
+  assert.throws(() => cookies.set('x', '1', { sameSite: 'none' }), /needs `secure: true`/);
+  assert.throws(() => cookies.delete('x', { sameSite: 'None' }), /needs `secure: true`/);
+});
+
+test("sameSite 'None' with secure is an ordinary cookie", () => {
+  const { response, cookies } = setup();
+  cookies.set('x', '1', { sameSite: 'None', secure: true });
+
+  const [header] = sent(response);
+  assert.match(header, /SameSite=None/);
+  assert.match(header, /Secure/);
+});
+
 test('options override the defaults', () => {
   const { response, cookies } = setup();
   cookies.set('theme', 'dark', { httpOnly: false, path: '/settings', maxAge: 60 });

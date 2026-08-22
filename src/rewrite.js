@@ -81,15 +81,15 @@ export function sanitize(root, { styles = 'keep' } = {}) {
           removed.push('@style');
           return false;
         }
-        return true;
-      });
-
-      for (const attr of child.attrs) {
+        // Removed rather than emptied. An empty value still means something:
+        // `href=""` names the page the fragment lands in, and `action=""`
+        // submits to it, neither of which the source wrote.
         if (!allowedUrl(child, attr)) {
           removed.push(`@${attr.name}`);
-          attr.value = '';
+          return false;
         }
-      }
+        return true;
+      });
 
       visit(child);
     }
@@ -100,7 +100,7 @@ export function sanitize(root, { styles = 'keep' } = {}) {
 }
 
 /**
- * Whether a URL-bearing attribute may keep its value.
+ * Whether a URL-bearing attribute may stay.
  *
  * `javascript:` is refused everywhere. `data:` is refused everywhere except an
  * image source, where it is ordinary and cannot navigate anything.

@@ -65,3 +65,106 @@ test('nothing is declared that nothing names', () => {
   assert.doesNotMatch(source, /__Cookies/);
   assert.deepEqual(diagnose(source), []);
 });
+
+// ---- elements, layouts and the tag name map --------------------------------
+
+test('an element is emitted with its props, its state and its members', () => {
+  const source = emitTypes({
+    components: [
+      {
+        tag: 'boxed-card',
+        type: '{ label: string }',
+        state: '{ open: boolean }',
+        members: '{ toggle(): void }',
+        upgrades: true,
+      },
+    ],
+  });
+
+  assert.match(source, /export type BoxedCardProps = \{/);
+  assert.match(source, /export type BoxedCardState = \{/);
+  assert.match(source, /export type BoxedCardMembers = \{/);
+  assert.deepEqual(diagnose(source), []);
+});
+
+test('an element declaring neither state nor members gets neither type', () => {
+  // Emitting an empty `State` would give a page a name to read that stands for
+  // nothing, and reading it would compile.
+  const source = emitTypes({ components: [{ tag: 'plain-note', type: '{}', upgrades: true }] });
+
+  assert.doesNotMatch(source, /PlainNoteState/);
+  assert.doesNotMatch(source, /PlainNoteMembers/);
+  assert.deepEqual(diagnose(source), []);
+});
+
+test('the tag name map carries only what an element actually has', () => {
+  // `querySelector('boxed-card')` should hand back the props and members the
+  // element defines. A light element nothing registers is still an
+  // HTMLElement, and claiming accessors it never gets would be a lie tsc
+  // repeats to every caller.
+  const source = emitTypes({
+    components: [{ tag: 'boxed-card', type: '{ label: string }', upgrades: true }],
+    partials: [{ tag: 'plain-note', type: '{ text: string }', upgrades: false }],
+  });
+
+  assert.match(source, /interface HTMLElementTagNameMap \{/);
+  assert.match(source, /"boxed-card": HTMLElement & BoxedCardProps;/);
+  assert.match(source, /"plain-note": HTMLElement;/);
+  assert.deepEqual(diagnose(source), []);
+});
+
+test('an app with no elements declares no tag name map at all', () => {
+  const source = emitTypes(page({ context: '{}', type: '{}' }));
+
+  assert.doesNotMatch(source, /HTMLElementTagNameMap/);
+  assert.deepEqual(diagnose(source), []);
+});
+
+test('a layout gets its context and its data, under its own id', () => {
+  const source = emitTypes({
+    layouts: [
+      { id: 'root', type: '{ site: string }', context: '{ url: string }' },
+      { id: 'docs', type: '{ nav: string[] }', context: '{ url: string }' },
+    ],
+  });
+
+  assert.match(source, /export type RootLayoutContext = \{/);
+  assert.match(source, /export type RootLayoutData = \{/);
+  assert.match(source, /export type DocsLayoutContext = \{/);
+  assert.match(source, /export type DocsLayoutData = \{/);
+  assert.deepEqual(diagnose(source), []);
+});
+
+test('a layout with no context still compiles', () => {
+  // A layout with no `<script server>` has no context to describe. `unknown`
+  // is the honest stand-in: it reads, and nothing can be taken off it.
+  const source = emitTypes({ layouts: [{ id: 'root', type: '{}' }] });
+
+  assert.match(source, /export type RootLayoutContext = unknown;/);
+  assert.deepEqual(diagnose(source), []);
+});
+
+test('a page with route params gets a type naming them', () => {
+  const source = emitTypes({
+    pages: [
+      {
+        id: 'blog-slug',
+        pattern: '/blog/:slug',
+        params: ['slug'],
+        context: '{ params: BlogSlugParams }',
+        type: '{}',
+      },
+    ],
+  });
+
+  assert.match(source, /Route params for `\/blog\/:slug`/);
+  assert.match(source, /export type BlogSlugParams = \{ slug: string \};/);
+  assert.deepEqual(diagnose(source), []);
+});
+
+test('a page with no params gets no params type', () => {
+  const source = emitTypes(page({ context: '{}', type: '{}' }));
+
+  assert.doesNotMatch(source, /IndexParams/);
+  assert.deepEqual(diagnose(source), []);
+});

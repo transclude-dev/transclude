@@ -266,6 +266,7 @@ test('a styles value nobody recognizes throws rather than quietly keeping them',
   );
 });
 
+
 test('the index is built after cleaning, so it names nothing that was removed', async () => {
   // Indexing first would list `gone` and then fail to resolve it.
   const source = '<h2 id="a">A</h2><iframe id="gone"></iframe>';
@@ -278,7 +279,31 @@ test('the index is built after cleaning, so it names nothing that was removed', 
   assert.deepEqual(body.fragments.map((f) => f.id), ['a']);
 });
 
+test('the outline says what the cleaning took out', async () => {
+  // `sanitize` kept the list from the start and nothing read it. This is where
+  // an operator does: ask the document question, with no id.
+  const source = '<h2 id="a">A</h2><script>x()</script><p onclick="y()">b</p>';
+  const { fetch } = fakeFetch({ 'https://source.example/x': html(source) });
+
+  const body = await (
+    await proxyHandler(ALLOW, { fetch })(request('url=https://source.example/x'))
+  ).json();
+
+  assert.deepEqual(body.removed, ['script', '@onclick']);
+});
+
 // ---- caching ---------------------------------------------------------------
+test('a proxy key nothing reads throws, naming it and every key there is', async () => {
+  // `maxage` for `maxAge` fell back to the default and said nothing, which
+  // reads exactly like the setting working. The config's own keys already
+  // refuse this by name; these get the same treatment.
+  const { fetch } = fakeFetch({});
+
+  await assert.rejects(
+    () => readForeign('https://source.example/x', { ...ALLOW, maxage: 5 }, { fetch }),
+    /`proxy` sets maxage.*maxAge/,
+  );
+});
 
 test('several fragments from one page cost one request', async () => {
   // The reason the document is cached rather than the fragment. Without the
@@ -423,7 +448,9 @@ test('the app mounts it, and the injected resolver reaches it', async () => {
     config: {
       csrf: false,
       trailingSlash: 'never',
-      proxy: { allow: ['source.example'], fetch: undefined },
+      // This once carried `fetch: undefined`, which nothing has ever read:
+      // a fake fetch travels through `deps`. The key check refused it.
+      proxy: { allow: ['source.example'] },
     },
     lookup: async (host) => (asked.push(host), null),
     manifest: { routes: [], endpoints: [] },

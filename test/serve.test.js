@@ -285,7 +285,9 @@ function appThatThrows(config) {
         renderHead: () => '',
         elements: [],
         includes: [],
-        regions: {},
+        // A region, so a `?fragment=` request gets past the existence check
+        // and reaches the loader that throws.
+        regions: { part: () => '<p>part</p>' },
         load: async () => {
           throw new Error('loader gave up');
         },
@@ -324,6 +326,20 @@ test('a 500 goes to onError with the request, and the page still ships', async (
   assert.match(seen[0].err.message, /loader gave up/);
   assert.equal(seen[0].ctx.url, 'http://x/');
   assert.equal(seen[0].ctx.method, 'GET');
+  assert.deepEqual(seen[0].ctx.route, { id: 'index', pattern: '/', params: {} });
+  assert.equal(seen[0].ctx.phase, 'page');
+});
+
+test('the report says which work threw, not only which URL', async () => {
+  // The same route, asked for as a fragment. An operator reading `phase`
+  // starts at the region render rather than at a URL to re-derive it from.
+  const seen = [];
+  const app = appThatThrows({ onError: (err, ctx) => seen.push(ctx) });
+
+  await quietly(() => app.request('http://x/?fragment=part'));
+
+  assert.equal(seen[0].route.id, 'index');
+  assert.equal(seen[0].phase, 'fragment');
 });
 
 test('a reporter that throws does not replace the error it was given', async () => {
@@ -409,6 +425,20 @@ test('the hint is not a header on the page, so the page is still cacheable', asy
   await app.request('http://x/');
 
   assert.equal(renders, 1, 'the preload header made the page uncacheable');
+});
+
+test('a shareable render says public, and a personal one says private', async () => {
+  // Both leave through `sendRendered`. `public` on a page that read a cookie
+  // is an explicit grant to shared caches: a conforming one revalidates and
+  // misses on the ETag, but a CDN whose edge rule skips revalidation would
+  // hand one visitor's page to the next.
+  const open = await pageApp().request('http://x/');
+  assert.equal(open.headers.get('cache-control'), 'public, max-age=0, must-revalidate');
+
+  const personal = await pageApp({
+    load: async ({ cookies }) => ({ theme: cookies.get('theme') ?? 'auto' }),
+  }).request('http://x/');
+  assert.equal(personal.headers.get('cache-control'), 'private, no-cache');
 });
 
 // ---- the author's own files ------------------------------------------------

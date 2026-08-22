@@ -33,13 +33,26 @@ const DEFAULTS = {
 
 const STYLE_MODES = new Set(['keep', 'strip']);
 
+/** Every key `proxy` may set. `lookup` has no default: absent means the runtime's. */
+const KEYS = new Set([...Object.keys(DEFAULTS), 'lookup']);
+
 /**
- * Defaults filled in, and the one value worth checking checked. A misspelled
- * `styles` would keep every style attribute and say nothing, which reads exactly
- * like the setting working.
+ * Defaults filled in, and what the author wrote checked. A misspelled `maxage`
+ * would fall back to the default and say nothing, which reads exactly like the
+ * setting working. That is the failure the config's own keys refuse by name,
+ * one level up, and these keys get the same treatment.
  */
 function settings(options) {
   const config = { ...DEFAULTS, ...options };
+
+  const unknown = Object.keys(options ?? {}).filter((key) => !KEYS.has(key));
+  if (unknown.length) {
+    throw new Error(
+      `[transclude] \`proxy\` sets ${unknown.join(', ')}, which nothing reads. ` +
+        `The keys are ${[...KEYS].sort().join(', ')}.`,
+    );
+  }
+
   if (!STYLE_MODES.has(config.styles)) {
     throw new Error(
       `[transclude] proxy.styles is ${JSON.stringify(config.styles)}. It is 'keep' or 'strip'.`,
@@ -289,10 +302,12 @@ export function proxyHandler(options = {}, deps = {}) {
     try {
       const entry = await readForeign(url, config, { ...deps, store });
 
-      // No id is a question about the document rather than a piece of it.
+      // No id is a question about the document rather than a piece of it, so
+      // the answer also says what the cleaning took out. The list was already
+      // kept for exactly this; nothing read it until here.
       if (!id) {
         const { listFragments } = await import('./extract.js');
-        return json(200, { url, fragments: listFragments(entry.doc) });
+        return json(200, { url, fragments: listFragments(entry.doc), removed: entry.removed });
       }
 
       const found = resolveFragment(entry.doc, id);

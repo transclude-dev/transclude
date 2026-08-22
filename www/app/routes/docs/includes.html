@@ -100,7 +100,7 @@
 
 { "url": "…", "fragments": [
   { "id": "reference", "implicit": false, "tag": "h2", "rank": 2, "kind": "heading-run", "text": "Reference" }
-] }`,
+], "removed": ["script", "@onclick"] }`,
         'text',
       ],
     }),
@@ -253,7 +253,7 @@
 
   <p>
     There is no route until a host is named. Default deny, and the list is the
-    part that actually protects you.
+    part that protects you.
   </p>
 
   ${html(s.config)}
@@ -338,6 +338,11 @@
   ${html(s.tuning)}
 
   <p>
+    A key nothing reads throws, naming it and every key there is, the same way
+    the <a href="/docs/config">config</a> does for its own.
+  </p>
+
+  <p>
     Redirects are followed one at a time, and every hop is checked again. The
     check that passed on the URL you configured says nothing about where the
     third redirect landed. Addresses on the private ranges are refused, including
@@ -367,7 +372,10 @@
 
   ${html(s.request)}
 
-  <p>With no <code>id</code>, the answer is the document's outline.</p>
+  <p>
+    With no <code>id</code>, the answer is the document's outline, and what the
+    cleaning removed.
+  </p>
 
   ${html(s.outline)}
 

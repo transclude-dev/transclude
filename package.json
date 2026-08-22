@@ -1,6 +1,6 @@
 {
   "name": "@transclude/core",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "An HTML-first server framework. A page is an .html file, the directory tree is the route table, and any fragment of a page is a URL of its own. Runs on Node, Bun, Deno and workerd, and ships no client JavaScript by default.",
   "keywords": [
     "html",
@@ -38,6 +38,7 @@
   "exports": {
     ".": "./src/plugin.js",
     "./app": "./src/app.js",
+    "./compiler": "./src/compiler/index.js",
     "./cookies": "./src/cookies.js",
     "./document": "./src/document.js",
     "./production": "./src/production.js",
@@ -57,6 +58,7 @@
   ],
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
+    "crap": "node scripts/crap.js",
     "test:examples": "npm test --prefix examples/showcase && npm test --prefix examples/todomvc && npm test --prefix examples/blog && npm test --prefix examples/search && npm test --prefix examples/htmx && npm test --prefix examples/includes && npm test --prefix examples/auth && npm test --prefix examples/live && npm test --prefix examples/elements && npm test --prefix examples/markdown && npm test --prefix examples/atlas",
     "test:www": "npm test --prefix www",
     "showcase": "npm run dev --prefix examples/showcase",

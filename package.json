@@ -38,6 +38,7 @@
   "exports": {
     ".": "./src/plugin.js",
     "./app": "./src/app.js",
+    "./compiler": "./src/compiler/index.js",
     "./cookies": "./src/cookies.js",
     "./document": "./src/document.js",
     "./production": "./src/production.js",

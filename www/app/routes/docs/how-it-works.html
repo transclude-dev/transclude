@@ -1,0 +1,294 @@
+<script server>
+  import { compilePage } from '@transclude/core/compiler';
+
+  import { all, code } from '../../lib/code.js';
+
+  // The example, and what the compiler makes of it. Compiled here rather than
+  // pasted, so the module below is this version's output and cannot drift from
+  // it. This page is prerendered, so the compile happens once, at build time.
+  const example = `<script server>
+  import { notes } from '../data/notes.js';
+
+  export default async () => ({ notes: notes.all() });
+
+  export const POST = async ({ request, url }) => {
+    notes.add((await request.formData()).get('text'));
+    return Response.redirect(new URL(url).origin + '/notes', 303);
+  };
+<\/script>
+
+<title>Notes</title>
+
+<form method="post">
+  <input name="text" required />
+  <button>Add</button>
+</form>
+
+<ul id="list" fragment>
+  <li each="note of notes">\${note.text}</li>
+</ul>`;
+
+  export default async () => {
+    const compiled = compilePage(example, { runtime: '/runtime.js', filename: 'notes' });
+
+    return {
+      s: await all({
+        page: example,
+        fate: [
+          `// A file, written once at build time. The default.
+
+// Held, and rebuilt behind the response after a minute.
+export const revalidate = 60;
+
+// Rendered for every request.
+export const prerender = false;`,
+          'js',
+        ],
+      }),
+      // The whole emitted module, and the one export worth reading on its own.
+      module: await code(compiled.code, 'js'),
+      regions: await code(
+        compiled.code.slice(
+          compiled.code.indexOf('export const regions'),
+          compiled.code.indexOf('export const includes'),
+        ),
+        'js',
+      ),
+    };
+  };
+</script>
+
+<title>How it works · transclude</title>
+<meta
+  name="description"
+  content="What a .html file compiles to, and what answers a request for it."
+/>
+
+<doc-page
+  heading="How it works"
+  lede="A page is one file. This is what the file becomes, and what answers a request for it."
+>
+  <h2>The file</h2>
+
+  <p>
+    <code>app/routes/notes.html</code> answers <code>/notes</code>. It holds the
+    markup and the code that loads its data.
+  </p>
+
+  ${html(s.page)}
+
+  <h2>What it compiles to</h2>
+
+  <p>
+    One module, with a fixed set of exports. Every later stage reads one of
+    them. This is the real output for the file above, compiled while this page
+    was built.
+  </p>
+
+  ${html(module)}
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Export</th>
+          <th>Came from</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>load</code></td>
+          <td>The <code>&lt;script server&gt;</code> default export.</td>
+        </tr>
+        <tr>
+          <td><code>POST</code></td>
+          <td>The verb export, passed through as it was written.</td>
+        </tr>
+        <tr>
+          <td><code>render</code></td>
+          <td>The markup. Directives became <code>if</code> and <code>for</code>.</td>
+        </tr>
+        <tr>
+          <td><code>regions</code></td>
+          <td>One entry per element marked <code>fragment</code>.</td>
+        </tr>
+        <tr>
+          <td><code>renderTitle</code>, <code>hasTitle</code></td>
+          <td>The <code>&lt;title&gt;</code>, lifted out of the body.</td>
+        </tr>
+        <tr>
+          <td><code>css</code></td>
+          <td>The <code>&lt;style&gt;</code> blocks, collected once.</td>
+        </tr>
+        <tr>
+          <td><code>client</code></td>
+          <td>Which elements the browser has to define, and whether any script ships.</td>
+        </tr>
+        <tr>
+          <td><code>includes</code></td>
+          <td>What a <code>&lt;transclude src&gt;</code> has to resolve first.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>The fragment is the same markup</h2>
+
+  <p>
+    <code>regions.list</code> is emitted from the <code>&lt;ul&gt;</code>, on the
+    same walk that emitted <code>render</code>. Nine lines of it appear in both,
+    character for character.
+  </p>
+
+  ${html(regions)}
+
+  <doc-note label="This is what a fragment is">
+    <a href="/docs/fragments">Fragments</a> covers the URL.
+    <code>GET /notes?fragment=list</code> calls this function instead of
+    <code>render</code>, with the data the same loader returned.
+  </doc-note>
+
+  <h2>What the build decides</h2>
+
+  <p>
+    The build runs each loader once. A page that reads nothing about the request
+    is rendered to a file. A page that reads a cookie, sets a header or answers
+    with a <code>Response</code> cannot be one file for every visitor. The build
+    names that page, says which of those it did, and exits non-zero.
+  </p>
+
+  ${html(s.fate)}
+
+  <p>
+    <a href="/docs/production">The production build</a> has the rest.
+  </p>
+
+  <h2>What answers a request</h2>
+
+  <p>
+    Everything above the route table runs for every request, including one that
+    ends at a file. The order is fixed.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Step</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Trailing slash</td>
+          <td><code>/notes/</code> redirects to <code>/notes</code> with a 301.</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>CSRF</td>
+          <td>A form post from another origin is refused with a 403.</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><code>nosniff</code></td>
+          <td>On every response, a public file included.</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><a href="/docs/middleware">Your middleware</a></td>
+          <td><code>app/server.js</code>, before anything that serves bytes.</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Public files</td>
+          <td>A real file beats a <code>[...path]</code> catch-all.</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>The route</td>
+          <td>The directory tree, matched.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Inside the route, in this order:</p>
+
+  <ol>
+    <li>
+      The <a href="/docs/layouts">layout chain</a>, outermost first. Any one can
+      return a <code>Response</code> and stop everything below it.
+    </li>
+    <li>The action, for a non-GET. The fragment name is checked before this.</li>
+    <li>The page loader.</li>
+    <li>
+      <code>render</code> for a document, <code>regions[name]</code> for a
+      fragment.
+    </li>
+    <li>Includes, the head, and the policy built from what the page inlined.</li>
+  </ol>
+
+  <h2>The same module, four ways</h2>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Request</th>
+          <th>What runs</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>GET /notes</code></td>
+          <td><code>load</code>, then <code>render</code>. The whole document.</td>
+        </tr>
+        <tr>
+          <td><code>GET /notes?fragment=list</code></td>
+          <td>
+            <code>load</code>, then <code>regions.list</code>. The
+            <code>&lt;ul&gt;</code> and nothing else.
+          </td>
+        </tr>
+        <tr>
+          <td><code>POST /notes</code></td>
+          <td>
+            <code>POST</code>, then the loader and <code>render</code> again.
+          </td>
+        </tr>
+        <tr>
+          <td><code>&lt;transclude src="/notes#list"&gt;</code></td>
+          <td>
+            <code>load</code>, then <code>regions.list</code>, inside another
+            page. See <a href="/docs/includes">includes</a>.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <doc-note label="A POST answers twice over">
+    The loader runs again after the action, so the page renders from what the
+    action just did. That is two loader runs on a request that changes
+    something, and it is on purpose.
+  </doc-note>
+
+  <h2>What reaches the browser</h2>
+
+  <p>
+    The <code>client</code> export above is empty, so this page ships no
+    JavaScript. A page ships some when it renders an
+    <a href="/docs/elements">element</a> with behavior, and only for those
+    elements. The <code>&lt;script server&gt;</code> block is compiled into the
+    route and never appears in the page.
+  </p>
+
+  <doc-note label="The same thing, to click through">
+    <a href="/how-it-works.html">The explorer</a> is this page with the code in
+    it. Every stage opens the module that does the work, and the whole of
+    <code>src/</code> is there to read. It runs JavaScript to do that, which is
+    why it is a file beside the docs rather than a page in them.
+  </doc-note>
+</doc-page>

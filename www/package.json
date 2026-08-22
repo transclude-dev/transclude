@@ -16,7 +16,8 @@
     "deploy": "npm run build && wrangler deploy",
     "start:worker": "npm run build && wrangler dev",
     "newsletter": "node scripts/send.js",
-    "og": "node scripts/og.js"
+    "og": "node scripts/og.js",
+    "how-it-works": "node scripts/how-it-works.js"
   },
   "dependencies": {
     "@transclude/core": "file:..",

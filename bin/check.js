@@ -3,8 +3,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import ts from 'typescript';
-import { createChecker, positionAt } from '../src/typecheck.js';
+import { checkAlone, createChecker, positionAt } from '../src/typecheck.js';
 import { emitTypes } from '../src/compiler/types.js';
 import { loadProject } from '../src/project.js';
 import { isMarkdown } from '../src/markdown.js';
@@ -23,34 +22,15 @@ if (!fs.existsSync(types) || fs.readFileSync(types, 'utf8') !== next) {
 }
 
 // Nothing downstream reads this file, so nothing else would notice it being
-// wrong. Parse what we just wrote, or a bad identifier ships silently.
-//
-// `skipLibCheck` has to be off, and it was on. This is a .d.ts, which is the one
-// kind of file that flag skips, so the guard checked nothing at all: every
-// project shipped a file naming `__Cookies` and declaring it nowhere. An editor
-// missed it too, because a jsconfig.json implies the same flag.
-//
-// `types: []` keeps it to this file: whatever `@types` a project happens to have
-// installed is not what is being checked here, and one of them failing to
-// resolve its own dependency would read as our file being broken.
-const emitted = ts.createProgram([types], {
-  noEmit: true,
-  skipLibCheck: false,
-  types: [],
-  target: ts.ScriptTarget.ESNext,
-  lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
-});
-const broken = [
-  ...emitted.getSyntacticDiagnostics(),
-  ...emitted.getSemanticDiagnostics(),
-];
+// wrong. Parse what we just wrote, or a bad identifier ships silently. The
+// guard itself lives in `checkAlone`, where the reasons for its options are,
+// and where `test/types.test.js` reads the same answers.
+const broken = checkAlone(types);
 if (broken.length) {
   console.error(`\n${path.relative(root, types)} is not valid TypeScript:`);
   for (const diagnostic of broken.slice(0, 5)) {
-    const at = diagnostic.file?.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
-    console.error(
-      `  ${at ? `line ${at.line + 1}: ` : ''}${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`,
-    );
+    const at = positionAt(next, diagnostic.offset);
+    console.error(`  line ${at.line}: ${diagnostic.message}`);
   }
   if (broken.length > 5) console.error(`  …and ${broken.length - 5} more`);
   process.exit(1);
@@ -96,6 +76,9 @@ for (const file of files) {
     console.log(`    ${pad}${run}`);
   }
 }
+
+// The compiler is a child process. Closed here, or the exit waits on it.
+checker.dispose();
 
 const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
 

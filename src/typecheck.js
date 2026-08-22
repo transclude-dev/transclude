@@ -1,4 +1,5 @@
-// Type checking and type extraction, both by TypeScript.
+// Type checking and type extraction, both by TypeScript 7: the Go compiler as
+// a child process, driven through its API over a synchronous channel.
 //
 // Shims live in memory at `<file>.html.js`, never on disk. Naming them after the
 // source file is what makes their relative imports resolve the way the author
@@ -14,13 +15,74 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import ts from 'typescript';
+import { version as tsVersion } from 'typescript';
 import { AMBIENT_NAMES } from './compiler/ambient.js';
 import { buildEndpointShim, buildShim, originalOffset } from './compiler/shim.js';
 import { splitBlocks, readFlags } from './compiler/index.js';
 import { resolveRoutesDir, scanRoutes } from './routes.js';
 // Aliased: this file has its own `sourceOf`, which is the one that reads disk.
 import { MARKDOWN_EXT, sourceOf as htmlFrom } from './markdown.js';
+
+// The version is checked before the API is imported, because the import is what
+// fails on the wrong version: `typescript/unstable/sync` is a 7.x export, and a
+// resolution error names a package path rather than the fix.
+if (!/^7\./.test(tsVersion)) {
+  throw new Error(
+    `[transclude] transclude-check drives TypeScript 7 and this project has ${tsVersion}. ` +
+      `Install it: npm install -D typescript@7`,
+  );
+}
+
+// The 7.x API: a Go compiler as a child process, spoken to synchronously. It
+// is exported under `unstable`, which is the API's own warning, so the import
+// and the shape are both checked rather than trusted. A 7.x minor may move the
+// subpath, which fails loudly with the wrong name, or rename a flag, which
+// does not fail at all: an undefined bit ORs into TYPE_FORMAT as nothing and
+// types print wrong without a word. Either way the refusal names what moved
+// and the version that held still.
+const TESTED = '7.0.2';
+
+/**
+ * The unstable module, or the refusal naming what moved.
+ *
+ * Exported for its test, which is the only way to falsify a failure that needs
+ * a TypeScript that does not exist yet.
+ *
+ * @param {object|null} unstable what importing `typescript/unstable/sync` gave
+ * @param {string} version the TypeScript that gave it
+ * @returns {object} the module, once its shape holds
+ * @throws when the subpath or a name this file drives is gone
+ */
+export function refuseMovedAPI(unstable, version) {
+  const missing = ['API', 'DiagnosticCategory', 'NodeBuilderFlags'].filter(
+    (name) => !unstable?.[name],
+  );
+  for (const flag of [
+    'NoTruncation',
+    'InTypeAlias',
+    'UseFullyQualifiedType',
+    'UseSingleQuotesForStringLiteralType',
+  ]) {
+    // Only once the enum itself is there: a missing enum already says enough.
+    if (unstable?.NodeBuilderFlags && typeof unstable.NodeBuilderFlags[flag] !== 'number') {
+      missing.push(`NodeBuilderFlags.${flag}`);
+    }
+  }
+
+  if (missing.length) {
+    throw new Error(
+      `[transclude] TypeScript ${version} moved the unstable API this checker drives: ` +
+        `${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} gone. ` +
+        `Pin the version that held still: npm install -D typescript@${TESTED}`,
+    );
+  }
+  return unstable;
+}
+
+const { API, DiagnosticCategory, NodeBuilderFlags } = refuseMovedAPI(
+  await import('typescript/unstable/sync').catch(() => null),
+  tsVersion,
+);
 
 /**
  * Annotations are optional, so `noImplicitAny` is off: an unannotated parameter
@@ -32,31 +94,40 @@ import { MARKDOWN_EXT, sourceOf as htmlFrom } from './markdown.js';
  * `strictNullChecks` stays on: `querySelector` really can return null, and that
  * is a bug rather than a matter of taste. `strict: true` in the config turns the
  * rest on for anyone who wants it.
+ *
+ * Written as tsconfig JSON rather than option objects, because the 7.x API
+ * loads a project from a config file. Ours never exists: the filesystem the
+ * compiler is given serves it from memory, next to the shims.
  */
-const compilerOptions = (strict) => ({
-  target: ts.ScriptTarget.ESNext,
-  module: ts.ModuleKind.ESNext,
-  moduleResolution: ts.ModuleResolutionKind.Bundler,
-  lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
-  strict,
-  strictNullChecks: true,
-  noImplicitAny: strict,
-  noEmit: true,
-  skipLibCheck: true,
-  allowJs: true,
-  checkJs: true,
-  types: [],
-});
+const configJson = (strict, files) =>
+  JSON.stringify({
+    compilerOptions: {
+      target: 'esnext',
+      module: 'esnext',
+      moduleResolution: 'bundler',
+      lib: ['esnext', 'dom'],
+      strict,
+      strictNullChecks: true,
+      noImplicitAny: strict,
+      noEmit: true,
+      skipLibCheck: true,
+      allowJs: true,
+      checkJs: true,
+      types: [],
+    },
+    files,
+  });
 
 // `UseFullyQualifiedType` is what makes a name the app declared resolvable
 // somewhere else. Without it a `@typedef {…} Post` in the app prints as `Post`,
 // which means something in the file it came from and nothing in
-// transclude-env.d.ts, where it landed as an undeclared name.
+// transclude-env.d.ts, where it landed as an undeclared name. These were
+// `TypeFormatFlags` before 7; the four names survived the move.
 const TYPE_FORMAT =
-  ts.TypeFormatFlags.NoTruncation |
-  ts.TypeFormatFlags.InTypeAlias |
-  ts.TypeFormatFlags.UseFullyQualifiedType |
-  ts.TypeFormatFlags.UseSingleQuotesForStringLiteralType;
+  NodeBuilderFlags.NoTruncation |
+  NodeBuilderFlags.InTypeAlias |
+  NodeBuilderFlags.UseFullyQualifiedType |
+  NodeBuilderFlags.UseSingleQuotesForStringLiteralType;
 
 const LAYOUT_FILE = '_layout.html';
 
@@ -83,7 +154,8 @@ const LAYOUT_FILE = '_layout.html';
  * @param {{ root: string, appDir: string, routesDir: string, elementsDir: string,
  *   strict?: boolean, markdown?: ((source: string, file: string) => string)|null }} options
  * @returns {{ files: Function, sourceFor: Function, update: Function,
- *   rebuild: Function, check: Function, quickInfo: Function, describe: Function }}
+ *   rebuild: Function, check: Function, quickInfo: Function, describe: Function,
+ *   dispose: Function }}
  */
 export function createChecker({
   root,
@@ -94,38 +166,63 @@ export function createChecker({
   markdown = null,
 }) {
   const app = path.resolve(root, appDir);
-  const options = compilerOptions(Boolean(strict));
   const shims = new Map();
-  const versions = new Map();
   const overlays = new Map();
 
   const shimPath = (file) => `${file}.js`;
 
-  const host = {
-    getScriptFileNames: () => [...shims.keys()],
-    getScriptVersion: (name) => String(versions.get(name) ?? 0),
-    getScriptSnapshot: (name) => {
-      const shim = shims.get(name);
-      if (shim) return ts.ScriptSnapshot.fromString(shim.code);
-      if (!fs.existsSync(name)) return undefined;
-      return ts.ScriptSnapshot.fromString(fs.readFileSync(name, 'utf8'));
+  // The project file the compiler is asked to open. It never touches disk: the
+  // filesystem below serves it from memory, regenerated whenever the shim set
+  // changes, because its `files` list is the shim list.
+  const configPath = path.join(root, '.transclude-check.tsconfig.json');
+
+  // The compiler, a child process. It sees the real filesystem except where a
+  // callback answers first: the config and the shims come from these maps, and
+  // `undefined` means "ask the disk", which is how the app's own imports and
+  // the libs resolve without this file listing them.
+  const api = new API({
+    cwd: root,
+    fs: {
+      fileExists: (name) => (name === configPath || shims.has(name) ? true : undefined),
+      readFile: (name) => {
+        if (name === configPath) return configJson(Boolean(strict), [...shims.keys()]);
+        return shims.get(name)?.code;
+      },
     },
-    getCurrentDirectory: () => root,
-    getCompilationSettings: () => options,
-    getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
-    fileExists: (name) => shims.has(name) || ts.sys.fileExists(name),
-    readFile: (name) => (shims.has(name) ? shims.get(name).code : ts.sys.readFile(name)),
-    readDirectory: ts.sys.readDirectory,
-    directoryExists: ts.sys.directoryExists,
-    getDirectories: ts.sys.getDirectories,
+  });
+
+  // One snapshot at a time, rebuilt lazily. `install` records what changed and
+  // the next question re-snapshots with exactly those invalidations, so a
+  // build's forty installs cost one program rather than forty.
+  let snapshot = null;
+  const dirty = { changed: new Set(), created: new Set() };
+
+  const current = () => {
+    if (snapshot && !dirty.changed.size && !dirty.created.size) return snapshot;
+
+    const fileChanges = snapshot
+      ? { changed: [...dirty.changed, configPath], created: [...dirty.created] }
+      : undefined;
+    snapshot?.dispose();
+    // The open is ref-counted and persists across snapshots, so the project is
+    // named once and invalidated after.
+    snapshot = api.updateSnapshot({ openProjects: [configPath], fileChanges });
+    dirty.changed.clear();
+    dirty.created.clear();
+
+    const project = snapshot.getProject(configPath);
+    if (!project) throw new Error('[transclude] the compiler did not open the shim project');
+    return snapshot;
   };
 
-  const service = ts.createLanguageService(host, ts.createDocumentRegistry());
+  const projectOf = () => current().getProject(configPath);
+  const programOf = () => projectOf().program;
+  const checkerOf = () => projectOf().checker;
 
   const install = (file, built) => {
     const name = shimPath(file);
+    (shims.has(name) ? dirty.changed : dirty.created).add(name);
     shims.set(name, built);
-    versions.set(name, (versions.get(name) ?? 0) + 1);
     return built;
   };
 
@@ -136,27 +233,27 @@ export function createChecker({
 
   /** The type of one of a shim's marker exports. What tsc made of the file. */
   const exportTypeOf = (file, name) => {
-    const program = service.getProgram();
-    const source = program?.getSourceFile(shimPath(file));
+    const source = programOf().getSourceFile(shimPath(file));
     if (!source) return 'unknown';
 
-    const checker = program.getTypeChecker();
+    const checker = checkerOf();
     const moduleSymbol = checker.getSymbolAtLocation(source);
     const data =
       moduleSymbol &&
-      checker.getExportsOfModule(moduleSymbol).find((symbol) => symbol.getName() === name);
+      checker.getExportsOfModule(moduleSymbol).find((symbol) => symbol.name === name);
     if (!data) return 'unknown';
 
-    const type = checker.getTypeOfSymbolAtLocation(data, data.valueDeclaration ?? source);
-    const text = checker.typeToString(type, undefined, TYPE_FORMAT);
+    const type = checker.getTypeOfSymbol(data);
+    const text = type ? checker.typeToString(type, undefined, TYPE_FORMAT) : 'unknown';
     return text === 'any' ? 'unknown' : text;
   };
 
-  // `UseFullyQualifiedType` prints a named type as `import("/abs/file").Name`.
+  // `UseFullyQualifiedType` prints a named type as `import('/abs/file').Name`.
   // Inside a shim that resolves and is what keeps a prop structurally checked.
   // In transclude-env.d.ts it does not: a shim path is `<file>.js` for an .html
   // file nobody can import, and an absolute path would name this machine.
-  const QUALIFIED = /import\("([^"]+)"\)\.([A-Za-z_$][\w$]*)/g;
+  // Either quote: 5.x printed double and 7 prints single.
+  const QUALIFIED = /import\((["'])([^"']+)\1\)\.([A-Za-z_$][\w$]*)/g;
 
   /**
    * The type a name stands for, expanded. `InTypeAlias` is what stops tsc
@@ -169,14 +266,14 @@ export function createChecker({
     const already = into.byKey.get(key);
     if (already) return already;
 
-    const program = service.getProgram();
+    const program = programOf();
     // tsc prints the path with no extension, and a shim is the source it names
     // plus `.js`.
-    const source = program?.getSourceFile(file) ?? program?.getSourceFile(`${file}.js`);
-    const checker = program?.getTypeChecker();
-    const moduleSymbol = source && checker?.getSymbolAtLocation(source);
+    const source = program.getSourceFile(file) ?? program.getSourceFile(`${file}.js`);
+    const checker = checkerOf();
+    const moduleSymbol = source && checker.getSymbolAtLocation(source);
     const symbol =
-      moduleSymbol && checker.getExportsOfModule(moduleSymbol).find((s) => s.getName() === name);
+      moduleSymbol && checker.getExportsOfModule(moduleSymbol).find((s) => s.name === name);
     // Two files can each declare a `Post`, and one name cannot mean both.
     let display = name;
     for (let n = 2; into.text.has(display); n++) display = `${name}_${n}`;
@@ -195,7 +292,7 @@ export function createChecker({
    * same shapes from `ambient.js`; anything else is the app's and is expanded.
    */
   const resolveNames = (type, into) =>
-    type.replace(QUALIFIED, (_, file, name) =>
+    type.replace(QUALIFIED, (_, quote, file, name) =>
       AMBIENT_NAMES.has(name) ? name : expand(file, name, into),
     );
 
@@ -455,6 +552,17 @@ export function createChecker({
       project = build();
     },
 
+    /**
+     * Stops the compiler. It is a child process, so a caller that finishes,
+     * like `bin/check.js`, closes it rather than leaving the exit to wait on
+     * an orphan. The editor's server never calls this: it dies with the editor.
+     */
+    dispose() {
+      snapshot?.dispose();
+      snapshot = null;
+      api.close();
+    },
+
     check(file) {
       const shim = refresh(file);
       const name = shimPath(file);
@@ -472,12 +580,13 @@ export function createChecker({
         }));
       }
 
+      const program = programOf();
       const out = [];
       for (const diagnostic of [
-        ...service.getSyntacticDiagnostics(name),
-        ...service.getSemanticDiagnostics(name),
+        ...program.getSyntacticDiagnostics(name),
+        ...program.getSemanticDiagnostics(name),
       ]) {
-        const offset = originalOffset(shim.chunks, diagnostic.start ?? 0);
+        const offset = originalOffset(shim.chunks, diagnostic.pos ?? 0);
         // A diagnostic with no home is one about generated scaffolding. Dropping
         // it is right, but it means anything that can carry a diagnostic has to be
         // mapped, or it disappears without a word.
@@ -486,10 +595,10 @@ export function createChecker({
         out.push({
           file,
           offset,
-          length: diagnostic.length ?? 1,
+          length: Math.max(1, (diagnostic.end ?? 0) - (diagnostic.pos ?? 0)),
           code: diagnostic.code,
-          message: ts.flattenDiagnosticMessageText(diagnostic.messageText, ' '),
-          severity: diagnostic.category === ts.DiagnosticCategory.Error ? 'error' : 'warning',
+          message: flatten(diagnostic),
+          severity: diagnostic.category === DiagnosticCategory.Error ? 'error' : 'warning',
         });
       }
       return out.sort((a, b) => a.offset - b.offset);
@@ -506,15 +615,27 @@ export function createChecker({
       );
       if (!target) return null;
 
-      const info = service.getQuickInfoAtPosition(
-        shimPath(file),
-        target.start + (offset - target.source),
-      );
-      if (!info) return null;
+      const name = shimPath(file);
+      const position = target.start + (offset - target.source);
+      const checker = checkerOf();
+
+      // Assembled rather than asked for: the 7.x API has no quick-info call, and
+      // the symbol plus its printed type is what the old one's display parts
+      // said. Documentation rides on the JSDoc tags when the symbol carries any.
+      const symbol = checker.getSymbolAtPosition(name, position);
+      const type = symbol
+        ? checker.getTypeOfSymbol(symbol)
+        : checker.getTypeAtPosition(name, position);
+      if (!type) return null;
+
+      const printed = checker.typeToString(type, undefined, NodeBuilderFlags.NoTruncation);
+      const tags = symbol?.getJsDocTags?.(checker) ?? [];
 
       return {
-        text: ts.displayPartsToString(info.displayParts),
-        documentation: ts.displayPartsToString(info.documentation ?? []),
+        text: symbol ? `${symbol.name}: ${printed}` : printed,
+        documentation: tags
+          .map((tag) => [tag.name, tag.text?.map((part) => part.text).join('')].filter(Boolean).join(' '))
+          .join('\n'),
       };
     },
 
@@ -571,6 +692,69 @@ export function createChecker({
       return { ...described, types: [...aliases.text].map(([name, type]) => ({ name, type })) };
     },
   };
+}
+
+/**
+ * Diagnostics for one TypeScript file, compiled alone.
+ *
+ * The guard `bin/check.js` runs over the emitted transclude-env.d.ts, and what
+ * `test/types.test.js` asserts against, so the two cannot disagree about what
+ * the file is allowed to name. `skipLibCheck` is off on purpose: a .d.ts is
+ * the one kind of file that flag skips, and with it on this guard checked
+ * nothing at all. `types: []` keeps the compile to this file, so a project's
+ * own `@types` failing to resolve does not read as our file being broken.
+ *
+ * @param {string} file an absolute path to a .ts or .d.ts on disk
+ * @returns {Array<{ offset: number, message: string }>}
+ */
+export function checkAlone(file) {
+  const dir = path.dirname(file);
+  const configPath = path.join(dir, '.transclude-alone.tsconfig.json');
+  const api = new API({
+    cwd: dir,
+    fs: {
+      fileExists: (name) => (name === configPath ? true : undefined),
+      readFile: (name) =>
+        name === configPath
+          ? JSON.stringify({
+              compilerOptions: {
+                noEmit: true,
+                skipLibCheck: false,
+                types: [],
+                target: 'esnext',
+                lib: ['esnext', 'dom'],
+              },
+              files: [path.basename(file)],
+            })
+          : undefined,
+    },
+  });
+
+  try {
+    const snapshot = api.updateSnapshot({ openProjects: [configPath] });
+    const program = snapshot.getProject(configPath).program;
+    return [...program.getSyntacticDiagnostics(), ...program.getSemanticDiagnostics()].map(
+      (diagnostic) => ({ offset: diagnostic.pos, message: flatten(diagnostic) }),
+    );
+  } finally {
+    api.close();
+  }
+}
+
+/**
+ * A diagnostic's text with its chained reasons behind it, space-joined.
+ *
+ * The reasons are the useful half: "not assignable" without the "because" is a
+ * verdict with no evidence. 5.x flattened chains before handing them over; 7
+ * sends them structured, so the joining moved here.
+ *
+ * @param {{ text: string, messageChain?: readonly object[] }} diagnostic
+ * @returns {string}
+ */
+function flatten(diagnostic) {
+  const parts = [String(diagnostic.text)];
+  for (const chained of diagnostic.messageChain ?? []) parts.push(flatten(chained));
+  return parts.join(' ');
 }
 
 /**

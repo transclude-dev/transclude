@@ -466,12 +466,12 @@ test('a handler that returns nothing is an error', () => {
   // TypeScript reports this at the annotation, which is generated text. With an
   // unmapped position the diagnostic was dropped and this passed quietly.
   const [diagnostic] = endpointErrors('export const GET = () => {};');
-  assert.match(diagnostic.message, /not assignable to type 'Response \| Promise<Response>'/);
+  assert.match(diagnostic.message, /not assignable to type 'Promise<Response> \| Response'/);
 });
 
 test('a handler that returns a bare object is an error', () => {
   const [diagnostic] = endpointErrors('export const POST = () => ({ ok: true });');
-  assert.match(diagnostic.message, /not assignable to type 'Response \| Promise<Response>'/);
+  assert.match(diagnostic.message, /not assignable to type 'Promise<Response> \| Response'/);
 });
 
 test('the error points into the real file, not into the shim', () => {
@@ -517,7 +517,7 @@ test('an async handler is fine, since a Promise<Response> satisfies it', () => {
 
 test('export function GET counts as much as export const GET', () => {
   const [diagnostic] = endpointErrors('export function GET() { return { no: 1 }; }');
-  assert.match(diagnostic.message, /not assignable to type 'Response \| Promise<Response>'/);
+  assert.match(diagnostic.message, /not assignable to type 'Promise<Response> \| Response'/);
 });
 
 test("an endpoint's ctx has no layout, because nothing renders", () => {
@@ -546,6 +546,31 @@ test('a loader that can answer with a Response still types its own template', ()
   );
 
   assert.match(code, /Exclude<Awaited<ReturnType<typeof __default>>, Response>/);
+});
+
+test('the unstable API is checked by shape, and the refusal names what moved', async () => {
+  // The port stands on `typescript/unstable/sync`, whose name is its own
+  // warning. A moved subpath fails loudly with the wrong name; a renamed flag
+  // does not fail at all, because an undefined bit ORs into the format flags
+  // as nothing and types print wrong without a word. Both roads lead here.
+  const { refuseMovedAPI } = await import('../src/typecheck.js');
+  const real = await import('typescript/unstable/sync');
+
+  // The shape that holds today passes through untouched.
+  assert.equal(refuseMovedAPI(real, '7.0.2'), real);
+
+  // The subpath gone entirely: three names, and no flag noise behind them.
+  assert.throws(
+    () => refuseMovedAPI(null, '7.1.0'),
+    /API, DiagnosticCategory, NodeBuilderFlags are gone.*typescript@7\.0\.2/s,
+  );
+
+  // One renamed flag, which is the quiet failure this exists for.
+  const renamed = { ...real, NodeBuilderFlags: { ...real.NodeBuilderFlags, InTypeAlias: undefined } };
+  assert.throws(
+    () => refuseMovedAPI(renamed, '7.1.0'),
+    /NodeBuilderFlags\.InTypeAlias is gone.*typescript@7\.0\.2/s,
+  );
 });
 
 // ---- describe(), which is what transclude-env.d.ts is written from ---------

@@ -9,6 +9,12 @@
 // The last report this process received, so a driver can read the outcome
 // rather than scrape a log. One slot, not a list: everything that reads this
 // runs one browser at a time, and the newest run is the one that counts.
+//
+// Annotated, because `GET` reads it before `POST` assigns it, and TypeScript 7
+// no longer infers an evolving type for a `let` a closure reads.
+/** @type {null | { agent: string, passed: number, total: number,
+ *   failed: Array<{ name: string, why: string }>, crash: string | null,
+ *   moveBefore?: unknown }} */
 let last = null;
 
 /** The last report, or 204 while no browser has reported yet. */

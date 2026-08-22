@@ -44,7 +44,6 @@ export type RootLayoutContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -87,7 +86,6 @@ export type AdminLayoutContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -146,7 +144,6 @@ export type AdminSettingsContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -199,7 +196,6 @@ export type AdminIndexContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -234,7 +230,6 @@ export type LoginContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -272,7 +267,6 @@ export type IndexContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -315,7 +309,6 @@ export type _404Context = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void

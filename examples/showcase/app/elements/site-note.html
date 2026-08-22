@@ -35,7 +35,9 @@
     },
     /** @returns {boolean} */
     get dismissed() {
-      return this.hidden;
+      // Boolean(), because the platform types `hidden` as string | boolean
+      // now that it can hold "until-found". Dismissed is a yes or a no.
+      return Boolean(this.hidden);
     },
   };
 

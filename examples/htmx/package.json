@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "htmx.org": "^2.0.10",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0",
     "vite": "^8.1.5"
   }
 }

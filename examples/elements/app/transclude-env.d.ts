@@ -72,7 +72,6 @@ export type IndexContext = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void
@@ -106,7 +105,6 @@ export type _404Context = {
     headers: Headers
   };
   cookies: __Cookies;
-  htmlAttrs: Record<string, string | boolean | null>;
   absolute: (path: string) => string;
   revalidateTag: (tag: string) => void;
   after: (work: Promise<unknown>) => void

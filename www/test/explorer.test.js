@@ -130,6 +130,33 @@ describe('a module page carries its code as a fragment of itself', async () => {
   assert.equal(rows, source.trim().split('\n').length, 'the page and the file disagree about how many lines there are');
 });
 
+describe('a swapped-in listing brings nothing it needs', async () => {
+  // The bug this exists for. `.listing` and `.row` used to live in the source
+  // page's own <style>, which is hoisted into that page's head and does not
+  // travel with a fragment. The explorer swapped one in and got 700 lines run
+  // together on one line, with no error anywhere.
+  const { body: piece } = await ask('/source/src/after.js?fragment=code');
+  const stylesheet = fs.readFileSync(path.join(root, 'app', 'styles', 'global.css'), 'utf8');
+
+  assert.doesNotMatch(piece, /<style/, 'the fragment carries styles, so it cannot be the page that holds them');
+  // Matched to where the selector ends, because `.listing .row` is a substring
+  // of `.listing .rowX` and a renamed rule would otherwise still look present.
+  for (const rule of ['.listing', '.listing .row', '.listing .no']) {
+    const declared = new RegExp(rule.replace(/\./g, '\\.') + '\\s*[,{]');
+    assert.match(stylesheet, declared, `${rule} is not in the stylesheet, so a swapped-in listing has no layout`);
+  }
+});
+
+describe('a listing takes its colors from the token rule', async () => {
+  // Shiki writes both themes onto every token and sets no color itself, and
+  // the stylesheet picks with `.shiki span`. Without that class on the block
+  // the code renders in one flat color and still looks deliberate.
+  const { body: piece } = await ask('/source/src/after.js?fragment=code');
+
+  assert.match(piece, /<pre class="shiki"/, 'the block is not marked for the token rule');
+  assert.match(piece, /--shiki-light/, 'the tokens carry no theme');
+});
+
 describe('the explorer reads without JavaScript', () => {
   const html = explorer();
 

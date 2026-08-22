@@ -185,6 +185,62 @@ pre code {
   color: light-dark(var(--shiki-light), var(--shiki-dark));
 }
 
+/* A source listing, numbered.
+ *
+ * Here rather than in the page that renders it, because the page hands this
+ * markup out as a fragment and a fragment carries markup and not styles. The
+ * explorer swaps one in, so both places need the rule and only one of them
+ * ever rendered the element. `/docs/fragments` is the long version.
+ */
+.listing {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  overflow: auto;
+  background: var(--surface);
+}
+
+.listing pre {
+  margin: 0;
+  padding: 0.75rem 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  /* Sized to the longest line so `.listing` scrolls sideways, rather than each
+     row being the container's width and clipping what runs past it. */
+  width: max-content;
+  min-width: 100%;
+}
+
+.listing .row {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.listing .row:target,
+.listing .row.at {
+  background: var(--note-bg);
+}
+
+.listing .no {
+  color: var(--muted);
+  text-align: right;
+  padding-right: 1rem;
+  padding-left: 0.5rem;
+  user-select: none;
+  text-decoration: none;
+}
+
+.listing .no:hover {
+  color: var(--link);
+}
+
+.listing .code {
+  padding-right: 1rem;
+}
+
 /* A directory listing. The comment column is part of the content, so the
    whole block is preformatted and only the roles are colored. */
 .tree .t-dir {

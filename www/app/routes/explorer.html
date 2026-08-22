@@ -134,7 +134,17 @@
     margin: 0;
     padding: 0.5rem 0.85rem;
   }
-  .x-pane pre { margin: 0; border: 0; border-radius: 0; background: none; overflow-x: auto; }
+  .x-pane pre {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    overflow: auto;
+    /* The compiled module is 84 lines. Left to grow, the chips that drive it
+       ended up below the fold, so the control and the thing it controls were
+       never on screen together. */
+    max-height: 26rem;
+  }
   .x-pane code { display: block; padding: 0.8rem 0; font-size: 0.76rem; line-height: 1.65; }
 
   .x-line { display: block; padding: 0 0.85rem; }
@@ -142,7 +152,7 @@
   .x-line[data-tag]:hover { background: var(--surface); }
   .x-line.on { background: var(--note-bg); box-shadow: inset 2px 0 0 var(--link); }
 
-  .x-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 1.1rem 0 0; padding: 0; list-style: none; }
+  .x-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0 0 0.9rem; padding: 0; list-style: none; }
   .x-chip {
     font: inherit;
     font-family: var(--mono);
@@ -157,7 +167,7 @@
   .x-chip[aria-pressed='true'] { background: var(--note-bg); border-color: var(--link); color: var(--ink); }
   .x-chip:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
 
-  .x-said { font-family: var(--serif); font-size: 0.98rem; line-height: 1.65; color: var(--muted); margin: 1rem 0 0; max-width: 46em; }
+  .x-said { font-family: var(--serif); font-size: 0.98rem; line-height: 1.65; color: var(--muted); margin: 1rem 0 2rem; max-width: 46em; }
   .x-said[hidden] { display: none; }
 
   .x-stages { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; }
@@ -226,6 +236,20 @@
     to see what it became.
   </p>
 
+  <ul class="x-chips" id="chips">
+    <li each="one of blocks">
+      <button
+        type="button"
+        class="x-chip"
+        aria-pressed="false"
+        data-tag="${one.tag}"
+        data-said="${one.said}"
+      >
+        ${one.tag}
+      </button>
+    </li>
+  </ul>
+
   <div class="x-panes" id="panes">
     <div class="x-pane">
       <h3>app/routes/notes.html</h3>
@@ -244,20 +268,6 @@
             >${html(line.html)}</span></code></pre>
     </div>
   </div>
-
-  <ul class="x-chips" id="chips">
-    <li each="one of blocks">
-      <button
-        type="button"
-        class="x-chip"
-        aria-pressed="false"
-        data-tag="${one.tag}"
-        data-said="${one.said}"
-      >
-        ${one.tag}
-      </button>
-    </li>
-  </ul>
 
   <p class="x-said" id="said" hidden></p>
 
@@ -387,6 +397,14 @@
     for (const chip of chips) chip.setAttribute('aria-pressed', String(chip.dataset.tag === picked));
     said.textContent = picked ? from.dataset.said : '';
     said.hidden = !picked;
+
+    // The panes scroll, so a block can be picked while both of its halves are
+    // out of view. Bring the first line of each into it.
+    if (!picked) return;
+    for (const pane of document.querySelectorAll('.x-pane pre')) {
+      const first = pane.querySelector('.x-line.on');
+      if (first) pane.scrollTop = first.offsetTop - pane.offsetTop - 8;
+    }
   }
 
   for (const chip of chips) chip.addEventListener('click', () => pick(chip.dataset.tag, chip));

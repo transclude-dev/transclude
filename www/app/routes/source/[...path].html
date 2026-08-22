@@ -63,10 +63,20 @@
     color: var(--muted);
     margin-left: auto;
   }
+  /* What this file is, in the story. The loader already knows the symbol and
+     the line, so these jump into the listing below rather than back out to a
+     heading that is only right for half of them. */
   .source-in {
     font-size: 0.9rem;
     color: var(--muted);
     margin: 0 0 1.25rem;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.3rem;
+  }
+  .source-in code {
+    font-size: 0.95em;
   }
   .source-after {
     margin-top: 1.5rem;
@@ -80,10 +90,12 @@
     <span class="count" if="!missing">${lines.length} lines</span>
   </div>
   
-  <p class="source-in" if="named.length">
-    In <a href="/explorer">how it works</a>:
-    <span each="one of named"><a href="/explorer#stages">${one.title}</a> </span>
-  </p>
+  <ul class="source-in" if="named.length">
+    <li each="one of named">
+      <a href="#L${one.line}"><code>${one.symbol}</code>, line ${one.line}</a> is
+      <a href="/explorer">${one.title}</a> in how it works
+    </li>
+  </ul>
   
   <p if="missing">
     No file by that name. <a href="/explorer">The explorer</a> lists every one.

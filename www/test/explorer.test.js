@@ -115,6 +115,21 @@ describe('a stage link lands on a line that is there', async () => {
   assert.deepEqual(wrong, [], 'a stage link names a line the page never rendered');
 });
 
+describe('a module page points into itself, not back at a heading', async () => {
+  // The loader hands this page the symbol and the line for every stage that
+  // names it. They used to link to `/explorer#stages`, which is the compile
+  // section and wrong for the request ones, and jumped into no file at all.
+  const { body } = await ask('/source/src/document.js');
+  const inside = body.slice(body.indexOf('<ul class="source-in"'), body.indexOf('</ul>'));
+
+  const anchors = [...inside.matchAll(/href="#(L\d+)"/g)].map(([, id]) => id);
+  assert.ok(anchors.length >= 5, `only ${anchors.length} stage references on document.js`);
+  for (const id of anchors) {
+    assert.ok(body.includes(`id="${id}"`), `${id} is named but never rendered`);
+  }
+  assert.doesNotMatch(inside, /explorer#stages/, 'a stage reference points at the wrong section');
+});
+
 describe('a linked line can be seen when the browser lands on it', () => {
   // Without a scroll margin the line sits against the top of the viewport with
   // nothing above it, and without a rule of its own it is one of seven hundred

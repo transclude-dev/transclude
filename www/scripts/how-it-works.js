@@ -22,7 +22,10 @@ const www = path.dirname(here);
 const root = path.dirname(www);
 
 const at = process.argv.indexOf('--out');
-const out = path.resolve(www, at === -1 ? 'dist/how-it-works.html' : process.argv[at + 1]);
+// Into `public/`, so the build copies it to the site root and precompresses it.
+// 4 MB of highlighted source is 175 KB over the wire, which is what a reader
+// pays only if they open it.
+const out = path.resolve(www, at === -1 ? 'app/public/how-it-works.html' : process.argv[at + 1]);
 
 /** The page every stage below is about. Small enough to read whole. */
 const EXAMPLE = `<script server>

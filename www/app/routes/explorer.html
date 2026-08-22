@@ -211,48 +211,6 @@
   .x-answer p { margin: 0.5rem 0 0; font-family: var(--serif); font-size: 0.96rem; line-height: 1.6; color: var(--muted); }
   .x-answer .lit { font-family: var(--mono); font-size: 0.78rem; color: var(--ink); }
 
-  /* A dialog rather than a panel under the index. The index is 48 names long,
-     so opening the first one used to scroll the page away from where the
-     reader was. `showModal` also brings the focus trap, Escape, the inert
-     background and the focus restore, none of which is worth hand-writing. */
-  .x-peek {
-    width: min(64rem, calc(100vw - 2rem));
-    max-height: calc(100vh - 4rem);
-    padding: 0;
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    background: var(--ground);
-    color: var(--ink);
-    overflow: hidden;
-  }
-  .x-peek::backdrop { background: rgb(0 0 0 / 0.5); }
-  .x-peek[open] { display: flex; flex-direction: column; }
-  .x-peek header {
-    display: flex;
-    gap: 0.75rem 1rem;
-    align-items: baseline;
-    flex-wrap: wrap;
-    background: var(--surface);
-    border-bottom: 1px solid var(--rule);
-    padding: 0.6rem 0.9rem;
-  }
-  .x-peek h2 { font-family: var(--mono); font-size: 0.9rem; margin: 0; word-break: break-word; }
-  .x-peek .whole { font-family: var(--mono); font-size: 0.78rem; margin-left: auto; }
-  .x-peek .shut {
-    font: inherit;
-    font-family: var(--mono);
-    font-size: 0.78rem;
-    background: var(--ground);
-    color: var(--ink);
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    padding: 0.22rem 0.6rem;
-    cursor: pointer;
-  }
-  .x-peek .shut:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
-  .x-peek .held { overflow: auto; padding: 0.75rem; }
-  .x-peek .held .listing { border: 0; background: none; }
-  .x-peek .waiting { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); padding: 1rem; margin: 0; }
 </style>
 
 <site-shell here="docs">
@@ -393,6 +351,13 @@
     one is a page, so a link to it is a link anyone can follow.
   </p>
 
+  <doc-note label="Each of those marks its code as a fragment">
+    <a href="/source/src/document.js">src/document.js</a> is the page.
+    <a href="/source/src/document.js?fragment=code">The same URL with
+    <code>?fragment=code</code></a> is the listing on its own, from the markup
+    the page already holds. Open both and read one inside the other.
+  </doc-note>
+
   <div each="group of groups" style="margin-top: 1.5rem">
     <h3>${group.title}</h3>
     <p style="margin: 0.2rem 0 0; font-size: 0.92rem">${group.blurb}</p>
@@ -407,16 +372,6 @@
 
 </site-shell>
 
-<!-- Outside the shell, because a modal dialog is in the top layer and belongs
-     to the document rather than to the column it was opened from. -->
-<dialog class="x-peek" id="peek" aria-labelledby="peek-name">
-  <header>
-    <h2 id="peek-name"></h2>
-    <a class="whole" id="peek-whole" href="/explorer">Open the page</a>
-    <button type="button" class="shut" id="shut" autofocus>Close</button>
-  </header>
-  <div class="held" id="held"></div>
-</dialog>
 
 <script>
   // Everything this needs is already in the page. A client block takes no
@@ -471,55 +426,4 @@
     });
   }
 
-  // Every module is already a page. This asks that page for its code and
-  // nothing else, which is the fragment it marks, and shows it without leaving
-  // the index. Without this the same link still opens the page.
-  const peek = document.getElementById('peek');
-  const held = document.getElementById('held');
-  const name = document.getElementById('peek-name');
-  const whole = document.getElementById('peek-whole');
-
-  async function show(file, href) {
-    name.textContent = file;
-    whole.href = href;
-    held.innerHTML = '<p class="waiting">Reading\u2026</p>';
-    peek.showModal();
-
-    try {
-      const answered = await fetch(`${href}?fragment=code`);
-      if (!answered.ok) throw new Error(String(answered.status));
-      // `setHTMLUnsafe`, not `innerHTML`: a fragment may carry a declarative
-      // shadow root, and innerHTML leaves one as an inert template.
-      held.setHTMLUnsafe(await answered.text());
-    } catch {
-      held.innerHTML = '<p class="waiting"></p>';
-      held.firstChild.append('That did not load. Try ');
-      const straight = document.createElement('a');
-      straight.href = href;
-      straight.textContent = file;
-      held.firstChild.append(straight, ' on its own page.');
-    }
-  }
-
-  document.addEventListener('click', (event) => {
-    const link = event.target.closest('.x-files a[data-file]');
-    // A modified click is the reader asking for a tab, and the href is real.
-    if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
-    event.preventDefault();
-    show(link.dataset.file, link.getAttribute('href'));
-  });
-
-  document.getElementById('shut').addEventListener('click', () => peek.close());
-
-  // Clicking the backdrop is a click on the dialog itself: the header and the
-  // listing are children, so anything landing on the element is outside them.
-  peek.addEventListener('click', (event) => {
-    if (event.target === peek) peek.close();
-  });
-
-  // Dropped on close, so the next open cannot flash the last file's code and
-  // so 700 lines are not held for a reader who has moved on.
-  peek.addEventListener('close', () => {
-    held.textContent = '';
-  });
 </script>

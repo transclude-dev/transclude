@@ -4,20 +4,19 @@
   "type": "module",
   "description": "The documentation site. An app built against the framework beside it.",
   "scripts": {
-    "predev": "node scripts/write-version.js && node scripts/how-it-works.js",
+    "predev": "node scripts/write-version.js && node scripts/source-data.js",
     "dev": "transclude-dev",
-    "prebuild": "node scripts/write-version.js && node scripts/how-it-works.js",
+    "prebuild": "node scripts/write-version.js && node scripts/source-data.js",
     "build": "transclude-build",
     "start": "transclude-serve",
-    "precheck": "node scripts/write-version.js",
+    "precheck": "node scripts/write-version.js && node scripts/source-data.js",
     "check": "transclude-check",
     "test": "node --test \"test/**/*.test.js\"",
     "preview": "npm run build && npm start",
     "deploy": "npm run build && wrangler deploy",
     "start:worker": "npm run build && wrangler dev",
     "newsletter": "node scripts/send.js",
-    "og": "node scripts/og.js",
-    "how-it-works": "node scripts/how-it-works.js"
+    "og": "node scripts/og.js"
   },
   "dependencies": {
     "@transclude/core": "file:..",

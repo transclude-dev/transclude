@@ -1,0 +1,129 @@
+<script server>
+  import { modules, files, stages } from '../../lib/source.js';
+
+  // One page per module, rendered when asked for rather than written to 48
+  // files. The data these read is in the server bundle either way, so
+  // prerendering would carry the same source twice: once as `source.js`, and
+  // again as the pages built from it. That was 0.77 MB gzip of the worker, for
+  // a long tail most readers never open.
+  //
+  // `paths()` stays. Without `prerender` it no longer names what the build
+  // writes, only what the URLs are, and that is what puts all 48 in the
+  // sitemap. Rendering one is joining an array already in memory.
+  export const prerender = false;
+  export const paths = () => files.map((path) => ({ path }));
+
+  export default async ({ params, response }) => {
+    const file = params.path;
+    const lines = modules[file];
+
+    if (!lines) {
+      response.status = 404;
+      return { file, lines: [], named: [], missing: true };
+    }
+
+    // The stages that point into this file, so a reader arriving here from a
+    // link knows which part of the story it belongs to.
+    const named = stages
+      .filter((stage) => stage.file === file)
+      .map(({ title, symbol, line }) => ({ title, symbol, line }));
+
+    return { file, lines, named, missing: false };
+  };
+</script>
+
+<title>${file} · transclude</title>
+<meta name="description" content="${file}, from the transclude framework." />
+<link rel="canonical" href="https://transclude.dev/source/${file}" />
+
+<style>
+  .source-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: baseline;
+    margin-bottom: 1rem;
+  }
+  .source-head h1 {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    margin: 0;
+    word-break: break-word;
+  }
+  .source-head .count {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-left: auto;
+  }
+  .source-in {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0 0 1.25rem;
+  }
+  .source-in a { white-space: nowrap; }
+
+  .listing {
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    overflow: auto;
+    background: var(--surface);
+  }
+  .listing pre {
+    margin: 0;
+    padding: 0.75rem 0;
+    background: none;
+    border: 0;
+  }
+  .listing .row {
+    display: grid;
+    grid-template-columns: 4rem 1fr;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+  .listing .row:target,
+  .listing .row.at {
+    background: var(--note-bg);
+  }
+  .listing .no {
+    color: var(--muted);
+    text-align: right;
+    padding-right: 1rem;
+    user-select: none;
+    text-decoration: none;
+  }
+  .listing .no:hover {
+    color: var(--link);
+  }
+</style>
+
+<div class="source-head">
+  <h1>${file}</h1>
+  <span class="count" if="!missing">${lines.length} lines</span>
+</div>
+
+<p class="source-in" if="named.length">
+  In <a href="/explorer">how it works</a>:
+  <span each="one of named"><a href="/explorer#stages">${one.title}</a> </span>
+</p>
+
+<p if="missing">
+  No file by that name. <a href="/explorer">The explorer</a> lists every one.
+</p>
+
+<!-- The code, and its own URL. `/source/src/app.js?fragment=code` returns this
+     and nothing else, which is what the explorer's drawer asks for. -->
+<div id="code" fragment class="listing">
+  <pre if="!missing"><span class="row" id="L${index + 1}" each="line, index of lines"><a
+        class="no"
+        href="#L${index + 1}"
+        aria-label="Line ${index + 1}"
+        >${index + 1}</a
+      ><span>${html(line)}</span></span></pre>
+</div>
+
+<p style="margin-top: 1.5rem">
+  <a href="/explorer">Back to how it works</a> &middot;
+  <a href="https://github.com/transclude-dev/transclude/blob/main/${file}">On GitHub</a>
+</p>

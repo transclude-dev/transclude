@@ -172,7 +172,9 @@
 
   .x-stages { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; }
   .x-stage { background: var(--ground); padding: 0.8rem 1rem; display: grid; grid-template-columns: 2rem 1fr auto; gap: 0.35rem 0.85rem; align-items: baseline; }
-  @media (max-width: 42rem) { .x-stage { grid-template-columns: 2rem 1fr; } }
+  /* Two columns, and `where` moves under the title rather than into the 2rem
+     number column, where `nowrap` ran it across the blurb. */
+  @media (max-width: 42rem) { .x-stage { grid-template-columns: 2rem 1fr; } .x-stage a.where { grid-column: 2; } }
   .x-stage .n { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
   .x-stage h3 { font-size: 0.94rem; margin: 0; }
   .x-stage p { grid-column: 2; margin: 0; font-family: var(--serif); font-size: 0.9rem; line-height: 1.55; color: var(--muted); }

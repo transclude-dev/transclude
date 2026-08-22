@@ -99,17 +99,30 @@ describe('every module URL is in the sitemap', () => {
   assert.deepEqual(listed, sources());
 });
 
-describe('a stage link points at a line its file has', () => {
-  // The line comes from finding the symbol at build time. If it ran past the
-  // end of the file the anchor would simply do nothing, which is the quiet
-  // kind of wrong.
-  const short = [];
-  for (const [, file, line] of explorer().matchAll(/href="\/source\/(src\/[^"#]+)#L(\d+)"/g)) {
-    const rows = fs.readFileSync(path.join(root, '..', file), 'utf8').split('\n').length;
-    if (Number(line) > rows) short.push(`${file}:${line} of ${rows}`);
+describe('a stage link lands on a line that is there', async () => {
+  // The line comes from finding the symbol at build time and the id comes from
+  // rendering the listing, and they are written in different files. An anchor
+  // that names an id nothing rendered does not fail: the browser opens the
+  // page at the top and the reader assumes that is the line.
+  const wanted = [...explorer().matchAll(/href="(\/source\/src\/[^"#]+)#(L\d+)"/g)];
+  const wrong = [];
+  for (const [, href, id] of wanted) {
+    const { body } = await ask(href);
+    if (!body.includes(`id="${id}"`)) wrong.push(`${href}#${id}`);
   }
 
-  assert.deepEqual(short, [], 'a stage points past the end of its file');
+  assert.ok(wanted.length >= 20, `only ${wanted.length} stage links`);
+  assert.deepEqual(wrong, [], 'a stage link names a line the page never rendered');
+});
+
+describe('a linked line can be seen when the browser lands on it', () => {
+  // Without a scroll margin the line sits against the top of the viewport with
+  // nothing above it, and without a rule of its own it is one of seven hundred
+  // that all look the same.
+  const css = fs.readFileSync(path.join(root, 'app', 'styles', 'global.css'), 'utf8');
+
+  assert.match(css, /\.listing \.row\s*\{[^}]*scroll-margin-top/, 'a linked line lands flush against the top');
+  assert.match(css, /\.listing \.row:target\s*\{/, 'a linked line is not marked');
 });
 
 describe('a module page carries its code as a fragment of itself', async () => {

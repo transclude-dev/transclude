@@ -219,9 +219,21 @@ pre code {
   line-height: 1.6;
 }
 
-.listing .row:target,
-.listing .row.at {
+/* A stage links to `#L507`, so the line it names has to be findable once the
+   browser lands. Flush against the top of the viewport it has no code above it
+   to read it against, which is most of what makes a line make sense. */
+.listing .row {
+  scroll-margin-top: 8rem;
+}
+
+.listing .row:target {
   background: var(--note-bg);
+  box-shadow: inset 3px 0 0 var(--link);
+}
+
+.listing .row:target .no {
+  color: var(--link);
+  font-weight: 700;
 }
 
 .listing .no {

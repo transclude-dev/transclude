@@ -616,6 +616,26 @@ against.
   `cd editor/vscode && npm install && npx @vscode/vsce package`. Publishing
   needs a Marketplace publisher whose id matches `publisher` in its
   `package.json`, and `npx ovsx publish` covers Open VSX.
+- **A directive rule that matches the name alone leaves the value to the HTML
+  grammar, which has moved past it.** `each` was highlighted by one pattern
+  matching the word. HTML's own attribute rule had already passed the position
+  where an attribute may start, so the `=` came out
+  `invalid.illegal.character-not-allowed-here`, `of` and `inks` came out as two
+  more attribute names, and a `>` inside the value ended the tag and dropped the
+  rest of the line on the floor. 263 error tokens across the committed `.html`
+  files, and `if="hop.count > 1"` in four of them. It reads as a string colored
+  red rather than as a mistake, which is why it stood. A directive that takes a
+  value is a `begin`/`end` block now, opening on the quote and closing on it, and
+  the value is `source.js`: `each` names its item and its index, `of` is an
+  operator, and everything after it is an expression, which is what the compiler
+  does with it.
+- **A directive is only a directive inside a tag.** `else`, `if` and `each` are
+  ordinary English words, and `injectionSelector: "L:text.html -comment"` reaches
+  the whole document, so "nothing else matters" had a keyword in the middle of it.
+  The directives live in `transclude.directives.json` under
+  `L:text.html meta.tag` for this, and `transclude.injection.json` keeps the
+  whole-document selector, which `${…}` and a `<script server>` block both need.
+  Two files because a grammar has one selector.
 - **The sprite is written after the public copy and before anything that reads
   `dist/public`.** The asset module a worker imports, the precache list and
   precompression each build themselves by walking that directory. Written earlier

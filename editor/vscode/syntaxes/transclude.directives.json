@@ -1,0 +1,56 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "scopeName": "transclude.directives",
+  "//": "Only inside a tag. `else`, `if` and `each` are ordinary English words, and a selector reaching the whole document highlights them in prose.",
+  "injectionSelector": "L:text.html meta.tag",
+  "patterns": [
+    { "include": "#each" },
+    { "include": "#expression" },
+    { "include": "#flag" }
+  ],
+  "repository": {
+    "each": {
+      "//": "The whole attribute, quotes and all. Matching the name alone leaves the value to the HTML grammar, which has already passed the point where an attribute may start: it scopes the `=` as an illegal character and reads the value's words as more attribute names.",
+      "begin": "(?<![-\\w$])(each)\\s*(=)\\s*([\"'])",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.directive.transclude" },
+        "2": { "name": "punctuation.separator.key-value.html" },
+        "3": { "name": "punctuation.definition.string.begin.html" }
+      },
+      "end": "\\3",
+      "endCaptures": { "0": { "name": "punctuation.definition.string.end.html" } },
+      "contentName": "meta.embedded.expression.transclude",
+      "patterns": [
+        {
+          "//": "`item of list` or `item, index of list`. Anchored, so only the head of the value is a declaration and everything after `of` is an expression.",
+          "match": "\\G\\s*([A-Za-z_$][\\w$]*)(?:\\s*(,)\\s*([A-Za-z_$][\\w$]*))?\\s+(of)(?![\\w$])",
+          "captures": {
+            "1": { "name": "variable.other.constant.transclude" },
+            "2": { "name": "punctuation.separator.comma.transclude" },
+            "3": { "name": "variable.other.constant.transclude" },
+            "4": { "name": "keyword.operator.expression.of.transclude" }
+          }
+        },
+        { "include": "source.js" }
+      ]
+    },
+    "expression": {
+      "//": "A bare expression. `else-if` before `if`, or the alternation matches the tail of the longer name.",
+      "begin": "(?<![-\\w$])(else-if|if|key)\\s*(=)\\s*([\"'])",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.directive.transclude" },
+        "2": { "name": "punctuation.separator.key-value.html" },
+        "3": { "name": "punctuation.definition.string.begin.html" }
+      },
+      "end": "\\3",
+      "endCaptures": { "0": { "name": "punctuation.definition.string.end.html" } },
+      "contentName": "meta.embedded.expression.transclude",
+      "patterns": [{ "include": "source.js" }]
+    },
+    "flag": {
+      "//": "The two that take no value. `fragment` names a region of a page; `else` closes a chain.",
+      "match": "(?<![-\\w$])(else|fragment)(?=[\\s>/])",
+      "name": "keyword.control.directive.transclude"
+    }
+  }
+}

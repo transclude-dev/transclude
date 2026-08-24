@@ -5,8 +5,13 @@ Diagnostics, hovers and syntax highlighting for the `.html` files of a
 
 A page here holds script blocks that are separate modules, which the editor's
 built-in HTML support reads as one. This extension understands the real shape:
-`${…}` is an expression, a directive is an expression, and a misspelled field
-is an error with a line number, the same ones `npm run check` reports.
+`${…}` is an expression, a misspelled field is an error with a line number, the
+same ones `npm run check` reports, and a directive is an expression rather than
+a string.
+
+That last one is the visible difference. `each="ink of inks"` colors `ink` as
+the name it declares, `of` as an operator and `inks` as the expression it is.
+`if="hop.count > 1"` keeps its `>` inside the value instead of ending the tag.
 
 ## How it works
 

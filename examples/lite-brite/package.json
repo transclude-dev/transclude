@@ -2,7 +2,7 @@
   "name": "transclude-example-lite-brite",
   "private": true,
   "type": "module",
-  "description": "A fullscreen Lite-Brite board made of radio buttons. No client JavaScript at all.",
+  "description": "A Lite-Brite board made of radio buttons, sized to fit the screen. No client JavaScript at all.",
   "scripts": {
     "dev": "transclude-dev",
     "build": "transclude-build",

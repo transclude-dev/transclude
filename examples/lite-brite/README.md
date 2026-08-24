@@ -1,9 +1,9 @@
 # Lite-Brite
 
-A [Lite-Brite](https://en.wikipedia.org/wiki/Lite-Brite) that fills the screen.
-Pick a colour, tap a hole, and a peg lights up. Pick Pull and tap it again to
-take the peg out. Two hundred and forty holes, nine colours, and zero bytes of
-JavaScript.
+A [Lite-Brite](https://en.wikipedia.org/wiki/Lite-Brite) that fits the screen
+with nothing to scroll. Pick a colour, tap a hole, and a peg lights up. Pick
+Pull and tap it again to take the peg out. Two hundred and forty holes, nine
+colours, and zero bytes of JavaScript.
 
 ```sh
 npm install

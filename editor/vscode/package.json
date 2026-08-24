@@ -39,6 +39,17 @@
         "embeddedLanguages": {
           "meta.embedded.expression.transclude": "javascript"
         }
+      },
+      {
+        "scopeName": "transclude.directives",
+        "path": "./syntaxes/transclude.directives.json",
+        "injectTo": [
+          "text.html.basic",
+          "text.html.derivative"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.expression.transclude": "javascript"
+        }
       }
     ],
     "configuration": {

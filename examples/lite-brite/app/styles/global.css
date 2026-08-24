@@ -1,0 +1,31 @@
+/* The page around the board. Everything about the board itself is in
+   app/routes/index.html, because the board is the example. */
+
+:root {
+  color-scheme: dark;
+
+  --page: #07080b;
+  --ink: #d8dce5;
+  --muted: #8a92a3;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font:
+    400 16px/1.5 system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+
+  /* A board that fills the viewport has nowhere to scroll to, and a rubber-band
+     bounce over a fixed board reads as a bug. */
+  overscroll-behavior: none;
+}

@@ -85,6 +85,29 @@ test('nested each shadowing warns but inner wins', () => {
   );
 });
 
+test('an inner each reads the outer loop variable', () => {
+  // The inner loop's scope has the outer one as its parent, so a value built
+  // from both is distinct per pair. A page of radio groups needs exactly this:
+  // the name is the outer item and the id is both.
+  assert.equal(
+    render('<div each="row of rows"><b each="cell of cells">${row}${cell}</b></div>', {
+      rows: [1, 2],
+      cells: ['a', 'b'],
+    }),
+    '<div><b>1a</b><b>1b</b></div><div><b>2a</b><b>2b</b></div>',
+  );
+});
+
+test('an inner each reads the outer index, and inside an attribute', () => {
+  assert.equal(
+    render('<div each="row, r of rows"><input each="c of cols" name="p${r}${c}"></div>', {
+      rows: ['x', 'y'],
+      cols: ['a'],
+    }),
+    '<div><input name="p0a"></div><div><input name="p1a"></div>',
+  );
+});
+
 test('malformed each is a compile error', () => {
   assert.throws(() => compile('<li each="items">x</li>'), CompileError);
 });

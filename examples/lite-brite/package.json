@@ -1,0 +1,23 @@
+{
+  "name": "transclude-example-lite-brite",
+  "private": true,
+  "type": "module",
+  "description": "A fullscreen Lite-Brite board made of radio buttons. No client JavaScript at all.",
+  "scripts": {
+    "dev": "transclude-dev",
+    "build": "transclude-build",
+    "start": "transclude-serve",
+    "check": "transclude-check",
+    "test": "node --test \"test/**/*.test.js\"",
+    "preview": "npm run build && npm start",
+    "start:worker": "wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "@transclude/core": "file:../.."
+  },
+  "devDependencies": {
+    "typescript": "^7.0",
+    "vite": "^8.1.5"
+  }
+}

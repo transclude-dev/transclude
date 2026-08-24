@@ -18,14 +18,14 @@
   // and the custom property holding the colour, so `.red` and `--red` are the
   // same word written twice in the style block below.
   const INKS = [
-    { id: 'red', name: 'Red' },
-    { id: 'orange', name: 'Orange' },
-    { id: 'yellow', name: 'Yellow' },
-    { id: 'green', name: 'Green' },
-    { id: 'aqua', name: 'Aqua' },
-    { id: 'blue', name: 'Blue' },
-    { id: 'violet', name: 'Violet' },
-    { id: 'white', name: 'White' },
+    { id: "red", name: "Red" },
+    { id: "orange", name: "Orange" },
+    { id: "yellow", name: "Yellow" },
+    { id: "green", name: "Green" },
+    { id: "aqua", name: "Aqua" },
+    { id: "blue", name: "Blue" },
+    { id: "violet", name: "Violet" },
+    { id: "white", name: "White" },
   ];
 
   /** Every hole, with the row and column a screen reader announces. */
@@ -51,7 +51,10 @@
   content="A fullscreen Lite-Brite board made of radio buttons and CSS, with no client JavaScript."
 />
 <!-- viewport-fit=cover, so the tray can keep clear of the home indicator. -->
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, viewport-fit=cover"
+/>
 
 <form class="brite" style="--cols: ${cols}; --rows: ${rows}">
   <fieldset class="tray">
@@ -66,7 +69,8 @@
     </div>
     <input type="reset" class="clear" value="Empty the board" />
     <p class="credit">
-      <a href="https://transclude.dev">transclude</a> &middot; radio buttons and CSS, no JavaScript
+      <a href="https://transclude.dev">transclude</a> &middot; radio buttons and
+      CSS, no JavaScript
     </p>
   </fieldset>
 
@@ -77,10 +81,21 @@
       role="radiogroup"
       aria-label="Row ${hole.row}, column ${hole.col}"
     >
-      <input type="radio" name="p${hole.i}" id="p${hole.i}off" class="off" checked />
+      <input
+        type="radio"
+        name="p${hole.i}"
+        id="p${hole.i}off"
+        class="off"
+        checked
+      />
       <label for="p${hole.i}off" class="off">Empty</label>
       <template each="ink of inks">
-        <input type="radio" name="p${hole.i}" id="p${hole.i}${ink.id}" class="${ink.id}" />
+        <input
+          type="radio"
+          name="p${hole.i}"
+          id="p${hole.i}${ink.id}"
+          class="${ink.id}"
+        />
         <label for="p${hole.i}${ink.id}" class="${ink.id}">${ink.name}</label>
       </template>
     </div>
@@ -195,7 +210,7 @@
   /* ::before is the empty socket. ::after is the peg, hidden until --lit. */
   .hole::before,
   .hole::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: 18%;
     border-radius: 50%;
@@ -208,7 +223,11 @@
 
   .hole::after {
     background:
-      radial-gradient(circle at 34% 30%, rgb(255 255 255 / 0.8), rgb(255 255 255 / 0) 58%),
+      radial-gradient(
+        circle at 34% 30%,
+        rgb(255 255 255 / 0.8),
+        rgb(255 255 255 / 0) 58%
+      ),
       var(--peg, transparent);
     box-shadow: 0 0 calc(var(--cell) * 0.5) var(--peg, transparent);
     opacity: var(--lit, 0);
@@ -223,31 +242,75 @@
 
   /* What a checked radio means. One line per colour, and this is the whole
      rendering layer. */
-  .hole:has(input.red:checked) { --peg: var(--red); --lit: 1; }
-  .hole:has(input.orange:checked) { --peg: var(--orange); --lit: 1; }
-  .hole:has(input.yellow:checked) { --peg: var(--yellow); --lit: 1; }
-  .hole:has(input.green:checked) { --peg: var(--green); --lit: 1; }
-  .hole:has(input.aqua:checked) { --peg: var(--aqua); --lit: 1; }
-  .hole:has(input.blue:checked) { --peg: var(--blue); --lit: 1; }
-  .hole:has(input.violet:checked) { --peg: var(--violet); --lit: 1; }
-  .hole:has(input.white:checked) { --peg: var(--white); --lit: 1; }
+  .hole:has(input.red:checked) {
+    --peg: var(--red);
+    --lit: 1;
+  }
+  .hole:has(input.orange:checked) {
+    --peg: var(--orange);
+    --lit: 1;
+  }
+  .hole:has(input.yellow:checked) {
+    --peg: var(--yellow);
+    --lit: 1;
+  }
+  .hole:has(input.green:checked) {
+    --peg: var(--green);
+    --lit: 1;
+  }
+  .hole:has(input.aqua:checked) {
+    --peg: var(--aqua);
+    --lit: 1;
+  }
+  .hole:has(input.blue:checked) {
+    --peg: var(--blue);
+    --lit: 1;
+  }
+  .hole:has(input.violet:checked) {
+    --peg: var(--violet);
+    --lit: 1;
+  }
+  .hole:has(input.white:checked) {
+    --peg: var(--white);
+    --lit: 1;
+  }
 
   /* Which label layer is live. One line per colour again, plus Pull, which
      makes the layer over the `off` radio the target and empties a hole. */
-  .brite:has(#ink-red:checked) .hole > label.red { pointer-events: auto; }
-  .brite:has(#ink-orange:checked) .hole > label.orange { pointer-events: auto; }
-  .brite:has(#ink-yellow:checked) .hole > label.yellow { pointer-events: auto; }
-  .brite:has(#ink-green:checked) .hole > label.green { pointer-events: auto; }
-  .brite:has(#ink-aqua:checked) .hole > label.aqua { pointer-events: auto; }
-  .brite:has(#ink-blue:checked) .hole > label.blue { pointer-events: auto; }
-  .brite:has(#ink-violet:checked) .hole > label.violet { pointer-events: auto; }
-  .brite:has(#ink-white:checked) .hole > label.white { pointer-events: auto; }
-  .brite:has(#ink-off:checked) .hole > label.off { pointer-events: auto; }
+  .brite:has(#ink-red:checked) .hole > label.red {
+    pointer-events: auto;
+  }
+  .brite:has(#ink-orange:checked) .hole > label.orange {
+    pointer-events: auto;
+  }
+  .brite:has(#ink-yellow:checked) .hole > label.yellow {
+    pointer-events: auto;
+  }
+  .brite:has(#ink-green:checked) .hole > label.green {
+    pointer-events: auto;
+  }
+  .brite:has(#ink-aqua:checked) .hole > label.aqua {
+    pointer-events: auto;
+  }
+  .brite:has(#ink-blue:checked) .hole > label.blue {
+    pointer-events: auto;
+  }
+  .brite:has(#ink-violet:checked) .hole > label.violet {
+    pointer-events: auto;
+  }
+  .brite:has(#ink-white:checked) .hole > label.white {
+    pointer-events: auto;
+  }
+  .brite:has(#ink-off:checked) .hole > label.off {
+    pointer-events: auto;
+  }
 
   /* No swatch carries `checked`, so nothing is picked at first paint and
      nothing is picked again after the board is emptied. Red is in hand both
      times, which is one rule for two states. */
-  .brite:not(:has(.pick:checked)) .hole > label.red { pointer-events: auto; }
+  .brite:not(:has(.pick:checked)) .hole > label.red {
+    pointer-events: auto;
+  }
 
   /* The tray ------------------------------------------------------------- */
 
@@ -257,7 +320,7 @@
     grid-row: 2;
     display: grid;
     justify-items: center;
-    gap: 0.45rem;
+    gap: 1rem;
     margin: 0;
     padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom));
     border: 0;
@@ -299,7 +362,11 @@
     margin-inline: 0.275rem;
     border-radius: 50%;
     background:
-      radial-gradient(circle at 34% 30%, rgb(255 255 255 / 0.75), rgb(255 255 255 / 0) 58%),
+      radial-gradient(
+        circle at 34% 30%,
+        rgb(255 255 255 / 0.75),
+        rgb(255 255 255 / 0) 58%
+      ),
       var(--peg);
     box-shadow: 0 0 0.55rem var(--peg);
     cursor: pointer;
@@ -309,14 +376,30 @@
     transition: scale 120ms ease-out;
   }
 
-  .swatch.red { --peg: var(--red); }
-  .swatch.orange { --peg: var(--orange); }
-  .swatch.yellow { --peg: var(--yellow); }
-  .swatch.green { --peg: var(--green); }
-  .swatch.aqua { --peg: var(--aqua); }
-  .swatch.blue { --peg: var(--blue); }
-  .swatch.violet { --peg: var(--violet); }
-  .swatch.white { --peg: var(--white); }
+  .swatch.red {
+    --peg: var(--red);
+  }
+  .swatch.orange {
+    --peg: var(--orange);
+  }
+  .swatch.yellow {
+    --peg: var(--yellow);
+  }
+  .swatch.green {
+    --peg: var(--green);
+  }
+  .swatch.aqua {
+    --peg: var(--aqua);
+  }
+  .swatch.blue {
+    --peg: var(--blue);
+  }
+  .swatch.violet {
+    --peg: var(--violet);
+  }
+  .swatch.white {
+    --peg: var(--white);
+  }
 
   /* Pull holds no colour, so it is a ring rather than a peg. */
   .swatch.off {

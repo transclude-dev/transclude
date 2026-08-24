@@ -177,7 +177,7 @@ export function roomOf(id) {
  * game.
  *
  * @param {Room} room
- * @returns {(Item & { line: string }) | null}
+ * @returns {(Item & { line: string, gone: string }) | null}
  */
 export function itemIn(room) {
   if (!room.item) return null;
@@ -185,11 +185,23 @@ export function itemIn(room) {
   const item = itemOf(room.item.id);
   if (!item) return null;
 
-  return { ...item, line: room.item.line };
+  return { ...item, line: room.item.line, gone: room.item.gone };
 }
 
 /** Every room, in map order. The minimap draws the ones a run has seen. */
 export const rooms = ROOMS;
+
+/**
+ * How wide and how tall the map is, counted from the rooms.
+ *
+ * The minimap is a grid, and a grid needs its column count somewhere. Here
+ * rather than in the stylesheet: a room added at the edge would otherwise be
+ * drawn outside a grid that still says four.
+ */
+export const extent = {
+  cols: Math.max(...ROOMS.map((room) => room.at[0])) + 1,
+  rows: Math.max(...ROOMS.map((room) => room.at[1])) + 1,
+};
 
 /**
  * The ways out of a room, in compass order.

@@ -45,6 +45,7 @@ type Room = {
   item?: {
     id: string;
     line: string;
+    gone: string;
   } | undefined;
   exits: Record<string, Exit>;
   ending?: boolean | undefined;
@@ -148,6 +149,14 @@ export type DungeonRoomData = __Shape<{
   take: null;
   held: never[];
   carried: string;
+  gone: null;
+  map: never[];
+  extent: {
+    cols: number;
+    rows: number;
+  };
+  panel: string;
+  total: number;
   room: null;
   title: string;
   asked: string;
@@ -173,7 +182,20 @@ export type DungeonRoomData = __Shape<{
     name: string;
     href: string;
   } | null;
+  gone: string | null;
   held: Item[];
+  map: {
+    title: string;
+    col: number;
+    row: number;
+    here: boolean;
+  }[];
+  extent: {
+    cols: number;
+    rows: number;
+  };
+  panel: string;
+  total: number;
   carried: string;
 }>;
 

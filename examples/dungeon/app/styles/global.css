@@ -1,10 +1,20 @@
-/* One stylesheet, and the page ships no script at all. */
+/* One stylesheet, and the page ships no JavaScript of ours at all. */
+
+/* Room to room is a document navigation, and the browser animates it. Nothing
+   here is scripted: a browser that has never heard of this rule ignores it and
+   the page changes the way pages always have. */
+@view-transition {
+  navigation: auto;
+}
 
 :root {
   color-scheme: dark;
 
   --ink: #d7d2c7;
   --dim: #8b8578;
+  /* Dots on the minimap and nothing else. It is 3.5:1 on the panel, which is
+     enough for a shape and not enough for a sentence, and the words on a shut
+     exit are a sentence somebody has to read. */
   --shut: #7a6f60;
   --paper: #14130f;
   --panel: #1b1a15;
@@ -127,17 +137,19 @@ h2 {
   color: var(--dim);
 }
 
+/* A shut exit says why, so it is read at the same contrast as everything else.
+   What marks it is the missing arrow and the dashed edge. */
+.exits li:has(.shut) {
+  border-style: dashed;
+}
+
 .exits .shut {
-  color: var(--shut);
+  color: var(--dim);
 }
 
 .exits .shut b {
   font-weight: 500;
   color: var(--dim);
-}
-
-.pack {
-  margin-top: 2.5rem;
 }
 
 .pack ul {
@@ -151,6 +163,10 @@ h2 {
 
 .pack b {
   font-weight: 500;
+}
+
+.pack .note {
+  color: var(--dim);
 }
 
 .pack .empty {
@@ -169,4 +185,71 @@ code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.9em;
   color: var(--dim);
+}
+
+/* The chrome: what is carried, and where the run has been. */
+.chrome {
+  display: grid;
+  gap: 1.75rem;
+  margin-top: 2.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.chart .grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1.1rem);
+  grid-auto-rows: 1.1rem;
+  gap: 0.3rem;
+}
+
+.chart .cell {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.chart .dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--shut);
+}
+
+.chart .cell[aria-current='page'] {
+  border-color: var(--gold);
+  background: #2a2419;
+}
+
+.chart .cell[aria-current='page'] .dot {
+  background: var(--gold);
+}
+
+.chart .count {
+  margin: 0.75rem 0 0;
+  color: var(--dim);
+  font-size: 0.8rem;
+}
+
+/* Named for a screen reader, and drawn as a dot for everyone else. */
+.name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.own {
+  margin: 0;
+  color: var(--dim);
+  font-size: 0.8rem;
+  max-width: 34rem;
 }

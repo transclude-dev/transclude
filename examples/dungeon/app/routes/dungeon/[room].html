@@ -2,8 +2,8 @@
   // Any room. The path says which one, the query string says what the run has
   // done so far, and nothing on this server remembers either.
 
-  import { exitsFrom, itemIn, roomOf } from '../../lib/graph.js';
-  import { itemOf } from '../../data/items.js';
+  import { exitsFrom, extent, itemIn, roomOf, rooms } from '../../lib/graph.js';
+  import { LIGHT, itemOf } from '../../data/items.js';
   import { roll } from '../../lib/rng.js';
   import { href, parse } from '../../lib/state.js';
 
@@ -38,8 +38,37 @@
     return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
   }
 
+  /**
+   * The rooms a run has been in, as cells to draw.
+   *
+   * Only what `seen` names. The grid keeps its shape either way, because every
+   * cell is placed by the coordinates the map gave it rather than by its turn in
+   * a list, so the rooms nobody has found leave holes rather than closing up.
+   */
+  function mapOf(seen, current) {
+    return rooms
+      .filter((room) => seen.includes(room.id))
+      .map((room) => ({
+        title: room.title,
+        col: room.at[0] + 1,
+        row: room.at[1] + 1,
+        here: room.id === current,
+      }));
+  }
+
   /** What the not-found branch fills in, so both branches return one shape. */
-  const EMPTY = { lines: [], exits: [], take: null, held: [], carried: '' };
+  const EMPTY = {
+    lines: [],
+    exits: [],
+    take: null,
+    held: [],
+    carried: '',
+    gone: null,
+    map: [],
+    extent,
+    panel: '',
+    total: 0,
+  };
 
   export default async ({ params, url, response }) => {
     const room = roomOf(params.room);
@@ -55,7 +84,7 @@
     // The current room joins `seen` here, so a URL that arrived without it still
     // draws the room you are standing in and hands it to every link below.
     const here = { ...state, seen: [...new Set([...state.seen, room.id])].sort() };
-    const lit = state.have.includes('lantern');
+    const lit = state.have.includes(LIGHT);
 
     const exits = exitsFrom(room, state.have).map((exit) => ({
       dir: NAMES[exit.dir],
@@ -73,14 +102,19 @@
     const held = state.have.map((id) => itemOf(id)).filter((item) => item !== null);
 
     const lying = itemIn(room);
+    const taken = lying !== null && state.have.includes(lying.id);
     const take =
-      lying && !state.have.includes(lying.id)
+      lying && !taken
         ? {
             line: lying.line,
             name: lying.name,
             href: href(here, { room: room.id, add: lying.id }),
           }
         : null;
+
+    // The canonical URL of this page, which is also what a link out of it would
+    // have written. `&fragment=room` on the end of it is the panel on its own.
+    const self = href(here, { room: room.id });
 
     return {
       room,
@@ -90,7 +124,14 @@
       lines: linesOf(room, lit, here.seed),
       exits,
       take,
+      // What the room says about the space the item left. The room reads
+      // differently once it has been picked up, and nothing but the URL knows.
+      gone: lying && taken ? lying.gone : null,
       held,
+      map: mapOf(here.seen, room.id),
+      extent,
+      panel: `${self}&fragment=room`,
+      total: rooms.length,
       carried: held.length
         ? `You come out with ${listOf(held.map((item) => `the ${item.name}`))}.`
         : 'You come out with nothing at all.',
@@ -107,6 +148,8 @@
 
     <p each="line of lines">${line}</p>
 
+    <p class="gone" if="gone">${gone}</p>
+
     <p class="take" if="take">
       ${take.line}
       <a href="${take.href}">Take the ${take.name}</a>
@@ -119,8 +162,7 @@
             ${exit.dir}<span class="to" if="exit.to">, to ${exit.to}</span>
           </a>
           <span else class="shut">
-            <b>${exit.dir}</b>
-            ${exit.locked}
+            <b>${exit.dir}</b> &middot; ${exit.locked}
           </span>
         </li>
       </ul>
@@ -132,12 +174,39 @@
     </p>
   </section>
 
-  <aside class="pack" id="pack" fragment>
-    <h2>Carrying</h2>
-    <ul if="held.length">
-      <li each="item of held"><b>${item.name}</b> ${item.note}</li>
-    </ul>
-    <p else class="empty">Nothing yet.</p>
+  <aside class="chrome">
+    <section class="pack" id="pack" fragment>
+      <h2>Carrying</h2>
+      <ul if="held.length">
+        <li each="item of held">
+          <b>${item.name}</b>
+          <span class="note">${item.note}</span>
+        </li>
+      </ul>
+      <p else class="empty">Nothing yet.</p>
+    </section>
+
+    <section class="chart" id="map" fragment>
+      <h2>Where you have been</h2>
+      <ul class="grid" style="--cols: ${extent.cols}; --rows: ${extent.rows}">
+        <li
+          each="cell of map"
+          class="cell"
+          style="grid-area: ${cell.row} / ${cell.col}"
+          aria-current="${cell.here ? 'page' : false}"
+        >
+          <span class="dot" aria-hidden="true"></span>
+          <span class="name">${cell.title}</span>
+        </li>
+      </ul>
+      <p class="count">${state.seen.length} of ${total} rooms.</p>
+    </section>
+
+    <p class="own">
+      This room is also a URL of its own:
+      <a href="${panel}">the panel, and nothing else</a>. Same route, same server
+      code, same markup.
+    </p>
   </aside>
 </template>
 

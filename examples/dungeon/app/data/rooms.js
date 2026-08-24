@@ -22,7 +22,8 @@
  * @property {string[]} prose what is written when the room can be seen
  * @property {string[]} [unlit] read instead when the lantern is not held
  * @property {string[]} [moods] one of these, picked by the seed
- * @property {{ id: string, line: string }} [item] what is lying here
+ * @property {{ id: string, line: string, gone: string }} [item] what is lying here, and
+ *   what the room says once it has been taken
  * @property {Record<string, Exit>} exits
  * @property {boolean} [ending] the run stops here
  */
@@ -78,7 +79,11 @@ export const ROOMS = [
     title: 'The Guardroom',
     at: [0, 1],
     prose: ['A bench, a bucket, and a rack for spears with no spears in it.'],
-    item: { id: 'lantern', line: 'A lantern stands on the bench, filled and trimmed.' },
+    item: {
+      id: 'lantern',
+      line: 'A lantern stands on the bench, filled and trimmed.',
+      gone: 'The bench holds a ring of clean wood where the lantern stood.',
+    },
     exits: { east: 'vault', south: 'cistern' },
   },
   {
@@ -89,7 +94,11 @@ export const ROOMS = [
       'Dust, and the smell of old coins.',
       'The shelves were emptied in a hurry, by somebody who dropped things.',
     ],
-    item: { id: 'brass-key', line: 'A brass key lies where it fell, under the bottom shelf.' },
+    item: {
+      id: 'brass-key',
+      line: 'A brass key lies where it fell, under the bottom shelf.',
+      gone: 'Under the bottom shelf there is dust, and a clean patch the size of a key.',
+    },
     exits: { north: 'hall', west: 'guardroom', east: 'stair', south: 'kitchen' },
   },
   {
@@ -150,7 +159,11 @@ export const ROOMS = [
     at: [3, 2],
     prose: ['A small room off the crypt. This is where the good things were kept.'],
     unlit: ['Small, and close, and you are reading the walls with your hands.'],
-    item: { id: 'silver-coin', line: 'One silver coin sits in a case made for forty.' },
+    item: {
+      id: 'silver-coin',
+      line: 'One silver coin sits in a case made for forty.',
+      gone: 'The case is empty now, which is nearly what it was before.',
+    },
     exits: { north: 'crypt' },
   },
   {

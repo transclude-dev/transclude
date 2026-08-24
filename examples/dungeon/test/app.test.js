@@ -22,11 +22,44 @@ const read = async (url) => (await get(url)).text();
 /** Every href in a page, in the order they were written. */
 const hrefs = (html) => [...html.matchAll(/href="([^"]+)"/g)].map(([, href]) => href.replace(/&amp;/g, '&'));
 
-describe('a room ships no script at all', async () => {
+describe('a room ships no JavaScript, and the one script tag is data', async () => {
   const page = await read('/dungeon/vault?have=lantern&seen=gate,hall,vault&seed=7f3a');
+  const scripts = [...page.matchAll(/<script[^>]*>/g)].map(([tag]) => tag);
 
-  assert.doesNotMatch(page, /<script/i);
+  // Speculation rules are read by the browser, not run. Anything else in a
+  // <script> would be code this app wrote, and there is none.
+  assert.deepEqual(scripts, ['<script type="speculationrules">']);
+  assert.doesNotMatch(page, /<script[^>]*\ssrc=/i);
   assert.doesNotMatch(page, /\son[a-z]+=/i);
+});
+
+describe('hovering a link never starts a run', async () => {
+  // `/dungeon` mints a seed, so a browser rendering it early would spend one.
+  // Every room is a server render, which is what keeps it out of `prerender`.
+  const page = await read('/dungeon/gate?seen=gate&seed=7f3a');
+  const rules = JSON.parse(page.slice(page.indexOf('speculationrules">') + 18, page.indexOf('</script>')));
+
+  assert.deepEqual(rules.prefetch[0].where.or, [{ href_matches: '/dungeon/*' }]);
+  assert.ok(!JSON.stringify(rules.prerender ?? []).includes('/dungeon'));
+});
+
+describe('the minimap draws what has been seen, and marks where you are', async () => {
+  const page = await read('/dungeon/vault?seen=gate,hall,vault&seed=7f3a');
+  const chart = page.slice(page.indexOf('id="map"'), page.indexOf('</section>', page.indexOf('id="map"')));
+  const names = [...chart.matchAll(/<span class="name">([^<]+)</g)].map(([, name]) => name);
+
+  assert.deepEqual(names, ['The Gate', 'The Long Hall', 'The Vault']);
+  assert.equal((chart.match(/aria-current="page"/g) ?? []).length, 1);
+  assert.match(chart, /aria-current="page"[^>]*>\s*<span class="dot"[^>]*><\/span>\s*<span class="name">The Vault/);
+  assert.match(chart, /3 of 15 rooms/);
+});
+
+describe('the minimap is a map and not a menu', async () => {
+  // A link on a visited room would be a move nothing checked.
+  const page = await read('/dungeon/vault?seen=gate,hall,vault&seed=7f3a');
+  const chart = page.slice(page.indexOf('id="map"'), page.indexOf('</section>', page.indexOf('id="map"')));
+
+  assert.doesNotMatch(chart, /<a /);
 });
 
 describe('the same URL twice is the same bytes', async () => {
@@ -70,22 +103,72 @@ describe('the key opens it, even typed in by hand', async () => {
   assert.ok(hrefs(page).some((href) => href.startsWith('/dungeon/crypt?have=brass-key')));
 });
 
-describe('a walk from the gate to the key and back through the door', async () => {
+/**
+ * A run, one link at a time.
+ *
+ * The walker only ever follows a link the page it is standing on rendered. So a
+ * playthrough here is a claim about the markup rather than about the rules: if
+ * an exit is passable and the page did not write it, the walk stops.
+ */
+async function walk(route) {
   let url = (await get('/dungeon')).headers.get('location');
-  const walked = [];
 
-  for (const room of ['hall', 'vault', 'vault', 'hall', 'gallery', 'chapel', 'crypt']) {
+  for (const room of route) {
     const page = await read(url);
-    // Only ever follow a link the page actually offered.
     const next = hrefs(page).find((href) => href.startsWith(`/dungeon/${room}?`));
 
     assert.ok(next, `no link to ${room} from ${url}`);
     url = next;
-    walked.push(url);
   }
+  return { url, page: await read(url) };
+}
+
+describe('a walk from the gate to the key and back through the door', async () => {
+  const { url } = await walk(['hall', 'vault', 'vault', 'hall', 'gallery', 'chapel', 'crypt']);
 
   assert.match(url, /^\/dungeon\/crypt\?have=brass-key&seen=chapel,crypt,gallery,gate,hall,vault&seed=[0-9a-f]{4}$/);
   assert.equal((await get(url)).status, 200);
+});
+
+describe('a whole run, out through the well with the coin', async () => {
+  const { url, page } = await walk([
+    'hall', 'vault', 'vault', 'guardroom', 'guardroom', 'vault', 'hall', 'gallery', 'chapel',
+    'crypt', 'reliquary', 'reliquary', 'crypt', 'chapel', 'gallery', 'stair', 'ossuary',
+    'kitchen', 'cistern', 'well',
+  ]);
+
+  assert.match(url, /^\/dungeon\/well\?have=brass-key,lantern,silver-coin&/);
+  assert.match(page, /You come out with the brass key, the lantern and the silver coin\./);
+
+  // The minimap counts what the URL carries, and nothing else does the counting.
+  const seen = new URL(`http://localhost${url}`).searchParams.get('seen').split(',');
+  assert.equal(seen.length, 13);
+  assert.match(page, new RegExp(`${seen.length} of 15 rooms\\.`));
+});
+
+describe('a whole run, down the dark stair with nothing but a light', async () => {
+  // The lantern is the only thing this run picks up, and the stair is shut
+  // until it does.
+  const shut = await read('/dungeon/stair?seen=stair&seed=7f3a');
+  assert.equal(hrefs(shut).filter((href) => href.includes('/dungeon/sump')).length, 0);
+
+  const { url, page } = await walk([
+    'hall', 'vault', 'guardroom', 'guardroom', 'vault', 'hall', 'gallery', 'stair', 'sump',
+  ]);
+
+  assert.match(url, /^\/dungeon\/sump\?have=lantern&/);
+  assert.match(page, /You come out with the lantern\./);
+  assert.doesNotMatch(page, /<nav class="exits"/);
+});
+
+describe('a room reads differently once the thing in it is gone', async () => {
+  const before = await read('/dungeon/vault?seen=vault&seed=7f3a');
+  const after = await read('/dungeon/vault?have=brass-key&seen=vault&seed=7f3a');
+
+  assert.match(before, /A brass key lies where it fell/);
+  assert.doesNotMatch(before, /a clean patch the size of a key/);
+  assert.doesNotMatch(after, /Take the brass key/);
+  assert.match(after, /a clean patch the size of a key/);
 });
 
 describe('the room panel is a URL of its own', async () => {

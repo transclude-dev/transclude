@@ -1,0 +1,150 @@
+<script server>
+  // Any room. The path says which one, the query string says what the run has
+  // done so far, and nothing on this server remembers either.
+
+  import { exitsFrom, itemIn, roomOf } from '../../lib/graph.js';
+  import { itemOf } from '../../data/items.js';
+  import { roll } from '../../lib/rng.js';
+  import { href, parse } from '../../lib/state.js';
+
+  /**
+   * The state is in the query string, and the static handler keys on the path
+   * alone. A file written at build time would answer every run with whatever
+   * state the build happened to render, which is none.
+   */
+  export const prerender = false;
+
+  const NAMES = {
+    north: 'North',
+    east: 'East',
+    south: 'South',
+    west: 'West',
+    up: 'Up',
+    down: 'Down',
+  };
+
+  /** What is written on the wall here, given a light and a seed. */
+  function linesOf(room, lit, seed) {
+    const body = room.unlit && !lit ? room.unlit : room.prose;
+    if (!room.moods) return body;
+
+    // Derived from the seed, never sampled. The second visit reads the same.
+    return [...body, room.moods[roll(seed, room.id, 'mood', room.moods.length)]];
+  }
+
+  /** "the lantern and the silver coin", for the last line of a run. */
+  function listOf(names) {
+    if (names.length < 2) return names.join('');
+    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  }
+
+  /** What the not-found branch fills in, so both branches return one shape. */
+  const EMPTY = { lines: [], exits: [], take: null, held: [], carried: '' };
+
+  export default async ({ params, url, response }) => {
+    const room = roomOf(params.room);
+    const state = parse(url);
+
+    // A room nobody wrote. The template below says so, and the status agrees
+    // with it: dev used to answer 200 with a not-found body and production 404.
+    if (!room) {
+      response.status = 404;
+      return { room: null, title: 'Nowhere', asked: String(params.room), state, ...EMPTY };
+    }
+
+    // The current room joins `seen` here, so a URL that arrived without it still
+    // draws the room you are standing in and hands it to every link below.
+    const here = { ...state, seen: [...new Set([...state.seen, room.id])].sort() };
+    const lit = state.have.includes('lantern');
+
+    const exits = exitsFrom(room, state.have).map((exit) => ({
+      dir: NAMES[exit.dir],
+      locked: exit.locked,
+      // A link, or nothing. An exit that cannot be walked is never a link, so
+      // there is no request to refuse and no dead end to explain.
+      href: exit.passable ? href(here, { room: exit.room }) : null,
+      // Naming a room you have been in is a help. Naming one you have not is a
+      // spoiler, and `seen` already knows which is which.
+      to: here.seen.includes(exit.room) ? exit.title : null,
+    }));
+
+    // `parse` already dropped anything that is not an item. The filter is what
+    // says so to the type checker.
+    const held = state.have.map((id) => itemOf(id)).filter((item) => item !== null);
+
+    const lying = itemIn(room);
+    const take =
+      lying && !state.have.includes(lying.id)
+        ? {
+            line: lying.line,
+            name: lying.name,
+            href: href(here, { room: room.id, add: lying.id }),
+          }
+        : null;
+
+    return {
+      room,
+      title: room.title,
+      asked: '',
+      state: here,
+      lines: linesOf(room, lit, here.seed),
+      exits,
+      take,
+      held,
+      carried: held.length
+        ? `You come out with ${listOf(held.map((item) => `the ${item.name}`))}.`
+        : 'You come out with nothing at all.',
+    };
+  };
+</script>
+
+<title>${title} · Transclude Dungeon</title>
+<meta name="description" content="A dungeon crawl whose save file is the address bar." />
+
+<template if="room">
+  <section id="room" fragment class="room">
+    <h1>${room.title}</h1>
+
+    <p each="line of lines">${line}</p>
+
+    <p class="take" if="take">
+      ${take.line}
+      <a href="${take.href}">Take the ${take.name}</a>
+    </p>
+
+    <nav class="exits" aria-label="Ways out" if="!room.ending">
+      <ul>
+        <li each="exit of exits">
+          <a if="exit.href" href="${exit.href}">
+            ${exit.dir}<span class="to" if="exit.to">, to ${exit.to}</span>
+          </a>
+          <span else class="shut">
+            <b>${exit.dir}</b>
+            ${exit.locked}
+          </span>
+        </li>
+      </ul>
+    </nav>
+
+    <p class="ending" if="room.ending">
+      ${carried}
+      <a href="/dungeon">Another run</a>
+    </p>
+  </section>
+
+  <aside class="pack" id="pack" fragment>
+    <h2>Carrying</h2>
+    <ul if="held.length">
+      <li each="item of held"><b>${item.name}</b> ${item.note}</li>
+    </ul>
+    <p else class="empty">Nothing yet.</p>
+  </aside>
+</template>
+
+<template else>
+  <section class="room">
+    <h1>Nowhere</h1>
+    <p>There is no room called <code>${asked}</code>.</p>
+    <p><a href="/dungeon">Start a run</a></p>
+  </section>
+</template>

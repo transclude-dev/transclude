@@ -1,0 +1,172 @@
+/* One stylesheet, and the page ships no script at all. */
+
+:root {
+  color-scheme: dark;
+
+  --ink: #d7d2c7;
+  --dim: #8b8578;
+  --shut: #7a6f60;
+  --paper: #14130f;
+  --panel: #1b1a15;
+  --line: #33302a;
+  --gold: #d2a24c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 1.5rem 1.25rem 3rem;
+  background: var(--paper);
+  color: var(--ink);
+  font: 1rem/1.6 ui-serif, Georgia, 'Times New Roman', serif;
+}
+
+a {
+  color: var(--gold);
+  text-underline-offset: 0.2em;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.top,
+main,
+.bottom {
+  max-width: 40rem;
+  margin-inline: auto;
+}
+
+.top {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.top a {
+  color: var(--dim);
+  text-decoration: none;
+}
+
+.bottom {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 0.8rem;
+}
+
+h1 {
+  margin: 1.5rem 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.room p {
+  margin: 0 0 0.85rem;
+  max-width: 34rem;
+}
+
+.take {
+  color: var(--ink);
+}
+
+.take a,
+.go a,
+.ending a {
+  display: inline-block;
+  margin-top: 0.35rem;
+}
+
+/* The ways out. A link is a way you can walk; anything else is not a link. */
+.exits {
+  margin-top: 1.75rem;
+}
+
+.exits ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.exits li {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--panel);
+}
+
+.exits a {
+  text-decoration: none;
+}
+
+.exits a::before {
+  content: '→ ';
+  color: var(--dim);
+}
+
+.exits .to {
+  color: var(--dim);
+}
+
+.exits .shut {
+  color: var(--shut);
+}
+
+.exits .shut b {
+  font-weight: 500;
+  color: var(--dim);
+}
+
+.pack {
+  margin-top: 2.5rem;
+}
+
+.pack ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.pack b {
+  font-weight: 500;
+}
+
+.pack .empty {
+  margin: 0;
+  color: var(--dim);
+  font-size: 0.9rem;
+}
+
+.ending {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  color: var(--dim);
+}

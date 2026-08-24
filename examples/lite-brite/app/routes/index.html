@@ -1,0 +1,377 @@
+<script server>
+  // A Lite-Brite, and the whole app. Every hole is a radio group, the colour in
+  // hand is another radio, and CSS reads both. Nothing here ships JavaScript,
+  // so there is none to turn off.
+
+  // The board. These two numbers decide everything: the markup, the size of a
+  // hole, and how many bytes the page is.
+  //
+  // A narrow phone is what holds them down. The board fills the viewport, so the
+  // width of a hole is the width of the screen divided by the columns, and a
+  // finger needs about 20 of those pixels. 20 columns is 17px on a 390px phone
+  // and 14px on a 320px one. 30 columns, which is closer to the real toy, is
+  // 11px and misses. Turn them up for a canvas and down for a target.
+  const COLS = 20;
+  const ROWS = 12;
+
+  // One peg colour per swatch in the tray. `id` is the CSS class on the radio
+  // and the custom property holding the colour, so `.red` and `--red` are the
+  // same word written twice in the style block below.
+  const INKS = [
+    { id: 'red', name: 'Red' },
+    { id: 'orange', name: 'Orange' },
+    { id: 'yellow', name: 'Yellow' },
+    { id: 'green', name: 'Green' },
+    { id: 'aqua', name: 'Aqua' },
+    { id: 'blue', name: 'Blue' },
+    { id: 'violet', name: 'Violet' },
+    { id: 'white', name: 'White' },
+  ];
+
+  /** Every hole, with the row and column a screen reader announces. */
+  function holesOf(cols, rows) {
+    const holes = [];
+    for (let i = 0; i < cols * rows; i++) {
+      holes.push({ i, row: Math.floor(i / cols) + 1, col: (i % cols) + 1 });
+    }
+    return holes;
+  }
+
+  export default async () => ({
+    cols: COLS,
+    rows: ROWS,
+    inks: INKS,
+    holes: holesOf(COLS, ROWS),
+  });
+</script>
+
+<title>transclude • Lite-Brite</title>
+<meta
+  name="description"
+  content="A fullscreen Lite-Brite board made of radio buttons and CSS, with no client JavaScript."
+/>
+<!-- viewport-fit=cover, so the tray can keep clear of the home indicator. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+<form class="brite" style="--cols: ${cols}; --rows: ${rows}">
+  <fieldset class="tray">
+    <legend>Pegs</legend>
+    <div class="pegs">
+      <template each="ink of inks">
+        <input type="radio" name="ink" id="ink-${ink.id}" class="pick" />
+        <label for="ink-${ink.id}" class="swatch ${ink.id}">${ink.name}</label>
+      </template>
+      <input type="radio" name="ink" id="ink-off" class="pick" />
+      <label for="ink-off" class="swatch off">Pull</label>
+    </div>
+    <input type="reset" class="clear" value="Empty the board" />
+    <p class="credit">
+      <a href="https://transclude.dev">transclude</a> &middot; radio buttons and CSS, no JavaScript
+    </p>
+  </fieldset>
+
+  <div class="board">
+    <div
+      class="hole"
+      each="hole of holes"
+      role="radiogroup"
+      aria-label="Row ${hole.row}, column ${hole.col}"
+    >
+      <input type="radio" name="p${hole.i}" id="p${hole.i}off" class="off" checked />
+      <label for="p${hole.i}off" class="off">Empty</label>
+      <template each="ink of inks">
+        <input type="radio" name="p${hole.i}" id="p${hole.i}${ink.id}" class="${ink.id}" />
+        <label for="p${hole.i}${ink.id}" class="${ink.id}">${ink.name}</label>
+      </template>
+    </div>
+  </div>
+</form>
+
+<style>
+  /* The board is the example, so its style lives here beside its markup. The
+     stylesheet holds the reset and the page around it. */
+
+  .brite {
+    --red: #ff3b46;
+    --orange: #ff8a1e;
+    --yellow: #ffe23d;
+    --green: #3ce06d;
+    --aqua: #35dfe8;
+    --blue: #4b7bff;
+    --violet: #ac5cff;
+    --white: #f2f6ff;
+
+    --frame: #14161c;
+    --socket: #04050a;
+    --edge: #9aa4b8;
+
+    /* Narrow enough that nine swatches and their margins fit one row at any
+       width, so the tray keeps the three rows the reservation below counts on.
+       8rem is those margins, the tray's padding, and room for the one swatch
+       that grows: the picked one scales up and takes an outline, and on a narrow
+       phone a row sized to the pixel clips it. */
+    --swatch: min(2.1rem, calc((100vw - 8rem) / 9));
+
+    /* What the tray takes, so the board can have the rest: the swatch row, the
+       button, the credit, the gaps around them, and whatever the home indicator
+       sits over. Measure this again after changing anything in the tray. */
+    --tray: calc(8.5rem + env(safe-area-inset-bottom));
+
+    /* One number sizes everything. The board has to fit both ways, so a cell is
+       whichever is smaller: the width left after the frame, or the height left
+       after the tray.
+
+       The 1.2 is the board's own padding, which is 0.6 of a cell on each side.
+       Dividing by the hole count alone leaves the frame out of the sum, and the
+       board ends up taller than the space measured for it. That is a scrollbar
+       on a page whose whole promise is that it fits. */
+    --cell: min(
+      calc((100vw - 1.5rem) / (var(--cols) + 1.2)),
+      calc((100dvh - var(--tray)) / (var(--rows) + 1.2)),
+      /* A board fills a phone. On a monitor it would fill a wall, so it stops
+         here and sits in the dark instead. */
+      2.5rem
+    );
+
+    display: grid;
+    grid-template-rows: auto auto;
+    align-content: center;
+    justify-items: center;
+    gap: 1rem;
+    min-height: 100dvh;
+    margin: 0;
+  }
+
+  /* The tray comes first in the markup so the keyboard reaches the colours
+     before the two hundred holes, and grid puts it back under the board. */
+  .board {
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: repeat(var(--cols), var(--cell));
+    grid-auto-rows: var(--cell);
+    width: max-content;
+    padding: calc(var(--cell) * 0.6);
+    border-radius: calc(var(--cell) * 0.8);
+    background: var(--frame);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.06),
+      0 1.5rem 3rem rgb(0 0 0 / 0.6);
+  }
+
+  /* Nine labels are stacked over every hole and only one of them is a target.
+     The tray picks which. `pointer-events: none` here is what makes the other
+     eight inert, so a tap always lands on the colour in hand. */
+  .hole {
+    position: relative;
+    pointer-events: none;
+  }
+
+  .hole input,
+  .hole > label {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+  }
+
+  /* The radios hold the state and take the keyboard. They are never seen and
+     never a target: the label over each one is. */
+  .hole input {
+    appearance: none;
+    border: 0;
+    background: none;
+    opacity: 0;
+  }
+
+  .hole > label {
+    /* The text is the radio's accessible name, so it stays in the markup and
+       leaves the screen. */
+    overflow: hidden;
+    text-indent: 100%;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ::before is the empty socket. ::after is the peg, hidden until --lit. */
+  .hole::before,
+  .hole::after {
+    content: '';
+    position: absolute;
+    inset: 18%;
+    border-radius: 50%;
+  }
+
+  .hole::before {
+    background: var(--socket);
+    box-shadow: inset 0 0.08em 0.14em rgb(0 0 0 / 0.9);
+  }
+
+  .hole::after {
+    background:
+      radial-gradient(circle at 34% 30%, rgb(255 255 255 / 0.8), rgb(255 255 255 / 0) 58%),
+      var(--peg, transparent);
+    box-shadow: 0 0 calc(var(--cell) * 0.5) var(--peg, transparent);
+    opacity: var(--lit, 0);
+    transition: opacity 140ms ease-out;
+  }
+
+  .hole:has(:focus-visible)::before {
+    box-shadow:
+      inset 0 0.08em 0.14em rgb(0 0 0 / 0.9),
+      0 0 0 max(2px, calc(var(--cell) * 0.09)) var(--edge);
+  }
+
+  /* What a checked radio means. One line per colour, and this is the whole
+     rendering layer. */
+  .hole:has(input.red:checked) { --peg: var(--red); --lit: 1; }
+  .hole:has(input.orange:checked) { --peg: var(--orange); --lit: 1; }
+  .hole:has(input.yellow:checked) { --peg: var(--yellow); --lit: 1; }
+  .hole:has(input.green:checked) { --peg: var(--green); --lit: 1; }
+  .hole:has(input.aqua:checked) { --peg: var(--aqua); --lit: 1; }
+  .hole:has(input.blue:checked) { --peg: var(--blue); --lit: 1; }
+  .hole:has(input.violet:checked) { --peg: var(--violet); --lit: 1; }
+  .hole:has(input.white:checked) { --peg: var(--white); --lit: 1; }
+
+  /* Which label layer is live. One line per colour again, plus Pull, which
+     makes the layer over the `off` radio the target and empties a hole. */
+  .brite:has(#ink-red:checked) .hole > label.red { pointer-events: auto; }
+  .brite:has(#ink-orange:checked) .hole > label.orange { pointer-events: auto; }
+  .brite:has(#ink-yellow:checked) .hole > label.yellow { pointer-events: auto; }
+  .brite:has(#ink-green:checked) .hole > label.green { pointer-events: auto; }
+  .brite:has(#ink-aqua:checked) .hole > label.aqua { pointer-events: auto; }
+  .brite:has(#ink-blue:checked) .hole > label.blue { pointer-events: auto; }
+  .brite:has(#ink-violet:checked) .hole > label.violet { pointer-events: auto; }
+  .brite:has(#ink-white:checked) .hole > label.white { pointer-events: auto; }
+  .brite:has(#ink-off:checked) .hole > label.off { pointer-events: auto; }
+
+  /* No swatch carries `checked`, so nothing is picked at first paint and
+     nothing is picked again after the board is emptied. Red is in hand both
+     times, which is one rule for two states. */
+  .brite:not(:has(.pick:checked)) .hole > label.red { pointer-events: auto; }
+
+  /* The tray ------------------------------------------------------------- */
+
+  /* A grid, not a wrapping flex row: three rows that are three rows at every
+     width is what makes --tray above a number rather than a guess. */
+  .tray {
+    grid-row: 2;
+    display: grid;
+    justify-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom));
+    border: 0;
+  }
+
+  /* Margins on the swatches rather than a gap on the row. Every picker is a
+     zero-width flex item sitting between two swatches, so a gap would be
+     counted twice between them and once before the first one. */
+  .pegs {
+    display: flex;
+    align-items: center;
+  }
+
+  /* A visible legend does not take part in the fieldset's grid, so this one is
+     only read aloud. */
+  .tray legend {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* In the flow, next to its swatch, so focus scrolls to the right place. Zero
+     size rather than `display: none`, which would take it off the keyboard. */
+  .pick {
+    appearance: none;
+    width: 0;
+    height: 0;
+    margin: 0;
+    border: 0;
+    opacity: 0;
+  }
+
+  .swatch {
+    width: var(--swatch);
+    height: var(--swatch);
+    margin-inline: 0.275rem;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 34% 30%, rgb(255 255 255 / 0.75), rgb(255 255 255 / 0) 58%),
+      var(--peg);
+    box-shadow: 0 0 0.55rem var(--peg);
+    cursor: pointer;
+    overflow: hidden;
+    text-indent: 100%;
+    white-space: nowrap;
+    transition: scale 120ms ease-out;
+  }
+
+  .swatch.red { --peg: var(--red); }
+  .swatch.orange { --peg: var(--orange); }
+  .swatch.yellow { --peg: var(--yellow); }
+  .swatch.green { --peg: var(--green); }
+  .swatch.aqua { --peg: var(--aqua); }
+  .swatch.blue { --peg: var(--blue); }
+  .swatch.violet { --peg: var(--violet); }
+  .swatch.white { --peg: var(--white); }
+
+  /* Pull holds no colour, so it is a ring rather than a peg. */
+  .swatch.off {
+    background: none;
+    box-shadow: inset 0 0 0 0.2rem var(--edge);
+  }
+
+  .pick:checked + .swatch,
+  .brite:not(:has(.pick:checked)) .swatch.red {
+    scale: 1.3;
+    outline: 2px solid var(--edge);
+    outline-offset: 3px;
+  }
+
+  .pick:focus-visible + .swatch {
+    outline: 2px solid var(--edge);
+    outline-offset: 3px;
+  }
+
+  .clear {
+    appearance: none;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid rgb(255 255 255 / 0.2);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.07);
+    color: inherit;
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .clear:hover {
+    background: rgb(255 255 255 / 0.14);
+  }
+
+  /* One line, and it stays one line: a second one would push the board past the
+     height reserved for the tray. */
+  .credit {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.7rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .credit a {
+    color: inherit;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hole::after,
+    .swatch {
+      transition: none;
+    }
+  }
+</style>

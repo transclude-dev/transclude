@@ -133,6 +133,7 @@ npm run auth          # a guarded section on http://localhost:1967
 npm run live          # server-sent events on http://localhost:1968
 npm run elements      # light and shadow elements on http://localhost:1969
 npm run markdown      # Markdown pages on http://localhost:1970
+npm run lite-brite    # a peg board out of radio buttons on http://localhost:1972
 npm run check:src     # type-check the framework itself
 ```
 
@@ -142,6 +143,7 @@ would be. Every one of them is deployed, from the same source you would clone.
 | Example | What it proves | Running |
 | --- | --- | --- |
 | `todomvc` | Seven actions, one POST handler, zero bytes of JavaScript | [todomvc.transclude.dev](https://todomvc.transclude.dev) |
+| `lite-brite` | A drawing the browser holds, and CSS that reads it | [lite-brite.transclude.dev](https://lite-brite.transclude.dev) |
 | `search` | A fragment that is a substring of the document it came from | [search.transclude.dev](https://search.transclude.dev) |
 | `blog` | Markdown to files, with a sitemap and a feed | [blog.transclude.dev](https://blog.transclude.dev) |
 | `htmx` | htmx and this framework, each doing its own half | [htmx.transclude.dev](https://htmx.transclude.dev) |

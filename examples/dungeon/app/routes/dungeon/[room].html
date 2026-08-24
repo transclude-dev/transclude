@@ -14,13 +14,22 @@
    */
   export const prerender = false;
 
-  const NAMES = {
-    north: 'North',
-    east: 'East',
-    south: 'South',
-    west: 'West',
-    up: 'Up',
-    down: 'Down',
+  /**
+   * The word on an exit, and the arrow beside it.
+   *
+   * The arrow points where the link goes, so it is a fact about the direction
+   * rather than decoration on a link, which is why it comes from here rather
+   * than from a `::before` in the stylesheet. A stair is not a compass
+   * direction, so `up` and `down` get a glyph of their own rather than a second
+   * north and south.
+   */
+  const WAYS = {
+    north: { name: 'North', arrow: '↑' },
+    east: { name: 'East', arrow: '→' },
+    south: { name: 'South', arrow: '↓' },
+    west: { name: 'West', arrow: '←' },
+    up: { name: 'Up', arrow: '⇑' },
+    down: { name: 'Down', arrow: '⇓' },
   };
 
   /** What is written on the wall here, given a light and a seed. */
@@ -87,7 +96,10 @@
     const lit = state.have.includes(LIGHT);
 
     const exits = exitsFrom(room, state.have).map((exit) => ({
-      dir: NAMES[exit.dir],
+      dir: WAYS[exit.dir].name,
+      // Read out as a word by a screen reader either way: the arrow is hidden
+      // from one, and the word beside it is not.
+      arrow: WAYS[exit.dir].arrow,
       locked: exit.locked,
       // A link, or nothing. An exit that cannot be walked is never a link, so
       // there is no request to refuse and no dead end to explain.
@@ -159,6 +171,7 @@
       <ul>
         <li each="exit of exits">
           <a if="exit.href" href="${exit.href}">
+            <span class="arrow" aria-hidden="true">${exit.arrow}</span>
             ${exit.dir}<span class="to" if="exit.to">, to ${exit.to}</span>
           </a>
           <span else class="shut">

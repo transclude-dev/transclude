@@ -4,6 +4,13 @@ node_modules/
 dist/
 
 .claude/
+
+# wrangler's local state for `npm run start:worker`. Regenerated on demand.
+.wrangler/
+
 .env
 .env.*
 !.env.example
+
+# The same, for `wrangler dev`.
+.dev.vars

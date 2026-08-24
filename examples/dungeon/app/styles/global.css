@@ -128,9 +128,13 @@ h2 {
   text-decoration: none;
 }
 
-.exits a::before {
-  content: '→ ';
+.exits .arrow {
   color: var(--dim);
+  /* The compass arrows and the two stair ones are not all in one face, so the
+     line boxes differ. A fixed width keeps the words under each other. */
+  display: inline-block;
+  width: 1.1em;
+  text-align: center;
 }
 
 .exits .to {

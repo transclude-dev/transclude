@@ -43,6 +43,16 @@ describe('hovering a link never starts a run', async () => {
   assert.ok(!JSON.stringify(rules.prerender ?? []).includes('/dungeon'));
 });
 
+describe('an arrow points where its link goes', async () => {
+  const page = await read('/dungeon/stair?have=lantern&seen=stair&seed=7f3a');
+  const arrows = [...page.matchAll(/<span class="arrow" aria-hidden="true">(.)<\/span>\s*(\w+)/g)];
+
+  assert.deepEqual(
+    arrows.map(([, arrow, word]) => `${word} ${arrow}`),
+    ['North ↑', 'South ↓', 'West ←', 'Down ⇓'],
+  );
+});
+
 describe('the minimap draws what has been seen, and marks where you are', async () => {
   const page = await read('/dungeon/vault?seen=gate,hall,vault&seed=7f3a');
   const chart = page.slice(page.indexOf('id="map"'), page.indexOf('</section>', page.indexOf('id="map"')));

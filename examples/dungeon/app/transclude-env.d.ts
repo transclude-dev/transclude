@@ -173,6 +173,7 @@ export type DungeonRoomData = __Shape<{
   lines: any;
   exits: {
     dir: any;
+    arrow: any;
     locked: any;
     href: string | null;
     to: any;

@@ -13,6 +13,8 @@
 import fs from 'node:fs';
 import { serveStatic } from '@hono/node-server/serve-static';
 
+import { typeOf } from './mime.js';
+
 /** Same as the build output's. These change when the author changes them. */
 const REVALIDATE = 'public, max-age=0, must-revalidate';
 
@@ -35,7 +37,30 @@ function validatorFor(file) {
 }
 
 /**
- * A handler for `publicFiles`, with a validator and a 304.
+ * The type of what is inside the file `serveStatic` chose.
+ *
+ * It hands `onFound` the twin it picked, so the name can be `page.css.br`, and
+ * the type belongs to what is inside rather than to the suffix on the outside.
+ *
+ * Two things decide this, and both matter. The `Content-Encoding` it set is the
+ * only thing that says a twin was picked at all, so a `backup.tar.gz` nobody
+ * compressed keeps no encoding and stays a gzip somebody meant to hand out. And
+ * what comes off is the last extension rather than a suffix from a list of our
+ * own: `.br`, `.zst` and `.gz` are the ones `serveStatic` knows today, and a
+ * copy of that list here would be a fourth table to drift.
+ *
+ * @param {string} file the file on disk, as `serveStatic` found it
+ * @param {string|null} encoding the `Content-Encoding` it set, if any
+ * @returns {string}
+ */
+function typeFor(file, encoding) {
+  if (!encoding) return typeOf(file);
+
+  return typeOf(file.replace(/\.[^.]+$/, ''));
+}
+
+/**
+ * A handler for `publicFiles`, with a validator, a type and a 304.
  *
  * `serveStatic` sets the headers and reads no request condition, so the
  * conditional half is done around it. The file it found is the one measured,
@@ -52,6 +77,15 @@ export function publicFiles(root) {
     onFound: (file, c) => {
       c.header('ETag', validatorFor(file));
       c.header('Cache-Control', REVALIDATE);
+
+      // Over the top of the one `serveStatic` already wrote. Its table has holes
+      // where a site keeps its media: no `.m4a`, no `.wav`, no `.mov`, no
+      // `.vtt`, and an unknown extension is written `application/octet-stream`.
+      // With `nosniff` on every response that is not a guess a browser may
+      // correct, so an `<audio>` element is handed bytes it is forbidden to
+      // read. `src/mime.js` is a superset of Hono's table, so answering over it
+      // can only add types, never lose one.
+      c.header('Content-Type', typeFor(file, c.res.headers.get('content-encoding')));
     },
   });
 

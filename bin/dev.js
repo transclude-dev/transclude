@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { getRequestListener } from '@hono/node-server';
+import { TYPES } from '../src/mime.js';
 import { publicFiles as publicHandler } from '../src/public-files.js';
 import { buildSprite, readLibraries, refuseSpriteClash } from '../src/icons.js';
 import { createServer as createViteServer } from 'vite';
@@ -98,8 +99,12 @@ function sprite(name) {
     }
 
     return {
+      // The same answer the build's copy of this file gets from the public
+      // handler. Written out here, dev said `image/svg+xml; charset=utf-8` and
+      // production said `image/svg+xml`, which is one more thing that is true
+      // on one server and not the other.
       status: 200,
-      type: 'image/svg+xml; charset=utf-8',
+      type: TYPES.svg,
       body: buildSprite(library.icons),
     };
   } catch (error) {

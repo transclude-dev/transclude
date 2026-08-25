@@ -552,6 +552,28 @@ against.
   caught it: `app.request()` takes a different branch inside `serveStatic` and
   shows no `onFound` headers at all, so the public-file tests run against a real
   listener on a port the OS picks.
+- **One table says what a file is, and there were three.** `static-cache.js` had
+  thirteen types, `bin/build.js` had eleven, and public files on Node took
+  whatever Hono's own table said, which has no `.m4a`, `.wav`, `.mov` or `.vtt`.
+  So an audio file in `app/public/` went out as `application/octet-stream`, and
+  `nosniff` is on every response, which means the browser was forbidden to look
+  at the bytes and find the AAC it would otherwise have played. It did not play
+  badly. It did not play. `.mp3` was the worse half of it: `audio/mpeg` on Node
+  and `application/octet-stream` on workerd, one app, two deployments, two
+  answers. `src/mime.js` is the one answer now, and it imports nothing so the
+  build, both servers and anything later can all reach it. Four things hold it
+  up. It is a superset of Hono's table, asserted against `hono/utils/mime`,
+  because `public-files.js` writes its own type over the one `serveStatic`
+  already set and an extension Hono knows and we do not would go backwards.
+  `serveStatic` hands `onFound` the `.br` twin it chose, so `page.css.br` is
+  typed past that suffix, and only when the `Content-Encoding` it set says a
+  twin was chosen: a `backup.tar.gz` nobody compressed is a download and stays
+  `application/gzip`. The lookup is `Object.hasOwn`, because the name comes off
+  a URL and `/x.constructor` otherwise finds a function on `Object.prototype`
+  and sends its source as a content type. And the build prints the kinds of
+  public file it has no type for, the way it prints a draft it skipped, since
+  the alternative is a file that silently cannot be used. The fix for a wrong
+  type is the right type; `nosniff` is not the thing to reconsider.
 - **Public files are served by Hono, build output by the in-memory cache.** These
   are different on purpose. Build output is small, used often and never changes, and
   gets a strong ETag for each encoding. Public files belong to the author, can be

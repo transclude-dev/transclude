@@ -1,0 +1,56 @@
+<script properties>
+  /**
+   * Three repeated blocks under an `<svg>`, which is a namespace rather than a
+   * tag.
+   *
+   * `createElement('svg')` is an HTMLUnknownElement, so a re-render that parsed
+   * new markup inside one used to hand back `<g>` and `<circle>` in the HTML
+   * namespace. They are in the document, they have the right attributes, and
+   * they draw nothing. The first paint always looked right, because that one
+   * arrives through the shadow root's own parser.
+   *
+   * Each block is here for a different path through the runtime. `shapes` is
+   * keyed, so a new key is built one item at a time. `bars` is not, so the whole
+   * block is replaced. And `notes` is inside `<foreignObject>`, where the
+   * children are HTML again and wrapping them in an `<svg>` would empty the
+   * block instead of fixing it.
+   */
+  export default {
+    /** @type {{ id: number, x: number }[]} */
+    shapes: [],
+    /** @type {number[]} */
+    bars: [],
+    /** @type {string[]} */
+    notes: [],
+  };
+
+  export const shadow = true;
+</script>
+
+<style>
+  :host {
+    display: block;
+  }
+
+  circle {
+    fill: #1a7f37;
+  }
+
+  rect {
+    fill: #0b7285;
+  }
+</style>
+
+<svg viewBox="0 0 120 24" width="120" height="24">
+  <g each="shape of shapes" key="shape.id" class="shape">
+    <circle cx="${shape.x}" cy="12" r="4"></circle>
+  </g>
+
+  <g class="bars">
+    <rect each="bar of bars" x="${bar}" y="4" width="3" height="16"></rect>
+  </g>
+
+  <foreignObject x="0" y="0" width="120" height="24">
+    <p each="note of notes">${note}</p>
+  </foreignObject>
+</svg>

@@ -64,6 +64,15 @@
   <!-- A boolean in <script state>, so it has a custom state to reflect. -->
   <tally-box id="tally" label="hot at five"></tally-box>
 
+  <!-- Repeated blocks under an <svg>, which is a namespace rather than a tag.
+       The checks re-render it and read the namespace back off what returned. -->
+  <shape-field
+    id="shapes"
+    shapes='[{"id":1,"x":20},{"id":2,"x":50}]'
+    bars="[10,40]"
+    notes='["one","two"]'
+  ></shape-field>
+
   <!-- Where a fetched fragment gets swapped in. Empty in the markup, so nothing
        it ends up containing is in this page's element closure. -->
   <div id="swap"></div>
@@ -789,6 +798,61 @@
       heading.removeAttribute('tabindex');
       return 'activeElement is followed down through every shadow root';
     }));
+
+  // ---- namespaces ---------------------------------------------------------
+  //
+  // `document.createElement('svg')` is an HTMLUnknownElement, so markup parsed
+  // inside one used to come back in the HTML namespace: in the document, with
+  // the right attributes, drawing nothing. Only a browser can answer this, and
+  // only after the first paint: that one arrives through the shadow root's own
+  // parser, which does enter foreign content. Every re-render after it is the
+  // question.
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const HTML_NS = 'http://www.w3.org/1999/xhtml';
+  const shapes = document.getElementById('shapes');
+
+  await check('a keyed each under <svg> is rebuilt in the SVG namespace', async () => {
+    shapes.shapes = [{ id: 1, x: 20 }, { id: 2, x: 50 }];
+    await shapes.updateComplete;
+
+    // A key nobody has seen is built rather than moved, and building is what
+    // parses new markup.
+    shapes.shapes = [{ id: 3, x: 80 }, { id: 1, x: 20 }];
+    await shapes.updateComplete;
+
+    const groups = [...shapes.shadowRoot.querySelectorAll('g.shape')];
+    is(groups.length, 2, 'two shapes');
+    ok(groups.every((g) => g.namespaceURI === SVG_NS), 'a rebuilt <g> came back HTML');
+
+    // The interface is the whole difference. An HTMLUnknownElement named
+    // "circle" has no `r`, so there is nothing to paint.
+    const circles = [...shapes.shadowRoot.querySelectorAll('circle')];
+    is(circles.length, 2, 'two circles');
+    ok(circles.every((circle) => circle.r?.baseVal.value === 4), 'a circle has no SVG geometry');
+    return 'a rebuilt shape draws, rather than only parsing';
+  });
+
+  await check('an unkeyed each under <g> is replaced in the SVG namespace', async () => {
+    shapes.bars = [10, 40, 70];
+    await shapes.updateComplete;
+
+    const bars = [...shapes.shadowRoot.querySelectorAll('rect')];
+    is(bars.length, 3, 'three bars');
+    ok(bars.every((bar) => bar instanceof SVGRectElement), 'a replaced <rect> came back HTML');
+    return 'the whole block is replaced here, rather than one item of it';
+  });
+
+  await check('an each inside <foreignObject> stays HTML', async () => {
+    shapes.notes = ['one', 'two', 'three'];
+    await shapes.updateComplete;
+
+    const notes = [...shapes.shadowRoot.querySelectorAll('foreignObject p')];
+    is(notes.length, 3, 'three notes');
+    ok(notes.every((note) => note instanceof HTMLParagraphElement), 'a note came back as SVG');
+    ok(notes.every((note) => note.namespaceURI === HTML_NS), 'a note is not in the HTML namespace');
+    return 'the one place inside an <svg> where wrapping in <svg> empties the block';
+  });
 
   // ---- fragments ----------------------------------------------------------
   //

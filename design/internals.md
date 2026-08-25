@@ -138,6 +138,32 @@ against.
   them with mapped offsets. Keep it that way.
 - **Never bind twice.** Moving an element in the DOM reconnects it, and a second
   `bind` splits an already split text node. Guarded by `#bound`.
+- **`createElement` cannot express a namespace, and the parser will not enter one
+  without a real tag.** A re-render parses its new markup inside a scratch
+  element of the destination's kind, because a bare `<tr>` in a `<div>` is thrown
+  away. For an `<svg>` parent that scratch element was
+  `document.createElement('svg')`, which is an HTMLUnknownElement in the HTML
+  namespace: the parser never enters foreign content inside one, so every `<g>`,
+  `<use>` and `<circle>` parsed there came back HTML. They are in the document,
+  they carry the right attributes, and they draw nothing. The first paint always
+  looked right, because that one arrives through `setHTMLUnsafe` on the shadow
+  root, where the parser does see a real `<svg>`. Only a block rebuilt afterwards
+  vanished, and an item the keyed walk reused kept its good node, so it presented
+  as "some of them draw". Reported from an app, confirmed in Chrome, and MathML
+  had exactly the same bug. `holderFor` answers with a tag to create and a tag to
+  wrap the markup in: foreign markup goes into a written-out `<svg>` or `<math>`
+  inside a div, and that wrapper is what the caller walks. Two traps around it.
+  The wrap is refused at an HTML integration point, which is `<foreignObject>`,
+  `<desc>`, `<title>` and an `<annotation-xml>` whose `encoding` says HTML. Those
+  children are HTML again, and an HTML start tag inside foreign content takes the
+  parser *out* of the `<svg>`, so wrapping them does not fix a block, it empties
+  one: the first patch tried crashed the whole check page on a node it did not
+  have, rather than losing one region. And the namespace table is a `Map`,
+  because `createElementNS('constructor', 'x')` is a thing somebody can write.
+  Nothing in Node models any of this. `test/dom.js` has no `namespaceURI` at all,
+  so all 1,287 Node tests passed for as long as it was broken:
+  `test/namespaces.test.js` holds the decision, and the browser checks hold what
+  a browser does with it.
 - **Directive values are expressions, not interpolations.** `each="tag of tags"`
   has no `${}`. Parse it as an expression or the volatile set is wrong.
 - **Fragment mode emits components bare, and the flag has to reach all the way

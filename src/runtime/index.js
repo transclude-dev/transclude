@@ -581,15 +581,78 @@ function place(parent, node, reference) {
 }
 
 /**
+ * The tag that puts the parser into a namespace, keyed by the namespace.
+ *
+ * A Map rather than an object: `namespaceURI` is a string the DOM hands back,
+ * and `createElementNS('constructor', 'x')` is a thing somebody can write.
+ */
+const FOREIGN = new Map([
+  ['http://www.w3.org/2000/svg', 'svg'],
+  ['http://www.w3.org/1998/Math/MathML', 'math'],
+]);
+
+/** Inside SVG and MathML, the elements whose children are HTML again. */
+const HTML_INSIDE = new Set(['foreignobject', 'desc', 'title']);
+
+/** The two `encoding` values that make an `<annotation-xml>` one of those. */
+const HTML_ENCODINGS = new Set(['text/html', 'application/xhtml+xml']);
+
+/**
+ * Whether this element's children are HTML rather than its own kind.
+ *
+ * The spec calls these HTML integration points, and the parser leaves foreign
+ * content at one. `<foreignObject>` is the one anybody writes.
+ */
+function htmlInside(parent) {
+  const name = String(parent.localName ?? '').toLowerCase();
+  if (name !== 'annotation-xml') return HTML_INSIDE.has(name);
+
+  // An integration point only while it says its content is HTML. Anything else
+  // in there is MathML, including no `encoding` at all.
+  const encoding = String(parent.getAttribute('encoding') ?? '').trim().toLowerCase();
+  return HTML_ENCODINGS.has(encoding);
+}
+
+/**
+ * What to parse this parent's new markup inside, as a tag to create and a tag
+ * to wrap the markup in.
+ *
+ * Exported to be tested. Whether a browser then parses into the namespace this
+ * asks for is a browser's answer, and `app/routes/check.html` in the showcase is
+ * where that is asked.
+ *
+ * @param {{ nodeType?: number, namespaceURI?: string, localName?: string, tagName?: string }} parent
+ * @returns {{ tag: string, wrap: string|null }}
+ */
+export function holderFor(parent) {
+  if (parent.nodeType !== 1) return { tag: 'div', wrap: null };
+
+  const wrap = FOREIGN.get(parent.namespaceURI);
+  if (!wrap || htmlInside(parent)) return { tag: parent.tagName, wrap: null };
+
+  return { tag: 'div', wrap };
+}
+
+/**
  * Parsing has to happen inside an element of the same kind as the destination,
  * or the parser drops what cannot live there. A bare <tr> in a <div> is thrown
  * away.
+ *
+ * A namespace is the same rule one level up, and `createElement` cannot express
+ * it: `createElement('svg')` is an HTMLUnknownElement, the parser never enters
+ * foreign content, and every <g> and <use> parsed in it comes out HTML and draws
+ * nothing. So foreign markup is wrapped in a real <svg> or <math>, parsed in a
+ * div, and the wrapper is what the caller walks.
  */
 function parseInContext(parent, html) {
-  const holder = document.createElement(parent.nodeType === 1 ? parent.tagName : 'div');
-  if (holder.setHTMLUnsafe) holder.setHTMLUnsafe(html);
-  else holder.innerHTML = html;
-  return holder;
+  const { tag, wrap } = holderFor(parent);
+  const holder = document.createElement(tag);
+  const markup = wrap ? `<${wrap}>${html}</${wrap}>` : html;
+
+  if (holder.setHTMLUnsafe) holder.setHTMLUnsafe(markup);
+  else holder.innerHTML = markup;
+
+  return wrap ? holder.firstElementChild : holder;
 }
 
 // ---- internal state -------------------------------------------------------

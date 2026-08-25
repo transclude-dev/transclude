@@ -29,6 +29,13 @@ running an app.
   identity, input values, caret and component state all survive. Safari 26.4 has
   no `moveBefore`, so it is the browser that runs this path in `check.html`, and
   it passes there. Chrome 150 and Firefox 152 both have it.
+- **The `<svg>` fixture draws nothing anyone reads.** `shape-field` is three
+  repeated blocks under an `<svg>`: one keyed, one not, and one inside
+  `<foreignObject>`. `check.html` re-renders each of them and reads the namespace
+  back off what returned, because a re-render used to parse them into the HTML
+  namespace, where they carry every right attribute and paint nothing. Node
+  models no namespaces at all, so this is the only place the question can be
+  asked.
 - **VS Code joins all `<script>` blocks** into one virtual module, so every file
   looks like a redeclaration. `.vscode/settings.json` turns
   `html.validate.scripts` off.

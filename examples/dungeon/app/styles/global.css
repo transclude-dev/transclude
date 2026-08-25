@@ -1,0 +1,259 @@
+/* One stylesheet, and the page ships no JavaScript of ours at all. */
+
+/* Room to room is a document navigation, and the browser animates it. Nothing
+   here is scripted: a browser that has never heard of this rule ignores it and
+   the page changes the way pages always have. */
+@view-transition {
+  navigation: auto;
+}
+
+:root {
+  color-scheme: dark;
+
+  --ink: #d7d2c7;
+  --dim: #8b8578;
+  /* Dots on the minimap and nothing else. It is 3.5:1 on the panel, which is
+     enough for a shape and not enough for a sentence, and the words on a shut
+     exit are a sentence somebody has to read. */
+  --shut: #7a6f60;
+  --paper: #14130f;
+  --panel: #1b1a15;
+  --line: #33302a;
+  --gold: #d2a24c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 1.5rem 1.25rem 3rem;
+  background: var(--paper);
+  color: var(--ink);
+  font: 1rem/1.6 ui-serif, Georgia, 'Times New Roman', serif;
+}
+
+a {
+  color: var(--gold);
+  text-underline-offset: 0.2em;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.top,
+main,
+.bottom {
+  max-width: 40rem;
+  margin-inline: auto;
+}
+
+.top {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.top a {
+  color: var(--dim);
+  text-decoration: none;
+}
+
+.bottom {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 0.8rem;
+}
+
+h1 {
+  margin: 1.5rem 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.room p {
+  margin: 0 0 0.85rem;
+  max-width: 34rem;
+}
+
+.take {
+  color: var(--ink);
+}
+
+.take a,
+.go a,
+.ending a {
+  display: inline-block;
+  margin-top: 0.35rem;
+}
+
+/* The ways out. A link is a way you can walk; anything else is not a link. */
+.exits {
+  margin-top: 1.75rem;
+}
+
+.exits ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.exits li {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--panel);
+}
+
+.exits a {
+  text-decoration: none;
+}
+
+.exits .arrow {
+  color: var(--dim);
+  /* The compass arrows and the two stair ones are not all in one face, so the
+     line boxes differ. A fixed width keeps the words under each other. */
+  display: inline-block;
+  width: 1.1em;
+  text-align: center;
+}
+
+.exits .to {
+  color: var(--dim);
+}
+
+/* A shut exit says why, so it is read at the same contrast as everything else.
+   What marks it is the missing arrow and the dashed edge. */
+.exits li:has(.shut) {
+  border-style: dashed;
+}
+
+.exits .shut {
+  color: var(--dim);
+}
+
+.exits .shut b {
+  font-weight: 500;
+  color: var(--dim);
+}
+
+.pack ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.pack b {
+  font-weight: 500;
+}
+
+.pack .note {
+  color: var(--dim);
+}
+
+.pack .empty {
+  margin: 0;
+  color: var(--dim);
+  font-size: 0.9rem;
+}
+
+.ending {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  color: var(--dim);
+}
+
+/* The chrome: what is carried, and where the run has been. */
+.chrome {
+  display: grid;
+  gap: 1.75rem;
+  margin-top: 2.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.chart .grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1.1rem);
+  grid-auto-rows: 1.1rem;
+  gap: 0.3rem;
+}
+
+.chart .cell {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.chart .dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--shut);
+}
+
+.chart .cell[aria-current='page'] {
+  border-color: var(--gold);
+  background: #2a2419;
+}
+
+.chart .cell[aria-current='page'] .dot {
+  background: var(--gold);
+}
+
+.chart .count {
+  margin: 0.75rem 0 0;
+  color: var(--dim);
+  font-size: 0.8rem;
+}
+
+/* Named for a screen reader, and drawn as a dot for everyone else. */
+.name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.own {
+  margin: 0;
+  color: var(--dim);
+  font-size: 0.8rem;
+  max-width: 34rem;
+}

@@ -134,6 +134,7 @@ npm run live          # server-sent events on http://localhost:1968
 npm run elements      # light and shadow elements on http://localhost:1969
 npm run markdown      # Markdown pages on http://localhost:1970
 npm run lite-brite    # a peg board out of radio buttons on http://localhost:1972
+npm run dungeon       # a crawl whose save file is the URL on http://localhost:1973
 npm run check:src     # type-check the framework itself
 ```
 

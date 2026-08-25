@@ -388,6 +388,22 @@ export const POST = async ({ request, revalidateTag }) => {
     with byte ranges, so media works.
   </p>
 
+  <p>
+    The <code>Content-Type</code> comes from the extension, out of one table the
+    build, both servers and workerd all read. It covers what a site serves:
+    audio, video, captions, fonts, images and documents. A kind it does not know
+    goes out as <code>application/octet-stream</code>, and the build prints
+    which kinds those were.
+  </p>
+
+  <doc-note label="A wrong type is silence, not a warning" tone="warn">
+    Every response carries <code>X-Content-Type-Options: nosniff</code>, so a
+    browser may not guess past the type it was given. An
+    <code>&lt;audio&gt;</code> element handed
+    <code>application/octet-stream</code> is forbidden to look at the bytes and
+    find the AAC in them. The clip does not play badly. It does not play.
+  </doc-note>
+
   <h2>Error pages</h2>
 
   <p>

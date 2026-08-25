@@ -201,6 +201,25 @@ skipped. Deployed, the URL is a 404. Publishing is deleting the line.
 `prerender` is read off the page, never off its layouts. A layout that reads a
 cookie makes every page under it request-dependent, and nothing says so.
 
+## Public files
+
+`app/public/` is copied to the site root and served with byte ranges, so media
+works.
+
+The `Content-Type` comes from the extension, out of one table the build, both
+servers and workerd read. Audio, video, captions, fonts, images and documents
+are in it. A kind it does not know is sent as `application/octet-stream`, and
+the build prints which kinds those were.
+
+`X-Content-Type-Options: nosniff` is on every response, so a browser may not
+guess past the type it was given. A file has to carry the extension its bytes
+match: `kitchen.m4a` is `audio/mp4` and plays, and the same bytes named
+`kitchen.audio` are `application/octet-stream` and silence.
+
+**A browser plays no sound in a document nobody has touched.** That is the
+autoplay policy and no header changes it. If a clip is silent and the type is
+right, this is why.
+
 ## Holding a render
 
 Between a file written once and a render on every request, there is a page held

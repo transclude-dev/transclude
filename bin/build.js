@@ -30,6 +30,7 @@ import { speculateSettings, speculationRules } from '../src/speculate.js';
 import { pool } from '../src/pool.js';
 import { mappedFrames } from '../src/stack.js';
 import { precompress } from '../src/compress.js';
+import { known, typeOf } from '../src/mime.js';
 
 const { root, config } = await loadProject();
 const dist = path.join(root, config.outDir);
@@ -526,7 +527,7 @@ function assetModule() {
     for (const file of walkAll(publicOut)) {
       if (file.endsWith('.br') || file.endsWith('.gz')) continue;
       const url = '/' + path.relative(publicOut, file).split(path.sep).join('/');
-      publicMap.set(url, { body: fs.readFileSync(file), type: mimeOf(file) });
+      publicMap.set(url, { body: fs.readFileSync(file), type: typeOf(file) });
     }
   }
 
@@ -562,20 +563,24 @@ function walkAll(dir, out = []) {
   return out;
 }
 
-const MIMES = {
-  '.html': 'text/html; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.webp': 'image/webp',
-  '.woff2': 'font/woff2',
-  '.txt': 'text/plain; charset=utf-8',
-};
-const mimeOf = (file) => MIMES[path.extname(file)] ?? 'application/octet-stream';
+/**
+ * Public files of a kind `src/mime.js` has no type for.
+ *
+ * The build says so rather than sending `application/octet-stream` quietly.
+ * `nosniff` is on every response, so a browser is told it may not guess, and a
+ * file typed like that is one it will refuse to use rather than one it renders
+ * badly. Extensions rather than paths: forty tiles of one unknown kind are one
+ * thing to fix.
+ */
+function untypedExtensions(dir) {
+  const found = new Set();
+  for (const file of walkAll(dir)) {
+    if (file.endsWith('.br') || file.endsWith('.gz')) continue;
+    if (known(file)) continue;
+    found.add(path.extname(file) || path.basename(file));
+  }
+  return [...found].sort();
+}
 
 // ---- precache manifest ----------------------------------------------------
 //
@@ -644,6 +649,19 @@ if (drafts.length) {
       `and served by \`npm run dev\`:`,
   );
   for (const route of drafts) console.log(`  ${route.pattern}`);
+}
+
+// Also never silent, and for the same reason a draft is not. A file sent as
+// `application/octet-stream` under `nosniff` is a file the browser is forbidden
+// to interpret, so an audio clip does not play badly: it does not play at all.
+const untypedHere = fs.existsSync(publicOut) ? untypedExtensions(publicOut) : [];
+if (untypedHere.length) {
+  console.log(
+    `\n${untypedHere.length} kind${untypedHere.length === 1 ? '' : 's'} of public file ` +
+      `has no content type here, and goes out as application/octet-stream:`,
+  );
+  for (const ext of untypedHere) console.log(`  ${ext}`);
+  console.log('  Every response carries nosniff, so a browser will not guess past that.');
 }
 
 if (compressed.files) {

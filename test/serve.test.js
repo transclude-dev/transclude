@@ -450,10 +450,19 @@ test('a shareable render says public, and a personal one says private', async ()
 
 const { publicFiles } = await import('../src/public-files.js');
 
-/** A directory with one file, served by a real server on a port the OS picks. */
-const withPublicServer = async (fn) => {
+/**
+ * A directory of files, served by a real server on a port the OS picks.
+ *
+ * `thing.txt` is always there. `files` adds to it, which is how a test gets an
+ * audio file or a precompressed twin without every other test paying for one.
+ */
+const withPublicServer = async (fn, files = {}) => {
   const dir = fs.mkdtempSync(path.join(process.cwd(), '.public-test-'));
   fs.writeFileSync(path.join(dir, 'thing.txt'), 'x'.repeat(500));
+  for (const [name, body] of Object.entries(files)) {
+    fs.mkdirSync(path.dirname(path.join(dir, name)), { recursive: true });
+    fs.writeFileSync(path.join(dir, name), body);
+  }
 
   const { Hono } = await import('hono');
   const { serve } = await import('@hono/node-server');
@@ -500,6 +509,85 @@ test('a stale validator gets the file', async () => {
     assert.equal(res.status, 200);
     assert.equal((await res.text()).length, 500);
   });
+});
+
+test('an audio file arrives as audio, which is the whole of whether it plays', async () => {
+  // `serveStatic` has no `.m4a`, and wrote `application/octet-stream`. Every
+  // response carries `nosniff`, so the browser was forbidden to look at the
+  // bytes and find the AAC it would otherwise have played. It did not play
+  // badly: it did not play.
+  await withPublicServer(
+    async (base) => {
+      const clip = await fetch(`${base}/audio/kitchen.m4a`);
+      assert.equal(clip.headers.get('content-type'), 'audio/mp4');
+
+      const wave = await fetch(`${base}/audio/step.wav`);
+      assert.equal(wave.headers.get('content-type'), 'audio/wav');
+
+      // One Hono already knew. The answer written over it has to agree.
+      const song = await fetch(`${base}/audio/room.mp3`);
+      assert.equal(song.headers.get('content-type'), 'audio/mpeg');
+    },
+    {
+      'audio/kitchen.m4a': 'x'.repeat(500),
+      'audio/step.wav': 'x'.repeat(500),
+      'audio/room.mp3': 'x'.repeat(500),
+    },
+  );
+});
+
+test('a range of an audio file keeps the type it would have had whole', async () => {
+  // A media element asks for ranges, so the 206 is the response that actually
+  // plays. `onFound` runs on that path too, and this is what says so.
+  await withPublicServer(
+    async (base) => {
+      const res = await fetch(`${base}/audio/kitchen.m4a`, { headers: { range: 'bytes=0-99' } });
+
+      assert.equal(res.status, 206);
+      assert.equal(res.headers.get('content-type'), 'audio/mp4');
+      assert.equal((await res.text()).length, 100);
+    },
+    { 'audio/kitchen.m4a': 'x'.repeat(500) },
+  );
+});
+
+test('a precompressed twin is typed by what is inside it', async () => {
+  // `serveStatic` hands `onFound` the file it chose, which is `sheet.css.br`.
+  // Typed by its own name, that is a `.br`, which is nothing, and a stylesheet
+  // would arrive as `application/octet-stream` after years of arriving as CSS.
+  const brotli = zlib.brotliCompressSync(Buffer.from('a{color:red}'.repeat(50)));
+  const gzip = zlib.gzipSync(Buffer.from('a{color:red}'.repeat(50)));
+
+  await withPublicServer(
+    async (base) => {
+      for (const encoding of ['br', 'gzip']) {
+        const res = await fetch(`${base}/sheet.css`, { headers: { 'accept-encoding': encoding } });
+
+        assert.equal(res.headers.get('content-encoding'), encoding);
+        assert.equal(res.headers.get('content-type'), 'text/css; charset=utf-8');
+      }
+    },
+    {
+      'sheet.css': 'a{color:red}'.repeat(50),
+      'sheet.css.br': brotli,
+      'sheet.css.gz': gzip,
+    },
+  );
+});
+
+test('a gzip somebody meant to hand out stays a gzip', async () => {
+  // The rule above reads the `Content-Encoding` `serveStatic` set, so it cannot
+  // mistake a download for a twin. Nothing compressed this one, so it is not
+  // `application/x-tar` with an encoding: it is a file to save.
+  await withPublicServer(
+    async (base) => {
+      const res = await fetch(`${base}/backup.tar.gz`);
+
+      assert.equal(res.headers.get('content-encoding'), null);
+      assert.equal(res.headers.get('content-type'), 'application/gzip');
+    },
+    { 'backup.tar.gz': 'x'.repeat(500) },
+  );
 });
 
 test('a range is still answered, and the wrapper does not eat it', async () => {

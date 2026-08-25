@@ -8,23 +8,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 
-const DEFAULT_MAX_BYTES = 64 * 1024 * 1024;
+import { typeOf } from './mime.js';
 
-const TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.map': 'application/json; charset=utf-8',
-  '.txt': 'text/plain; charset=utf-8',
-  '.ico': 'image/x-icon',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.webp': 'image/webp',
-  '.woff2': 'font/woff2',
-};
+const DEFAULT_MAX_BYTES = 64 * 1024 * 1024;
 
 /**
  * @typedef {object} Entry
@@ -125,7 +111,7 @@ function read(file) {
     });
   }
 
-  return { body, etag, encodings, type: TYPES[path.extname(file)] ?? 'application/octet-stream' };
+  return { body, etag, encodings, type: typeOf(file) };
 }
 
 /**

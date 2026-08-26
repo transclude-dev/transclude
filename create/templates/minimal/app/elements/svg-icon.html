@@ -35,7 +35,7 @@
 </style>
 
 <!-- Two spellings, because they are different elements to a screen reader.
-     `aria-hidden` and a label together leave one nothing to say, so a labelled
+     `aria-hidden` and a label together leave one nothing to say, so a labeled
      icon is not also hidden. -->
 <svg if="label" role="img" aria-label="${label}"><use href="/${library}.svg#${name}"></use></svg>
 <svg else aria-hidden="true"><use href="/${library}.svg#${name}"></use></svg>

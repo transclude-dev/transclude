@@ -30,7 +30,7 @@ on:
   #   gh workflow run publish.yml --ref v0.8.1
   #
   # Added after a tag push produced a run that queued forever and could not be
-  # cancelled, rerun or drained: `gh run cancel` called it completed, `gh run
+  # canceled, rerun or drained: `gh run cancel` called it completed, `gh run
   # rerun` called it already running, and `gh run list` called it queued. Nothing
   # restarts a push event, and deleting and re-pushing the tag fired nothing.
   #

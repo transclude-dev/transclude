@@ -132,7 +132,7 @@ export function toFunctionBody(blocks, label, { lift = null, binding = '__member
     const ast = parseOrThrow(code, label, line, { allowReturnOutsideFunction: true });
     const cuts = [];
 
-    warnUnsignalled(ast, code, line, warnings);
+    warnUnsignaled(ast, code, line, warnings);
 
     const plan = lift ? planLift(ast, lift) : null;
     if (plan) {
@@ -224,10 +224,10 @@ const OUTLIVES = new Set(['document', 'window', 'globalThis', 'screen', 'navigat
  * closure and everything it captured, and every element after it adds another.
  * Nothing reports that, which is why it is worth saying at compile time.
  */
-function warnUnsignalled(ast, code, line, warnings) {
+function warnUnsignaled(ast, code, line, warnings) {
   const seen = new Set();
 
-  const looksSignalled = (arg) => {
+  const looksSignaled = (arg) => {
     if (!arg) return false;
     // A boolean third argument is `capture`, which is the old spelling and
     // carries no signal.
@@ -252,7 +252,7 @@ function warnUnsignalled(ast, code, line, warnings) {
       node.callee.property?.name === 'addEventListener' &&
       node.callee.object?.type === 'Identifier' &&
       OUTLIVES.has(node.callee.object.name) &&
-      !looksSignalled(node.arguments[2])
+      !looksSignaled(node.arguments[2])
     ) {
       const target = node.callee.object.name;
       const event = node.arguments[0]?.value;

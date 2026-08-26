@@ -1,9 +1,9 @@
 # Lite-Brite
 
 A [Lite-Brite](https://en.wikipedia.org/wiki/Lite-Brite) that fits the screen
-with nothing to scroll. Pick a colour, tap a hole, and a peg lights up. Pick
+with nothing to scroll. Pick a color, tap a hole, and a peg lights up. Pick
 Pull and tap it again to take the peg out. Two hundred and forty holes, ten
-colours, and zero bytes of JavaScript.
+colors, and zero bytes of JavaScript.
 
 ```sh
 npm install
@@ -13,11 +13,11 @@ npm run dev     # http://localhost:1972
 ## What to look at
 
 `app/routes/index.html` is the whole app. A `<script server>` block names the
-grid and the colours, the markup under it is the board, and the style block at
+grid and the colors, the markup under it is the board, and the style block at
 the bottom draws it.
 
 **A hole is a radio group.** Eleven radios share the name `p137`: one `off`,
-checked to begin with, and one per colour. A radio group holds exactly one value,
+checked to begin with, and one per color. A radio group holds exactly one value,
 and the browser is the thing that holds it. So the board's state is form state,
 and nothing on the server or in a database knows what anyone drew.
 
@@ -30,9 +30,9 @@ none of them is a target until a rule says otherwise:
 ```
 
 The tray decides which layer takes the tap. That is the whole mechanic: a tap
-lands on the label for the colour in hand, and checks the radio it points at.
+lands on the label for the color in hand, and checks the radio it points at.
 
-**Rendering reads the checked radio.** One rule per colour, and this is all of
+**Rendering reads the checked radio.** One rule per color, and this is all of
 it:
 
 ```css
@@ -63,7 +63,7 @@ custom properties from the server data, which is how CSS gets to divide by them.
 **The tray comes first in the markup.** Two hundred and forty holes are two
 hundred and forty tab stops, so a tray after them would be unreachable from the
 keyboard. `grid-row` puts it back under the board. Arrow keys work inside a hole
-too: focus one and the peg cycles through the colours.
+too: focus one and the peg cycles through the colors.
 
 ## The size of the board
 
@@ -95,8 +95,8 @@ This page has none, so the board is tap by tap.
 in the tab. A reload is a blank board. Undo would be a history, and a history
 needs somewhere to keep it.
 
-**A colour picker.** Ten colours are ten radios and four rules each. An arbitrary
-colour is an `<input type="color">` whose value only CSS could read, and CSS
+**A color picker.** Ten colors are ten radios and four rules each. An arbitrary
+color is an `<input type="color">` whose value only CSS could read, and CSS
 cannot read a form value.
 
 ## Tests
@@ -106,6 +106,6 @@ npm run build && npm test
 ```
 
 They read the built page and check the two halves agree: every label points at a
-radio that exists, every colour in the server block has the four rules the
+radio that exists, every color in the server block has the four rules the
 mechanic needs, and nothing in the output is a script. What a browser does with
 those bytes is CSS, and Node models none of it.

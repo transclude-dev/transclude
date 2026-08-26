@@ -58,7 +58,7 @@
   <!-- Both spellings, because they are different elements to a screen reader.
        Neither ships any JavaScript: there is no <script> block to ship. -->
   <svg-icon id="icon-plain" name="check"></svg-icon>
-  <svg-icon id="icon-labelled" name="chevron-down" label="More"></svg-icon>
+  <svg-icon id="icon-labeled" name="chevron-down" label="More"></svg-icon>
   <svg-icon id="icon-library" library="glyphicons" name="check"></svg-icon>
 
   <!-- A boolean in <script state>, so it has a custom state to reflect. -->
@@ -235,13 +235,13 @@
     ok(plain.querySelector('use').getAttribute('href') === '/icons.svg#check', 'wrong href');
     ok(plain.querySelector('svg').getAttribute('aria-hidden') === 'true', 'not hidden');
 
-    // The other spelling. A labelled icon is announced, so it must not also be
+    // The other spelling. A labeled icon is announced, so it must not also be
     // hidden: the two attributes together leave a screen reader nothing to say.
-    const labelled = document.getElementById('icon-labelled');
-    const svg = labelled.querySelector('svg');
-    ok(svg.getAttribute('role') === 'img', 'a labelled icon is not an image');
+    const labeled = document.getElementById('icon-labeled');
+    const svg = labeled.querySelector('svg');
+    ok(svg.getAttribute('role') === 'img', 'a labeled icon is not an image');
     ok(svg.getAttribute('aria-label') === 'More', 'the label did not reach the markup');
-    ok(svg.getAttribute('aria-hidden') === null, 'labelled and hidden at once');
+    ok(svg.getAttribute('aria-hidden') === null, 'labeled and hidden at once');
 
     // The half no markup check can see: `<use>` is a live reference, so the file
     // has to be there and the symbol has to be in it.

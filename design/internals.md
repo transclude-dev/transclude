@@ -413,7 +413,7 @@ against.
 - **A listener on `document` outlives the element that added it.** One on `host`
   is collected with the element, so it needs nothing; one on `document`,
   `window` or `globalThis` holds its closure forever and every element after it
-  adds another. `warnUnsignalled` in `script.js` reports a missing `signal` for
+  adds another. `warnUnsignaled` in `script.js` reports a missing `signal` for
   those targets only. A boolean third argument is `capture` and counts as
   missing; a variable is left alone, because guessing would make the warning
   something to switch off.

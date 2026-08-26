@@ -171,7 +171,7 @@ export const ROOMS = [
     title: 'The Well Shaft',
     at: [0, 3],
     prose: [
-      'A shaft, and a circle of grey daylight a long way up.',
+      'A shaft, and a circle of gray daylight a long way up.',
       'Irons are set into the wall to climb, and you climb them.',
     ],
     exits: {},
@@ -186,7 +186,7 @@ export const ROOMS = [
     moods: [
       'A rat leaves by a hole you cannot find.',
       'Water gets in somewhere above, one drop at a time.',
-      'The draught here comes from below, which is the wrong way for a draught.',
+      'The draft here comes from below, which is the wrong way for a draft.',
     ],
     exits: { north: 'kitchen' },
   },

@@ -499,7 +499,7 @@ describe('a date reads the same to a person and to a machine', () => {
 // ---- sharing cards ---------------------------------------------------------
 //
 // What a link looks like when someone posts it. The failure is invisible from
-// inside the site: every page renders, and the only symptom is a bare grey box
+// inside the site: every page renders, and the only symptom is a bare gray box
 // on somebody else's timeline.
 
 describe('every page carries the sharing card', () => {

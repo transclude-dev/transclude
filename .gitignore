@@ -20,7 +20,13 @@ release-notes.md
 
 # Editor and agent working files. The engineering record they used to hold is in
 # `design/internals.md`, which is where a contributor looks for it.
-.claude/
+#
+# The contents rather than the directory: git cannot re-include a file whose
+# parent directory is excluded, and `settings.json` is committed on purpose. It
+# holds the hooks that check spelling on every write, so an agent working here
+# is held to the same rule the tests hold.
+.claude/*
+!.claude/settings.json
 CLAUDE.md
 
 # vsce output, built from editor/vscode when someone packages the extension

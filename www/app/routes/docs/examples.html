@@ -17,7 +17,8 @@ npm run auth       # http://localhost:1967
 npm run live       # http://localhost:1968
 npm run elements   # http://localhost:1969
 npm run markdown   # http://localhost:1970
-npm run lite-brite # http://localhost:1972`,
+npm run lite-brite # http://localhost:1972
+npm run dungeon    # http://localhost:1973`,
         'shell',
       ],
     }),
@@ -55,6 +56,11 @@ npm run lite-brite # http://localhost:1972`,
           <td><a href="#lite-brite">Lite-Brite</a></td>
           <td>A drawing the browser holds, and CSS that reads it</td>
           <td><a href="https://lite-brite.transclude.dev">lite-brite</a></td>
+        </tr>
+        <tr>
+          <td><a href="#dungeon">Dungeon</a></td>
+          <td>A save file that is the URL, and a server that keeps nothing</td>
+          <td><a href="https://dungeon.transclude.dev">dungeon</a></td>
         </tr>
         <tr>
           <td><a href="#search">Search</a></td>
@@ -166,7 +172,7 @@ npm run lite-brite # http://localhost:1972`,
     drew. Eleven labels are stacked over every hole, and the tray decides which
     one takes the tap.
     <code>.brite:has(#ink-blue:checked) .hole &gt; label.blue</code> gets
-    <code>pointer-events: auto</code>, and the other eight stay inert. Rendering
+    <code>pointer-events: auto</code>, and the other ten stay inert. Rendering
     reads the same radios back, one rule per color.
   </p>
 
@@ -177,9 +183,47 @@ npm run lite-brite # http://localhost:1972`,
   </p>
 
   <doc-note label="A large page on a small wire">
-    240 holes are 240 copies of the same 24 lines, so 311 KB of markup is 10 KB
+    240 holes are 240 copies of the same 23 tags, so 383 KB of markup is 11 KB
     of brotli. A bigger board costs the parse rather than the download, and the
     two numbers at the top of the page are what you turn.
+  </doc-note>
+
+  <h2 id="dungeon">Dungeon</h2>
+
+  <p>
+    <a href="https://github.com/transclude-dev/transclude/tree/main/examples/dungeon"
+      >examples/dungeon</a
+    >
+    is a crawl through fifteen rooms with no client JavaScript and no session on
+    the server. The path is the room and the query string is everything else:
+    <code
+      >/dungeon/vault?have=brass-key,lantern&amp;seen=gate,hall,vault&amp;seed=7f3a</code
+    >.
+  </p>
+
+  <p>
+    Read it for what that buys. Back is undo, a bookmark is a save slot, and a
+    link is your run in somebody else's browser. Two players holding the same
+    things are on the same URL, character for character. Every list is sorted
+    and deduped before it is written. Anything that varies is derived from the
+    seed the links carry, so the second visit to a room reads like the first.
+  </p>
+
+  <p>
+    A locked door is never a link. An exit that can be walked is an
+    <code>&lt;a&gt;</code>, and one that cannot is text. There is no request to
+    refuse and no dead end to explain. The lock reads <code>have</code> rather
+    than a history. A URL carrying <code>have=brass-key</code> opens the iron
+    door, whether or not anyone went to the vault for it. That is the bargain:
+    the URL is the save file, and a hand-edited save is a cheat rather than an
+    error.
+  </p>
+
+  <doc-note label="One route, and it may not be a file">
+    Every room is <code>dungeon/[room].html</code> with
+    <code>export const prerender = false</code>. The static handler keys on the
+    path alone. A file written at build time would answer every run with the
+    state the build had, which is none.
   </doc-note>
 
   <h2 id="elements">Elements</h2>

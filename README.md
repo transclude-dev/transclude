@@ -145,6 +145,7 @@ would be. Every one of them is deployed, from the same source you would clone.
 | --- | --- | --- |
 | `todomvc` | Seven actions, one POST handler, zero bytes of JavaScript | [todomvc.transclude.dev](https://todomvc.transclude.dev) |
 | `lite-brite` | A drawing the browser holds, and CSS that reads it | [lite-brite.transclude.dev](https://lite-brite.transclude.dev) |
+| `dungeon` | A save file that is the URL, and a server that keeps nothing | [dungeon.transclude.dev](https://dungeon.transclude.dev) |
 | `search` | A fragment that is a substring of the document it came from | [search.transclude.dev](https://search.transclude.dev) |
 | `blog` | Markdown to files, with a sitemap and a feed | [blog.transclude.dev](https://blog.transclude.dev) |
 | `htmx` | htmx and this framework, each doing its own half | [htmx.transclude.dev](https://htmx.transclude.dev) |

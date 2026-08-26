@@ -20,11 +20,13 @@
   const INKS = [
     { id: "red", name: "Red" },
     { id: "orange", name: "Orange" },
+    { id: "brown", name: "Brown" },
     { id: "yellow", name: "Yellow" },
     { id: "green", name: "Green" },
     { id: "aqua", name: "Aqua" },
     { id: "blue", name: "Blue" },
     { id: "violet", name: "Violet" },
+    { id: "pink", name: "Pink" },
     { id: "white", name: "White" },
   ];
 
@@ -109,23 +111,29 @@
   .brite {
     --red: #ff3b46;
     --orange: #ff8a1e;
+    /* A peg is lit from behind, and light does not do brown. This is the
+       lightest one that still reads as brown next to orange rather than as a
+       dim orange. */
+    --brown: #b0763f;
     --yellow: #ffe23d;
     --green: #3ce06d;
     --aqua: #35dfe8;
     --blue: #4b7bff;
     --violet: #ac5cff;
+    --pink: #ff6fd8;
     --white: #f2f6ff;
 
     --frame: #14161c;
     --socket: #04050a;
     --edge: #9aa4b8;
 
-    /* Narrow enough that nine swatches and their margins fit one row at any
+    /* Narrow enough that eleven swatches and their margins fit one row at any
        width, so the tray keeps the three rows the reservation below counts on.
-       8rem is those margins, the tray's padding, and room for the one swatch
-       that grows: the picked one scales up and takes an outline, and on a narrow
-       phone a row sized to the pixel clips it. */
-    --swatch: min(2.1rem, calc((100vw - 8rem) / 9));
+       9.5rem is those margins (eleven times 0.55rem), the tray's padding, and
+       room for the one swatch that grows: the picked one scales up and takes an
+       outline, and on a narrow phone a row sized to the pixel clips it. Both
+       numbers here count swatches, so adding a colour changes both. */
+    --swatch: min(2.1rem, calc((100vw - 9.5rem) / 11));
 
     /* What the tray takes, so the board can have the rest: the swatch row, the
        button, the credit, the gaps around them, and whatever the home indicator
@@ -173,9 +181,9 @@
       0 1.5rem 3rem rgb(0 0 0 / 0.6);
   }
 
-  /* Nine labels are stacked over every hole and only one of them is a target.
+  /* Eleven labels are stacked over every hole and only one of them is a target.
      The tray picks which. `pointer-events: none` here is what makes the other
-     eight inert, so a tap always lands on the colour in hand. */
+     ten inert, so a tap always lands on the colour in hand. */
   .hole {
     position: relative;
     pointer-events: none;
@@ -250,6 +258,10 @@
     --peg: var(--orange);
     --lit: 1;
   }
+  .hole:has(input.brown:checked) {
+    --peg: var(--brown);
+    --lit: 1;
+  }
   .hole:has(input.yellow:checked) {
     --peg: var(--yellow);
     --lit: 1;
@@ -270,6 +282,10 @@
     --peg: var(--violet);
     --lit: 1;
   }
+  .hole:has(input.pink:checked) {
+    --peg: var(--pink);
+    --lit: 1;
+  }
   .hole:has(input.white:checked) {
     --peg: var(--white);
     --lit: 1;
@@ -281,6 +297,9 @@
     pointer-events: auto;
   }
   .brite:has(#ink-orange:checked) .hole > label.orange {
+    pointer-events: auto;
+  }
+  .brite:has(#ink-brown:checked) .hole > label.brown {
     pointer-events: auto;
   }
   .brite:has(#ink-yellow:checked) .hole > label.yellow {
@@ -296,6 +315,9 @@
     pointer-events: auto;
   }
   .brite:has(#ink-violet:checked) .hole > label.violet {
+    pointer-events: auto;
+  }
+  .brite:has(#ink-pink:checked) .hole > label.pink {
     pointer-events: auto;
   }
   .brite:has(#ink-white:checked) .hole > label.white {
@@ -382,6 +404,9 @@
   .swatch.orange {
     --peg: var(--orange);
   }
+  .swatch.brown {
+    --peg: var(--brown);
+  }
   .swatch.yellow {
     --peg: var(--yellow);
   }
@@ -396,6 +421,9 @@
   }
   .swatch.violet {
     --peg: var(--violet);
+  }
+  .swatch.pink {
+    --peg: var(--pink);
   }
   .swatch.white {
     --peg: var(--white);

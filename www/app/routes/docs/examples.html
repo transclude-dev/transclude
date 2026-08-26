@@ -157,13 +157,13 @@ npm run lite-brite # http://localhost:1972`,
     >
     is a <a href="https://en.wikipedia.org/wiki/Lite-Brite">Lite-Brite</a> board
     sized to fit the screen, with nothing to scroll. Pick a color, tap a hole,
-    and a peg lights up. Two hundred and forty holes, nine colors, and one page.
+    and a peg lights up. Two hundred and forty holes, ten colors, and one page.
   </p>
 
   <p>
-    Read it for where the drawing is kept. A hole is a radio group of nine, so
+    Read it for where the drawing is kept. A hole is a radio group of eleven, so
     the browser holds the color in it. Nothing on the server knows what anyone
-    drew. Nine labels are stacked over every hole, and the tray decides which
+    drew. Eleven labels are stacked over every hole, and the tray decides which
     one takes the tap.
     <code>.brite:has(#ink-blue:checked) .hole &gt; label.blue</code> gets
     <code>pointer-events: auto</code>, and the other eight stay inert. Rendering
@@ -172,7 +172,7 @@ npm run lite-brite # http://localhost:1972`,
 
   <p>
     Emptying the board is <code>&lt;input type="reset"&gt;</code>, which returns
-    every one of the 2,169 radios to the value its markup declared. The browser
+    every one of the 2,651 radios to the value its markup declared. The browser
     already had a button for that.
   </p>
 

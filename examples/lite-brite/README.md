@@ -2,7 +2,7 @@
 
 A [Lite-Brite](https://en.wikipedia.org/wiki/Lite-Brite) that fits the screen
 with nothing to scroll. Pick a colour, tap a hole, and a peg lights up. Pick
-Pull and tap it again to take the peg out. Two hundred and forty holes, nine
+Pull and tap it again to take the peg out. Two hundred and forty holes, ten
 colours, and zero bytes of JavaScript.
 
 ```sh
@@ -16,12 +16,12 @@ npm run dev     # http://localhost:1972
 grid and the colours, the markup under it is the board, and the style block at
 the bottom draws it.
 
-**A hole is a radio group.** Nine radios share the name `p137`: one `off`,
+**A hole is a radio group.** Eleven radios share the name `p137`: one `off`,
 checked to begin with, and one per colour. A radio group holds exactly one value,
 and the browser is the thing that holds it. So the board's state is form state,
 and nothing on the server or in a database knows what anyone drew.
 
-**Nine labels are stacked over each hole, and eight of them are inert.** Every
+**Eleven labels are stacked over each hole, and ten of them are inert.** Every
 radio has a label filling the whole cell. `.hole` sets `pointer-events: none`, so
 none of them is a target until a rule says otherwise:
 
@@ -52,7 +52,7 @@ Red is in hand at first paint, and red is in hand again after the board is
 emptied, because a reset puts the tray back to nothing checked.
 
 **Emptying the board is `<input type="reset">`.** A reset button returns every
-control in the form to the value its markup declared, which for 2,169 radios is
+control in the form to the value its markup declared, which for 2,651 radios is
 `off`. The browser already had a button for this.
 
 **One number sizes everything.** `--cell` is the smaller of the width left over
@@ -74,14 +74,14 @@ a hole is as wide as the screen divided by the columns, and a finger wants about
 
 | Board | Holes | Raw | gzip | brotli | Hole at 390px | at 320px |
 | --- | --- | --- | --- | --- | --- | --- |
-| 20 × 12 | 240 | 311 KB | 20 KB | 10 KB | 17px | 14px |
-| 24 × 14 | 336 | 432 KB | 26 KB | 13 KB | 15px | 12px |
-| 30 × 17 | 510 | 650 KB | 36 KB | 17 KB | 12px | 10px |
+| 20 × 12 | 240 | 383 KB | 24 KB | 11 KB | 17px | 14px |
+| 24 × 14 | 336 | 533 KB | 32 KB | 16 KB | 15px | 12px |
+| 30 × 17 | 510 | 804 KB | 45 KB | 20 KB | 12px | 10px |
 
 20 × 12 ships here. 30 × 17 is closer to the real toy and misses under a finger.
 The page compresses to about 3% of itself, because 240 holes are 240 copies of
-the same 24 lines, so the cost of a bigger board is the parse rather than the
-download: 30 × 17 is 9,700 elements and 4,600 radio buttons.
+the same 23 tags, so the cost of a bigger board is the parse rather than the
+download: 30 × 17 is 11,800 elements and 5,600 radio buttons.
 
 A cap of `2.5rem` on `--cell` stops the board from filling a monitor. It sits in
 the dark at about the size of the real one instead.
@@ -95,7 +95,7 @@ This page has none, so the board is tap by tap.
 in the tab. A reload is a blank board. Undo would be a history, and a history
 needs somewhere to keep it.
 
-**A colour picker.** Nine colours are nine radios and nine rules. An arbitrary
+**A colour picker.** Ten colours are ten radios and four rules each. An arbitrary
 colour is an `<input type="color">` whose value only CSS could read, and CSS
 cannot read a form value.
 

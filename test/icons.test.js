@@ -75,11 +75,11 @@ test("the file's own id and accessibility attributes do not survive", () => {
   // The symbol is named by its file, and a second id inside would answer to a
   // `<use href>` nobody wrote. A label belongs on the use site, which is the
   // only place that knows what the icon means there.
-  const labelled =
+  const labeled =
     '<svg viewBox="0 0 24 24" id="logo" role="img" aria-label="Home">' +
     '<title>Home</title><path d="M4 12h16"/></svg>';
 
-  const sprite = buildSprite([icon('home', labelled)]);
+  const sprite = buildSprite([icon('home', labeled)]);
 
   assert.match(sprite, /<symbol id="home"/);
   assert.doesNotMatch(sprite, /id="logo"/);

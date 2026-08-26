@@ -81,13 +81,13 @@ test('both templates ship the icon element, and it is the only one', () => {
       const source = read(dir, 'app/elements/svg-icon.html');
 
       // The trap it exists to close, tested as the trap rather than as a
-      // spelling: an icon that is hidden and labelled at once announces
+      // spelling: an icon that is hidden and labeled at once announces
       // nothing, and an icon that is neither announces its file name.
-      const labelled = source.match(/<svg if="label"[^>]*>/)?.[0] ?? '';
+      const labeled = source.match(/<svg if="label"[^>]*>/)?.[0] ?? '';
       const decorative = source.match(/<svg else[^>]*>/)?.[0] ?? '';
 
-      assert.match(labelled, /aria-label/, `${template}: the labelled icon has no label`);
-      assert.doesNotMatch(labelled, /aria-hidden/, `${template}: a labelled icon is also hidden`);
+      assert.match(labeled, /aria-label/, `${template}: the labeled icon has no label`);
+      assert.doesNotMatch(labeled, /aria-hidden/, `${template}: a labeled icon is also hidden`);
       assert.match(decorative, /aria-hidden="true"/, `${template}: the plain icon is announced`);
       assert.doesNotMatch(decorative, /aria-label/, `${template}: a hidden icon carries a label`);
 

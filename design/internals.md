@@ -413,7 +413,7 @@ against.
 - **A listener on `document` outlives the element that added it.** One on `host`
   is collected with the element, so it needs nothing; one on `document`,
   `window` or `globalThis` holds its closure forever and every element after it
-  adds another. `warnUnsignalled` in `script.js` reports a missing `signal` for
+  adds another. `warnUnsignaled` in `script.js` reports a missing `signal` for
   those targets only. A boolean third argument is `capture` and counts as
   missing; a variable is left alone, because guessing would make the warning
   something to switch off.
@@ -641,6 +641,19 @@ against.
   stylesheet this compiler never reads, so the check is the spelling everyone
   writes rather than every spelling there is. `none` is allowed, being the one
   value two elements can share.
+- **A rule nothing checks is a rule that drifts, and spelling was the proof.**
+  `design/voice.md` asked for American spelling from the day it was written, and
+  56 British ones accumulated across 18 files: a comment, the README built from
+  it, and the docs page about it disagreed with each other. Nobody was wrong on
+  purpose. `test/spelling.test.js` walks what `git ls-files` lists, so it covers
+  the examples and the site as well as the package, and needs no app to do it.
+  The words are in `scripts/spelling.js` rather than in the test, because
+  `.claude/settings.json` runs the same file as a `PostToolUse` hook and two
+  copies of one word list is the failure this repository has already had twice.
+  Three exclusions, each found by running it rather than by reasoning: a vendored
+  `.min.js`, the module `scripts/source-data.js` generates, and the lockfiles,
+  where npm records what somebody else called their package. `scripts/spelling.js`
+  excludes itself for the same reason the first run after committing it failed.
 - **A template file whose name starts with `_` becomes a dot on scaffold.**
   `_gitignore` and `_vscode/` are both spelled that way because a tool that
   finds the real name acts on it: git and npm apply a `.gitignore` wherever they

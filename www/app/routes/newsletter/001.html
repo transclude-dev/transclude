@@ -34,7 +34,7 @@
 <title>SVG has done transclusion since 2011</title>
 <meta name="description" content="${preheader}" />
 
-<!-- Both, so a client that reads them stops inverting on its own and honours the
+<!-- Both, so a client that reads them stops inverting on its own and honors the
      rule below instead. Ignoring them is common and survivable: every link is
      underlined, so nothing depends on a color arriving intact. -->
 <meta name="color-scheme" content="light dark" />
@@ -60,7 +60,7 @@
   }
 
   /* The only rule not written inline, because a media query cannot be. Apple
-     Mail and iOS honour it. Gmail and Outlook do not, and get the light copy,
+     Mail and iOS honor it. Gmail and Outlook do not, and get the light copy,
      which is what most people read anyway. */
   @media (prefers-color-scheme: dark) {
     .page { background: #0b0b0f !important; }

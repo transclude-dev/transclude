@@ -7,7 +7,7 @@
 // It needs a build, and skips without one rather than failing.
 //
 // What a browser does with those bytes is CSS, and Node models none of it. So
-// the checks here are about the two halves agreeing: every colour in the server
+// the checks here are about the two halves agreeing: every color in the server
 // block has the rules the mechanic needs, every label points at a radio that
 // exists, and nothing in the page is a script.
 
@@ -25,7 +25,7 @@ const { app } = built ? await import('@transclude/core/production') : { app: nul
 
 const page = built ? await app.request('http://localhost/').then((res) => res.text()) : '';
 
-/** The colours the tray offers, read back out of the markup. */
+/** The colors the tray offers, read back out of the markup. */
 const inks = [...page.matchAll(/id="ink-([a-z]+)"/g)].map(([, id]) => id).filter((id) => id !== 'off');
 
 describe('every hole is a radio group of nine', () => {
@@ -36,7 +36,7 @@ describe('every hole is a radio group of nine', () => {
   assert.equal(
     (page.match(/name="p\d+"/g) ?? []).length,
     holes.length * (inks.length + 1),
-    'a radio per colour, plus the empty one',
+    'a radio per color, plus the empty one',
   );
 });
 
@@ -50,7 +50,7 @@ describe('a hole starts empty, and only the empty radio says so', () => {
 describe('no swatch is checked, which is what puts red in hand', () => {
   // The CSS reads `.brite:not(:has(.pick:checked))` for both the first paint and
   // the state after a reset. A `checked` on any swatch here breaks the second
-  // one quietly: the board would empty and keep whatever colour was in hand.
+  // one quietly: the board would empty and keep whatever color was in hand.
   const tray = page.slice(page.indexOf('<fieldset'), page.indexOf('</fieldset>'));
 
   assert.doesNotMatch(tray, /\bchecked\b/);
@@ -64,13 +64,13 @@ describe('every label points at a radio that exists', () => {
   for (const target of targets) assert.ok(ids.includes(target), `nothing has id="${target}"`);
 });
 
-describe('the style block and the colour list agree', () => {
-  // Adding a colour to INKS means adding four rules. Forgetting one of them is
+describe('the style block and the color list agree', () => {
+  // Adding a color to INKS means adding four rules. Forgetting one of them is
   // silent: the swatch appears and the peg it places is invisible.
-  assert.ok(inks.length > 1, 'there are colours to check');
+  assert.ok(inks.length > 1, 'there are colors to check');
 
   for (const ink of inks) {
-    assert.match(page, new RegExp(`--${ink}:\\s*#`), `${ink} has no colour`);
+    assert.match(page, new RegExp(`--${ink}:\\s*#`), `${ink} has no color`);
     assert.match(page, new RegExp(`\\.hole:has\\(input\\.${ink}:checked\\)`), `${ink} renders nothing`);
     assert.match(page, new RegExp(`#ink-${ink}:checked\\) \\.hole > label\\.${ink}`), `${ink} is never in hand`);
     assert.match(page, new RegExp(`\\.swatch\\.${ink} \\{`), `${ink} has no swatch`);

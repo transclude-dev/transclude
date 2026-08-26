@@ -1,5 +1,5 @@
 <script server>
-  // A Lite-Brite, and the whole app. Every hole is a radio group, the colour in
+  // A Lite-Brite, and the whole app. Every hole is a radio group, the color in
   // hand is another radio, and CSS reads both. Nothing here ships JavaScript,
   // so there is none to turn off.
 
@@ -14,8 +14,8 @@
   const COLS = 20;
   const ROWS = 12;
 
-  // One peg colour per swatch in the tray. `id` is the CSS class on the radio
-  // and the custom property holding the colour, so `.red` and `--red` are the
+  // One peg color per swatch in the tray. `id` is the CSS class on the radio
+  // and the custom property holding the color, so `.red` and `--red` are the
   // same word written twice in the style block below.
   const INKS = [
     { id: "red", name: "Red" },
@@ -132,7 +132,7 @@
        9.5rem is those margins (eleven times 0.55rem), the tray's padding, and
        room for the one swatch that grows: the picked one scales up and takes an
        outline, and on a narrow phone a row sized to the pixel clips it. Both
-       numbers here count swatches, so adding a colour changes both. */
+       numbers here count swatches, so adding a color changes both. */
     --swatch: min(2.1rem, calc((100vw - 9.5rem) / 11));
 
     /* What the tray takes, so the board can have the rest: the swatch row, the
@@ -165,7 +165,7 @@
     margin: 0;
   }
 
-  /* The tray comes first in the markup so the keyboard reaches the colours
+  /* The tray comes first in the markup so the keyboard reaches the colors
      before the two hundred holes, and grid puts it back under the board. */
   .board {
     grid-row: 1;
@@ -183,7 +183,7 @@
 
   /* Eleven labels are stacked over every hole and only one of them is a target.
      The tray picks which. `pointer-events: none` here is what makes the other
-     ten inert, so a tap always lands on the colour in hand. */
+     ten inert, so a tap always lands on the color in hand. */
   .hole {
     position: relative;
     pointer-events: none;
@@ -248,7 +248,7 @@
       0 0 0 max(2px, calc(var(--cell) * 0.09)) var(--edge);
   }
 
-  /* What a checked radio means. One line per colour, and this is the whole
+  /* What a checked radio means. One line per color, and this is the whole
      rendering layer. */
   .hole:has(input.red:checked) {
     --peg: var(--red);
@@ -291,7 +291,7 @@
     --lit: 1;
   }
 
-  /* Which label layer is live. One line per colour again, plus Pull, which
+  /* Which label layer is live. One line per color again, plus Pull, which
      makes the layer over the `off` radio the target and empties a hole. */
   .brite:has(#ink-red:checked) .hole > label.red {
     pointer-events: auto;
@@ -429,7 +429,7 @@
     --peg: var(--white);
   }
 
-  /* Pull holds no colour, so it is a ring rather than a peg. */
+  /* Pull holds no color, so it is a ring rather than a peg. */
   .swatch.off {
     background: none;
     box-shadow: inset 0 0 0 0.2rem var(--edge);

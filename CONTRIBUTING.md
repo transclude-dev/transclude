@@ -84,7 +84,13 @@ code cannot. Leave it out otherwise.
 Prose: [`design/voice.md`](design/voice.md). Short plain words, American
 spelling, no em dashes, declarative. A docs page says what the thing is, shows
 the smallest example that runs, says what the reader gets, then the options,
-then the edges as notes. Two of those rules are tested in `www/test`.
+then the edges as notes. Two of those rules are tested in `www/test`, and the
+spelling is tested for the whole repository by `test/spelling.test.js`.
+
+The words that test refuses are in `scripts/spelling.js`, which
+`.claude/settings.json` also runs after every write an agent makes. That file is
+the one thing under `.claude/` that is committed: an agent writing here is held
+to the rule at the edit rather than at the pull request.
 
 Commit messages are the opposite of the docs. The docs describe what is;
 a commit records why, including what was tried and what broke.

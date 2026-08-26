@@ -143,7 +143,7 @@ const stream = new ReadableStream({
   <h2>What each half costs on its own</h2>
 
   <p>
-    Handle only <code>abort</code> and a cancelled stream leaves the
+    Handle only <code>abort</code> and a canceled stream leaves the
     subscription behind. Nothing errors. The listener stays on the list, holding
     whatever it closed over, and the next change calls it. On a server that runs
     for weeks this is the leak you find by watching memory rather than by

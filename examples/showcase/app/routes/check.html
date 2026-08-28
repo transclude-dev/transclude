@@ -211,7 +211,7 @@
     return 'the assertion innerHTML would fail';
   });
 
-  await check('the element client block ran and is wired to the host', async () => {
+  await check('connected() ran and is wired to the element', async () => {
     // The attribute is written synchronously; only the render is deferred.
     ok(!solo.hasAttribute('compact'), 'compact was already set');
     solo.click();

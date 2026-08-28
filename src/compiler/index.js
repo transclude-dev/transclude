@@ -222,6 +222,8 @@ export function compileComponent(
   assertNoCollisions(element.declared, COMPONENT_EXPORTS, where('element'), 'declares');
   assertNoLifecycle(element.nodes.prototype ?? null, where('element'));
   assertDistinct(element.nodes.properties ?? null, element.nodes.state ?? null, tag);
+  assertNoHookShadow(element.nodes.properties ?? null, 'properties', tag);
+  assertNoHookShadow(element.nodes.state ?? null, 'state', tag);
 
   const formAssociated = element.flags.formAssociated ?? false;
   // The file decides. `shadow` is still an argument so a caller can compile one
@@ -825,6 +827,35 @@ function assertDistinct(propsNode, stateNode, tag) {
         stateNode,
       );
     }
+  }
+}
+
+/**
+ * The members the framework itself calls. A prop or a state field of the same
+ * name puts an accessor on the prototype where the hook should be, and nothing
+ * notices: `defineMembers` checks a member against what the element already has,
+ * and there is no member here to check. The runtime then reads the accessor and
+ * calls what an attribute holds, which is a string.
+ *
+ * So the name is refused where it is declared rather than found at run time.
+ */
+const FRAMEWORK_MEMBERS = {
+  connected: 'runs on every connect',
+  disconnected: 'runs on every disconnect',
+  updated: 'runs after every render',
+};
+
+function assertNoHookShadow(node, kind, tag) {
+  for (const key of objectKeys(node)) {
+    const what = FRAMEWORK_MEMBERS[key];
+    if (!what) continue;
+
+    throw new CompileError(
+      `<${tag}>: \`${key}\` is declared in \`${kind}\`, and it is a member the framework ` +
+        `calls: it ${what}. A ${kind === 'properties' ? 'prop' : 'state field'} of that name ` +
+        `puts an accessor there instead, so the hook would never run. Pick another name.`,
+      node,
+    );
   }
 }
 

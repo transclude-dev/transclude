@@ -119,6 +119,24 @@ export function bindElementModule(block, label) {
 
     if (!statement.type.startsWith('Export')) continue;
 
+    // Every export here names something reserved, because anything else is
+    // refused below. So every one of them declares exactly one name, and asking
+    // once removes the whole class of "which declarator did we mean".
+    //
+    // It used to be asked in one branch and not the other:
+    // `export const properties = {…}, shadow = true` matched the flag, blanked
+    // the statement whole, and dropped `properties` with no error. The element
+    // then coerced no attributes, and a template read the raw string.
+    const declared = statement.declaration?.declarations ?? [];
+    if (declared.length > 1) {
+      const names = declared.map((d) => (d.id.type === 'Identifier' ? d.id.name : '…'));
+      throw new ScriptError(
+        `${label}: an export here declares one name, and this declares ` +
+          `\`${names.join('`, `')}\`. Each is read on its own, so give each its own ` +
+          `\`export const\` (line ${lineOf(statement, code, line)})`,
+      );
+    }
+
     const flag = ELEMENT_FLAGS.find((name) => namesExport(statement, name));
     if (flag) {
       const value = booleanExport(statement, flag);
@@ -459,22 +477,34 @@ function patternNames(node) {
 }
 
 /**
- * Rewrites ranges without moving any character that follows them.
+ * Rewrites ranges, keeping every line where it was.
  *
- * Replacement text is padded with spaces to the length it replaced, so a line
- * and column in the generated module is the same line and column in the .html
- * file. Every replacement here is shorter than what it replaces, which is
- * checked rather than assumed.
+ * Lines are the promise. A stack frame into the generated module reads a line
+ * number, so a range is replaced by text carrying the same newlines the range
+ * held. Columns come along wherever there is room: when the replacement is
+ * shorter than what it replaced, the rest is padded with spaces and every
+ * character after it on that line keeps its column too.
+ *
+ * Length was the promise once, and it was too strict to hold. `export const
+ * state=` is nineteen characters and `const __stateDefs = ` is twenty, so
+ * legal code failed to build over one character, with an error naming neither
+ * the file nor the line. Nothing maps a component's columns anyway: the source
+ * map is built for pages.
  */
 function splice(code, cuts) {
   let out = code;
-  for (const { start, end, text } of cuts) {
+  // Back to front. A replacement may now be longer than what it replaced, and
+  // every offset came from the original, so rewriting front to back would leave
+  // each later cut off by however much the ones before it grew.
+  for (const { start, end, text } of [...cuts].sort((a, b) => b.start - a.start)) {
     // Spaces where the code was, newlines left where they were.
     const kept = code.slice(start, end).replace(/[^\n]/g, ' ');
     const firstBreak = kept.indexOf('\n');
     const room = firstBreak === -1 ? kept.length : firstBreak;
-    if (text.length > room) throw new Error(`splice: "${text}" does not fit in ${room}`);
-    out = out.slice(0, start) + text + kept.slice(text.length) + out.slice(end);
+    // Past the first newline the padding would be on the wrong line, so a
+    // replacement that does not fit carries the newlines alone.
+    const filled = text.length <= room ? text + kept.slice(text.length) : text + kept.replace(/ /g, '');
+    out = out.slice(0, start) + filled + out.slice(end);
   }
   return out;
 }

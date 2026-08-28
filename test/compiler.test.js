@@ -465,6 +465,21 @@ test('the disconnectedCallback message names both ways out', () => {
   );
 });
 
+for (const hook of ['connected', 'disconnected', 'updated']) {
+  test(`a prop named ${hook} is refused, because it would shadow the hook`, () => {
+    // `defineProps` puts an accessor on the prototype, `defineMembers` sees no
+    // member to collide with, and the runtime then calls a string.
+    assert.throws(
+      () => component(`<script element>export const properties = { ${hook}: '' };</script><p>a</p>`),
+      (error) => error instanceof CompileError && error.message.includes(hook),
+    );
+    assert.throws(
+      () => component(`<script element>export const state = { ${hook}: false };</script><p>a</p>`),
+      (error) => error instanceof CompileError && error.message.includes(hook),
+    );
+  });
+}
+
 test('adoptedCallback is left alone, since nothing implements it', () => {
   assert.match(
     component('<script element>export const prototype = { adoptedCallback() {} };</script><p>a</p>'),

@@ -20,6 +20,13 @@
 /** @type {Post[]} */
 export const posts = [
   {
+    slug: 'what-the-shadow-boundary-costs',
+    title: 'What the shadow boundary costs',
+    summary:
+      'Style encapsulation is the reason people reach for a shadow root. The bill includes label-for, a JavaScript runtime, and your own stylesheet.',
+    date: new Date('2026-08-28'),
+  },
+  {
     slug: 'todomvc-with-no-javascript',
     title: 'TodoMVC with no JavaScript',
     summary:

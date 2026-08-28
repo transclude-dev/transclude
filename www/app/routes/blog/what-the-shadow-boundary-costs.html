@@ -1,10 +1,13 @@
 <script server>
   import { all } from "../../lib/code.js";
+  import { bySlug } from "../../data/posts.js";
+  import { dateline } from "../../lib/dateline.js";
 
-  // Not finished. `npm run dev` serves this; the build leaves it out.
-  export const draft = true;
+  const post = bySlug("what-the-shadow-boundary-costs");
 
   export default async () => ({
+    post,
+    when: dateline(post.date),
     s: await all({
       label: [
         `<label for="email">Email</label>
@@ -49,8 +52,19 @@
   content="Style encapsulation is the reason people reach for shadow DOM. The bill includes label-for, a JavaScript runtime, and your own stylesheet."
 />
 
+<!-- From `posts.js`, which the index and the feed also read, so a post says the
+     same thing in all three places or in none of them. -->
+<meta property="og:type" content="article" />
+<meta property="og:title" content="${post.title}" />
+<meta property="og:description" content="${post.summary}" />
+<meta property="article:published_time" content="${post.date.toISOString()}" />
+
 <article>
   <h1>What the shadow boundary costs</h1>
+
+  <time class="dateline" datetime="${post.date.toISOString()}">
+    ${when}
+  </time>
 
   <p>
     Custom elements and shadow DOM arrived together and get talked about as one

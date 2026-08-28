@@ -299,13 +299,22 @@ against.
   names injected into it that a hoisted member must not see. With no injection
   there is nothing to check: `this` is the element, and a bare `host` is a free
   name that tsc already reports.
-- **`connected` and `updated` are members the framework calls.** Neither class
-  can declare them, because a class field is an own property set in the
+- **`connected`, `disconnected` and `updated` are members the framework calls.**
+  No class can declare them, because a class field is an own property set in the
   constructor and would shadow the prototype member `defineMembers` installed.
   So the runtime reads them through `hooks(this)`, which is the one line that
-  says what shape the framework expects. `connected` runs on every connect and
-  its return value is the cleanup; the `AbortSignal` it is handed is per
-  connection, so a moved element gets a fresh one.
+  says what shape the framework expects. `connected` and `disconnected` both run
+  on every connect and disconnect rather than once, because moving an element is
+  both; the `AbortSignal` is per connection, so a moved element gets a fresh one.
+- **A synchronous cleanup runs synchronously, and that is load-bearing.**
+  `release` handed every cleanup to `Promise.resolve().then()`, so it was
+  deferred by a microtask even when it was already a function. Moving an element
+  is a disconnect and a connect in one task, so the first connection's cleanup
+  ran *after* the second `connected` had set everything up, and tore down what it
+  had just built. Nothing reported it, and no test looked until `disconnected`
+  needed an order that could be written down. That order is: abort the signal,
+  run what `connected` returned, then call `disconnected`. An `async connected`
+  is the exception nothing can fix, because its cleanup is a promise.
 - **The reserved names are not module-scope declarations.** They are rebound or
   blanked before the generated module is assembled, so `bindElementModule`
   filters them out of `declared`. Without that filter `export const

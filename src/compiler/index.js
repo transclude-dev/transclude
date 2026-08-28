@@ -797,7 +797,9 @@ function bindingsCode(bindings) {
 // implements it, so there is nothing to break.
 const RESERVED_LIFECYCLE = {
   connectedCallback: 'write `connected({ signal })` instead, which runs on every connect',
-  disconnectedCallback: 'return a cleanup function from `connected()` instead',
+  disconnectedCallback:
+    'write `disconnected()` instead, or return a cleanup function from `connected()`. ' +
+    'A listener given `signal` needs neither',
   attributeChangedCallback: 'an attribute change already re-renders; use updated() for the side effect',
 };
 

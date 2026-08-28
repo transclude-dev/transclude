@@ -98,6 +98,20 @@
     },
   };
 <\/script>`,
+      undo: `<script element>
+  export const prototype = {
+    connected() {
+      // A local, so a returned function is what reaches it.
+      const timer = setInterval(() => this.poll(), 1000);
+      return () => clearInterval(timer);
+    },
+
+    disconnected() {
+      // Reachable from the element, so the hook can find it again.
+      this.chart.destroy();
+    },
+  };
+<\/script>`,
       json: `<user-card
   name="Ada Lovelace"
   tags='["math", "engines"]'
@@ -306,12 +320,52 @@
 
   <p>
     <code>export const prototype</code> puts members on the class, shared by
-    every element of the tag. Two of the names belong to the framework.
-    <code>connected({ signal })</code> runs on every connect, and what it returns
-    runs on disconnect. <code>updated()</code> runs after every render.
+    every element of the tag. Three of the names belong to the framework.
+    <code>connected({ signal })</code> runs on every connect and
+    <code>disconnected()</code> on every disconnect, so the two pair off.
+    <code>updated()</code> runs after every render.
   </p>
 
   ${html(s.prototype)}
+
+  <h3>Undoing something</h3>
+
+  <p>
+    Most cleanup needs nothing written. A listener given <code>signal</code> is
+    removed when the element leaves, and that covers nearly every element.
+  </p>
+
+  <p>For the rest, pick by where the thing being undone is.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>It is</th>
+        <th>Undo it with</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>A listener</td>
+        <td><code>{ signal }</code>, and write nothing</td>
+      </tr>
+      <tr>
+        <td>A local in <code>connected</code></td>
+        <td>a function returned from <code>connected</code></td>
+      </tr>
+      <tr>
+        <td>Reachable from <code>this</code></td>
+        <td><code>disconnected()</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  ${html(s.undo)}
+
+  <p>
+    The returned function runs first and <code>disconnected()</code> after it, so
+    the element's own hook sees the connection already undone.
+  </p>
 
   <doc-note label="The element is this" tone="warn">
     Nothing is injected into scope. A member reaches its own element with

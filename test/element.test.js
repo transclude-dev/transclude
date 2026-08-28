@@ -247,6 +247,160 @@ test('the returned cleanup still runs, alongside the signal', async () => {
   });
 });
 
+test('disconnected runs when the element leaves', async () => {
+  await withDom(async ({ defineComponent }, registry) => {
+    let gone = 0;
+    defineComponent(defOf({ members: { disconnected: () => void (gone += 1) } }));
+    const el = new (registry.get('x-card'))();
+
+    el.connect();
+    assert.equal(gone, 0);
+    el.disconnect();
+    assert.equal(gone, 1);
+  });
+});
+
+test('disconnected runs on every disconnect, the way connected runs on every connect', async () => {
+  // Moving an element in the document is a disconnect and a connect. Both hooks
+  // pair off, or one of them stops matching the other after the first move.
+  await withDom(async ({ defineComponent }, registry) => {
+    const order = [];
+    defineComponent(
+      defOf({
+        members: {
+          connected: () => void order.push('in'),
+          disconnected: () => void order.push('out'),
+        },
+      }),
+    );
+    const el = new (registry.get('x-card'))();
+
+    el.connect();
+    el.disconnect();
+    el.connect();
+    el.disconnect();
+
+    assert.deepEqual(order, ['in', 'out', 'in', 'out']);
+  });
+});
+
+test('`this` is the element inside disconnected', async () => {
+  await withDom(async ({ defineComponent }, registry) => {
+    let saw = null;
+    defineComponent(
+      defOf({
+        members: {
+          disconnected() {
+            saw = this;
+          },
+        },
+      }),
+    );
+    const el = new (registry.get('x-card'))();
+
+    el.connect();
+    el.disconnect();
+
+    assert.equal(saw, el);
+  });
+});
+
+test('the signal is already aborted by the time disconnected runs', async () => {
+  // It is the element leaving, so every listener that was given the signal has
+  // gone. A member that reads it should see that rather than a live one.
+  await withDom(async ({ defineComponent }, registry) => {
+    let signal = null;
+    let abortedThen = null;
+    defineComponent(
+      defOf({
+        members: {
+          connected: ({ signal: incoming }) => void (signal = incoming),
+          disconnected: () => void (abortedThen = signal.aborted),
+        },
+      }),
+    );
+    const el = new (registry.get('x-card'))();
+
+    el.connect();
+    el.disconnect();
+
+    assert.equal(abortedThen, true);
+  });
+});
+
+test('the cleanup connected returned runs before disconnected', async () => {
+  // One order, written down. The returned function is the tail of `connected`
+  // and belongs to that connection; `disconnected` is the element's own hook and
+  // sees the connection already undone.
+  await withDom(async ({ defineComponent }, registry) => {
+    const order = [];
+    defineComponent(
+      defOf({
+        members: {
+          connected: () => () => void order.push('cleanup'),
+          disconnected: () => void order.push('disconnected'),
+        },
+      }),
+    );
+    const el = new (registry.get('x-card'))();
+
+    el.connect();
+    el.disconnect();
+
+    assert.deepEqual(order, ['cleanup', 'disconnected']);
+  });
+});
+
+test('a moved element runs the old cleanup before the new connect', async () => {
+  // It used to be handed to a microtask even when it was already a function, so
+  // the first connection's cleanup ran after the second `connected` had set
+  // everything up again and tore down what it had just built.
+  await withDom(async ({ defineComponent }, registry) => {
+    const order = [];
+    defineComponent(
+      defOf({
+        members: {
+          connected() {
+            order.push('connected');
+            return () => order.push('cleanup');
+          },
+        },
+      }),
+    );
+    const el = new (registry.get('x-card'))();
+
+    el.connect();
+    el.disconnect();
+    el.connect();
+
+    assert.deepEqual(order, ['connected', 'cleanup', 'connected']);
+  });
+});
+
+test('an async connected still has its cleanup run, late but run', async () => {
+  await withDom(async ({ defineComponent }, registry) => {
+    let cleaned = false;
+    defineComponent(
+      defOf({
+        members: {
+          connected: async () => () => {
+            cleaned = true;
+          },
+        },
+      }),
+    );
+    const el = new (registry.get('x-card'))();
+
+    el.connect();
+    await Promise.resolve();
+    el.disconnect();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.equal(cleaned, true);
+  });
+});
+
 test('a partial with only an exported prototype still upgrades', async () => {
   await withDom(async ({ defineLight }, registry) => {
     defineLight(defOf({ tag: 'x-note', members: { dismiss() { return this.name; } } }));

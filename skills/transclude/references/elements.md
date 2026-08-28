@@ -177,22 +177,52 @@ export const prototype = {
 };
 ```
 
-Two of those names belong to the framework, which calls them:
+Three of those names belong to the framework, which calls them:
 
 - **`connected({ signal })`** runs on every connect. Not only the first: moving
   an element in the document disconnects and reconnects it, and behavior torn
-  down on the way out has to come back on the way in. Return a function to have
-  it run on disconnect.
+  down on the way out has to come back on the way in.
+- **`disconnected()`** runs on every disconnect, so the two pair off.
 - **`updated()`** runs after every render, and once on connect.
 
 ```js
 export const prototype = {
   connected({ signal }) {
     this.addEventListener('click', () => this.dismiss(), { signal });
-    return () => stopPolling();
+    this.chart = draw(this);
+  },
+
+  disconnected() {
+    this.chart.destroy();
   },
 };
 ```
+
+## Three ways to undo something
+
+Most cleanup needs none of them. A listener given `signal` is removed when the
+element leaves, and that covers nearly every element here.
+
+For the rest, pick by where the thing being undone is:
+
+| It is | Undo it with |
+| --- | --- |
+| A listener | `{ signal }`, and write nothing |
+| A local in `connected` | a function returned from `connected` |
+| Reachable from `this` | `disconnected()` |
+
+```js
+export const prototype = {
+  connected() {
+    const timer = setInterval(() => this.poll(), 1000);
+    return () => clearInterval(timer);
+  },
+};
+```
+
+The returned function runs first, then `disconnected()`, so the element's own
+hook sees the connection already undone. An `async connected` is the exception:
+its cleanup is a promise, so it lands after everything synchronous.
 
 `signal` is an `AbortSignal` that fires when the element disconnects. **Always
 pass it to a listener on `document`, `window` or `globalThis`.** One on the

@@ -8,10 +8,10 @@
   export const attributes = {
     people: {
       from: (text) =>
-      /** @type {WirePerson[]} */ (JSON.parse(text)).map((person) => ({
-            ...person,
-            joined: new Date(person.joined),
-          })),
+        /** @type {WirePerson[]} */ (JSON.parse(text)).map((person) => ({
+          ...person,
+          joined: new Date(person.joined),
+        })),
     },
   };
 

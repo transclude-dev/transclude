@@ -16,9 +16,8 @@
     },
 
     connected({ signal }) {
-
-      // A light element upgrades for behavior. `this` is the element; there is no shadow
-      // root, so `shadow` is null.
+      // A light element upgrades for behavior. `this` is the element, and there is
+      // no shadow root, so `this.shadowRoot` is null.
       //
       // `signal` aborts when the element leaves the document, so a listener given
       // it removes itself. Nothing here has to name the teardown, and nothing can

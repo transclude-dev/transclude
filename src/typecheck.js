@@ -7,7 +7,7 @@
 // and rewriting is where source mapping breaks down.
 //
 // JavaScript rather than TypeScript because a JSDoc `@type` in the author's own
-// `<script props>` is honored in a .js file and silently ignored in a .ts one.
+// `<script element>` is honored in a .js file and silently ignored in a .ts one.
 //
 // Shims are self-contained: route contexts and component props are inlined as
 // type literals rather than imported. transclude-env.d.ts is written *from* the shims,
@@ -311,7 +311,7 @@ export function createChecker({
   const componentFiles = () => elementFiles(elementsDir);
 
   // The file decides whether the element has a shadow root, so it also decides
-  // what `this.shadowRoot` means inside its <script>. Read with the compiler's
+  // what `this.shadowRoot` means inside its <script element>. Read with the compiler's
   // own reader, or the types would describe a different element than the one
   // that ships.
   const isShadow = (file) => Boolean(safeFlags(file).shadow);

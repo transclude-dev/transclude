@@ -685,7 +685,7 @@ function defineState(Class, defs, schedule) {
   for (const key of Object.keys(defs ?? {})) {
     if (key in Class.prototype) {
       throw new Error(
-        `<script state>: \`${key}\` already exists on the element. Pick another name.`,
+        `\`export const state\`: \`${key}\` already exists on the element. Pick another name.`,
       );
     }
     Object.defineProperty(Class.prototype, key, {
@@ -753,7 +753,7 @@ export function writeProp(element, prop, value, fallback, specs) {
 }
 
 /**
- * An accessor per declared prop, generated from `<script props>`. The shape is
+ * An accessor per declared prop, generated from `export const properties`. The shape is
  * already stated there, so writing a getter and setter for each would say the
  * same thing twice.
  *
@@ -1047,7 +1047,7 @@ export function defineLight(def) {
   if (customElements.get(def.tag)) return;
 
   // No behavior to attach means nothing to register. A light element with no
-  // <script> is markup that was already rendered, and it ships no JavaScript at
+  // behavior is markup that was already rendered, and it ships no JavaScript at
   // all, accessors included. That is the trade the zero-JS default makes.
   //
   // Being a form control counts: a shadow root is not required to be one, and an
@@ -1225,13 +1225,11 @@ function hasState(def) {
 }
 
 /**
- * A `<script>` block may end by returning a function. That function runs when
- * the element leaves the document. Use it for cleanup that has no signal of its
- * own.
- * Listeners do not need it: they get `signal` as the third argument.
+ * `connected` may return a function. That function runs when the element leaves
+ * the document. Use it for cleanup that has no signal of its own; a listener
+ * needs none, because it is handed `signal`.
  *
- * It is a promise because the block is compiled to an async function, so a
- * top-level `await` works inside it.
+ * It may be a promise, because `connected` may be an async member.
  */
 function release(cleanup) {
   Promise.resolve(cleanup).then((fn) => {
@@ -1266,7 +1264,7 @@ function formValueOf(def, element) {
 function defineFormMembers(Class, def) {
   Object.defineProperties(Class.prototype, {
     /**
-     * Reset puts the prop back to the default its `<script properties>` block
+     * Reset puts the prop back to the default its `<script element>` block
      * declared. That is the same thing `value` returns when the attribute is
      * absent, so removing it is the whole job.
      */

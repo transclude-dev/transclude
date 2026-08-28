@@ -2,7 +2,7 @@
 // check it.
 //
 // JavaScript rather than TypeScript, on purpose. A JSDoc `@type` in the
-// author's own `<script props>` is honored in a .js file and silently ignored
+// author's own `<script element>` is honored in a .js file and silently ignored
 // in a .ts one. The job is to check what the author wrote, so the shim speaks the
 // same language they do. The scaffolding uses JSDoc too.
 //
@@ -28,7 +28,7 @@ const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each']);
 /**
  * Attributes that are not props, whatever they land on. `data-*` and `aria-*`
  * are the platform's own, and `hx-*` belongs to whichever library the author
- * brought. None of them are declared in `<script properties>`, so
+ * brought. None of them are declared as properties, so
  * checking them as props turns a correct page into a type error. That is what
  * `hx-get="/notes?id=${id}"` on a component used to be.
  *
@@ -341,7 +341,7 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
 }
 
 /**
- * `<script server>` and `<script props>` are module bodies, not expressions: they
+ * `<script server>` is a module body, not an expression: it
  * have imports and may have named exports of their own. Those stay where they
  * are, because the shim is a module too, and only the default export is rebound. For a
  * loader that rebinding is what types its parameter from the route context while
@@ -635,7 +635,7 @@ function emitComponentProps(node, out, scope, components, depth) {
     const parts = splitInterpolations(attr.value);
 
     // Props are declared camelCase and written dash-case, so the key is checked
-    // under the name `<script props>` gave it. Still mapped to the attribute in
+    // under the name the block gave it. Still mapped to the attribute in
     // the source: an unmapped key would have its diagnostic dropped.
     const prop = camelCase(attr.name);
     if (/^[A-Za-z_$][\w$]*$/.test(prop)) {

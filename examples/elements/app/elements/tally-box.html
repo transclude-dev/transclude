@@ -13,17 +13,16 @@
     },
 
     connected({ signal }) {
-
       // `this` is the element. A listener on it is collected with it, so this one
       // needs no signal; one on `document` would.
       this.addEventListener('click', () => this.bump());
 
       this.addEventListener('keydown', (event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            this.bump();
-          }
-        });
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          this.bump();
+        }
+      });
 
       this.tabIndex = 0;
       this.setAttribute('role', 'button');

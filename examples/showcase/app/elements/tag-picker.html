@@ -35,7 +35,6 @@
     },
 
     connected({ signal }) {
-
       // On `this.shadowRoot`, not on `this`. That was the bug this once had.
       //
       // A click inside a shadow root does reach a listener on the host, but by then

@@ -456,6 +456,15 @@ for (const name of ['connectedCallback', 'disconnectedCallback', 'attributeChang
   });
 }
 
+test('the disconnectedCallback message names both ways out', () => {
+  // A listener needs neither, which is what most people who hit this are doing.
+  assert.throws(
+    () =>
+      component('<script element>export const prototype = { disconnectedCallback() {} };</script><p>a</p>'),
+    /`disconnected\(\)`.*cleanup function.*`signal` needs neither/s,
+  );
+});
+
 test('adoptedCallback is left alone, since nothing implements it', () => {
   assert.match(
     component('<script element>export const prototype = { adoptedCallback() {} };</script><p>a</p>'),

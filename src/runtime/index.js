@@ -789,7 +789,8 @@ function defineProps(Class, defs, specs) {
  * and this is the one line that says what the framework expects to find.
  *
  * @param {HTMLElement} element
- * @returns {{ connected?: (arg: { signal: AbortSignal }) => unknown, updated?: () => void }}
+ * @returns {{ connected?: (arg: { signal: AbortSignal }) => unknown,
+ *   disconnected?: () => void, updated?: () => void }}
  */
 function hooks(element) {
   return /** @type {any} */ (element);
@@ -1170,6 +1171,8 @@ export function defineLight(def) {
       this.#abort = null;
       release(this.#cleanup);
       this.#cleanup = null;
+      // Last, so the element's own hook sees the connection already undone.
+      hooks(this).disconnected?.();
     }
   }
 
@@ -1229,12 +1232,26 @@ function hasState(def) {
  * the document. Use it for cleanup that has no signal of its own; a listener
  * needs none, because it is handed `signal`.
  *
- * It may be a promise, because `connected` may be an async member.
+ * Synchronously, when there is nothing to wait for. This used to hand every
+ * cleanup to `Promise.resolve().then()`, which deferred it by a microtask even
+ * when it was already a function. Moving an element in the document is a
+ * disconnect and a connect in one task, so the first connection's cleanup ran
+ * *after* the second `connected` had set everything up again, and tore down
+ * what it had just built. Nothing reported it.
+ *
+ * An async `connected` still lands later, because its return value is a promise
+ * and there is no way to have it sooner.
  */
 function release(cleanup) {
-  Promise.resolve(cleanup).then((fn) => {
-    if (typeof fn === 'function') fn();
-  });
+  if (typeof cleanup === 'function') {
+    cleanup();
+    return;
+  }
+  if (cleanup && typeof cleanup.then === 'function') {
+    cleanup.then((fn) => {
+      if (typeof fn === 'function') fn();
+    });
+  }
 }
 
 /**
@@ -1403,6 +1420,8 @@ export function defineComponent(def) {
       this.#abort = null;
       release(this.#cleanup);
       this.#cleanup = null;
+      // Last, so the element's own hook sees the connection already undone.
+      hooks(this).disconnected?.();
     }
 
     attributeChangedCallback() {

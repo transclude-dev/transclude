@@ -31,10 +31,30 @@ test('the fallback the repository uses is a file', () => {
 });
 
 test('the package ships the server the extension starts', () => {
-  // `files` in package.json is the publish list. Losing `editor` from it would
-  // install a package the extension searches and finds nothing in.
+  // `files` in package.json is the publish list. Losing the server from it
+  // would install a package the extension searches and finds nothing in.
   const { files } = JSON.parse(read('package.json'));
-  assert.ok(files.includes('editor'), 'editor is not published with the package');
+  assert.ok(
+    files.includes('editor/server.js'),
+    'the language server is not published with the package',
+  );
+});
+
+test('the publish list names the server, not the directory holding it', () => {
+  // `editor/vscode` is a working directory, not a shipped one. It holds an
+  // installed `node_modules` and a built `.vsix`, both untracked, and npm packs
+  // an untracked file that git ignores. An entry of `editor` published 324 of
+  // them, 2.2 MB, to everyone who installed the framework, and the tarball
+  // differed depending on whether the releaser had packaged the extension.
+  // The extension comes from the Marketplace. Only `editor/server.js` ships.
+  const { files } = JSON.parse(read('package.json'));
+
+  for (const entry of files) {
+    assert.ok(
+      entry === 'editor/server.js' || !entry.startsWith('editor'),
+      `${entry} publishes the extension's working directory`,
+    );
+  }
 });
 
 test('every grammar the manifest names parses and injects into HTML', () => {

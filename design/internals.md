@@ -716,11 +716,22 @@ against.
   through the fallback, and the extension worked for exactly the people who did
   not need it. Nothing errored anywhere: a lookup that finds nothing is an
   extension that quietly does nothing. `test/editor.test.js` pins the path to
-  the name in `package.json`, and pins `editor` into the publish list, which is
-  the same failure from the other side. To package it:
+  the name in `package.json`, and pins `editor/server.js` into the publish list,
+  which is the same failure from the other side. To package it:
   `cd editor/vscode && npm install && npx @vscode/vsce package`. Publishing
   needs a Marketplace publisher whose id matches `publisher` in its
   `package.json`, and `npx ovsx publish` covers Open VSX.
+- **A directory in `files` publishes what git ignores.** `files` said `editor`,
+  to ship the one file the extension starts. It shipped the directory: an
+  installed `editor/vscode/node_modules` and a built `.vsix`, 324 files and
+  2.2 MB, 77% of the package, into the `node_modules` of everyone who installed
+  the framework. Both are untracked, and untracked is not the same as unpacked:
+  `.gitignore` keeps a file out of the repository, and npm reads it only where
+  no `files` list overrides it. A releaser who had run `vsce package` published
+  a different tarball than one who had not, and nothing said so. Name the file,
+  not the directory holding it, whenever a directory is also somewhere work
+  happens. `npm pack --dry-run` is the check, and it is the only one that
+  answers this question: the publish list is not what `git status` shows.
 - **A directive rule that matches the name alone leaves the value to the HTML
   grammar, which has moved past it.** `each` was highlighted by one pattern
   matching the word. HTML's own attribute rule had already passed the position

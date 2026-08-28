@@ -127,7 +127,7 @@ test('a getter member is defined, not invoked, at define time', async () => {
         return this.pageSize * 2;
       },
     };
-    defineComponent(defOf({ members }), null);
+    defineComponent(defOf({ members }));
     assert.equal(reads, 0, 'Object.assign would have read it once here');
 
     const el = new (registry.get('x-card'))();
@@ -140,7 +140,7 @@ test('a getter member is defined, not invoked, at define time', async () => {
 test('a member that would shadow a DOM member is refused', async () => {
   await withDom(async ({ defineComponent }) => {
     assert.throws(
-      () => defineComponent(defOf({ members: { getAttribute() {} } }), null),
+      () => defineComponent(defOf({ members: { getAttribute() {} } })),
       /getAttribute.*already has/s,
     );
   });
@@ -149,7 +149,7 @@ test('a member that would shadow a DOM member is refused', async () => {
 test('a member that would shadow a declared prop is refused', async () => {
   await withDom(async ({ defineComponent }) => {
     assert.throws(
-      () => defineComponent(defOf({ members: { compact() {} } }), null),
+      () => defineComponent(defOf({ members: { compact() {} } })),
       /compact.*already has/s,
     );
   });
@@ -197,12 +197,10 @@ test('updated() runs after the paint, so it sees the current shadow root', async
   });
 });
 
-test('the signal passed to <script> aborts when the element leaves', async () => {
+test('the signal `connected` is handed aborts when the element leaves', async () => {
   await withDom(async ({ defineComponent }, registry) => {
     let signal = null;
-    defineComponent(defOf(), (host, shadow, incoming) => {
-      signal = incoming;
-    });
+    defineComponent(defOf({ members: { connected: ({ signal: incoming }) => void (signal = incoming) } }));
     const el = new (registry.get('x-card'))();
 
     el.connect();
@@ -215,7 +213,7 @@ test('the signal passed to <script> aborts when the element leaves', async () =>
 test('reconnecting gives a fresh signal rather than an already-aborted one', async () => {
   await withDom(async ({ defineComponent }, registry) => {
     const signals = [];
-    defineComponent(defOf(), (host, shadow, signal) => void signals.push(signal));
+    defineComponent(defOf({ members: { connected: ({ signal }) => void signals.push(signal) } }));
     const el = new (registry.get('x-card'))();
 
     el.connect();
@@ -231,9 +229,15 @@ test('reconnecting gives a fresh signal rather than an already-aborted one', asy
 test('the returned cleanup still runs, alongside the signal', async () => {
   await withDom(async ({ defineComponent }, registry) => {
     let cleaned = false;
-    defineComponent(defOf(), () => () => {
-      cleaned = true;
-    });
+    defineComponent(
+      defOf({
+        members: {
+          connected: () => () => {
+            cleaned = true;
+          },
+        },
+      }),
+    );
     const el = new (registry.get('x-card'))();
 
     el.connect();
@@ -245,7 +249,7 @@ test('the returned cleanup still runs, alongside the signal', async () => {
 
 test('a partial with only an exported prototype still upgrades', async () => {
   await withDom(async ({ defineLight }, registry) => {
-    defineLight(defOf({ tag: 'x-note', members: { dismiss() { return this.name; } } }), null);
+    defineLight(defOf({ tag: 'x-note', members: { dismiss() { return this.name; } } }));
     const Class = registry.get('x-note');
     assert.ok(Class, 'members are a reason to register, even with no <script>');
 
@@ -257,7 +261,7 @@ test('a partial with only an exported prototype still upgrades', async () => {
 
 test('a partial with neither block still ships nothing', async () => {
   await withDom(async ({ defineLight }, registry) => {
-    defineLight(defOf({ tag: 'x-plain' }), null);
+    defineLight(defOf({ tag: 'x-plain' }));
     assert.equal(registry.get('x-plain'), undefined);
   });
 });
@@ -265,7 +269,7 @@ test('a partial with neither block still ships nothing', async () => {
 test('a light element gets updated() once per connect, since it never repaints', async () => {
   await withDom(async ({ defineLight }, registry) => {
     let count = 0;
-    defineLight(defOf({ tag: 'x-note', members: { updated() { count++; } } }), null);
+    defineLight(defOf({ tag: 'x-note', members: { updated() { count++; } } }));
     const el = new (registry.get('x-note'))();
 
     el.connect();
@@ -299,7 +303,7 @@ const bindingDef = (overrides = {}) => {
 
 test('a bound change writes into the existing nodes instead of replacing them', async () => {
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(bindingDef(), null);
+    defineComponent(bindingDef());
     const el = new (registry.get('x-bound'))();
     el.connect();
 
@@ -367,7 +371,7 @@ test('reconnecting does not bind a second time', async () => {
   await withDom(async ({ defineComponent }, registry) => {
     let binds = 0;
     const def = bindingDef();
-    defineComponent({ ...def, bind: (root) => { binds++; return def.bind(root); } }, null);
+    defineComponent({ ...def, bind: (root) => { binds++; return def.bind(root); } });
     const el = new (registry.get('x-bound'))();
 
     el.connect();
@@ -405,7 +409,7 @@ const stateDef = (overrides = {}) => {
 
 test('state is a field on the instance, not an attribute', async () => {
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(stateDef(), null);
+    defineComponent(stateDef());
     const el = new (registry.get('x-state'))();
     el.connect();
 
@@ -420,7 +424,7 @@ test('state is a field on the instance, not an attribute', async () => {
 
 test('state reaches the template, and an assignment renders', async () => {
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(stateDef(), null);
+    defineComponent(stateDef());
     const el = new (registry.get('x-state'))();
     el.connect();
     assert.match(el.shadowRoot.html, /<p>0<\/p>/);
@@ -435,7 +439,7 @@ test('two assignments in a row are one render, not two', async () => {
   await withDom(async ({ defineComponent }, registry) => {
     let updates = 0;
     const def = stateDef();
-    defineComponent({ ...def, update: (b, d) => (updates++, def.update(b, d)) }, null);
+    defineComponent({ ...def, update: (b, d) => (updates++, def.update(b, d)) });
     const el = new (registry.get('x-state'))();
     el.connect();
     updates = 0;
@@ -455,7 +459,7 @@ test('setting state to the value it already has schedules nothing', async () => 
   await withDom(async ({ defineComponent }, registry) => {
     let updates = 0;
     const def = stateDef();
-    defineComponent({ ...def, update: (b, d) => (updates++, def.update(b, d)) }, null);
+    defineComponent({ ...def, update: (b, d) => (updates++, def.update(b, d)) });
     const el = new (registry.get('x-state'))();
     el.connect();
     updates = 0;
@@ -468,7 +472,7 @@ test('setting state to the value it already has schedules nothing', async () => 
 
 test('updateComplete with nothing pending is already resolved', async () => {
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(stateDef(), null);
+    defineComponent(stateDef());
     const el = new (registry.get('x-state'))();
     el.connect();
     assert.ok(el.updateComplete instanceof Promise);
@@ -512,7 +516,7 @@ test('state that would shadow a DOM member is refused', async () => {
     // carries the methods the runtime calls, so the collision is tested against
     // one of those. A genuine HTMLElement member is covered in the browser.
     assert.throws(
-      () => defineComponent(stateDef({ stateDefs: { getAttribute: '' } }), null),
+      () => defineComponent(stateDef({ stateDefs: { getAttribute: '' } })),
       /getAttribute.*already exists/s,
     );
   });
@@ -523,7 +527,7 @@ test('state that would shadow a declared prop is refused at runtime too', async 
     // The compiler rejects this outright; the runtime is the second line, for a
     // def assembled by hand.
     assert.throws(
-      () => defineComponent(stateDef({ stateDefs: { name: '' } }), null),
+      () => defineComponent(stateDef({ stateDefs: { name: '' } })),
       /name.*already exists/s,
     );
   });
@@ -531,7 +535,7 @@ test('state that would shadow a declared prop is refused at runtime too', async 
 
 test('each instance gets its own state', async () => {
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(stateDef(), null);
+    defineComponent(stateDef());
     const Class = registry.get('x-state');
     const one = new Class();
     const two = new Class();
@@ -546,11 +550,17 @@ test('each instance gets its own state', async () => {
   });
 });
 
-test('state set from a <script> block before the first paint still lands', async () => {
+test('state set from `connected` before the first paint still lands', async () => {
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(stateDef(), (host) => {
-      host.count = 42;
-    });
+    defineComponent(
+      stateDef({
+        members: {
+          connected() {
+            this.count = 42;
+          },
+        },
+      }),
+    );
     const el = new (registry.get('x-state'))();
     el.connect();
 
@@ -616,14 +626,14 @@ test('the static flag is what a form reads to decide it is a control', async () 
   // Nothing in Node models a form, so this is the only place the flag itself can
   // be checked here. app/routes/check.html checks the result in a browser.
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(controlOf(), null);
+    defineComponent(controlOf());
     assert.equal(registry.get('x-card').formAssociated, true);
   });
 });
 
 test('a control reports its value when it connects', async () => {
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(controlOf(), null);
+    defineComponent(controlOf());
     const element = new (registry.get('x-card'))();
     element.setAttribute('value', 'ada');
     element.connect();
@@ -636,7 +646,7 @@ test('a change is reported before the render, not after', async () => {
   // A form can be submitted between the attribute changing and the microtask that
   // repaints. What it sends has to be what the attribute already says.
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(controlOf(), null);
+    defineComponent(controlOf());
     const element = new (registry.get('x-card'))();
     element.connect();
     element.reported.length = 0;
@@ -649,7 +659,7 @@ test('a change is reported before the render, not after', async () => {
 test('an object value is serialized the way its attribute is', async () => {
   // What gets submitted is what the DOM says, rather than "[object Object]".
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(controlOf({ propDefs: { value: [] } }), null);
+    defineComponent(controlOf({ propDefs: { value: [] } }));
     const element = new (registry.get('x-card'))();
     element.connect();
     element.reported.length = 0;
@@ -662,7 +672,7 @@ test('an object value is serialized the way its attribute is', async () => {
 
 test('an absent value is reported as null, not as the string "null"', async () => {
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(controlOf({ propDefs: { value: null } }), null);
+    defineComponent(controlOf({ propDefs: { value: null } }));
     const element = new (registry.get('x-card'))();
     element.connect();
 
@@ -673,7 +683,7 @@ test('an absent value is reported as null, not as the string "null"', async () =
 test('a control with no value prop reports nothing rather than guessing', async () => {
   // It can still report validity through internals, so this is allowed.
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent({ ...defOf(), formAssociated: true, propDefs: { label: '' } }, null);
+    defineComponent({ ...defOf(), formAssociated: true, propDefs: { label: '' } });
     const element = new (registry.get('x-card'))();
     element.connect();
 
@@ -685,7 +695,7 @@ test('reset removes the attribute rather than blanking it', async () => {
   // Removing is what puts the prop back to the default its properties block
   // declared, because that is what the getter falls back to.
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(controlOf({ propDefs: { value: 'default' } }), null);
+    defineComponent(controlOf({ propDefs: { value: 'default' } }));
     const element = new (registry.get('x-card'))();
     element.connect();
     element.value = 'changed';
@@ -698,7 +708,7 @@ test('reset removes the attribute rather than blanking it', async () => {
 
 test('a form disabling its controls mirrors to the attribute, if declared', async () => {
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(controlOf({ propDefs: { value: '', disabled: false } }), null);
+    defineComponent(controlOf({ propDefs: { value: '', disabled: false } }));
     const element = new (registry.get('x-card'))();
     element.connect();
 
@@ -711,7 +721,7 @@ test('a form disabling its controls mirrors to the attribute, if declared', asyn
 
 test('an ordinary component gets no internals and reports nothing', async () => {
   await withDom(async ({ defineComponent }, registry) => {
-    defineComponent(defOf(), null);
+    defineComponent(defOf());
     const Class = registry.get('x-card');
 
     assert.equal(Class.formAssociated, false);
@@ -725,11 +735,11 @@ test('the message names the block the member is actually written in', async () =
   // not there.
   await withDom(async ({ defineComponent }) => {
     assert.throws(
-      () => defineComponent(defOf({ members: { getAttribute() {} } }), null),
+      () => defineComponent(defOf({ members: { getAttribute() {} } })),
       /export const prototype/,
     );
     assert.throws(
-      () => defineComponent(defOf({ members: { getAttribute() {} } }), null),
+      () => defineComponent(defOf({ members: { getAttribute() {} } })),
       (error) => !/<script element>/.test(error.message),
     );
   });
@@ -741,8 +751,8 @@ test('a light element observes every declared prop', async () => {
   // It observed nothing unless it was form-associated, so an attribute change
   // reached the DOM and nothing else.
   await withDom(async ({ defineLight }, registry) => {
-    const def = defOf({ light: true, propDefs: { count: 0, label: '' } });
-    defineLight(def, () => {});
+    const def = defOf({ light: true, propDefs: { count: 0, label: '' }, members: { connected() {} } });
+    defineLight(def);
 
     assert.deepEqual(registry.get(def.tag).observedAttributes.sort(), ['count', 'label']);
   });
@@ -761,8 +771,9 @@ test('a change writes through the bindings, and binds only once', async () => {
       propDefs: { count: 0 },
       bind: (root) => (binds++, [node]),
       update: (b, d) => (written.push(d.count), (b[0].data = String(d.count)), true),
+      members: { connected() {} },
     });
-    defineLight(def, () => {});
+    defineLight(def);
 
     const el = new (registry.get(def.tag))();
     el.isConnected = true;
@@ -783,7 +794,7 @@ test('a light element still ships nothing when it has no behavior', async () => 
   // element with nothing to define is still not defined.
   await withDom(async ({ defineLight }, registry) => {
     const def = defOf({ light: true, propDefs: { count: 0 }, members: {} });
-    defineLight(def, null);
+    defineLight(def);
 
     assert.equal(registry.get(def.tag), undefined);
   });
@@ -843,7 +854,7 @@ test('state alone is enough to define a light element', async () => {
   // Without this the accessors never exist, so `el.n = 1` is a silent no-op.
   await withDom(async ({ defineLight }, registry) => {
     const def = defOf({ light: true, stateDefs: { n: 0 }, members: {} });
-    defineLight(def, null);
+    defineLight(def);
 
     assert.ok(registry.get(def.tag), 'an element with state was not registered');
   });

@@ -16,7 +16,7 @@
       "patterns": [{ "include": "source.js" }]
     },
     "server-block": {
-      "begin": "(<)(script)\\s+(server|props)\\s*(>)",
+      "begin": "(<)(script)\\s+(server|element)\\s*(>)",
       "end": "(</)(script)\\s*(>)",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },

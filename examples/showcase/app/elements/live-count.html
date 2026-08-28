@@ -1,4 +1,4 @@
-<script properties>
+<script element>
   /**
    * A light element that re-renders. No shadow root, so page CSS reaches it and
    * `<label for>` would work; the count below is written in place when the
@@ -8,12 +8,21 @@
    */
 
   /** @type {Props} */
-  export default {
+  export const properties = {
     count: 0,
     label: "clicks",
   };
-</script>
 
+  export const prototype = {
+    add(n = 1) {
+      this.count = Number(this.count) + n;
+    },
+
+    connected({ signal }) {
+      this.addEventListener("click", () => this.add(), { signal });
+    },
+  };
+</script>
 <style>
   :scope {
     display: inline-flex;
@@ -28,16 +37,3 @@
 
 <strong>${count}</strong>
 <span>${label}</span>
-
-<script>
-  // Setting the prop writes the attribute, which schedules the update. The text
-  // node is written in place: nothing is replaced, so anything else on the page
-  // holding a reference to it still holds it.
-  export const prototype = {
-    add(n = 1) {
-      this.count = Number(this.count) + n;
-    },
-  };
-
-  host.addEventListener("click", () => host.add(), { signal });
-</script>

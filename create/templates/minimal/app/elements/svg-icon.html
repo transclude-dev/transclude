@@ -5,8 +5,8 @@
      Put SVG files in `app/icons/`. The build compiles them into `/icons.svg`,
      and a subdirectory becomes a library of its own. -->
 
-<script properties>
-  export default {
+<script element>
+  export const properties = {
     // A directory in `app/icons/`, or `icons` for the files loose at the top.
     // An icon set downloaded as a folder is a library named by that folder.
     library: 'icons',

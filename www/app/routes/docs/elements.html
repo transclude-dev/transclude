@@ -4,34 +4,25 @@
   export default async () => ({
     s: await all({
       state: `<!-- app/elements/tally-box.html -->
-<script properties>
-  export default {
-    label: 'tally',
-  };
-<\/script>
+<script element>
+  export const properties = { label: 'tally' };
+  export const state = { n: 0 };
 
-<script state>
-  export default {
-    n: 0,
-  };
-<\/script>
-
-<output>\${n}</output>
-<span>\${label}</span>
-
-<script>
   export const prototype = {
     bump(by = 1) {
       this.n += by;
     },
-  };
 
-  host.addEventListener('click', () => host.bump(), { signal });
-<\/script>`,
-      customState: `<script state>
-  export default {
-    hot: false,
+    connected({ signal }) {
+      this.addEventListener('click', () => this.bump(), { signal });
+    },
   };
+<\/script>
+
+<output>\${n}</output>
+<span>\${label}</span>`,
+      customState: `<script element>
+  export const state = { hot: false };
 <\/script>
 
 <style>
@@ -50,10 +41,8 @@
   await box.updateComplete;
 <\/script>`,
       light: `<!-- app/elements/site-note.html -->
-<script properties>
-  export default {
-    tone: 'neutral',
-  };
+<script element>
+  export const properties = { tone: 'neutral' };
 <\/script>
 
 <style>
@@ -70,8 +59,8 @@
 <p><slot>Nothing to say.</slot></p>`,
       use: `<site-note tone="warn">Rendered into the page's own DOM.</site-note>`,
       shadow: `<!-- app/elements/user-card.html -->
-<script properties>
-  export default {
+<script element>
+  export const properties = {
     name: '',
     tags: [],
   };
@@ -88,31 +77,34 @@
   <li each="tag of tags">\${tag}</li>
 </ul>
 <slot></slot>`,
-      behavior: `<script>
-  document.addEventListener(
-    'keydown',
-    (event) => {
-      if (event.key === 'Escape') host.dismiss();
+      behavior: `<script element>
+  export const prototype = {
+    connected({ signal }) {
+      document.addEventListener(
+        'keydown',
+        (event) => {
+          if (event.key === 'Escape') this.dismiss();
+        },
+        { signal },
+      );
     },
-    { signal },
-  );
+  };
 <\/script>`,
-      prototype: [
-        `export const prototype = {
-  dismiss() {
-    this.hidden = true;
-    this.dispatchEvent(new CustomEvent('dismiss', { bubbles: true }));
-  },
-};`,
-        "js",
-      ],
+      prototype: `<script element>
+  export const prototype = {
+    dismiss() {
+      this.hidden = true;
+      this.dispatchEvent(new CustomEvent('dismiss', { bubbles: true }));
+    },
+  };
+<\/script>`,
       json: `<user-card
   name="Ada Lovelace"
   tags='["math", "engines"]'
 ></user-card>`,
       form: `<!-- app/elements/tag-picker.html -->
-<script properties>
-  export default {
+<script element>
+  export const properties = {
     name: '',
     value: '',
   };
@@ -121,7 +113,7 @@
 <\/script>
 
 <button type="button">\${value || 'Pick tags'}</button>`,
-      validity: `<script>
+      validity: `<script element>
   export const prototype = {
     updated() {
       const empty = !this.value;
@@ -293,13 +285,12 @@
   <h2>Giving it behavior</h2>
 
   <p>
-    A plain <code>&lt;script&gt;</code> block runs once per element.
-    <code>host</code> is the element and <code>shadow</code> is its shadow root,
-    or <code>null</code> without one. <code>signal</code> is an
+    <code>connected</code> runs once per connect, and <code>this</code> is the
+    element. It is handed an
     <a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal"
       >AbortSignal</a
     >
-    that fires when the element leaves the document: pass it to
+    that fires when the element leaves the document. Pass it to
     <code>addEventListener</code> and the listener is removed for you.
   </p>
 
@@ -314,19 +305,20 @@
   <h3>A public API</h3>
 
   <p>
-    <code>export const prototype</code> puts members on the class. The rest of
-    the block runs once per element.
+    <code>export const prototype</code> puts members on the class, shared by
+    every element of the tag. Two of the names belong to the framework.
+    <code>connected({ signal })</code> runs on every connect, and what it returns
+    runs on disconnect. <code>updated()</code> runs after every render.
   </p>
 
   ${html(s.prototype)}
 
-  <doc-note label="Inside a member, use this" tone="warn">
-    <code>host</code>, <code>shadow</code>, <code>signal</code> and
-    <code>internals</code> exist only in the body of the script, which runs once
-    per element. A <code>prototype</code> member is shared by every element of
-    that tag, so it reaches its own element with <code>this</code>. Using
-    <code>host</code> in one is a compile error rather than a bug you find
-    later.
+  <doc-note label="The element is this" tone="warn">
+    Nothing is injected into scope. A member reaches its own element with
+    <code>this</code>, its shadow root with <code>this.shadowRoot</code> and its
+    <code>ElementInternals</code> with <code>this.internals</code>. Only
+    <code>signal</code> is passed in, because it belongs to one connection
+    rather than to the element.
   </doc-note>
 
   <h2>State</h2>
@@ -334,7 +326,7 @@
   <p>
     A prop comes from the outside and lives in an attribute. State is the
     element's own, and nothing outside sets it.
-    <code>&lt;script state&gt;</code> declares it, and each element gets its own
+    <code>export const state</code> declares it, and each element gets its own
     copy.
   </p>
 
@@ -385,7 +377,7 @@
   <doc-note label="State is not an attribute">
     Nothing outside can set it: not the page's markup, not a parent, not a URL.
     Anything a caller needs to say belongs in
-    <code>&lt;script properties&gt;</code>.
+    <code>export const properties</code>.
   </doc-note>
 
   <h2>Objects and arrays</h2>
@@ -426,7 +418,7 @@
 
   <p>
     A field that cannot say it is wrong is not really a field.
-    <code>host.internals</code> is the handle the platform hands out, so
+    <code>this.internals</code> is the handle the platform hands out, so
     <code>setValidity</code> works the way it does on an input.
     <code>:invalid</code> matches, a submit is blocked, and the browser shows its
     own message.
@@ -440,10 +432,9 @@
     element the message points at.
   </p>
 
-  <doc-note label="Declare a flag in one block" tone="warn">
-    <code>shadow</code> and <code>formAssociated</code> can go in
-    <code>&lt;script properties&gt;</code> or in <code>&lt;script&gt;</code>,
-    whichever the element already has. Declaring one in both is a compile error.
-    Write <code>true</code> directly: each becomes a static field on the class.
+  <doc-note label="A flag is a literal" tone="warn">
+    Write <code>export const shadow = true</code> directly, and the same for
+    <code>formAssociated</code>. Each becomes a static field on the class, the
+    same for every element of the tag, so neither can be computed.
   </doc-note>
 </doc-page>

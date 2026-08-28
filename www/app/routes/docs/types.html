@@ -43,8 +43,8 @@
   <ol>
     <li>What the loader's return value infers to.</li>
     <li>
-      What <code>&lt;script properties&gt;</code> and
-      <code>&lt;script state&gt;</code> declare.
+      What <code>properties</code> and <code>state</code> declare in
+      <code>&lt;script element&gt;</code>.
     </li>
     <li>JSDoc, where inference is not enough.</li>
   </ol>
@@ -78,10 +78,10 @@
 
   <p>
     A <code>.html</code> file here holds script blocks that are separate
-    modules. An element declaring both <code>&lt;script properties&gt;</code>
-    and <code>&lt;script state&gt;</code> has two default exports, which is
-    correct. The editor's built-in HTML support reads the blocks as one module
-    and reports them as a mistake.
+    modules. A page with a <code>&lt;script server&gt;</code> and a client
+    <code>&lt;script&gt;</code> has two of them, each with its own top-level
+    names, which is correct. The editor's built-in HTML support reads every
+    block as one module and reports the overlap as a mistake.
   </p>
 
   <p>

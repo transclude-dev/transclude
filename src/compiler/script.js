@@ -1,11 +1,10 @@
-// Real ESM handling for <script server>, <script props> and <script>.
+// Real ESM handling for <script server>, <script element> and a page's <script>.
 //
-// These blocks are authored as modules so editors treat them as JS, but they end
-// up spliced into a generated module (or, for client blocks, into a function
-// body). Doing that with regex silently mangles `export default` inside a
-// comment, multi-line imports, and anything else that merely looks like one.
-// acorn gives exact node ranges, so every rewrite here is a string splice at a
-// position the parser vouched for.
+// These blocks are authored as modules so editors treat them as JS, and they end
+// up spliced into a generated module. Doing that with regex silently mangles
+// `export default` inside a comment, multi-line imports, and anything else that
+// merely looks like one. acorn gives exact node ranges, so every rewrite here is
+// a string splice at a position the parser vouched for.
 
 import { parse } from 'acorn';
 
@@ -31,35 +30,22 @@ const PARSE_OPTIONS = {
  * @param {{ code: string, line?: number }} block
  * @param {string} name what to bind the default export to
  * @param {string} label for an error
- * @param {{ flags?: string[] }} [options]
  * @returns {{ code: string, exports: string[],
  *   imports: Array<{ source: string, specifiers: string }>,
- *   declared: string[], defaultNode: object|null, flags: object }}
+ *   declared: string[], defaultNode: object|null }}
  */
-export function bindDefaultExport(block, name, label, { flags = [] } = {}) {
-  const { code: source, line = 1 } = block;
-  const ast = parseOrThrow(source, label, line);
-
-  // A flag is a fact about the element rather than part of this block's own
-  // shape. Each is read out here and blanked, not removed, so every offset
-  // after it still points where it did.
-  const found = {};
-  const cuts = [];
-  for (const flag of flags) {
-    const hit = literalExport(ast, flag, source, line, label);
-    found[flag] = hit ? hit.value : null;
-    if (hit) cuts.push([hit.start, hit.end]);
-  }
-  const code = cuts.length ? blank(source, cuts) : source;
+export function bindDefaultExport(block, name, label) {
+  const { code, line = 1 } = block;
+  const ast = parseOrThrow(code, label, line);
 
   // acorn rejects a duplicate `default` itself, so there is at most one.
   const node = ast.body.find((s) => s.type === 'ExportDefaultDeclaration') ?? null;
-  const exports = namedExportsOf(ast, source, line, label).filter((n) => !flags.includes(n));
+  const exports = namedExportsOf(ast, code, line, label);
   const imports = importsOf(ast);
   const declared = topLevelNames(ast);
 
   if (!node) {
-    return { code: `${code}\nconst ${name} = null;`, exports, imports, declared, defaultNode: null, flags: found };
+    return { code: `${code}\nconst ${name} = null;`, exports, imports, declared, defaultNode: null };
   }
 
   // Slicing the *declaration* rather than the statement means
@@ -72,145 +58,153 @@ export function bindDefaultExport(block, name, label, { flags = [] } = {}) {
     ';' +
     code.slice(node.end);
 
-  return { code: rewritten, exports, imports, declared, defaultNode: node.declaration, flags: found };
+  return { code: rewritten, exports, imports, declared, defaultNode: node.declaration };
 }
 
 /**
- * `export const NAME = true` or `= false`, read out of a block.
- *
- * `null` when the block does not declare it, which is not the same as declaring
- * it false. A component may say so in one block or the other, and telling those
- * apart is what makes "declared in both" reportable.
+ * The names `<script element>` declares, and what the generated module calls
+ * each one. Every other export is refused: this block is read by name, so a
+ * name nobody reads is a typo the author should hear about rather than a value
+ * that quietly does nothing.
  */
-function literalExport(ast, flag, code, line, label) {
+export const ELEMENT_BINDINGS = {
+  properties: '__propDefs',
+  state: '__stateDefs',
+  prototype: '__members',
+  attributes: '__propAttrs',
+};
+
+/**
+ * What an element declares about the tag rather than about one element. Each is
+ * the same for every element of it, so each has to be a literal: a computed
+ * value would look like a per-element choice and could not be one.
+ */
+export const ELEMENT_FLAGS = ['shadow', 'formAssociated'];
+
+/**
+ * Reads `<script element>`: a module whose reserved exports are rebound to the
+ * names the generated module uses, and whose flags are read out as literals.
+ *
+ * Every splice keeps the block's own length, padding with spaces, so a line and
+ * column in the generated module is the line and column in the .html file. Only
+ * the reserved names move. Imports, helpers, typedefs and anything else the
+ * author wrote stay exactly where they were written, which is the whole point
+ * of the block being a real module.
+ *
+ * @param {{ code: string, line?: number }} block
+ * @param {string} label for an error
+ * @returns {{ code: string, nodes: Record<string, object|null>, flags: object,
+ *   imports: Array<object>, declared: string[], warnings: string[] }}
+ */
+export function bindElementModule(block, label) {
+  const { code, line = 1 } = block;
+  const ast = parseOrThrow(code, label, line);
+
+  const nodes = Object.fromEntries(Object.keys(ELEMENT_BINDINGS).map((name) => [name, null]));
+  // `null` until the block says so, so "not said" and "said false" differ.
+  const flags = Object.fromEntries(ELEMENT_FLAGS.map((flag) => [flag, null]));
+  const cuts = [];
+  const warnings = [];
+
   for (const statement of ast.body) {
-    if (!statement.type.startsWith('Export')) continue;
+    if (statement.type === 'ImportDeclaration') continue;
 
-    const value = booleanExport(statement, flag);
-    if (value !== null) return { value, start: statement.start, end: statement.end };
-
-    if (namesExport(statement, flag)) {
+    if (statement.type === 'ExportDefaultDeclaration') {
       throw new ScriptError(
-        `${label}: \`${flag}\` must be \`true\` or \`false\`. It becomes a static ` +
-          `class field, the same for every element of this tag, so it cannot be decided at ` +
-          `run time (line ${lineOf(statement, code, line)})`,
+        `${label}: an element declares itself by name, so there is no default export. ` +
+          `Write \`export const properties = { … }\` ` +
+          `(line ${lineOf(statement, code, line)})`,
       );
     }
-  }
 
-  return null;
-}
+    if (!statement.type.startsWith('Export')) continue;
 
-/**
- * Turns a client <script> into a function body: imports are lifted out (they
- * have to stay at module top level) and everything else is left alone, blanked
- * in place so line and column numbers still line up with the .html file.
- *
- * `lift` names one export that is not setup code: the element's members. It goes
- * to module scope, and so does anything it reads, because a prototype is shared by
- * every instance and the function body is not.
- *
- * @param {Array<{ code: string, line?: number }>} blocks
- * @param {string} label
- * @param {{ lift?: object|null, binding?: string, flags?: string[] }} [options]
- * @returns {{ imports: string, hoisted: string, body: string,
- *   lifted: object|null, flags: object, warnings: string[] }}
- */
-export function toFunctionBody(blocks, label, { lift = null, binding = '__members', flags = [] } = {}) {
-  const imports = [];
-  const hoisted = [];
-  const bodies = [];
-  const warnings = [];
-  let lifted = null;
-  // `null` until a block declares one, so "not said" and "said false" differ.
-  const found = Object.fromEntries(flags.map((flag) => [flag, null]));
-
-  for (const block of blocks) {
-    const { code, line = 1 } = block;
-    // This block becomes a function body, so a top-level `return` is legal here
-    // even though it would not be in a module. That is how cleanup is declared.
-    const ast = parseOrThrow(code, label, line, { allowReturnOutsideFunction: true });
-    const cuts = [];
-
-    warnUnsignaled(ast, code, line, warnings);
-
-    const plan = lift ? planLift(ast, lift) : null;
-    if (plan) {
-      if (lifted) {
+    const flag = ELEMENT_FLAGS.find((name) => namesExport(statement, name));
+    if (flag) {
+      const value = booleanExport(statement, flag);
+      if (value === null) {
         throw new ScriptError(
-          `${label}: \`${lift}\` is exported twice (line ${lineOf(plan.statement, code, line)})`,
+          `${label}: \`${flag}\` must be \`true\` or \`false\`. It decides something about ` +
+            `the tag, the same for every element of it, so it cannot be decided at run time ` +
+            `(line ${lineOf(statement, code, line)})`,
         );
       }
-      if (plan.reaches.length) {
-        throw new ScriptError(
-          `${label}: \`${lift}\` reaches \`${plan.reaches.join('`, `')}\`, which exists once ` +
-            `per element. Members live on the prototype and are shared by every instance, ` +
-            `so they reach their own element through \`this\` instead ` +
-            `(line ${lineOf(plan.statement, code, line)})`,
-        );
-      }
-
-      // Order is preserved, so the hoisted code means exactly what it would have
-      // meant written at the top of the block.
-      for (const dependency of plan.deps) {
-        hoisted.push(code.slice(dependency.start, dependency.end));
-        cuts.push([dependency.start, dependency.end]);
-      }
-      hoisted.push(`const ${binding} = ${code.slice(plan.init.start, plan.init.end)};`);
-      cuts.push([plan.statement.start, plan.statement.end]);
-      lifted = plan.init;
+      flags[flag] = value;
+      // Blanked rather than removed: it is a fact about the tag, read at compile
+      // time, and the generated module states it itself.
+      cuts.push({ start: statement.start, end: statement.end, text: '' });
+      continue;
     }
 
-    for (const statement of ast.body) {
-      if (statement.type === 'ImportDeclaration') {
-        imports.push(code.slice(statement.start, statement.end));
-        cuts.push([statement.start, statement.end]);
-        continue;
-      }
-      if (statement.type.startsWith('Export')) {
-        if (plan && statement === plan.statement) continue;
-
-        // A flag decides something about the tag rather than about one element,
-        // so it has to be a literal. A computed value would look like a
-        // per-element choice and could not be one.
-        let taken = false;
-        for (const flag of flags) {
-          const value = booleanExport(statement, flag);
-          if (value !== null) {
-            found[flag] = value;
-            cuts.push([statement.start, statement.end]);
-            taken = true;
-            break;
-          }
-          if (namesExport(statement, flag)) {
-            throw new ScriptError(
-              `${label}: \`${flag}\` must be \`true\` or \`false\`. It decides something ` +
-                `about the tag, the same for every element of it, so it cannot be decided at ` +
-                `run time (line ${lineOf(statement, code, line)})`,
-            );
-          }
-        }
-        if (taken) continue;
-
+    const declarator = reservedDeclarator(statement);
+    if (declarator) {
+      const name = declarator.id.name;
+      if (nodes[name]) {
         throw new ScriptError(
-          `${label}: a client <script> runs as setup code, so it cannot export` +
-            (lift ? ` anything but \`${[lift, ...flags].join('`, `')}\`` : '') +
-            ` (line ${lineOf(statement, code, line)})`,
+          `${label}: \`${name}\` is exported twice (line ${lineOf(statement, code, line)})`,
         );
       }
+      nodes[name] = declarator.init;
+      // `export const properties = ` becomes `const __propDefs = `, padded, so
+      // the initializer keeps the column it was written at.
+      cuts.push({
+        start: statement.start,
+        end: declarator.init.start,
+        text: `const ${ELEMENT_BINDINGS[name]} = `,
+      });
+      continue;
     }
 
-    bodies.push(blank(code, cuts));
+    throw new ScriptError(
+      `${label}: \`${exportedName(statement) ?? 'this'}\` is not something an element ` +
+        `declares. The block exports ${[...Object.keys(ELEMENT_BINDINGS), ...ELEMENT_FLAGS]
+          .map((name) => `\`${name}\``)
+          .join(', ')}, and nothing else ` +
+        `(line ${lineOf(statement, code, line)})`,
+    );
   }
+
+  warnUnsignaled(ast, code, line, warnings);
+
+  // The reserved names are rebound or blanked, so none of them reaches module
+  // scope. Reporting them as declarations made `export const formAssociated`
+  // collide with the module's own `formAssociated` export, which is the very
+  // name the block is supposed to use.
+  const reserved = new Set([...Object.keys(ELEMENT_BINDINGS), ...ELEMENT_FLAGS]);
 
   return {
-    imports: imports.join('\n'),
-    hoisted: hoisted.join('\n\n'),
-    body: bodies.join('\n'),
-    lifted,
-    flags: found,
+    code: splice(code, cuts),
+    nodes,
+    flags,
+    imports: importsOf(ast),
+    declared: topLevelNames(ast).filter((name) => !reserved.has(name)),
     warnings,
   };
+}
+
+/** `export const <reserved> = <init>`, as its declarator, or null. */
+function reservedDeclarator(statement) {
+  if (statement.type !== 'ExportNamedDeclaration') return null;
+  if (statement.declaration?.type !== 'VariableDeclaration') return null;
+  if (statement.declaration.declarations.length !== 1) return null;
+
+  const declarator = statement.declaration.declarations[0];
+  if (declarator.id.type !== 'Identifier') return null;
+  if (!(declarator.id.name in ELEMENT_BINDINGS)) return null;
+  if (!declarator.init) return null;
+
+  return declarator;
+}
+
+/** The first name an export statement introduces, for an error message. */
+function exportedName(statement) {
+  if (statement.declaration?.type === 'VariableDeclaration') {
+    const [first] = statement.declaration.declarations;
+    return first?.id.type === 'Identifier' ? first.id.name : null;
+  }
+  if (statement.declaration?.id) return statement.declaration.id.name;
+  const [spec] = statement.specifiers ?? [];
+  return spec ? (spec.exported.name ?? spec.exported.value) : null;
 }
 
 /** Targets that outlive the element listening to them. */
@@ -219,8 +213,8 @@ const OUTLIVES = new Set(['document', 'window', 'globalThis', 'screen', 'navigat
 /**
  * A listener on something that outlives this element, with no `signal`.
  *
- * A listener on `host` is collected with the element, so it needs nothing. One
- * on `document` is not: the element goes and the listener stays, holding the
+ * A listener on the element itself is collected with it, so it needs nothing.
+ * One on `document` is not: the element goes and the listener stays, holding the
  * closure and everything it captured, and every element after it adds another.
  * Nothing reports that, which is why it is worth saying at compile time.
  */
@@ -259,8 +253,8 @@ function warnUnsignaled(ast, code, line, warnings) {
       const at = lineOf(node, code, line);
       const message =
         `${target}.addEventListener(${event ? `"${event}"` : '…'}) has no \`signal\`, so the ` +
-        `listener stays after this element leaves the document. Pass \`{ signal }\` ` +
-        `(line ${at})`;
+        `listener stays after this element leaves the document. Take \`{ signal }\` in ` +
+        `\`connected\` and pass it (line ${at})`;
       if (!seen.has(message)) {
         seen.add(message);
         warnings.push(message);
@@ -276,9 +270,6 @@ function warnUnsignaled(ast, code, line, warnings) {
 
   visit(ast);
 }
-
-/** What only exists once the element does, and so cannot be reached from a prototype. */
-const PER_INSTANCE = ['host', 'shadow', 'signal', 'internals'];
 
 /** `export const NAME = true` / `= false`, or null when it is not that. */
 function booleanExport(statement, name) {
@@ -296,185 +287,6 @@ function namesExport(statement, name) {
       (d) => d.id.type === 'Identifier' && d.id.name === name,
     ) ?? null
   );
-}
-
-/**
- * The plan for hoisting one named export out of a client block: the statement
- * itself, its initializer, and the top-level declarations it reads. Those have to
- * come along, or the hoisted code names things that stayed behind.
- *
- * Shared with the shim, which copies the same slices so tsc resolves what the
- * generated module resolves.
- *
- * @param {object} ast an acorn program
- * @param {string} name the binding members land on
- * @param {Set<string>|string[]} [perInstance] names a member may not reach
- * @returns {object|null} what to hoist, or null when nothing is exported
- */
-export function planLift(ast, name, perInstance = PER_INSTANCE) {
-  const statement = ast.body.find(
-    (node) =>
-      node.type === 'ExportNamedDeclaration' &&
-      node.declaration?.type === 'VariableDeclaration' &&
-      node.declaration.declarations.length === 1 &&
-      node.declaration.declarations[0].id.type === 'Identifier' &&
-      node.declaration.declarations[0].id.name === name &&
-      node.declaration.declarations[0].init,
-  );
-  if (!statement) return null;
-
-  const init = statement.declaration.declarations[0].init;
-  const owners = new Map();
-  for (const node of ast.body) {
-    if (node === statement) continue;
-    for (const declared of declaredNames(node)) owners.set(declared, node);
-  }
-
-  const instance = new Set(perInstance);
-  const reaches = new Set();
-  const reads = new Set();
-  const deps = [];
-  const seen = new Set();
-  const queue = [init];
-
-  while (queue.length) {
-    for (const free of freeNames(queue.shift(), new Set(), new Set())) {
-      reads.add(free);
-      if (instance.has(free)) reaches.add(free);
-      const owner = owners.get(free);
-      if (!owner || seen.has(owner)) continue;
-      seen.add(owner);
-      deps.push(owner);
-      queue.push(owner);
-    }
-  }
-
-  deps.sort((a, b) => a.start - b.start);
-  return { statement, init, deps, reads, reaches: [...reaches] };
-}
-
-/** The names a top-level statement binds. */
-function declaredNames(statement) {
-  const node = statement.type === 'ExportNamedDeclaration' ? statement.declaration : statement;
-  if (node?.type === 'VariableDeclaration') {
-    return node.declarations.flatMap((declarator) => patternNames(declarator.id));
-  }
-  if (node?.type === 'FunctionDeclaration' || node?.type === 'ClassDeclaration') {
-    return node.id ? [node.id.name] : [];
-  }
-  return [];
-}
-
-function scopedNames(statements) {
-  return (statements ?? []).flatMap(declaredNames);
-}
-
-/** Keys acorn puts on every node. They hold positions, never child nodes. */
-const NODE_BOOKKEEPING = new Set(['type', 'start', 'end', 'loc', 'range']);
-
-/**
- * Identifiers a subtree reads from outside itself.
- *
- * Scopes are tracked rather than ignored: a method with a parameter named
- * `host` is not reaching for the element, and reporting it as one would be a
- * confusing error about code that is correct.
- */
-function freeNames(node, bound, out) {
-  if (!node || typeof node !== 'object') return out;
-  if (Array.isArray(node)) {
-    for (const child of node) freeNames(child, bound, out);
-    return out;
-  }
-  if (typeof node.type !== 'string') return out;
-
-  switch (node.type) {
-    case 'Identifier':
-      if (!bound.has(node.name)) out.add(node.name);
-      return out;
-
-    // `a.b` reads `a`; `b` is a property name, not a binding.
-    case 'MemberExpression':
-      freeNames(node.object, bound, out);
-      if (node.computed) freeNames(node.property, bound, out);
-      return out;
-    case 'Property':
-    case 'PropertyDefinition':
-    case 'MethodDefinition':
-      if (node.computed) freeNames(node.key, bound, out);
-      freeNames(node.value, bound, out);
-      return out;
-
-    case 'FunctionDeclaration':
-    case 'FunctionExpression':
-    case 'ArrowFunctionExpression': {
-      const inner = new Set(bound);
-      if (node.id) inner.add(node.id.name);
-      for (const param of node.params) {
-        for (const name of patternNames(param)) inner.add(name);
-      }
-      if (node.body.type === 'BlockStatement') {
-        for (const name of scopedNames(node.body.body)) inner.add(name);
-      }
-      // A default is evaluated in the function's own scope, so it sees the params.
-      for (const param of node.params) freeNames(param, inner, out);
-      freeNames(node.body, inner, out);
-      return out;
-    }
-    case 'BlockStatement': {
-      const inner = new Set(bound);
-      for (const name of scopedNames(node.body)) inner.add(name);
-      for (const statement of node.body) freeNames(statement, inner, out);
-      return out;
-    }
-    case 'ForStatement':
-    case 'ForOfStatement':
-    case 'ForInStatement': {
-      const inner = new Set(bound);
-      const head = node.init ?? node.left;
-      if (head?.type === 'VariableDeclaration') {
-        for (const declarator of head.declarations) {
-          for (const name of patternNames(declarator.id)) inner.add(name);
-        }
-      }
-      for (const key of ['init', 'left', 'right', 'test', 'update', 'body']) {
-        if (node[key]) freeNames(node[key], inner, out);
-      }
-      return out;
-    }
-    case 'CatchClause': {
-      const inner = new Set(bound);
-      if (node.param) for (const name of patternNames(node.param)) inner.add(name);
-      freeNames(node.body, inner, out);
-      return out;
-    }
-    case 'ClassDeclaration':
-    case 'ClassExpression': {
-      const inner = new Set(bound);
-      if (node.id) inner.add(node.id.name);
-      freeNames(node.superClass, inner, out);
-      freeNames(node.body, inner, out);
-      return out;
-    }
-    // The declared name is bound by the enclosing block already; a destructuring
-    // pattern can still carry defaults that read from outside.
-    case 'VariableDeclarator':
-      if (node.id.type !== 'Identifier') freeNames(node.id, bound, out);
-      freeNames(node.init, bound, out);
-      return out;
-
-    case 'ImportDeclaration':
-    case 'ExportAllDeclaration':
-    case 'BreakStatement':
-    case 'ContinueStatement':
-      return out;
-
-    default:
-      for (const key of Object.keys(node)) {
-        if (NODE_BOOKKEEPING.has(key)) continue;
-        freeNames(node[key], bound, out);
-      }
-      return out;
-  }
 }
 
 /**
@@ -615,6 +427,18 @@ function topLevelNames(ast) {
   );
 }
 
+/** The names a top-level statement binds. */
+function declaredNames(statement) {
+  const node = statement.type === 'ExportNamedDeclaration' ? statement.declaration : statement;
+  if (node?.type === 'VariableDeclaration') {
+    return node.declarations.flatMap((declarator) => patternNames(declarator.id));
+  }
+  if (node?.type === 'FunctionDeclaration' || node?.type === 'ClassDeclaration') {
+    return node.id ? [node.id.name] : [];
+  }
+  return [];
+}
+
 function patternNames(node) {
   switch (node.type) {
     case 'Identifier':
@@ -634,12 +458,23 @@ function patternNames(node) {
   }
 }
 
-// Blanks out ranges without changing any other character's line or column, so
-// stack traces into the generated module still point at the right spot.
-function blank(code, cuts) {
+/**
+ * Rewrites ranges without moving any character that follows them.
+ *
+ * Replacement text is padded with spaces to the length it replaced, so a line
+ * and column in the generated module is the same line and column in the .html
+ * file. Every replacement here is shorter than what it replaces, which is
+ * checked rather than assumed.
+ */
+function splice(code, cuts) {
   let out = code;
-  for (const [start, end] of cuts) {
-    out = out.slice(0, start) + code.slice(start, end).replace(/[^\n]/g, ' ') + out.slice(end);
+  for (const { start, end, text } of cuts) {
+    // Spaces where the code was, newlines left where they were.
+    const kept = code.slice(start, end).replace(/[^\n]/g, ' ');
+    const firstBreak = kept.indexOf('\n');
+    const room = firstBreak === -1 ? kept.length : firstBreak;
+    if (text.length > room) throw new Error(`splice: "${text}" does not fit in ${room}`);
+    out = out.slice(0, start) + text + kept.slice(text.length) + out.slice(end);
   }
   return out;
 }

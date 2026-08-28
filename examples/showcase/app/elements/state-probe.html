@@ -1,12 +1,11 @@
-<script properties>
-  export default {
+<script element>
+  export const properties = {
     label: '',
     open: false,
     /** @type {{ id: number; label: string; flagged: boolean }[]} */
     rows: [],
   };
 
-  // A shadow root, so this element re-renders when its attributes change.
   export const shadow = true;
 </script>
 

@@ -1,4 +1,4 @@
-<script properties>
+<script element>
   /**
    * Three repeated blocks under an `<svg>`, which is a namespace rather than a
    * tag.
@@ -15,7 +15,7 @@
    * children are HTML again and wrapping them in an `<svg>` would empty the
    * block instead of fixing it.
    */
-  export default {
+  export const properties = {
     /** @type {{ id: number, x: number }[]} */
     shapes: [],
     /** @type {number[]} */

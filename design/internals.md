@@ -84,7 +84,7 @@ against.
   declarative shadow roots; a child component becomes a dead `<template>`.
 - **Empty type shapes must be `{}`, not `Record<string, never>`.** The second one
   carries an index signature, which makes every template typo legal. This was
-  wrong in every component without a `<script state>` block and nothing failed.
+  wrong in every component that declared no `state` and nothing failed.
 - **The shim is `.js` on purpose.** JSDoc `@type` is honored in `.js` and
   ignored in `.ts`. Do not "clean it up" into TypeScript.
 - **`transclude-check` drives TypeScript 7, and refuses anything else by
@@ -284,19 +284,33 @@ against.
   rather than `[object Object]`.
 - **`formResetCallback` removes the value attribute.** Setting it to an empty
   string would submit an empty string. Removing it is what makes the getter fall
-  back to the default the `<script properties>` block declared.
+  back to the default `export const properties` declared.
 - **`static formAssociated` can only be checked in a browser.** Nothing in Node
   models a form, so setting it to `false` broke no test until one read the flag
   directly. Whether a `<form>` counts it as a field is checked in
   `app/routes/check.html`.
-- **`export const prototype` is hoisted out of `<script>`, and so is what it
-  reads.** Members land on `Class.prototype`, shared by every element, while the
-  rest of the block is `init`'s body and runs once per element. So a declaration
-  changes lifetime by being read from the prototype. Reaching `host`, `shadow`,
-  `signal` or `internals` from a member is a compile error rather than a value
-  shared without anyone asking. `planLift` in `script.js` is the one place that
-  analysis lives. The shim copies the same slices, so a change there needs the
-  matching change in `emitMembers`, or tsc reports names the browser resolves.
+- **Nothing is hoisted out of `<script element>`, and that is the design.** The
+  block is a module: what the author wrote at the top level stays at the top
+  level, in the order they wrote it, and only the six reserved names are rebound
+  in place. `bindElementModule` in `script.js` pads every splice with spaces, so
+  a line and column in the generated module is that line and column of the .html
+  file. This replaced a transitive dependency walk (`planLift`) and a per-element
+  reach check, both of which existed only because a `<script>` body had four
+  names injected into it that a hoisted member must not see. With no injection
+  there is nothing to check: `this` is the element, and a bare `host` is a free
+  name that tsc already reports.
+- **`connected` and `updated` are members the framework calls.** Neither class
+  can declare them, because a class field is an own property set in the
+  constructor and would shadow the prototype member `defineMembers` installed.
+  So the runtime reads them through `hooks(this)`, which is the one line that
+  says what shape the framework expects. `connected` runs on every connect and
+  its return value is the cleanup; the `AbortSignal` it is handed is per
+  connection, so a moved element gets a fresh one.
+- **The reserved names are not module-scope declarations.** They are rebound or
+  blanked before the generated module is assembled, so `bindElementModule`
+  filters them out of `declared`. Without that filter `export const
+  formAssociated` collided with the module's own `formAssociated` export, which
+  is the very name the block is meant to use.
 
 - **A light element writes; only a shadow one rebuilds.** Both react to a prop
   change. The light one updates the text and attributes already in the document
@@ -332,10 +346,12 @@ against.
   branch instead of binding it, which is 17 tests.
 - **State is behavior, so it defines the element.** Nothing observes state: its
   accessor is what schedules the write, the way an attribute change does for a
-  prop. So a light element with a `<script state>` block and no `<script>` at all
-  still has to be registered, or `el.n = 1` sets a value no node will ever hear
-  about. `defined` in the compiler and the early return in `defineLight` are two
-  spellings of one rule and have to agree.
+  prop. So a light element that exports nothing but `state` still has to be
+  registered, or `el.n = 1` sets a value no node will ever hear about. Three
+  places ask that question, and `readBehavior` in the compiler is the one reader
+  all three go through: `defined` in the compile, `hasScript` in the plugin and
+  `upgrades` in the type extractor. The early return in `defineLight` is the
+  fourth spelling and has to agree with it.
 - **`data()` is what a template sees, and the server has to build it too.**
   State defaults sit under the props. `shadow()` and `fragment()` rendered
   `def.coerce(props)` alone, so any template naming state wrote `undefined` into
@@ -410,8 +426,8 @@ against.
   brought in an element, which is most of them: a page that renders its own
   elements defines them without it. `watchElements` in the config, off by
   default. The starter went from three client entries to none.
-- **A listener on `document` outlives the element that added it.** One on `host`
-  is collected with the element, so it needs nothing; one on `document`,
+- **A listener on `document` outlives the element that added it.** One on the
+  element is collected with it, so it needs nothing; one on `document`,
   `window` or `globalThis` holds its closure forever and every element after it
   adds another. `warnUnsignaled` in `script.js` reports a missing `signal` for
   those targets only. A boolean third argument is `capture` and counts as

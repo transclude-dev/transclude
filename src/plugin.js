@@ -12,8 +12,8 @@ import {
   compileClientEntry,
   compileElementsEntry,
   ELEMENTS_ENTRY,
-  splitBlocks,
   usedComponents,
+  readBehavior,
   readFlags,
 } from './compiler/index.js';
 import { resolveRoutesDir, scanRoutes } from './routes.js';
@@ -128,8 +128,7 @@ export default function transclude({
     return [...out]
       .filter((tag) => {
         if (shadowTags.has(tag)) return true;
-        const blocks = safely(() => splitBlocks(read(components.get(tag))));
-        return Boolean(blocks?.client?.some((block) => block.code.trim()));
+        return Boolean(safely(() => readBehavior(read(components.get(tag))))?.behavior);
       })
       .sort();
   };
@@ -153,9 +152,9 @@ export default function transclude({
         seeds.add(tag);
         if (!shadowTags.has(tag) && components.has(tag)) queue.push(components.get(tag));
       }
-      // The block splitter already separates client <script> from server/props.
-      const blocks = safely(() => splitBlocks(source));
-      if (blocks?.client?.some((block) => block.code.trim())) hasScript = true;
+      // An element with behavior has a definition to ship; one without is markup
+      // that was already rendered.
+      if (safely(() => readBehavior(source))?.behavior) hasScript = true;
     }
     const tags = componentClosure(seeds);
     return {

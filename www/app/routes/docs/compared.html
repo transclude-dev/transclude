@@ -30,8 +30,8 @@ export default function MyMessage({ html, state }) {
 
       element: [
         `<!-- transclude: app/elements/my-message.html -->
-<script properties>
-  export default { message: '' };
+<script element>
+  export const properties = { message: '' };
 <\/script>
 
 <p>\${message}</p>`,

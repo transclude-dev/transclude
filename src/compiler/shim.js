@@ -2,7 +2,7 @@
 // check it.
 //
 // JavaScript rather than TypeScript, on purpose. A JSDoc `@type` in the
-// author's own `<script props>` is honored in a .js file and silently ignored
+// author's own `<script element>` is honored in a .js file and silently ignored
 // in a .ts one. The job is to check what the author wrote, so the shim speaks the
 // same language they do. The scaffolding uses JSDoc too.
 //
@@ -20,7 +20,6 @@ import { childrenOf } from './codegen.js';
 import { splitInterpolations } from './interp.js';
 import { GLOBALS as EXPRESSION_GLOBALS } from './expr.js';
 import { splitBlocks } from './index.js';
-import { planLift } from './script.js';
 import { ACTION_METHODS } from '../document.js';
 import { ENDPOINT_METHODS } from '../server.js';
 
@@ -29,7 +28,7 @@ const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each']);
 /**
  * Attributes that are not props, whatever they land on. `data-*` and `aria-*`
  * are the platform's own, and `hx-*` belongs to whichever library the author
- * brought. None of them are declared in `<script properties>`, so
+ * brought. None of them are declared as properties, so
  * checking them as props turns a correct page into a type error. That is what
  * `hx-get="/notes?id=${id}"` on a component used to be.
  *
@@ -276,8 +275,6 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
   if (kind === 'component') {
     // Props and state share one namespace in the template, so they are one type
     // by the time anything reads them.
-    emitModule(blocks.properties, out, null, '__Props', '__props');
-    emitModule(blocks.state, out, null, '__State', '__stateDefaults');
     out.add('/** @typedef {__Props & __State} __Data */\n\n');
     // Each converter is tied to the prop it converts: `from` has to produce
     // that prop's type, and `to` is handed it. Written out so the author does
@@ -288,10 +285,11 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
         ' *   to?: (value: __Props[K]) => string | number | boolean | null | undefined;\n' +
         ' * } }} __Attrs\n */\n\n',
     );
+    emitElement(blocks.element, out, shadow);
   } else {
     emitModule(blocks.server, out, contextType, '__Data', '__default');
+    out.add('/** @typedef {{}} __Members */\n\n');
   }
-  emitMembers(kind === 'component' ? blocks.client : [], out, shadow);
 
   // Helpers arrive as parameters rather than module-scope declarations: a
   // parameter shadows, so it cannot collide with something the author imported.
@@ -308,17 +306,16 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
   emitNodes(blocks.nodes, out, new Set(), componentProps, 1);
   out.add('}\n');
 
-  // Client blocks are not otherwise part of the shim. They run in the browser with
-  // `host`, `shadow` and `signal` in scope, which tsc has no way to know.
-  // They are still parsed, because a syntax error there should be reported by
-  // the same command that reports every other one.
+  // A page's client entry is not otherwise part of the shim: it runs in the
+  // browser against a document tsc knows nothing about. It is still parsed,
+  // because a syntax error there should be reported by the same command that
+  // reports every other one.
   for (const block of blocks.client) {
     try {
       parse(block.code, {
         ecmaVersion: 'latest',
         sourceType: 'module',
         allowAwaitOutsideFunction: true,
-        allowReturnOutsideFunction: true,
       });
     } catch (error) {
       out.failed(error, block);
@@ -344,7 +341,7 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
 }
 
 /**
- * `<script server>` and `<script props>` are module bodies, not expressions: they
+ * `<script server>` is a module body, not an expression: it
  * have imports and may have named exports of their own. Those stay where they
  * are, because the shim is a module too, and only the default export is rebound. For a
  * loader that rebinding is what types its parameter from the route context while
@@ -373,12 +370,9 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
   // empty array holds.
   const edits = [];
 
-  // A props block annotates `attributes`; a server block annotates `actions`,
-  // which types every handler's own `ctx` from the same route context the
-  // loader gets. Neither depends on there being a default export.
-  const attrs = binding === '__props' ? namedExport(ast, 'attributes') : null;
-  if (attrs) edits.push({ at: attrs.start, insert: '/** @type {__Attrs} */\n' });
-
+  // A server block annotates `actions`, which types every handler's own `ctx`
+  // from the same route context the loader gets. It does not depend on there
+  // being a default export.
   // A page's handlers are named for their methods, the same way an endpoint's
   // are. The route context here has `request` non-nullable: it is null only
   // while prerendering, and prerendering never runs an action.
@@ -455,79 +449,105 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
 }
 
 /**
- * `export const prototype` is checked the same way as everything else, with one
- * addition: `this` inside its members has to mean the element.
+ * `<script element>` is checked whole, because it is a module and every line of
+ * it is the author's. It is copied with splices at exact offsets rather than
+ * rebuilt statement by statement, so a loose `@typedef`, a JSDoc comment on an
+ * export and every diagnostic position all survive.
+ *
+ * Three exports are rebound so the rest of the shim can name them. `prototype`
+ * gets the extra step: `this` inside a member has to mean the element.
  *
  * `T & ThisType<Host & __Data & T>` is the whole trick. `T` infers from the
  * object literal, so the members keep their real types and transclude-env.d.ts can be
  * written from them; `ThisType` contextually types `this` without changing what
  * the value is. Including `T` in the intersection is what lets one member call
- * another.
+ * another, and `connected()` reach a prop.
  *
  * `shadowRoot` is narrowed rather than left as `ShadowRoot | null`: a shadow
  * element always has one by the time any of this runs, and a light one never
  * does. The DOM's type cannot know that; the file's `shadow` flag does.
  *
- * Only the members and what they read come across. The rest of the block runs
- * with `host`, `shadow` and `signal` in scope, which tsc has no way to know. Its
- * imports may be browser-only, so they are copied only where a member uses
- * them. A block that will not parse is skipped in silence here, because the
- * syntax pass below is what reports it, once.
+ * A block that will not parse is reported here and nothing else is emitted from
+ * it, because half a module gives tsc nothing useful to say about the rest.
  */
-function emitMembers(blocks, out, shadow) {
-  for (const block of blocks) {
-    let ast;
-    try {
-      ast = parse(block.code, {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        allowAwaitOutsideFunction: true,
-        allowReturnOutsideFunction: true,
-      });
-    } catch {
-      continue;
-    }
+function emitElement(block, out, shadow) {
+  const host = `HTMLElement & { shadowRoot: ${shadow ? 'ShadowRoot' : 'null'}; internals: ElementInternals }`;
+  out.add(
+    '/**\n * @template T\n' +
+      ` * @param {T & ThisType<${host} & __Data & T>} m\n` +
+      ' * @returns {T}\n */\n' +
+      'function __self(m) { return m; }\n\n',
+  );
 
-    const plan = planLift(ast, 'prototype');
-    if (!plan) continue;
-
-    for (const statement of ast.body) {
-      if (statement.type !== 'ImportDeclaration') continue;
-      if (!statement.specifiers.some((spec) => plan.reads.has(spec.local.name))) continue;
-      out.copy(block.code.slice(statement.start, statement.end), block.offset + statement.start);
-      out.add('\n');
-    }
-    for (const dependency of plan.deps) {
-      out.copy(block.code.slice(dependency.start, dependency.end), block.offset + dependency.start);
-      out.add('\n');
-    }
-
-    const host = `HTMLElement & { shadowRoot: ${shadow ? 'ShadowRoot' : 'null'} }`;
-    out.add(
-      '\n/**\n * @template T\n' +
-        ` * @param {T & ThisType<${host} & __Data & T>} m\n` +
-        ' * @returns {T}\n */\n' +
-        'function __self(m) { return m; }\n' +
-        'const __memberDefs = __self(',
-    );
-    out.copy(block.code.slice(plan.init.start, plan.init.end), block.offset + plan.init.start);
-    out.add(');\n/** @typedef {typeof __memberDefs} __Members */\n\n');
+  if (!block) {
+    out.add('/** @typedef {{}} __Props */\n/** @typedef {{}} __State */\n');
+    out.add('/** @typedef {{}} __Members */\n\n');
     return;
   }
-  out.add('/** @typedef {{}} __Members */\n\n');
-}
 
-/** `export const <name> = …`, as a statement, or null. */
-function namedExport(ast, name) {
-  return (
-    ast.body.find(
-      (node) =>
-        node.type === 'ExportNamedDeclaration' &&
-        node.declaration?.type === 'VariableDeclaration' &&
-        node.declaration.declarations.some(
-          (declarator) => declarator.id.type === 'Identifier' && declarator.id.name === name,
-        ),
-    ) ?? null
+  let ast;
+  try {
+    ast = parse(block.code, { ecmaVersion: 'latest', sourceType: 'module', allowAwaitOutsideFunction: true });
+  } catch (error) {
+    out.failed(error, block);
+    out.add('/** @typedef {{}} __Props */\n/** @typedef {{}} __State */\n');
+    out.add('/** @typedef {{}} __Members */\n\n');
+    return;
+  }
+
+  // What each reserved export is rebound to, and what wraps its initializer.
+  const REBIND = {
+    properties: { binding: '__props', open: '', close: '' },
+    state: { binding: '__stateDefaults', open: '', close: '' },
+    prototype: { binding: '__memberDefs', open: '__self(', close: ')' },
+    attributes: { binding: '__attrDefs', open: '/** @type {__Attrs} */ (', close: ')' },
+  };
+
+  const edits = [];
+  const found = new Set();
+
+  for (const statement of ast.body) {
+    if (statement.type !== 'ExportNamedDeclaration') continue;
+    if (statement.declaration?.type !== 'VariableDeclaration') continue;
+    const [declarator] = statement.declaration.declarations;
+    if (declarator?.id.type !== 'Identifier') continue;
+
+    const rebind = REBIND[declarator.id.name];
+    if (!rebind || !declarator.init) continue;
+
+    found.add(declarator.id.name);
+    // `export const properties = ` becomes `const __props = `. The name is
+    // dropped rather than re-exported: the shim is a module, and an export named
+    // `properties` would collide with nothing but says nothing either.
+    edits.push({ at: statement.start, to: declarator.init.start, text: `const ${rebind.binding} = ${rebind.open}` });
+    if (rebind.close) edits.push({ at: declarator.init.end, to: declarator.init.end, text: rebind.close });
+  }
+
+  edits.sort((a, b) => a.at - b.at);
+
+  let cursor = 0;
+  for (const edit of edits) {
+    out.copy(block.code.slice(cursor, edit.at), block.offset + cursor);
+    out.pin(edit.text, block.offset + edit.at);
+    cursor = edit.to;
+  }
+  out.copy(block.code.slice(cursor), block.offset + cursor);
+  out.add('\n');
+
+  out.add(
+    found.has('properties')
+      ? '/** @typedef {__Shape<typeof __props>} __Props */\n'
+      : '/** @typedef {{}} __Props */\n',
+  );
+  out.add(
+    found.has('state')
+      ? '/** @typedef {__Shape<typeof __stateDefaults>} __State */\n'
+      : '/** @typedef {{}} __State */\n',
+  );
+  out.add(
+    found.has('prototype')
+      ? '/** @typedef {typeof __memberDefs} __Members */\n\n'
+      : '/** @typedef {{}} __Members */\n\n',
   );
 }
 
@@ -615,7 +635,7 @@ function emitComponentProps(node, out, scope, components, depth) {
     const parts = splitInterpolations(attr.value);
 
     // Props are declared camelCase and written dash-case, so the key is checked
-    // under the name `<script props>` gave it. Still mapped to the attribute in
+    // under the name the block gave it. Still mapped to the attribute in
     // the source: an unmapped key would have its diagnostic dropped.
     const prop = camelCase(attr.name);
     if (/^[A-Za-z_$][\w$]*$/.test(prop)) {

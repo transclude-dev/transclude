@@ -1,4 +1,4 @@
-<script properties>
+<script element>
   /**
    * A collection listing, and the live examples on a schema page. One element
    * for the whole list, so the rows are serialized once.
@@ -9,8 +9,7 @@
    * @property {string} summary  The first readable field, worked out by the lexicon.
    * @property {string} when  Empty when the record carries no date.
    */
-
-  export default {
+  export const properties = {
     /** @type {Row[]} */
     rows: [],
   };

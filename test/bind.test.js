@@ -47,7 +47,7 @@ async function transition(source, before, after, opts) {
   };
 }
 
-const props = (defaults) => `<script properties>export default ${JSON.stringify(defaults)};</script>`;
+const props = (defaults) => `<script element>export const properties = ${JSON.stringify(defaults)};</script>`;
 
 // ---- the rule -------------------------------------------------------------
 
@@ -608,8 +608,10 @@ test('a partial gets no bindings at all, it is never repainted', async () => {
 // only the anchors around it say. The rule at the top of this file judges these
 // too: after update, the DOM is what a full render would have produced.
 
+// The element needs behavior to be registered at all, so it declares a member.
 const lightSource = (markup, defaults) =>
-  `${props(defaults)}${markup}<script>host.id;</script>`;
+  `<script element>export const properties = ${JSON.stringify(defaults)};
+export const prototype = { connected() { void this.id; } };</script>${markup}`;
 
 async function lightTransition(source, before, after, slots = {}) {
   const mod = await load(source, { shadow: false });
@@ -684,12 +686,13 @@ test('a light child renders its own markup, so its props force a repaint', () =>
 
 // ---- per-prop converters ---------------------------------------------------
 
-const converted = `<script properties>
-  export default { since: new Date(0), tags: new Set() };
+const converted = `<script element>
+  export const properties = { since: new Date(0), tags: new Set() };
+
   export const attributes = {
-    since: { from: (text) => new Date(text), to: (date) => date.toISOString().slice(0, 10) },
-    tags: { from: (text) => new Set(text.split(',')), to: (set) => [...set].join(',') },
-  };
+      since: { from: (text) => new Date(text), to: (date) => date.toISOString().slice(0, 10) },
+      tags: { from: (text) => new Set(text.split(',')), to: (set) => [...set].join(',') },
+    };
 </script>`;
 
 test('a converter reads an attribute the default type could not describe', async () => {
@@ -713,10 +716,11 @@ test('an absent attribute is the declared default, untouched by the converter', 
 
 test('a converter that throws falls back rather than taking the page down', async () => {
   const mod = await load(
-    `<script properties>
-       export default { n: 0 };
-       export const attributes = { n: { from: () => { throw new Error('nope'); } } };
-     </script><p>\${n}</p>`,
+    `<script element>
+  export const properties = { n: 0 };
+
+  export const attributes = { n: { from: () => { throw new Error('nope'); } } };
+</script><p>\${n}</p>`,
   );
   assert.equal(mod.coerce({ n: 'anything' }).n, 0);
 });
@@ -744,7 +748,9 @@ test("a parent serializes a child's attribute the way that child reads it back",
 
 test('a parent emits the child converter for both render and update', () => {
   const source =
-    `<script properties>export default { when: new Date(0) };</script>` +
+    `<script element>
+  export const properties = { when: new Date(0) };
+</script>` +
     `<x-child since="\${when}"></x-child>`;
   const opts = {
     components: new Map([['x-child', '/x-child.js']]),
@@ -757,7 +763,9 @@ test('a parent emits the child converter for both render and update', () => {
 
 test('without a converter the old rules still apply', async () => {
   const mod = await load(
-    `<script properties>export default { n: 0, on: false, list: [] };</script><p>x</p>`,
+    `<script element>
+  export const properties = { n: 0, on: false, list: [] };
+</script><p>x</p>`,
   );
   assert.deepEqual(mod.coerce({ n: '3', on: '', list: '["a"]' }), { n: 3, on: true, list: ['a'] });
 });

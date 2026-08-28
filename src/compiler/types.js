@@ -34,11 +34,11 @@ export function emitTypes({
   const head = out.length;
 
   for (const { tag, type, members, state } of [...components, ...partials]) {
-    out.push(`/** Properties of \`<${tag}>\`, from its <script properties> block. */`);
+    out.push(`/** Properties of \`<${tag}>\`, from its <script element> block. */`);
     out.push(`export type ${interfaceName(tag)}Props = ${pretty(type)};`);
     out.push('');
     if (state) {
-      out.push(`/** Internal state of \`<${tag}>\`, from its <script state> block. */`);
+      out.push(`/** Internal state of \`<${tag}>\`, from its <script element> block. */`);
       out.push(`export type ${interfaceName(tag)}State = ${pretty(state)};`);
       out.push('');
     }

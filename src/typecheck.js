@@ -7,7 +7,7 @@
 // and rewriting is where source mapping breaks down.
 //
 // JavaScript rather than TypeScript because a JSDoc `@type` in the author's own
-// `<script props>` is honored in a .js file and silently ignored in a .ts one.
+// `<script element>` is honored in a .js file and silently ignored in a .ts one.
 //
 // Shims are self-contained: route contexts and component props are inlined as
 // type literals rather than imported. transclude-env.d.ts is written *from* the shims,
@@ -18,7 +18,7 @@ import path from 'node:path';
 import { version as tsVersion } from 'typescript';
 import { AMBIENT_NAMES } from './compiler/ambient.js';
 import { buildEndpointShim, buildShim, originalOffset } from './compiler/shim.js';
-import { splitBlocks, readFlags } from './compiler/index.js';
+import { readBehavior, readFlags } from './compiler/index.js';
 import { resolveRoutesDir, scanRoutes } from './routes.js';
 // Aliased: this file has its own `sourceOf`, which is the one that reads disk.
 import { MARKDOWN_EXT, sourceOf as htmlFrom } from './markdown.js';
@@ -311,7 +311,7 @@ export function createChecker({
   const componentFiles = () => elementFiles(elementsDir);
 
   // The file decides whether the element has a shadow root, so it also decides
-  // what `this.shadowRoot` means inside its <script>. Read with the compiler's
+  // what `this.shadowRoot` means inside its <script element>. Read with the compiler's
   // own reader, or the types would describe a different element than the one
   // that ships.
   const isShadow = (file) => Boolean(safeFlags(file).shadow);
@@ -420,19 +420,19 @@ export function createChecker({
     }
     for (const file of files) {
       const tag = path.basename(file, '.html');
-      const blocks = splitBlocks(sourceOf(file));
       componentProps.set(tag, propTypeOf(file));
-      // An element with neither block registers nothing, so it has no accessors
+      // An element with no behavior registers nothing, so it has no accessors
       // and no members. Saying otherwise in transclude-env.d.ts would be a claim
       // the browser does not back up.
-      // Members live in the client block now, so the shim is what knows whether
-      // there are any. An empty `__Members` means the block exported no
-      // `prototype`, and having a client block at all is reason enough to upgrade.
+      // The shim is what knows the member types. Whether the element registers
+      // at all is one rule, read out of the block by `readBehavior`, because the
+      // compiler and the plugin ask the same question and have to agree.
       const members = memberTypeOf(file);
+      const declares = readBehavior(sourceOf(file), tag);
       componentMembers.set(tag, {
         members: members && members !== '{}' ? members : null,
-        state: blocks.state ? stateTypeOf(file) : null,
-        upgrades: Boolean(blocks.state || blocks.client.length),
+        state: declares.state ? stateTypeOf(file) : null,
+        upgrades: declares.behavior,
       });
     }
 

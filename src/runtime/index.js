@@ -685,7 +685,7 @@ function defineState(Class, defs, schedule) {
   for (const key of Object.keys(defs ?? {})) {
     if (key in Class.prototype) {
       throw new Error(
-        `<script state>: \`${key}\` already exists on the element. Pick another name.`,
+        `\`export const state\`: \`${key}\` already exists on the element. Pick another name.`,
       );
     }
     Object.defineProperty(Class.prototype, key, {
@@ -753,7 +753,7 @@ export function writeProp(element, prop, value, fallback, specs) {
 }
 
 /**
- * An accessor per declared prop, generated from `<script props>`. The shape is
+ * An accessor per declared prop, generated from `export const properties`. The shape is
  * already stated there, so writing a getter and setter for each would say the
  * same thing twice.
  *
@@ -778,6 +778,21 @@ function defineProps(Class, defs, specs) {
       configurable: true,
     });
   }
+}
+
+/**
+ * The two members the framework itself calls, typed in one place.
+ *
+ * They arrive through `defineMembers`, so neither class can declare them: a
+ * class field is an own property, set in the constructor, and it would shadow
+ * the prototype member it was meant to describe. So the read is cast instead,
+ * and this is the one line that says what the framework expects to find.
+ *
+ * @param {HTMLElement} element
+ * @returns {{ connected?: (arg: { signal: AbortSignal }) => unknown, updated?: () => void }}
+ */
+function hooks(element) {
+  return /** @type {any} */ (element);
 }
 
 /**
@@ -1021,10 +1036,9 @@ export function watch(loaders, root = globalThis.document) {
  * markup it was served is the markup it keeps.
  *
  * @param {object} def
- * @param {Function|null} [init] the `<script>` block, once per element
  * @returns {void}
  */
-export function defineLight(def, init) {
+export function defineLight(def) {
   // Before every other exit below: styles are the half of this that an element
   // with no behavior still has, and the half a swapped-in one arrives without.
   adoptStyles(def);
@@ -1033,14 +1047,13 @@ export function defineLight(def, init) {
   if (customElements.get(def.tag)) return;
 
   // No behavior to attach means nothing to register. A light element with no
-  // <script> is markup that was already rendered, and it ships no JavaScript at
+  // behavior is markup that was already rendered, and it ships no JavaScript at
   // all, accessors included. That is the trade the zero-JS default makes.
   //
   // Being a form control counts: a shadow root is not required to be one, and an
   // element that submits a value has to exist to do it. So does state, because
   // its accessor is what schedules the write.
-  const hasBehavior =
-    Boolean(init) || hasMembers(def) || def.formAssociated === true || hasState(def);
+  const hasBehavior = hasMembers(def) || def.formAssociated === true || hasState(def);
   if (!hasBehavior) return;
 
   class Light extends HTMLElement {
@@ -1118,9 +1131,9 @@ export function defineLight(def, init) {
 
       this.#ready = true;
       this.#abort = new AbortController();
-      this.#cleanup = init?.(this, null, this.#abort.signal, this.#internals);
+      this.#cleanup = hooks(this).connected?.({ signal: this.#abort.signal });
       this.reportFormValue();
-      this.updated?.();
+      hooks(this).updated?.();
     }
 
     /**
@@ -1134,7 +1147,7 @@ export function defineLight(def, init) {
     #apply() {
       const raw = this.#snapshot();
       if (this.#bindings) def.update(this.#bindings, this.#data(raw));
-      this.updated?.();
+      hooks(this).updated?.();
     }
 
     #data(raw) {
@@ -1212,13 +1225,11 @@ function hasState(def) {
 }
 
 /**
- * A `<script>` block may end by returning a function. That function runs when
- * the element leaves the document. Use it for cleanup that has no signal of its
- * own.
- * Listeners do not need it: they get `signal` as the third argument.
+ * `connected` may return a function. That function runs when the element leaves
+ * the document. Use it for cleanup that has no signal of its own; a listener
+ * needs none, because it is handed `signal`.
  *
- * It is a promise because the block is compiled to an async function, so a
- * top-level `await` works inside it.
+ * It may be a promise, because `connected` may be an async member.
  */
 function release(cleanup) {
   Promise.resolve(cleanup).then((fn) => {
@@ -1253,7 +1264,7 @@ function formValueOf(def, element) {
 function defineFormMembers(Class, def) {
   Object.defineProperties(Class.prototype, {
     /**
-     * Reset puts the prop back to the default its `<script properties>` block
+     * Reset puts the prop back to the default its `<script element>` block
      * declared. That is the same thing `value` returns when the attribute is
      * absent, so removing it is the whole job.
      */
@@ -1292,10 +1303,9 @@ function defineFormMembers(Class, def) {
 
 /**
  * @param {object} def
- * @param {Function|null} [init]
  * @returns {void}
  */
-export function defineComponent(def, init) {
+export function defineComponent(def) {
   if (typeof customElements === 'undefined') return;
   if (customElements.get(def.tag)) return;
 
@@ -1381,9 +1391,9 @@ export function defineComponent(def, init) {
       // way out has to come back on the way in.
       this.#ready = true;
       this.#abort = new AbortController();
-      this.#cleanup = init?.(this, this.shadowRoot, this.#abort.signal, this.#internals);
+      this.#cleanup = hooks(this).connected?.({ signal: this.#abort.signal });
       this.reportFormValue();
-      this.updated?.();
+      hooks(this).updated?.();
     }
 
     disconnectedCallback() {
@@ -1417,12 +1427,12 @@ export function defineComponent(def, init) {
         !volatileChanged(def.volatile, raw, prev, state, prevState ?? state)
       ) {
         if (def.update(this.#bindings, this.#data(raw))) {
-          this.updated?.();
+          hooks(this).updated?.();
           return;
         }
       }
       this.#paint();
-      this.updated?.();
+      hooks(this).updated?.();
     }
 
     /** What the template sees: state first, so a prop of the same name cannot

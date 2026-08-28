@@ -1,6 +1,6 @@
 {
   "name": "@transclude/core",
-  "version": "0.16.1",
+  "version": "0.17.0",
   "description": "An HTML-first server framework. A page is an .html file, the directory tree is the route table, and any fragment of a page is a URL of its own. Runs on Node, Bun, Deno and workerd, and ships no client JavaScript by default.",
   "keywords": [
     "html",

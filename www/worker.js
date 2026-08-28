@@ -22,9 +22,10 @@ import { hold } from './app/lib/bindings.js';
 
 const inner = workerFrom({ config, manifest, entry, bundle });
 
-// `hold` before the request goes in, because a loader reaching the subscriber
-// database asks for `env` and `ctx` has none. Outside any memoisation, since the
-// app is built once and this is free to repeat.
+// `hold` before the request goes in, because a loader reaching a binding asks
+// for `env` and `ctx` has none. Outside any memoisation, since the app is built
+// once and this is free to repeat. Nothing here reaches one today; the bridge
+// stays because it is what /docs/runtimes tells an app to write.
 export default {
   fetch(request, env, ctx) {
     hold(env);

@@ -12,26 +12,6 @@
   // is uploaded as a separate asset.
   "keep_vars": true,
 
-  // Who the confirmation mail comes from, and where a reply lands. Not secrets,
-  // so they live here where they can be read rather than in `wrangler secret`.
-  //
-  // Resend has to hold a verified domain for whatever `MAIL_FROM` names. An
-  // address on a domain it cannot sign for is refused when the mail is sent,
-  // which is after the reader has already been told to check their inbox.
-  // Resend has to hold a verified domain for whatever this names. An address on
-  // a domain it cannot sign for is refused at send time, which is after the
-  // reader has been told to check their inbox, so changing it means sending one
-  // and reading the log rather than assuming.
-  // `RESEND_AUDIENCE_ID` is the list a confirmed address is added to, and it is
-  // an identifier rather than a secret. Empty until an audience exists: without
-  // one the confirm page still confirms, and says in the log that it added
-  // nobody. Create one at resend.com/audiences and paste the id here.
-  "vars": {
-    "MAIL_FROM": "transclude <notes@dakroub.co>",
-    "MAIL_REPLY_TO": "admin@dakroub.co",
-    "RESEND_AUDIENCE_ID": "7b197ded-d4d9-4e0e-b568-b49a28ea1b58"
-  },
-
   // Both hostnames answer, and `app/server.js` sends www to the apex, which is
   // what every page's <link rel="canonical"> already names. Declaring them here
   // rather than clicking them into the dashboard means the deploy creates the
@@ -40,34 +20,5 @@
   "routes": [
     { "pattern": "transclude.dev", "custom_domain": true },
     { "pattern": "www.transclude.dev", "custom_domain": true }
-  ],
-
-  // The subscriber list. Schema in `schema.sql`:
-  //
-  //   wrangler d1 execute transclude-subscribers --remote --file schema.sql
-  //
-  // A binding reaches a loader through `app/lib/bindings.js`, because `ctx` has
-  // no `env`. See /docs/runtimes.
-  // Five posts a minute from one address. Double opt-in means a flood of them
-  // makes us mail strangers, so what this protects is the sending reputation
-  // rather than the table. `namespace_id` is a number this account picks and
-  // keeps; it is not secret and it is not looked up anywhere.
-  "unsafe": {
-    "bindings": [
-      {
-        "name": "SIGNUP_LIMIT",
-        "type": "ratelimit",
-        "namespace_id": "1001",
-        "simple": { "limit": 5, "period": 60 }
-      }
-    ]
-  },
-
-  "d1_databases": [
-    {
-      "binding": "SUBSCRIBERS",
-      "database_name": "transclude-subscribers",
-      "database_id": "e78f3300-af74-4ab2-8105-c10a9b0c3ca4"
-    }
   ]
 }

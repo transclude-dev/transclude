@@ -220,7 +220,7 @@
     await solo.updateComplete;
     ok(!solo.hasAttribute('compact'), 'second click did not untoggle');
     solo.clicks = 0;
-    return 'host.addEventListener from <script> in user-card.html';
+    return 'this.addEventListener from connected() in user-card.html';
   });
 
   await check('a light element upgrades for behavior, with no shadow root', () => {

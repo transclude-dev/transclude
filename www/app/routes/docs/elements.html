@@ -77,26 +77,27 @@
   <li each="tag of tags">\${tag}</li>
 </ul>
 <slot></slot>`,
-      behavior: `export const prototype = {
-  connected({ signal }) {
-    document.addEventListener(
-      'keydown',
-      (event) => {
-        if (event.key === 'Escape') this.dismiss();
-      },
-      { signal },
-    );
-  },
-};`,
-      prototype: [
-        `export const prototype = {
-  dismiss() {
-    this.hidden = true;
-    this.dispatchEvent(new CustomEvent('dismiss', { bubbles: true }));
-  },
-};`,
-        "js",
-      ],
+      behavior: `<script element>
+  export const prototype = {
+    connected({ signal }) {
+      document.addEventListener(
+        'keydown',
+        (event) => {
+          if (event.key === 'Escape') this.dismiss();
+        },
+        { signal },
+      );
+    },
+  };
+<\/script>`,
+      prototype: `<script element>
+  export const prototype = {
+    dismiss() {
+      this.hidden = true;
+      this.dispatchEvent(new CustomEvent('dismiss', { bubbles: true }));
+    },
+  };
+<\/script>`,
       json: `<user-card
   name="Ada Lovelace"
   tags='["math", "engines"]'
@@ -284,13 +285,12 @@
   <h2>Giving it behavior</h2>
 
   <p>
-    A plain <code>&lt;script&gt;</code> block runs once per element.
-    <code>host</code> is the element and <code>shadow</code> is its shadow root,
-    or <code>null</code> without one. <code>signal</code> is an
+    <code>connected</code> runs once per connect, and <code>this</code> is the
+    element. It is handed an
     <a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal"
       >AbortSignal</a
     >
-    that fires when the element leaves the document: pass it to
+    that fires when the element leaves the document. Pass it to
     <code>addEventListener</code> and the listener is removed for you.
   </p>
 

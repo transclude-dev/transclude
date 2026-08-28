@@ -131,6 +131,19 @@ test('a page of plain markup ships nothing', async () => {
   assert.deepEqual(manifest(plugin, 'index'), { tags: [], hasScript: false, needed: false });
 });
 
+test("a page's own <script> is a client entry, elements or no elements", async () => {
+  // Two kinds of file answer this question and each has its own reason. Reading
+  // only the element half left every page with a plain `<script>` claiming to
+  // ship nothing, so the build wrote no entry and the script never ran. Nothing
+  // in this suite noticed: the example tests that would have skip unless the app
+  // is built first, which is what the release does and `npm test` does not.
+  const plugin = await project({
+    'app/routes/index.html': '<h1>Home</h1>\n<script>console.log(1);</script>\n',
+  });
+
+  assert.deepEqual(manifest(plugin, 'index'), { tags: [], hasScript: true, needed: true });
+});
+
 test('a light element with no behavior needs no definition', async () => {
   // It is markup the server already rendered. Registering a class for it would
   // be the page shipping JavaScript to do nothing.

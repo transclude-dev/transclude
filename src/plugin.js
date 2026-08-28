@@ -12,6 +12,7 @@ import {
   compileClientEntry,
   compileElementsEntry,
   ELEMENTS_ENTRY,
+  splitBlocks,
   usedComponents,
   readBehavior,
   readFlags,
@@ -152,8 +153,12 @@ export default function transclude({
         seeds.add(tag);
         if (!shadowTags.has(tag) && components.has(tag)) queue.push(components.get(tag));
       }
-      // An element with behavior has a definition to ship; one without is markup
-      // that was already rendered.
+      // Two kinds of file reach this loop, and each ships JavaScript for its own
+      // reason. A page's `<script>` is its client entry. An element ships a
+      // definition when it has behavior to attach, and nothing when it does not,
+      // because then it is markup that was already rendered.
+      const blocks = safely(() => splitBlocks(source));
+      if (blocks?.client?.some((block) => block.code.trim())) hasScript = true;
       if (safely(() => readBehavior(source))?.behavior) hasScript = true;
     }
     const tags = componentClosure(seeds);

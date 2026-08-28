@@ -30,11 +30,7 @@
      laptop going dark at sunset does not quietly undo a choice.
 
      The listener is on the document rather than on the button, so the element
-     ships no script of its own and the page loads no runtime.
-
-     The mailed copy of a newsletter issue inherits this, the way it inherits the
-     sharing card above. Seven hundred dead bytes there: a mail client runs no
-     script, and most of them strip the tag before it is ever read. -->
+     ships no script of its own and the page loads no runtime. -->
 <script head>
   {
     const root = document.documentElement;
@@ -65,11 +61,7 @@
 <!-- The parts of a sharing card that are the same on every page. A title and a
      description are not among them, so each section supplies its own below, and
      what has none falls back to the page's `<title>` and `<meta name=description>`
-     the way every crawler does.
-
-     The newsletter inherits these, which is right for the web copy of an issue
-     and four hundred dead bytes in the mailed one. Worth it: a link to an issue
-     is a thing people share. -->
+     the way every crawler does. -->
 <meta property="og:site_name" content="transclude" />
 <meta property="og:url" content="${here}" />
 <meta property="og:image" content="${card}" />

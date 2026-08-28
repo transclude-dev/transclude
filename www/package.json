@@ -15,7 +15,6 @@
     "preview": "npm run build && npm start",
     "deploy": "npm run build && wrangler deploy",
     "start:worker": "npm run build && wrangler dev",
-    "newsletter": "node scripts/send.js",
     "og": "node scripts/og.js"
   },
   "dependencies": {

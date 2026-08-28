@@ -39,29 +39,26 @@ running an app.
 - **VS Code joins all `<script>` blocks** into one virtual module, so every file
   looks like a redeclaration. `.vscode/settings.json` turns
   `html.validate.scripts` off.
-- **Listen on `shadow`, not `host`, if the handler looks at the target.** A click
-  inside a shadow root does reach a listener on the host, but the target has been
-  retargeted by then: `event.target` is the host element, because not seeing
-  through the boundary is what a boundary is for. `closest("[data-tag]")` from
-  there finds nothing and the button does nothing, quietly. `<tag-picker>` shipped
-  that way and no test noticed. `event.composedPath()[0]` also works from the
-  host, but listening on the right side of the boundary needs no comment. A
-  handler that ignores the target, like `user-card`'s toggle, is fine on either.
+- **Listen on `this.shadowRoot`, not on `this`, if the handler looks at the
+  target.** A click inside a shadow root does reach a listener on the host, but
+  the target has been retargeted by then: `event.target` is the host element,
+  because not seeing through the boundary is what a boundary is for.
+  `closest("[data-tag]")` from there finds nothing and the button does nothing,
+  quietly. `<tag-picker>` shipped that way and no test noticed.
+  `event.composedPath()[0]` also works from the host, but listening on the right
+  side of the boundary needs no comment. A handler that ignores the target, like
+  `user-card`'s toggle, is fine on either.
 - **ARIA state needs the word, so `${boolean}` is wrong for it.** An interpolated
   boolean goes through the framework's attribute rule: `false` drops the attribute
   and `true` writes it bare. That is right for `disabled` and wrong for
   `aria-expanded` and `aria-pressed`, where a missing attribute and `=""` both
   mean no state to a screen reader. Write `${open ? 'true' : 'false'}`.
-- **`export const formAssociated` goes in `<script properties>` or `<script>`,
-  and not in both.** It is a fact about the element rather than a prop or a piece
-  of setup, so either block can say it. Declaring it twice is a compile error,
-  because one fact with two homes has nothing to settle a disagreement. Put it in
-  `<script properties>` when the element has props and no behavior, which saves a
-  `<script>` block holding one line. It has to be a literal either way: it becomes
-  a static class field, the same for every element of the tag, so a computed value
-  would look like a per-element choice and could not be one. A light element can
-  opt in too. Being a form control needs no shadow root, and it counts as behavior
-  for the "nothing to define, so define nothing" rule.
+- **`export const formAssociated` has to be a literal.** It becomes a static
+  class field, the same for every element of the tag, so a computed value would
+  look like a per-element choice and could not be one. `shadow` is the same. A
+  light element can opt in too: being a form control needs no shadow root, and it
+  counts as behavior for the "nothing to define, so define nothing" rule, because
+  an element that submits a value has to exist to do it.
 - **`static formAssociated` can only be checked in a browser.** Nothing in Node
   models a form, so setting it to `false` broke no test until one read the flag
   directly. Whether a `<form>` counts it as a field is checked in

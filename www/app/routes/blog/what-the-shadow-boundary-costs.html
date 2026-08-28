@@ -14,8 +14,8 @@
 
       light: [
         `<!-- app/elements/site-note.html -->
-<script properties>
-  export default { tone: 'info' };
+<script element>
+  export const properties = { tone: 'info' };
 <\/script>
 
 <style>
@@ -32,10 +32,10 @@
 
       shadow: [
         `<!-- app/elements/person-card.html -->
-<script properties>
+<script element>
   export const shadow = true;
 
-  export default { name: '' };
+  export const properties = { name: '' };
 <\/script>`,
         "html",
       ],

@@ -3,6 +3,24 @@
 An `.html` file in `app/elements/` becomes a custom element. The file name is
 the tag name and it needs a dash.
 
+## One block
+
+Everything an element declares lives in `<script element>`, and it is a real
+module: named exports the compiler reads, and whatever else the author wrote
+left exactly where they wrote it.
+
+| Export | What it is |
+| --- | --- |
+| `properties` | defaults, and the type each one implies |
+| `state` | data the element owns, which the document cannot read |
+| `prototype` | members, shared by every element of the tag |
+| `attributes` | a `from`/`to` converter per prop |
+| `shadow` | `true` for a shadow root. A literal |
+| `formAssociated` | `true` to be a real form field. A literal |
+
+A file has one of these blocks. A second is refused, and so is a bare `<script>`,
+because an element's per-element code is a member rather than a loose body.
+
 ## Light DOM, the default
 
 No shadow root, no boundary. Page CSS reaches it, `<label for>` works, and no
@@ -10,10 +28,8 @@ JavaScript is shipped.
 
 ```html
 <!-- app/elements/site-note.html -->
-<script properties>
-  export default {
-    tone: 'neutral',
-  };
+<script element>
+  export const properties = { tone: 'neutral' };
 </script>
 
 <style>
@@ -42,11 +58,12 @@ not write.
 
 ```html
 <!-- app/elements/user-card.html -->
-<script properties>
-  export default {
+<script element>
+  export const properties = {
     name: '',
     tags: [],
   };
+
   export const shadow = true;
 </script>
 
@@ -69,7 +86,7 @@ renders the same way whether the browser asked for a whole page or one fragment.
 
 ## Props
 
-`<script properties>` declares them, with defaults that set the type. An
+`export const properties` declares them, with defaults that set the type. An
 attribute is the value.
 
 ```html
@@ -84,35 +101,28 @@ back off the element that the server had.
 
 ## State
 
-`<script state>` is data the element owns. Nothing observes it: assigning to it
-schedules the render, the way an attribute change does for a prop.
+`export const state` is data the element owns. Nothing observes it: assigning to
+it schedules the render, the way an attribute change does for a prop.
 
 ```html
 <!-- app/elements/tally-box.html -->
-<script properties>
-  export default {
-    label: 'tally',
-  };
-</script>
+<script element>
+  export const properties = { label: 'tally' };
+  export const state = { n: 0 };
 
-<script state>
-  export default {
-    n: 0,
+  export const prototype = {
+    bump(by = 1) {
+      this.n += by;
+    },
+
+    connected({ signal }) {
+      this.addEventListener('click', () => this.bump(), { signal });
+    },
   };
 </script>
 
 <output>${n}</output>
 <span>${label}</span>
-
-<script>
-  export const prototype = {
-    bump(by = 1) {
-      this.n += by;
-    },
-  };
-
-  host.addEventListener('click', () => host.bump(), { signal });
-</script>
 ```
 
 ```html
@@ -132,10 +142,8 @@ attribute is written and no class is added, which is the point: the document
 still cannot read the state, and a stylesheet still reacts to it.
 
 ```html
-<script state>
-  export default {
-    hot: false,
-  };
+<script element>
+  export const state = { hot: false };
 </script>
 
 <style>
@@ -151,17 +159,14 @@ Booleans only. A custom state is a name and not a value, so a number or a string
 has nothing to select on. The state lands with the render rather than with the
 assignment, so `await element.updateComplete` before asserting on it.
 
-Nothing is reflected on the server. A state field starts at the default its
+Nothing is reflected on the server. A state field starts at the default the
 block declares, so the first paint is that default either way.
 
 ## Behavior
 
-A plain `<script>` block is the element's own code. `host` is the element,
-`shadow` is its shadow root when it has one, `signal` is an `AbortSignal` that
-fires when the element disconnects, and `internals` is its `ElementInternals`.
-
-`export const prototype` puts members on the class prototype, shared by every
-instance. The rest of the block is per-element setup and runs once each.
+`export const prototype` is the element's own code. Its members land on the
+class prototype, shared by every element of the tag, and `this` is the element
+in all of them.
 
 ```js
 export const prototype = {
@@ -172,32 +177,56 @@ export const prototype = {
 };
 ```
 
-A prototype member cannot read `host`, `shadow`, `signal` or `internals`. Those
-are per-element, and reaching one from a shared member is a compile error.
+Two of those names belong to the framework, which calls them:
 
-**Always pass `{ signal }` to a listener on `document`, `window` or
-`globalThis`.** One on `host` is collected with the element. One on `document`
-holds its closure forever, and every element after it adds another.
+- **`connected({ signal })`** runs on every connect. Not only the first: moving
+  an element in the document disconnects and reconnects it, and behavior torn
+  down on the way out has to come back on the way in. Return a function to have
+  it run on disconnect.
+- **`updated()`** runs after every render, and once on connect.
 
 ```js
-document.addEventListener(
-  'keydown',
-  (event) => {
-    if (event.key === 'Escape') host.dismiss();
+export const prototype = {
+  connected({ signal }) {
+    this.addEventListener('click', () => this.dismiss(), { signal });
+    return () => stopPolling();
   },
-  { signal },
-);
+};
 ```
+
+`signal` is an `AbortSignal` that fires when the element disconnects. **Always
+pass it to a listener on `document`, `window` or `globalThis`.** One on the
+element itself is collected with it. One on `document` holds its closure
+forever, and every element after it adds another.
+
+```js
+export const prototype = {
+  connected({ signal }) {
+    document.addEventListener(
+      'keydown',
+      (event) => {
+        if (event.key === 'Escape') this.dismiss();
+      },
+      { signal },
+    );
+  },
+};
+```
+
+`this.shadowRoot` is the shadow root when the element has one, and
+`this.internals` is its `ElementInternals`. Both are on the element already, so
+neither is passed in.
 
 ## Form association
 
 ```html
 <!-- app/elements/tag-picker.html -->
-<script properties>
-  export default {
+<script element>
+  export const properties = {
     name: '',
     value: '',
   };
+
   export const formAssociated = true;
 </script>
 
@@ -217,12 +246,12 @@ rest of them.
 
 ### Saying it is invalid
 
-`host.internals` is the handle the platform hands out, so `setValidity` works the
+`this.internals` is the handle the platform hands out, so `setValidity` works the
 way it does on an input. `:invalid` matches, a submit is blocked, and the browser
 shows its own message.
 
 ```html
-<script>
+<script element>
   export const prototype = {
     updated() {
       const empty = !this.value;
@@ -248,8 +277,8 @@ already there and it belongs to the project. Reproduced here for a project that
 predates it, or one that deleted it.
 
 ```html
-<script properties>
-  export default {
+<script element>
+  export const properties = {
     library: 'icons',
     name: '',
     label: '',
@@ -300,9 +329,9 @@ the same `each` to a block with anchors and rebuilds it.
 is built when a browser parses a document, and nothing that swaps HTML parses
 one. A light element arrives whole.
 
-**An element with `<script state>` and no `<script>` still gets registered.**
-State is behavior. Without the definition, `el.n = 1` sets a value no node hears
-about.
+**An element that only exports `state` still gets registered.** State is
+behavior. Without the definition, `el.n = 1` sets a value no node hears about.
+So is `formAssociated`: an element that submits a value has to exist to do it.
 
 **`setHTMLUnsafe()`, never `innerHTML`,** when inserting markup that holds an
 element. `innerHTML` leaves a nested declarative shadow root as a dead

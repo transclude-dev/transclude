@@ -253,8 +253,8 @@ export const GET = async () => Response.json({ tempC: 14, wind: 'NW 12kt' });`,
   }
 }`, 'css'],
       element: `<!-- app/elements/note-card.html -->
-<script properties>
-  export default { title: '', tone: 'plain' };
+<script element>
+  export const properties = { title: '', tone: 'plain' };
 <\/script>
 
 <style>

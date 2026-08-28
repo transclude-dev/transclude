@@ -57,5 +57,5 @@ describe('an element with neither behavior nor state costs nothing', () => {
   const source = fs.readFileSync(path.join(root, 'app', 'elements', 'site-note.html'), 'utf8');
 
   assert.doesNotMatch(source, /<script>/, 'no behavior block');
-  assert.doesNotMatch(source, /<script state>/, 'and no state');
+  assert.doesNotMatch(source, /export const state/, 'and no state');
 });

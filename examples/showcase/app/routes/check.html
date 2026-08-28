@@ -61,7 +61,7 @@
   <svg-icon id="icon-labeled" name="chevron-down" label="More"></svg-icon>
   <svg-icon id="icon-library" library="glyphicons" name="check"></svg-icon>
 
-  <!-- A boolean in <script state>, so it has a custom state to reflect. -->
+  <!-- A boolean in `export const state`, so it has a custom state to reflect. -->
   <tally-box id="tally" label="hot at five"></tally-box>
 
   <!-- Repeated blocks under an <svg>, which is a namespace rather than a tag.
@@ -296,7 +296,7 @@
     box.bump(-5);
     await box.updateComplete;
     ok(box.matches(':state(hot)') === false, 'the state was not taken away');
-    return 'ElementInternals.states, from a boolean in <script state>';
+    return 'ElementInternals.states, from a boolean state field';
   });
 
   await check('exported prototype members are shared by every instance', () => {
@@ -1015,7 +1015,7 @@
     controlForm.reset();
     await picker.updateComplete;
 
-    is(picker.value, '', 'the default from <script properties>');
+    is(picker.value, '', 'the default from `export const properties`');
     is(picker.getAttribute('value'), null, 'reset removes the attribute rather than blanking it');
     is(sent().get('tags'), '', '');
     return 'formResetCallback';

@@ -109,9 +109,9 @@ test('a leading underscore in a template becomes a dot', () => {
 
 test('both templates turn off the HTML validation that misreads an element', () => {
   // A `.html` file here holds several script blocks that are separate modules.
-  // The built-in HTML support reads them as one, so `<script properties>` and
-  // `<script state>` are reported as two default exports of one module. The
-  // file is correct, and `npm run check` says so.
+  // The built-in HTML support reads them as one, so a page's `<script server>`
+  // and its client `<script>` are reported as one module with two sets of
+  // top-level names. The file is correct, and `npm run check` says so.
   for (const template of ['blank', 'minimal']) {
     make(['--template', template], (dir) => {
       const settings = read(dir, '.vscode/settings.json');

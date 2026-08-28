@@ -818,7 +818,7 @@ function assertDistinct(propsNode, stateNode, tag) {
   for (const key of objectKeys(stateNode)) {
     if (declared.has(key)) {
       throw new CompileError(
-        `<${tag}>: \`${key}\` is declared in both <script properties> and <script state>. ` +
+        `<${tag}>: \`${key}\` is declared in both \`properties\` and \`state\`. ` +
           `A template reads them from one namespace, so the name has to be one or the other.`,
         stateNode,
       );

@@ -23,7 +23,11 @@
 />
 
 <style>
-  .listing {
+  /* Not `.listing`: that name belongs to the source viewer's panel in
+     `global.css`, which is global because the viewer hands its markup out as a
+     fragment. This list picked up its border and its background by sharing the
+     word, and the posts sat flush against edges nobody meant to draw. */
+  .posts {
     list-style: none;
     padding: 0;
     margin: 2.5rem 0 0;
@@ -31,22 +35,22 @@
     flex-direction: column;
     gap: 2rem;
   }
-  .listing h2 {
+  .posts h2 {
     margin: 0 0 0.4rem;
     font-size: 1.25rem;
   }
-  .listing h2 a {
+  .posts h2 a {
     text-decoration: none;
   }
-  .listing h2 a:hover {
+  .posts h2 a:hover {
     text-decoration: underline;
   }
-  .listing time {
+  .posts time {
     font-family: var(--mono);
     font-size: 0.78rem;
     color: var(--muted);
   }
-  .listing p {
+  .posts p {
     margin: 0.4rem 0 0;
     color: var(--muted);
   }
@@ -63,7 +67,7 @@
   There is a <a href="/feed.xml">feed</a>.
 </p>
 
-<ul class="listing">
+<ul class="posts">
   <li each="post of posts">
     <time datetime="${post.date.toISOString()}">${post.when}</time>
     <h2><a href="/blog/${post.slug}">${post.title}</a></h2>

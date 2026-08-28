@@ -306,6 +306,25 @@ against.
   says what shape the framework expects. `connected` and `disconnected` both run
   on every connect and disconnect rather than once, because moving an element is
   both; the `AbortSignal` is per connection, so a moved element gets a fresh one.
+- **Every export in `<script element>` declares one name, and `splice` works
+  back to front.** Two branches read a statement, and only one of them asked how
+  many declarators it had: `export const properties = {…}, shadow = true` matched
+  the flag, blanked the statement whole, and dropped `properties` in silence, so
+  the element coerced no attributes and a template read the raw string. Asking
+  once, before either branch, removes the question rather than answering it
+  twice. `splice` used to promise length and now promises lines: `export const
+  state=` is nineteen characters and `const __stateDefs = ` is twenty, so legal
+  code failed to build over one character. A replacement may now be longer than
+  what it replaced, which is why the cuts are applied in descending order — the
+  offsets all came from the original, and rewriting front to back leaves each
+  later cut off by however much the ones before it grew.
+- **A prop or a state field cannot be named for a member the framework calls.**
+  `defineProps` puts an accessor on the prototype where `connected` belongs, and
+  `defineMembers` catches nothing, because it checks a member against what the
+  element already has and there is no member here. The runtime then calls what
+  the attribute holds, which is a string. `assertNoHookShadow` refuses the name
+  where it is declared. `RESERVED_LIFECYCLE` is the other half of this and covers
+  the `*Callback` spellings on the prototype itself.
 - **A synchronous cleanup runs synchronously, and that is load-bearing.**
   `release` handed every cleanup to `Promise.resolve().then()`, so it was
   deferred by a microtask even when it was already a function. Moving an element

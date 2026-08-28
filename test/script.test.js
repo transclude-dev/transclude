@@ -194,6 +194,41 @@ test('the same export twice is refused rather than last-wins', () => {
   );
 });
 
+test('an export declaring two names is refused, not half-read', () => {
+  // `namesExport` scanned every declarator and the flag branch blanked the whole
+  // statement, so this set `shadow` and dropped `properties` without a word.
+  // Every export here names something reserved, so every one declares one thing.
+  assert.throws(
+    () => element('export const properties = { admin: false }, shadow = true;'),
+    /declares one name/,
+  );
+  assert.throws(() => element('export const properties = {}, state = {};'), /declares one name/);
+});
+
+test('a declaration the compiler does not read may still declare two names', () => {
+  assert.doesNotThrow(() => element('const a = 1, b = 2;\nexport const properties = { a, b };'));
+});
+
+test('tight spacing is not a build failure', () => {
+  // `export const state=` is 19 characters and `const __stateDefs = ` is 20, so
+  // requiring the replacement to fit made legal code fail to compile, with a
+  // bare Error naming neither the file nor the line.
+  const { code, nodes } = element('export const state={n:0};');
+
+  assert.match(code, /const __stateDefs = ?\{n:0\};/);
+  assert.equal(nodes.state.type, 'ObjectExpression');
+});
+
+test('a rewrite never changes how many lines the block has', () => {
+  // Lines are what a stack frame into the generated module reads. Columns are a
+  // nicety, kept where there is room for them.
+  const source = 'export const state={n:0};\nexport const properties = { a: 1 };\nconst tail = 2;';
+  const { code } = element(source);
+
+  assert.equal(code.split('\n').length, source.split('\n').length);
+  assert.match(code.split('\n')[2], /^const tail = 2;$/);
+});
+
 test('a parse error points back into the .html file', () => {
   assert.throws(
     () => bindElementModule({ code: 'export const properties = {', line: 12 }, 'a-a.html <script element>'),

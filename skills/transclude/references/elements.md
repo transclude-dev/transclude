@@ -21,6 +21,14 @@ left exactly where they wrote it.
 A file has one of these blocks. A second is refused, and so is a bare `<script>`,
 because an element's per-element code is a member rather than a loose body.
 
+Each export declares one name. `export const properties = {}, shadow = true` is
+refused, because the compiler reads each of these separately and a statement
+holding two of them has no single answer.
+
+`connected`, `disconnected` and `updated` are the framework's, so a prop or a
+state field cannot be called one. The accessor would sit where the hook belongs
+and the hook would never run.
+
 ## Light DOM, the default
 
 No shadow root, no boundary. Page CSS reaches it, `<label for>` works, and no

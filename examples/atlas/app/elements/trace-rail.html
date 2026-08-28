@@ -1,4 +1,4 @@
-<script properties>
+<script element>
   /**
    * Every hop the page made to render itself, with the time each one took and
    * whether it came from the cache.
@@ -9,8 +9,7 @@
    *
    * @typedef {import('../lib/trace.js').Row} Row
    */
-
-  export default {
+  export const properties = {
     /** @type {Row[]} */
     hops: [],
     /** Total across every hop, in milliseconds. */

@@ -1,10 +1,10 @@
-<script properties>
+<script element>
   /**
    * The frame around one record: what it is, where it lives, and whether a
    * schema was found for it. The fields go in the slot, so this element carries
    * only strings and the field data is serialized once, by `<field-list>`.
    */
-  export default {
+  export const properties = {
     uri: '',
     cid: '',
     collection: '',

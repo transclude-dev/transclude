@@ -1,4 +1,4 @@
-<script properties>
+<script element>
   /**
    * A light element whose value is state, not an attribute. Nothing observes
    * state, so the setter is what schedules the write.
@@ -7,14 +7,12 @@
    */
 
   /** @type {Props} */
-  export default {
+  export const properties = {
     label: "tally",
   };
-</script>
 
-<script state>
   /** @type {{ n: number, hot: boolean }} */
-  export default {
+  export const state = {
     n: 0,
     // A boolean state field is reflected as a custom state, so CSS can select
     // `:state(hot)`. Nothing is written to the document: the point of state is
@@ -22,8 +20,19 @@
     // stylesheet react.
     hot: false,
   };
-</script>
 
+  export const prototype = {
+    bump(by = 1) {
+      this.n += by;
+      this.hot = this.n >= 5;
+    },
+
+    connected({ signal }) {
+
+      this.addEventListener("click", () => this.bump(), { signal });
+    },
+  };
+</script>
 <style>
   :scope {
     display: inline-flex;
@@ -43,14 +52,3 @@
 
 <output>${n}</output>
 <span>${label}</span>
-
-<script>
-  export const prototype = {
-    bump(by = 1) {
-      this.n += by;
-      this.hot = this.n >= 5;
-    },
-  };
-
-  host.addEventListener("click", () => host.bump(), { signal });
-</script>

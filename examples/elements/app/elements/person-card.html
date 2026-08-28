@@ -1,12 +1,10 @@
-<script properties>
-  export default {
+<script element>
+  export const properties = {
     name: '',
     role: '',
     tags: [],
   };
 
-  // The boundary. Everything below is sealed off from the page, and this element
-  // rebuilds itself when a prop changes rather than writing into what it has.
   export const shadow = true;
 </script>
 

@@ -1,4 +1,4 @@
-<script properties>
+<script element>
   /**
    * Stated once for the whole object rather than field by field. An annotation is only
    * needed where a default cannot imply a type: `[]` is `never[]` to TypeScript,
@@ -12,7 +12,7 @@
    */
 
   /** @type {Props} */
-  export default {
+  export const properties = {
     caption: "",
     columns: [],
     rows: [],

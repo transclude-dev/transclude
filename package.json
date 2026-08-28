@@ -52,7 +52,7 @@
   "files": [
     "LICENSE",
     "bin",
-    "editor",
+    "editor/server.js",
     "skills",
     "src"
   ],

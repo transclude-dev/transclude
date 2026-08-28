@@ -5,8 +5,12 @@ import assert from 'node:assert/strict';
 
 import { compileComponent } from '../src/compiler/index.js';
 
+// The code goes in `connected`, which is where a listener is registered now.
 const warnings = (script) =>
-  compileComponent(`<p>x</p><script>${script}</script>`, 'a-a.html', {}).warnings;
+  compileComponent(
+    `<p>x</p><script element>export const prototype = { connected({ signal }) { void signal; ${script} } };</script>`,
+    { tag: 'a-a', runtime: 'x' },
+  ).warnings;
 
 test('a listener on document with no signal is reported', () => {
   // The element goes and the listener stays, holding its closure. Every element

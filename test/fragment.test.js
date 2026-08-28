@@ -246,7 +246,9 @@ test('a component with a block full of components binds every name it uses', () 
   // threaded in from render is not in scope there, and nothing that runs in
   // this file would notice, because the module is real ESM and never runs.
   const { code } = compileComponent(
-    `<script properties>export default { people: [] };</script>
+    `<script element>
+  export const properties = { people: [] };
+</script>
 <ul><li each="p of people" key="p.name"><user-card name="\${p.name}"></user-card></li></ul>`,
     {
       tag: 'card-list',
@@ -262,7 +264,9 @@ test('a component with a block full of components binds every name it uses', () 
 
 test('a partial with the same markup binds every name too', () => {
   const { code } = compileComponent(
-    `<script properties>export default { people: [] };</script>
+    `<script element>
+  export const properties = { people: [] };
+</script>
 <ul><li each="p of people"><user-card name="\${p.name}"></user-card></li></ul>`,
     {
       tag: 'card-row',

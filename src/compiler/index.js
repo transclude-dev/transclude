@@ -6,15 +6,17 @@ import { escapeAttr } from './html.js';
 import { lineMap, sourceMap } from './sourcemap.js';
 import { compileBindings } from './bind.js';
 import {
+  ELEMENT_BINDINGS,
+  ELEMENT_FLAGS,
   ScriptError,
   assertModule,
   assertNoActionsObject,
   assertNoCollisions,
   bindDefaultExport,
-  toFunctionBody,
+  bindElementModule,
 } from './script.js';
 
-export { CompileError, ScriptError };
+export { CompileError, ScriptError, ELEMENT_FLAGS };
 
 // Everything the generated page and layout modules define at the top level. A
 // block naming one of these is checked whether it exports it or merely declares
@@ -26,50 +28,15 @@ const PAGE_EXPORTS = new Set([
 ]);
 const COMPONENT_EXPORTS = new Set([
   'tag', 'light', 'css', 'elements', 'propDefs', 'propAttrs', 'stateDefs', 'members', 'render',
-  'coerce', 'def', 'init', 'define', 'default', 'bind', 'update', 'volatile', 'formAssociated',
+  'coerce', 'def', 'define', 'default', 'bind', 'update', 'volatile', 'formAssociated',
 ]);
-
-/**
- * What an element may declare about itself, in `<script properties>` or in
- * `<script>`. Neither is a prop and neither is setup code: each decides
- * something about the tag, the same for every element of it.
- *
- * `shadow` decides how the tag renders, so it is read before anything is
- * compiled: every other file mentioning the tag compiles differently for it.
- */
-export const ELEMENT_FLAGS = ['shadow', 'formAssociated'];
-
-/**
- * One value per flag, from whichever block declared it.
- *
- * Declaring one twice is refused rather than resolved. Two homes for one fact
- * leaves nothing to say which is right when they disagree.
- */
-function resolveFlags(fromProps = {}, fromClient = {}, tag) {
-  const out = {};
-
-  for (const flag of ELEMENT_FLAGS) {
-    const a = fromProps[flag] ?? null;
-    const b = fromClient[flag] ?? null;
-
-    if (a !== null && b !== null) {
-      throw new ScriptError(
-        `<${tag}> declares \`${flag}\` in both <script properties> and <script>. ` +
-          `Keep the one that reads better and delete the other.`,
-      );
-    }
-    out[flag] = a ?? b;
-  }
-
-  return out;
-}
 
 /**
  * An element's flags, read without compiling it.
  *
  * The plugin needs `shadow` before it can compile anything, because how a tag
- * renders decides how every other file that mentions it compiles. Same blocks
- * and the same extractor as the compile itself, so there is one answer.
+ * renders decides how every other file that mentions it compiles. Same block
+ * and the same reader as the compile itself, so there is one answer.
  *
  * @param {string} source the whole .html file
  * @param {string} [label] what to call it in an error
@@ -77,18 +44,37 @@ function resolveFlags(fromProps = {}, fromClient = {}, tag) {
  */
 export function readFlags(source, label = 'element') {
   const blocks = splitBlocks(source);
+  if (!blocks.element) return Object.fromEntries(ELEMENT_FLAGS.map((flag) => [flag, null]));
 
-  const fromProps = blocks.properties
-    ? bindDefaultExport(blocks.properties, '__probe', `${label} <script properties>`, {
-        flags: ELEMENT_FLAGS,
-      }).flags
-    : {};
-  const fromClient = toFunctionBody(blocks.client, `${label} <script>`, {
-    lift: 'prototype',
-    flags: ELEMENT_FLAGS,
-  }).flags;
+  return bindElementModule(blocks.element, `${label} <script element>`).flags;
+}
 
-  return resolveFlags(fromProps, fromClient, label);
+/**
+ * What the block declares, without compiling it.
+ *
+ * A light element is registered only when it has behavior to attach, and three
+ * different places ask that question: the compiler, so it knows whether to emit
+ * anchors; the plugin, so it knows whether to ship the definition; and the type
+ * extractor, so `transclude-env.d.ts` does not claim accessors that were never
+ * defined. One reader, so they cannot drift apart.
+ *
+ * @param {string} source the whole .html file
+ * @param {string} [label] what to call it in an error
+ * @returns {{ state: boolean, prototype: boolean, formAssociated: boolean,
+ *   behavior: boolean }}
+ */
+export function readBehavior(source, label = 'element') {
+  const blocks = splitBlocks(source);
+  const none = { state: false, prototype: false, formAssociated: false, behavior: false };
+  if (!blocks.element) return none;
+
+  const { nodes, flags } = bindElementModule(blocks.element, `${label} <script element>`);
+  const out = {
+    state: Boolean(nodes.state),
+    prototype: Boolean(nodes.prototype),
+    formAssociated: flags.formAssociated === true,
+  };
+  return { ...out, behavior: out.state || out.prototype || out.formAssociated };
 }
 
 /**
@@ -114,9 +100,8 @@ function isDataBlock(node) {
  * Top-level <script>/<style> blocks are pulled out; everything else is template.
  *
  *   <script server>      data loading, page only
- *   <script properties>  defaults + implied types for the element's properties
- *   <script state>       internal reactive state, component only
- *   <script>             client code, and `export const prototype` with it
+ *   <script element>     the whole element declaration, element only
+ *   <script>             client code, page only
  *   <style>              scoped to the shadow root (component) or the page
  *
  * Each block carries the line it starts on so parse errors can point back into
@@ -144,32 +129,33 @@ export function splitBlocks(source) {
   // one is the html element and does.
   const parent = /** @type {{ childNodes?: Array<{ nodeName: string }> }|null} */ (html);
   const body = parent?.childNodes?.find((n) => n.nodeName === 'body') ?? null;
-  const out = { server: null, properties: null, state: null, client: [], head: [], styles: [], nodes: [], html, body };
+  const out = { server: null, element: null, client: [], head: [], styles: [], nodes: [], html, body };
 
   for (const node of doc.childNodes) {
     if (node.nodeName === 'script') {
       const attrs = new Set((node.attrs ?? []).map((a) => a.name));
       const block = blockOf(node);
       if (attrs.has('server')) out.server = block;
-      else if (attrs.has('properties')) out.properties = block;
-      else if (attrs.has('props')) {
-        throw new CompileError(
-          '`<script props>` is now `<script properties>`. A property is what the ' +
-            'platform calls it, and what the element gets.',
-          node,
-        );
-      }
-      // Members used to have a block of their own. They belong with the setup
-      // code that calls them, so they moved into it.
+      // One per file, and a second is refused rather than resolved. The block is
+      // a module, and one module per file is the rule every JS reader has. Two
+      // of them leaves nothing to say which `properties` wins.
       else if (attrs.has('element')) {
+        if (out.element) {
+          throw new CompileError(
+            `<script element> is already declared on line ${out.element.line}. An element ` +
+              'declares itself once: move these exports into that block.',
+            node,
+          );
+        }
+        out.element = block;
+      } else if (attrs.has('properties') || attrs.has('props') || attrs.has('state')) {
         throw new CompileError(
-          '`<script element>` is gone. Move its members into `<script>` as ' +
-            '`export const prototype = { … }`. The same object, next to the code that uses it.',
+          `\`<script ${[...attrs].join(' ')}>\` is now one \`<script element>\` block. ` +
+            'It declares `properties`, `state`, `prototype`, `attributes`, `shadow` and ' +
+            '`formAssociated` as named exports of one module.',
           node,
         );
       }
-      // `<script state>` is the component's own, not in the document.
-      else if (attrs.has('state')) out.state = block;
       // `<script head>` is emitted verbatim into <head>, ahead of everything
       // else. Some things have to run before the body parses: a theme applied
       // before first paint, or a `pagereveal` listener, which fires too early for
@@ -219,43 +205,44 @@ export function compileComponent(
   const blocks = splitBlocks(source);
   const where = (kind) => `${filename || tag}.html <script${kind ? ` ${kind}` : ''}>`;
 
-  // A flag is a fact about the element rather than a prop or a piece of setup,
-  // so either block can carry it. An element that only needs one would otherwise
-  // need a block holding nothing else.
-  const props = blocks.properties
-    ? bindDefaultExport(blocks.properties, '__propDefs', where('properties'), { flags: ELEMENT_FLAGS })
-    : { code: 'const __propDefs = {};', exports: [], defaultNode: null, flags: {} };
-  assertNoCollisions(props.exports, COMPONENT_EXPORTS, where('properties'));
+  // A bare <script> is a page's client entry. An element has one block, and its
+  // per-element code is `connected` in the prototype, so a loose one here is
+  // code that would never run rather than code with another home.
+  if (blocks.client.some((block) => block.code.trim())) {
+    throw new ScriptError(
+      `${where('')}: an element's code lives in <script element>. Per-element setup is ` +
+        `\`connected({ signal })\` in \`export const prototype\`, which runs on every connect ` +
+        `and returns its own cleanup.`,
+    );
+  }
 
-  // Members ride along in the client block: `export const prototype`, hoisted to
-  // module scope with anything it reads, because a prototype is shared and the
-  // setup body is per element.
-  const client = toFunctionBody(blocks.client, where(''), { lift: 'prototype', flags: ELEMENT_FLAGS });
-  assertNoLifecycle(client.lifted, where(''));
+  const element = blocks.element
+    ? bindElementModule(blocks.element, where('element'))
+    : { code: '', nodes: {}, flags: {}, declared: [], warnings: [] };
+  assertNoCollisions(element.declared, COMPONENT_EXPORTS, where('element'), 'declares');
+  assertNoLifecycle(element.nodes.prototype ?? null, where('element'));
+  assertDistinct(element.nodes.properties ?? null, element.nodes.state ?? null, tag);
 
-  const flags = resolveFlags(props.flags, client.flags, tag);
-  const formAssociated = flags.formAssociated ?? false;
+  const formAssociated = element.flags.formAssociated ?? false;
   // The file decides. `shadow` is still an argument so a caller can compile one
   // element on its own, but a file that says which it is always wins.
-  const isShadow = flags.shadow ?? shadow;
+  const isShadow = element.flags.shadow ?? shadow;
 
-  const state = blocks.state
-    ? bindDefaultExport(blocks.state, '__stateDefs', where('state'))
-    : { code: 'const __stateDefs = {};', exports: [], defaultNode: null };
-  assertNoCollisions(state.exports, COMPONENT_EXPORTS, where('state'));
-
-  assertDistinct(props.defaultNode, state.defaultNode, tag);
+  // Every name the generated module reads has to exist whether the block
+  // declared it or not, so each missing one is defaulted here rather than
+  // guarded at each of its uses.
+  const fallbacks = Object.entries(ELEMENT_BINDINGS)
+    .filter(([name]) => !element.nodes[name])
+    .map(([, binding]) => `const ${binding} = {};`)
+    .join('\n');
+  const hasPrototype = Boolean(element.nodes.prototype);
 
   // Whether this element is registered at all. A light element with no behavior
   // is markup that was already rendered and ships nothing, so it can never see
   // an attribute change and has nothing to update. Anchors would be bytes on
   // every page that pay for a repaint that cannot happen.
   const defined =
-    isShadow ||
-    Boolean(client.body.trim()) ||
-    client.lifted !== null ||
-    formAssociated === true ||
-    Boolean(blocks.state);
+    isShadow || hasPrototype || formAssociated === true || Boolean(element.nodes.state);
 
   const template = compileFragment(blocks.nodes, {
     components,
@@ -320,24 +307,22 @@ export function compileComponent(
 
   const warnings = [
     ...template.warnings,
-    ...client.warnings,
-    ...unusedProps(props.defaultNode, template.reads, blocks),
+    ...element.warnings,
+    ...unusedProps(element.nodes.properties ?? null, template.reads, blocks),
   ];
 
   const code = `
 ${runtimeImport(runtime)}
 ${componentImports(template.components, { defines: true })}
-${client.imports}
-${props.code}
-${state.code}
-${client.lifted ? client.hoisted : 'const __members = {};'}
+${element.code}
+${fallbacks}
 
 export const tag = ${JSON.stringify(tag)};
 export const light = ${!isShadow};
 export const formAssociated = ${formAssociated === true};
 export const css = ${JSON.stringify(isShadow ? styles : scopeCss(styles, tag, nested))};
 export const propDefs = __propDefs;
-export const propAttrs = ${props.exports.includes('attributes') ? 'attributes' : '{}'};
+export const propAttrs = __propAttrs;
 export const stateDefs = __stateDefs;
 export const members = __members;
 ${elementsExport(template.components)}
@@ -360,10 +345,6 @@ export const def = {
 };
 export default def;
 
-export async function init(host, shadow, signal, internals) {
-${client.body}
-}
-
 // Defining an element defines what it renders. A page's entry lists the whole
 // set up front for first paint. An element that arrives on its own, in a fragment
 // found by the element watcher, has only itself to start from, and a shadow root
@@ -375,7 +356,7 @@ let __defined = false;
 export function define() {
   if (__defined) return;
   __defined = true;
-  ${isShadow ? 'defineComponent' : 'defineLight'}(def, ${client.body.trim() ? 'init' : 'null'});
+  ${isShadow ? 'defineComponent' : 'defineLight'}(def);
 ${template.components.map(({ ref }) => `  ${ref}_define();`).join('\n')}
 }
 `;
@@ -384,7 +365,7 @@ ${template.components.map(({ ref }) => `  ${ref}_define();`).join('\n')}
     code,
     warnings,
     isShadow,
-    hasScript: Boolean(client.body.trim()),
+    hasScript: hasPrototype,
     components: template.components.map((c) => c.tag),
   };
 }
@@ -815,8 +796,8 @@ function bindingsCode(bindings) {
 // element silently stops rendering. `adoptedCallback` is not among them: nothing
 // implements it, so there is nothing to break.
 const RESERVED_LIFECYCLE = {
-  connectedCallback: 'setup belongs in the <script> body, which runs on connect',
-  disconnectedCallback: 'return a cleanup function from the <script> body instead',
+  connectedCallback: 'write `connected({ signal })` instead, which runs on every connect',
+  disconnectedCallback: 'return a cleanup function from `connected()` instead',
   attributeChangedCallback: 'an attribute change already re-renders; use updated() for the side effect',
 };
 
@@ -878,7 +859,13 @@ function unusedProps(defaultNode, reads, blocks) {
     else if (prop.key.type === 'Literal') declared.push(String(prop.key.value));
   }
 
-  const elsewhere = [...blocks.styles, ...blocks.client.map((b) => b.code)].join('\n');
+  // The block's own `properties` declaration is cut out first. It is where every
+  // one of these names is written, so leaving it in would answer "used" for all
+  // of them and the warning would never fire again.
+  const script = blocks.element?.code ?? '';
+  const rest =
+    script.slice(0, defaultNode.start) + script.slice(defaultNode.end);
+  const elsewhere = [...blocks.styles, rest].join('\n');
 
   return declared
     .filter((name) => !reads.has(name))
@@ -886,7 +873,7 @@ function unusedProps(defaultNode, reads, blocks) {
     .map(
       (name) =>
         `prop \`${name}\` is declared but never used. It is not read in the template, ` +
-        `and does not appear in <style> or <script>`,
+        `and does not appear in <style> or <script element>`,
     );
 }
 

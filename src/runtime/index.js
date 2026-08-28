@@ -781,6 +781,21 @@ function defineProps(Class, defs, specs) {
 }
 
 /**
+ * The two members the framework itself calls, typed in one place.
+ *
+ * They arrive through `defineMembers`, so neither class can declare them: a
+ * class field is an own property, set in the constructor, and it would shadow
+ * the prototype member it was meant to describe. So the read is cast instead,
+ * and this is the one line that says what the framework expects to find.
+ *
+ * @param {HTMLElement} element
+ * @returns {{ connected?: (arg: { signal: AbortSignal }) => unknown, updated?: () => void }}
+ */
+function hooks(element) {
+  return /** @type {any} */ (element);
+}
+
+/**
  * `export const prototype` is an object; its members land on the class prototype
  * so they are shared, inherited, and visible to `in`.
  *
@@ -1021,10 +1036,9 @@ export function watch(loaders, root = globalThis.document) {
  * markup it was served is the markup it keeps.
  *
  * @param {object} def
- * @param {Function|null} [init] the `<script>` block, once per element
  * @returns {void}
  */
-export function defineLight(def, init) {
+export function defineLight(def) {
   // Before every other exit below: styles are the half of this that an element
   // with no behavior still has, and the half a swapped-in one arrives without.
   adoptStyles(def);
@@ -1039,8 +1053,7 @@ export function defineLight(def, init) {
   // Being a form control counts: a shadow root is not required to be one, and an
   // element that submits a value has to exist to do it. So does state, because
   // its accessor is what schedules the write.
-  const hasBehavior =
-    Boolean(init) || hasMembers(def) || def.formAssociated === true || hasState(def);
+  const hasBehavior = hasMembers(def) || def.formAssociated === true || hasState(def);
   if (!hasBehavior) return;
 
   class Light extends HTMLElement {
@@ -1118,9 +1131,9 @@ export function defineLight(def, init) {
 
       this.#ready = true;
       this.#abort = new AbortController();
-      this.#cleanup = init?.(this, null, this.#abort.signal, this.#internals);
+      this.#cleanup = hooks(this).connected?.({ signal: this.#abort.signal });
       this.reportFormValue();
-      this.updated?.();
+      hooks(this).updated?.();
     }
 
     /**
@@ -1134,7 +1147,7 @@ export function defineLight(def, init) {
     #apply() {
       const raw = this.#snapshot();
       if (this.#bindings) def.update(this.#bindings, this.#data(raw));
-      this.updated?.();
+      hooks(this).updated?.();
     }
 
     #data(raw) {
@@ -1292,10 +1305,9 @@ function defineFormMembers(Class, def) {
 
 /**
  * @param {object} def
- * @param {Function|null} [init]
  * @returns {void}
  */
-export function defineComponent(def, init) {
+export function defineComponent(def) {
   if (typeof customElements === 'undefined') return;
   if (customElements.get(def.tag)) return;
 
@@ -1381,9 +1393,9 @@ export function defineComponent(def, init) {
       // way out has to come back on the way in.
       this.#ready = true;
       this.#abort = new AbortController();
-      this.#cleanup = init?.(this, this.shadowRoot, this.#abort.signal, this.#internals);
+      this.#cleanup = hooks(this).connected?.({ signal: this.#abort.signal });
       this.reportFormValue();
-      this.updated?.();
+      hooks(this).updated?.();
     }
 
     disconnectedCallback() {
@@ -1417,12 +1429,12 @@ export function defineComponent(def, init) {
         !volatileChanged(def.volatile, raw, prev, state, prevState ?? state)
       ) {
         if (def.update(this.#bindings, this.#data(raw))) {
-          this.updated?.();
+          hooks(this).updated?.();
           return;
         }
       }
       this.#paint();
-      this.updated?.();
+      hooks(this).updated?.();
     }
 
     /** What the template sees: state first, so a prop of the same name cannot

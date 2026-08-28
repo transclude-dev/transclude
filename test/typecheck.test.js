@@ -80,20 +80,24 @@ export default () => ({ a: 1 });
   assert.match(code, /export const paths = \(\) => \[\];/);
 });
 
-test('a props block is a module body too, not an expression', () => {
-  const { code } = shim(`<script properties>export default { a: 1 };</script><p>\${a}</p>`, {
+test('the element block is copied as a module, not rebuilt as an expression', () => {
+  const { code } = shim(`<script element>
+  export const properties = { a: 1 };
+</script><p>\${a}</p>`, {
     kind: 'component',
     contextType: null,
   });
-  assert.match(code, /const __props = \(\{ a: 1 \}\)/);
-  assert.match(code, /@typedef \{__Shape<Exclude<typeof __props, Response>>\} __Props/);
+  assert.match(code, /const __props = \{ a: 1 \}/);
+  assert.match(code, /@typedef \{__Shape<typeof __props>\} __Props/);
   assert.match(code, /@typedef \{__Props & __State\} __Data/);
 });
 
 test('JSDoc in a props block survives into the shim', () => {
   // The reason shims are .js: a JSDoc @type is ignored in a .ts file.
   const { code } = shim(
-    `<script properties>export default { /** @type {string[]} */ tags: [] };</script><p>x</p>`,
+    `<script element>
+  export const properties = { /** @type {string[]} */ tags: [] };
+</script><p>x</p>`,
     { kind: 'component', contextType: null },
   );
   assert.match(code, /@type \{string\[\]\}/);
@@ -219,15 +223,15 @@ test('a JSDoc typedef and a whole-object @type both reach tsc', () => {
   // Neither is a statement, so copying the block statement-by-statement would
   // drop them without a word, and they are how an author says what `[]` holds.
   const { code } = shim(
-    `<script properties>
-/** @typedef {{ columns: string[] }} Props */
-/** @type {Props} */
-export default { columns: [] };
+    `<script element>
+  /** @typedef {{ columns: string[] }} Props */
+  /** @type {Props} */
+  export const properties = { columns: [] };
 </script><th each="c of columns">\${c}</th>`,
     { kind: 'component', contextType: null },
   );
   assert.match(code, /@typedef \{\{ columns: string\[\] \}\} Props/);
-  assert.match(code, /@type \{Props\} \*\/\nconst __props/);
+  assert.match(code, /@type \{Props\} \*\/\s*const __props/, 'the annotation lost its value');
 });
 
 test('an empty array without an annotation is usable, not never[]', () => {
@@ -235,7 +239,9 @@ test('an empty array without an annotation is usable, not never[]', () => {
   // "no annotation" from less checking into a page of errors about a type
   // nobody wrote.
   const { dir, checker } = project({
-    'app/elements/data-table.html': `<script properties>export default { columns: [] };</script>
+    'app/elements/data-table.html': `<script element>
+  export const properties = { columns: [] };
+</script>
 <th each="c of columns">\${c.length}</th>`,
   });
   assert.deepEqual(checker.check(path.join(dir, 'app/elements/data-table.html')), []);
@@ -245,12 +251,16 @@ test('an unannotated parameter is plain JavaScript, not an error', () => {
   // JSDoc is optional. A parameter with no declared type is `any`, the same as it
   // would be in any other .js file.
   const { dir, checker } = project({
-    'app/elements/data-table.html': `<script properties>export default { columns: [] };</script>
-<script>
+    'app/elements/data-table.html': `<script element>
+  export const properties = { columns: [] };
+
   export const prototype = {
     add(column) { this.columns = [...this.columns, column]; },
+
+    connected({ signal }) {
+      this.addEventListener('click', (event) => void event, { signal });
+    },
   };
-  host.addEventListener('click', (event) => void event, { signal });
 </script>
 <th each="c of columns">\${c}</th>`,
   });
@@ -261,38 +271,70 @@ test('a helper the prototype reads is resolvable in the shim', () => {
   // The helper is hoisted with the members in the generated module, so the shim
   // has to copy it too, or tsc reports a name the browser resolves fine.
   const { dir, checker } = project({
-    'app/elements/data-table.html': `<script properties>export default { columns: [] };</script>
-<script>
+    'app/elements/data-table.html': `<script element>
+  export const properties = { columns: [] };
+
   const LIMIT = 3;
+
   export const prototype = {
     /** @returns {number} */
-    get shown() { return Math.min(this.columns.length, LIMIT); },
+        get shown() { return Math.min(this.columns.length, LIMIT); },
+
+    connected({ signal }) {
+      this.addEventListener('click', () => void 0, { signal });
+    },
   };
-  host.addEventListener('click', () => void 0, { signal });
 </script>
 <th>\${columns.length}</th>`,
   });
   assert.deepEqual(checker.check(path.join(dir, 'app/elements/data-table.html')), []);
 });
 
-test('setup code is not checked, because host, shadow and signal are in scope', () => {
+test('connected() is checked like everything else in the block', () => {
+  // It used to be a `<script>` body running with four names nobody declared, so
+  // tsc was told nothing about it and checked none of it. As a member of a
+  // module it is ordinary code, and `this` is the element.
   const { dir, checker } = project({
-    'app/elements/data-table.html': `<script properties>export default { columns: [] };</script>
-<script>
-  export const prototype = { go() { return this.columns; } };
-  host.addEventListener('click', () => shadow.append(signal), { signal });
+    'app/elements/data-table.html': `<script element>
+  export const properties = { columns: [] };
+
+  export const prototype = {
+    connected({ signal }) {
+      this.addEventListener('click', () => void this.columns.length, { signal });
+    },
+  };
 </script>
 <th>\${columns.length}</th>`,
   });
   assert.deepEqual(checker.check(path.join(dir, 'app/elements/data-table.html')), []);
+});
+
+test('a typo inside connected() is now reported, where it used to be invisible', () => {
+  const { dir, checker } = project({
+    'app/elements/data-table.html': `<script element>
+  export const properties = { columns: [] };
+
+  export const prototype = {
+    connected() {
+      void this.colums.length;
+    },
+  };
+</script>
+<th>\${columns.length}</th>`,
+  });
+  const [first] = checker.check(path.join(dir, 'app/elements/data-table.html'));
+  assert.match(first.message, /colums/);
 });
 
 test('strict: true puts the annotations back on the critical path', () => {
   const { dir, checker } = project(
     {
-      'app/elements/data-table.html': `<script properties>export default { columns: [] };</script>
-<script>
-  export const prototype = { add(column) { void column; } };
+      'app/elements/data-table.html': `<script element>
+  export const properties = { columns: [] };
+
+  export const prototype = {
+    add(column) { void column; }
+  };
 </script>
 <th>x</th>`,
     },
@@ -307,7 +349,9 @@ test('a misspelled prop is still caught with no annotations anywhere', () => {
   // undeclared property off a type that came from an object literal in a .js
   // file, and that is the one check this framework most needs.
   const { dir, checker } = project({
-    'app/elements/data-table.html': `<script properties>export default { columns: [] };</script>
+    'app/elements/data-table.html': `<script element>
+  export const properties = { columns: [] };
+</script>
 <th>\${colums.length}</th>`,
   });
   const [diagnostic] = checker.check(path.join(dir, 'app/elements/data-table.html'));
@@ -316,9 +360,10 @@ test('a misspelled prop is still caught with no annotations anywhere', () => {
 
 test('the same file with an annotation checks clean', () => {
   const { dir, checker } = project({
-    'app/elements/data-table.html': `<script properties>
-/** @type {{ columns: string[] }} */
-export default { columns: [] };
+    'app/elements/data-table.html': `<script element>
+  /** @type {{ columns: string[] }} */
+
+  export const properties = { columns: [] };
 </script><th each="c of columns">\${c.length}</th>`,
   });
   assert.deepEqual(checker.check(path.join(dir, 'app/elements/data-table.html')), []);
@@ -345,8 +390,8 @@ test('a dash-case attribute is checked under its camelCase prop name', () => {
 // to be.
 
 const withCard = (markup) => ({
-  'app/elements/user-card.html': `<script properties>
-export default { name: '' };
+  'app/elements/user-card.html': `<script element>
+  export const properties = { name: '' };
 </script>
 <h3>\${name}</h3>`,
   'app/routes/index.html': `<script server>export default () => ({ id: 1 });</script>\n${markup}`,
@@ -626,9 +671,9 @@ test('a light element is a partial and a shadow one is a component', () => {
   const { checker } = project({
     'app/routes/index.html': '<h1>Home</h1>',
     'app/elements/plain-note.html':
-      "<p>${text}</p><script properties>export default { text: '' };</script>",
+      "<p>${text}</p><script element>export const properties = { text: '' };</script>",
     'app/elements/boxed-card.html':
-      '<article><slot></slot></article><script properties>export const shadow = true;\nexport default { open: false };</script>',
+      '<article><slot></slot></article><script element>export const shadow = true;\nexport const properties = { open: false };</script>',
   });
 
   const described = checker.describe();

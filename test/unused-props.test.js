@@ -10,7 +10,9 @@ const compile = (source) =>
 
 test('a prop nobody reads is reported', () => {
   const warnings = compile(`
-    <script properties>export default { name: 'x', nmae: 'y' };</script>
+    <script element>
+      export const properties = { name: 'x', nmae: 'y' };
+    </script>
     <h3>\${name}</h3>
   `);
   assert.equal(warnings.length, 1);
@@ -20,7 +22,9 @@ test('a prop nobody reads is reported', () => {
 test('a prop used only in <style> is not reported', () => {
   // `compact` drives :host([compact]) and never appears in the template.
   const warnings = compile(`
-    <script properties>export default { compact: false };</script>
+    <script element>
+      export const properties = { compact: false };
+    </script>
     <style>:host([compact]) { padding: 0 }</style>
     <p>hi</p>
   `);
@@ -29,16 +33,18 @@ test('a prop used only in <style> is not reported', () => {
 
 test('a prop used only in the client <script> is not reported', () => {
   const warnings = compile(`
-    <script properties>export default { compact: false };</script>
+    <script element>export const properties = { compact: false };
+export const prototype = { connected() { this.toggleAttribute('compact'); } };</script>
     <p>hi</p>
-    <script>host.toggleAttribute('compact');</script>
   `);
   assert.deepEqual(warnings, []);
 });
 
 test('a prop read through a loop counts as used', () => {
   const warnings = compile(`
-    <script properties>export default { tags: ['a'] };</script>
+    <script element>
+      export const properties = { tags: ['a'] };
+    </script>
     <li each="t of tags">\${t}</li>
   `);
   assert.deepEqual(warnings, []);
@@ -46,7 +52,9 @@ test('a prop read through a loop counts as used', () => {
 
 test('an inexact props object disables the check', () => {
   const warnings = compile(`
-    <script properties>export default { ...base, unused: 1 };</script>
+    <script element>
+      export const properties = { ...base, unused: 1 };
+    </script>
     <p>hi</p>
   `);
   assert.deepEqual(warnings, []);

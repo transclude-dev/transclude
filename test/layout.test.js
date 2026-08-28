@@ -305,21 +305,29 @@ test('it comes before anything the compiler generates, so a page can override', 
 
 // ---- interactivity ---------------------------------------------------------
 
-test('a <script> block becomes init(host, shadow, signal, internals)', () => {
-  const { code } = element('<p>x</p><script>host.dataset.ready = "1";</script>');
-  assert.match(code, /export async function init\(host, shadow, signal, internals\)/);
-  assert.match(code, /host\.dataset\.ready = "1";/);
+test('connected reaches the module as an ordinary member', () => {
+  // No `init` wrapper and no injected names: the runtime finds it on the
+  // prototype and calls it through `this`.
+  const { code } = element(
+    '<p>x</p><script element>export const prototype = { connected() { this.dataset.ready = "1"; } };</script>',
+  );
+  assert.doesNotMatch(code, /function init/);
+  assert.match(code, /this\.dataset\.ready = "1";/);
 });
 
-test('an element with no script registers nothing at all', () => {
+test('an element with no behavior has nothing to attach', () => {
+  // `defineLight` is still called: it adopts the styles first and only then asks
+  // whether there is behavior to register. The definition is what it skips.
   const { code, hasScript } = element('<p>x</p>');
   assert.equal(hasScript, false);
-  assert.match(code, /define(Light|Component)\(def, null\)/);
+  assert.match(code, /defineLight\(def\);/);
+  assert.match(code, /const __members = \{\};/);
 });
 
 test('a partial defines through defineLight, a component through defineComponent', () => {
-  assert.match(element('<p>x</p><script>host;</script>').code, /defineLight\(def, init\)/);
-  assert.match(element('<p>x</p><script>host;</script>', { shadow: true }).code, /defineComponent\(def, init\)/);
+  const behaved = '<p>x</p><script element>export const prototype = { connected() {} };</script>';
+  assert.match(element(behaved).code, /defineLight\(def\)/);
+  assert.match(element(behaved, { shadow: true }).code, /defineComponent\(def\)/);
 });
 
 // ---- <script head> ---------------------------------------------------------
@@ -350,7 +358,7 @@ test('no head block means nothing emitted', () => {
   assert.doesNotMatch(html, /<script>/);
 });
 
-// ---- properties, generated from <script properties> -----------------------------
+// ---- properties, generated from <script element> ---------------------------
 
 test('a camelCase prop maps to a dash-case attribute, as HTML requires', () => {
   assert.equal(rt.attrName('name'), 'name');

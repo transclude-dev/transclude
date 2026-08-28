@@ -72,7 +72,8 @@ function manifest(plugin, name) {
   return JSON.parse(found[1]);
 }
 
-const SCRIPTED = "<button>go</button>\n<script>\nhost.dataset.ready = 'yes';\n</script>\n";
+const SCRIPTED =
+  "<button>go</button>\n<script element>\nexport const prototype = { connected() { this.dataset.ready = 'yes'; } };\n</script>\n";
 const QUIET = '<p class="note"><slot></slot></p>\n';
 
 // ---- the two entries -------------------------------------------------------
@@ -160,7 +161,7 @@ test('a shadow element ships even with no script of its own', async () => {
   const plugin = await project({
     'app/routes/index.html': '<h1>Home</h1>\n<boxed-card>hi</boxed-card>\n',
     'app/elements/boxed-card.html':
-      '<article><slot></slot></article>\n<script properties>\nexport const shadow = true;\nexport default {};\n</script>\n',
+      '<article><slot></slot></article>\n<script element>\nexport const shadow = true;\nexport const properties = {};\n</script>\n',
   });
 
   assert.deepEqual(manifest(plugin, 'index').tags, ['boxed-card']);
@@ -187,7 +188,7 @@ test('an element reached only through a shadow one still ships', async () => {
   const plugin = await project({
     'app/routes/index.html': '<h1>Home</h1>\n<boxed-card></boxed-card>\n',
     'app/elements/boxed-card.html':
-      '<article><deep-leaf></deep-leaf></article>\n<script properties>\nexport const shadow = true;\nexport default {};\n</script>\n',
+      '<article><deep-leaf></deep-leaf></article>\n<script element>\nexport const shadow = true;\nexport const properties = {};\n</script>\n',
     'app/elements/deep-leaf.html': SCRIPTED,
   });
 

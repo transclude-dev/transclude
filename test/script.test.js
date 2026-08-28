@@ -8,8 +8,7 @@ import {
   assertModule,
   assertNoCollisions,
   bindDefaultExport,
-  planLift,
-  toFunctionBody,
+  bindElementModule,
 } from '../src/compiler/script.js';
 
 const at = (code, line = 1) => ({ code, line });
@@ -107,199 +106,103 @@ test('collisions with the generated module are caught by name', () => {
   assert.doesNotThrow(() => assertNoCollisions(['revalidate'], new Set(['css']), 'x'));
 });
 
-// ---- client blocks --------------------------------------------------------
+// ---- <script element> ------------------------------------------------------
+//
+// The block is a module. It is read by name, rebound in place, and everything
+// the author wrote that is not one of those names is left exactly where it was.
 
-test('client imports are hoisted and the rest becomes a function body', () => {
-  const { imports, body } = toFunctionBody([at(`import x from 'x';\nhost.append(x);`)], 'x');
-  assert.equal(imports, `import x from 'x';`);
-  assert.match(body, /host\.append\(x\);/);
-  assert.doesNotMatch(body, /import x/);
+const element = (code) => bindElementModule(at(code), 'a-a.html <script element>');
+
+test('each reserved export is rebound to what the module calls it', () => {
+  const { code } = element(
+    'export const properties = { a: 1 };\nexport const state = { b: 2 };\n' +
+      'export const prototype = { go() {} };\nexport const attributes = { a: {} };',
+  );
+
+  // The padding is the point: the initializer keeps the column it was written at.
+  assert.match(code, /const __propDefs = +\{ a: 1 \};/);
+  assert.match(code, /const __stateDefs = +\{ b: 2 \};/);
+  assert.match(code, /const __members = +\{ go\(\) \{\} \};/);
+  assert.match(code, /const __propAttrs = +\{ a: \{\} \};/);
 });
 
-test('multi-line imports are hoisted whole', () => {
-  const source = `import {\n  a,\n  b,\n} from 'x';\nuse(a, b);`;
-  const { imports, body } = toFunctionBody([at(source)], 'x');
-  assert.match(imports, /import \{\n {2}a,\n {2}b,\n\} from 'x';/);
-  assert.match(body, /use\(a, b\);/);
+test('a rebind moves nothing after it', () => {
+  // Padded with spaces, so a line and column in the generated module is the same
+  // line and column in the .html file. A stack trace has to land somewhere true.
+  const source = 'export const properties = { a: 1 };\nconst after = 2;';
+  const { code } = element(source);
+
+  assert.equal(code.split('\n').length, source.split('\n').length);
+  assert.equal(code.indexOf('const after'), source.indexOf('const after'));
 });
 
-test('hoisting preserves line and column positions', () => {
-  const source = `import x from 'x';\nhost.append(x);`;
-  const { body } = toFunctionBody([at(source)], 'x');
-  const [first, second] = body.split('\n');
-  assert.equal(first.trim(), '');
-  assert.equal(first.length, `import x from 'x';`.length);
-  assert.equal(second, 'host.append(x);');
+test('the initializer node comes back, for the checks that read its keys', () => {
+  const { nodes } = element('export const properties = { a: 1 };\nexport const prototype = {};');
+
+  assert.equal(nodes.properties.type, 'ObjectExpression');
+  assert.equal(nodes.prototype.type, 'ObjectExpression');
+  assert.equal(nodes.state, null);
 });
 
-test('dynamic import is not mistaken for a declaration', () => {
-  const { imports, body } = toFunctionBody([at(`const m = await import('./x.js');`)], 'x');
-  assert.equal(imports, '');
-  assert.match(body, /await import\('\.\/x\.js'\)/);
+test('flags are read as literals and blanked out of the code', () => {
+  const { code, flags } = element('export const shadow = true;\nexport const formAssociated = false;');
+
+  assert.equal(flags.shadow, true);
+  assert.equal(flags.formAssociated, false);
+  assert.doesNotMatch(code, /export const/);
 });
 
-test('top-level await is allowed, because init is async', () => {
-  assert.doesNotThrow(() => toFunctionBody([at('await ready();')], 'x'));
+test('a flag nobody declared is null, which is not the same as false', () => {
+  const { flags } = element('export const properties = {};');
+
+  assert.equal(flags.shadow, null);
+  assert.equal(flags.formAssociated, null);
 });
 
-test('a client block cannot export', () => {
-  assert.throws(() => toFunctionBody([at('export const a = 1;')], 'card.html <script>'), /cannot export/);
+test('a computed flag is refused, because it decides something about the tag', () => {
+  assert.throws(() => element('export const shadow = 1 > 0;'), /must be `true` or `false`/);
 });
 
-test('multiple client blocks merge', () => {
-  const { imports, body } = toFunctionBody([at(`import a from 'a';\nuse(a);`), at('more();')], 'x');
-  assert.equal(imports, `import a from 'a';`);
-  assert.match(body, /use\(a\);/);
-  assert.match(body, /more\(\);/);
+test('imports stay where the author put them', () => {
+  const { code, imports } = element("import { fmt } from './f.js';\nexport const prototype = { at() { return fmt(1); } };");
+
+  assert.match(code, /^import \{ fmt \} from '\.\/f\.js';/);
+  assert.equal(imports[0].source, './f.js');
 });
 
-// ---- the lifted prototype -------------------------------------------------
+test('a helper is left at module scope, because that is where it was written', () => {
+  // Nothing is hoisted any more. The block is a module, so the order the author
+  // wrote is the order the module has.
+  const { code } = element("const LIMIT = 3;\nexport const prototype = { cap() { return LIMIT; } };");
 
-test('the lifted export and what it reads leave the function body', () => {
-  const source = `const FORMAT = 1;
-const other = 2;
-export const prototype = { go() { return FORMAT; } };
-host.x = other;`;
-  const { hoisted, body, lifted } = toFunctionBody([at(source)], 'x', { lift: 'prototype' });
-
-  assert.match(hoisted, /const FORMAT = 1;/);
-  assert.match(hoisted, /const __members = \{ go\(\) \{ return FORMAT; \} \};/);
-  // `other` is setup's, not the prototype's, so it stays per element.
-  assert.doesNotMatch(hoisted, /const other = 2;/);
-  assert.match(body, /const other = 2;/);
-  assert.match(body, /host\.x = other;/);
-  assert.ok(lifted);
+  assert.ok(code.indexOf('const LIMIT') < code.indexOf('const __members'));
 });
 
-test('something a hoisted name reads comes along too', () => {
-  const source = `const A = 1;
-const B = A + 1;
-export const prototype = { go() { return B; } };`;
-  const { hoisted } = toFunctionBody([at(source)], 'x', { lift: 'prototype' });
-  assert.match(hoisted, /const A = 1;/);
-  assert.match(hoisted, /const B = A \+ 1;/);
+test('an export the element does not declare is refused', () => {
+  assert.throws(() => element('export const other = 1;'), /is not something an element declares/);
+  assert.throws(() => element('export function go() {}'), /is not something an element declares/);
 });
 
-test('lifting preserves line and column positions in what stays behind', () => {
-  const { body } = toFunctionBody([at(`export const prototype = {};\nhost.x = 1;`)], 'x', {
-    lift: 'prototype',
-  });
-  const [first, second] = body.split('\n');
-  assert.equal(first.trim(), '');
-  assert.equal(second, 'host.x = 1;');
+test('a default export is refused, and the message says what to write', () => {
+  assert.throws(() => element('export default { a: 1 };'), /export const properties/);
 });
 
-test('a prototype reaching per-element scope is refused', () => {
+test('the same export twice is refused rather than last-wins', () => {
   assert.throws(
-    () => toFunctionBody([at('export const prototype = { go() { return shadow; } };')], 'x', { lift: 'prototype' }),
-    /per element/,
+    () => element('export const properties = { a: 1 };\nexport const properties = { b: 2 };'),
+    /exported twice|already been declared/,
   );
 });
 
-test('shadowing is tracked, so a local named signal is not a reach', () => {
-  assert.doesNotThrow(() =>
-    toFunctionBody([at('export const prototype = { go() { const signal = 1; return signal; } };')], 'x', {
-      lift: 'prototype',
-    }),
+test('a parse error points back into the .html file', () => {
+  assert.throws(
+    () => bindElementModule({ code: 'export const properties = {', line: 12 }, 'a-a.html <script element>'),
+    (error) => error instanceof ScriptError && /line 12/.test(error.message),
   );
-});
-
-test('without a lift option every export is still refused', () => {
-  assert.throws(() => toFunctionBody([at('export const prototype = {};')], 'x'), /cannot export/);
 });
 
 test('page client entries keep their imports and top-level await', () => {
   const code = assertModule([at(`import a from 'a';\nawait a();`)], 'x');
   assert.match(code, /import a from 'a';/);
   assert.match(code, /await a\(\);/);
-});
-
-// ---- what a lifted member reaches for --------------------------------------
-//
-// `planLift` answers two questions about `export const prototype`: which other
-// top-level statements have to come with it, and whether it reads anything that
-// exists once per element. The second is what makes `host` inside a member a
-// compile error instead of a bug found later.
-//
-// Scopes are tracked rather than ignored. A member with its own `host` in hand
-// is not reaching for the element, and reporting it as one would be an error
-// about code that is correct. Every binding form below is a way to have one.
-
-const parse = (code) => acorn.parse(code, { ecmaVersion: 'latest', sourceType: 'module' });
-const lift = (code) => planLift(parse(code), 'prototype');
-
-test('a member reading host is caught', () => {
-  const plan = lift('export const prototype = { open() { host.hidden = false; } };');
-
-  assert.deepEqual(plan.reaches, ['host']);
-});
-
-test('a member is not caught for a name it declares itself', () => {
-  const plan = lift('export const prototype = { open() { const host = this; host.hidden = false; } };');
-
-  assert.deepEqual(plan.reaches, []);
-});
-
-test('a loop variable named host is the loop s, not the element', () => {
-  const forOf = lift('export const prototype = { all() { for (const host of this.items) host.reset(); } };');
-  const classic = lift('export const prototype = { all() { for (let host = 0; host < 2; host++) void host; } };');
-  const forIn = lift('export const prototype = { all() { for (const host in this.map) void host; } };');
-
-  assert.deepEqual(forOf.reaches, []);
-  assert.deepEqual(classic.reaches, []);
-  assert.deepEqual(forIn.reaches, []);
-});
-
-test('a loop still reaches for what it reads from outside itself', () => {
-  const plan = lift('export const prototype = { all() { for (const row of host.rows) void row; } };');
-
-  assert.deepEqual(plan.reaches, ['host']);
-});
-
-test('a caught error named signal is the error, not the AbortSignal', () => {
-  const plan = lift(
-    'export const prototype = { go() { try { this.run(); } catch (signal) { void signal; } } };',
-  );
-
-  assert.deepEqual(plan.reaches, []);
-});
-
-test('a named class expression binds its own name inside itself', () => {
-  // The name of a class expression is in scope in the class body and nowhere
-  // else. So the first reads the class and the second reads the element, and
-  // the same word means two things one line apart.
-  const inside = lift(
-    'export const prototype = { make() { return class host { self() { return host; } }; } };',
-  );
-  const outside = lift('export const prototype = { make() { const C = class host {}; return host; } };');
-
-  assert.deepEqual(inside.reaches, []);
-  assert.deepEqual(outside.reaches, ['host']);
-});
-
-test('a class still reaches for what its body reads', () => {
-  const plan = lift('export const prototype = { make() { return class extends host.Base {}; } };');
-
-  assert.deepEqual(plan.reaches, ['host']);
-});
-
-test('a statement a member depends on is lifted with it', () => {
-  // `label` is read by the member, so the member cannot be moved onto the class
-  // without it. The dependency is transitive: `label` reads `prefix`.
-  const plan = lift(
-    "const prefix = 'a';\nconst label = prefix + 'b';\nexport const prototype = { name() { return label; } };",
-  );
-
-  assert.equal(plan.deps.length, 2);
-  assert.ok(plan.reads.has('label'));
-});
-
-test('an import is not a name the member reaches for', () => {
-  const plan = lift("import { format } from './fmt.js';\nexport const prototype = { at() { return format(1); } };");
-
-  assert.deepEqual(plan.reaches, []);
-});
-
-test('a file with no prototype export has nothing to plan', () => {
-  assert.equal(lift('const x = 1;'), null);
 });

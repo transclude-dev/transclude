@@ -311,16 +311,16 @@ test('a component renders host attrs, a shadow root, and slotted children', () =
 
 // ---- blocks ---------------------------------------------------------------
 
-test('splitBlocks separates server, properties, client and style', () => {
+test('splitBlocks separates server, element, client and style', () => {
   const blocks = splitBlocks(`
     <script server>export default () => ({ a: 1 });</script>
-    <script properties>export default { a: 0 };</script>
+    <script element>export const properties = { a: 0 };</script>
     <style>p{color:red}</style>
     <p>hi</p>
     <script>console.log(1);</script>
   `);
   assert.match(blocks.server.code, /export default \(\) =>/);
-  assert.match(blocks.properties.code, /export default \{ a: 0 \}/);
+  assert.match(blocks.element.code, /export const properties = \{ a: 0 \}/);
   assert.deepEqual(blocks.styles, ['p{color:red}']);
   assert.equal(blocks.client.length, 1);
   assert.match(blocks.client[0].code, /console\.log\(1\)/);
@@ -351,69 +351,106 @@ test('attribute strings coerce to the shape of the declared default', () => {
 const component = (source) =>
   compileComponent(source, { tag: 'x-card', shadow: true, runtime: '/rt.js' }).code;
 
-const INIT = /export async function init/;
+test('the retired blocks say where they went', () => {
+  for (const attr of ['properties', 'props', 'state']) {
+    assert.throws(
+      () => splitBlocks(`<script ${attr}>export default {};</script>`),
+      (error) => error instanceof CompileError && error.message.includes('<script element>'),
+    );
+  }
+});
 
-test('the retired <script element> block says where its members went', () => {
+test('a second <script element> is refused, naming the first', () => {
+  // One module per file. Two of them leaves nothing to say which `properties`
+  // wins, which is the arbitration this design exists to delete.
   assert.throws(
-    () => splitBlocks('<script element>export default {};</script>'),
-    /export const prototype/,
+    () =>
+      splitBlocks(
+        '<script element>export const properties = { a: 0 };</script>\n' +
+          '<script element>export const state = { b: 0 };</script>',
+      ),
+    /already declared on line 1/,
+  );
+});
+
+test("a bare <script> in an element points at connected()", () => {
+  // In a page it is the client entry. Here it is code that would never run, so
+  // it is refused rather than dropped.
+  assert.throws(
+    () => component('<script>console.log(1);</script><p>a</p>'),
+    /connected\(\{ signal \}\)/,
   );
 });
 
 test('members reach the def, and are absent when nothing exports them', () => {
-  assert.match(component('<script>export const prototype = { go() {} };</script><p>a</p>'), /go\(\)/);
+  assert.match(
+    component('<script element>export const prototype = { go() {} };</script><p>a</p>'),
+    /go\(\)/,
+  );
   assert.match(component('<p>a</p>'), /const __members = \{\};/);
 });
 
-test('the prototype is hoisted out of the per-element setup body', () => {
-  const code = component('<script>export const prototype = { go() {} };\nhost.x = 1;</script><p>a</p>');
-  const members = code.indexOf('const __members =');
-  const init = code.search(INIT);
-
-  assert.ok(members !== -1 && members < init, 'members belong to the module, not to init');
-  assert.doesNotMatch(code.slice(init), /go\(\)/);
-  assert.match(code.slice(init), /host\.x = 1;/);
-});
-
-test('a helper the prototype reads is hoisted along with it', () => {
-  // Otherwise the hoisted members would refer to a name that stayed behind.
+test('the block is a module, so nothing is hoisted out of it', () => {
+  // The whole reason for one block: what the author wrote at the top level of a
+  // module stays at the top level of a module, in the order they wrote it.
   const code = component(
-    `<script>const FORMAT = new Intl.NumberFormat();
+    `<script element>const FORMAT = new Intl.NumberFormat();
 export const prototype = { show() { return FORMAT.format(1); } };</script><p>a</p>`,
   );
   const helper = code.indexOf('const FORMAT =');
-  assert.ok(helper !== -1 && helper < code.search(INIT), 'the helper came along');
+  const members = code.indexOf('const __members =');
+
+  assert.ok(helper !== -1 && helper < members, 'the helper stayed above the members');
+  assert.doesNotMatch(code, /export async function init/, 'there is no init to splice into');
 });
 
-test('setup code the prototype does not read stays per element', () => {
+test('the reserved exports are rebound without moving anything after them', () => {
+  // Every splice is padded, so a line in the generated module is that line of
+  // the .html file. A stack trace into `connected` has to point somewhere true.
   const code = component(
-    '<script>const id = 1;\nexport const prototype = { go() {} };</script><p>a</p>',
+    '<script element>export const properties = { a: 0 };\nexport const state = { b: 0 };</script><p>a</p>',
   );
-  assert.match(code.slice(code.search(INIT)), /const id = 1;/);
+  assert.match(code, /const __propDefs =\s+\{ a: 0 \};/);
+  assert.match(code, /const __stateDefs =\s+\{ b: 0 \};/);
 });
 
-test('a prototype reaching for host is an error, not a silently shared value', () => {
+test('an element declares by name, so a default export is refused', () => {
   assert.throws(
-    () => component('<script>export const prototype = { go() { return host; } };</script><p>a</p>'),
-    /per element/,
+    () => component('<script element>export default { a: 0 };</script><p>a</p>'),
+    /no default export/,
   );
 });
 
-test('a parameter named host is not a reach for the element', () => {
-  // Scopes are tracked, so shadowing is shadowing and not a false alarm.
-  assert.doesNotThrow(() =>
-    component('<script>export const prototype = { go(host) { return host; } };</script><p>a</p>'),
+test('a name the element does not declare is refused, not ignored', () => {
+  // The block is read by name, so an export nobody reads is a typo rather than
+  // a value that quietly does nothing.
+  assert.throws(
+    () => component('<script element>export const propertes = { a: 0 };</script><p>a</p>'),
+    /is not something an element declares/,
   );
 });
 
-test('a client block still cannot export anything else', () => {
-  assert.throws(() => component('<script>export const other = 1;</script><p>a</p>'), /cannot export/);
+test('a flag has to be a literal, because it decides something about the tag', () => {
+  assert.throws(
+    () => component('<script element>export const shadow = Boolean(1);</script><p>a</p>'),
+    /must be `true` or `false`/,
+  );
+});
+
+test('an export declared twice is refused', () => {
+  assert.throws(
+    () =>
+      component(
+        '<script element>export const properties = { a: 0 };\nexport const properties = { b: 0 };</script><p>a</p>',
+      ),
+    /exported twice|already been declared/,
+  );
 });
 
 for (const name of ['connectedCallback', 'disconnectedCallback', 'attributeChangedCallback']) {
   test(`${name} in the prototype is a compile error`, () => {
     assert.throws(
-      () => component(`<script>export const prototype = { ${name}() {} };</script><p>a</p>`),
+      () => component(`<script element>export const prototype = { ${name}() {} };</script><p>a</p>`),
       (error) => error instanceof CompileError && error.message.includes(name),
     );
   });
@@ -421,16 +458,20 @@ for (const name of ['connectedCallback', 'disconnectedCallback', 'attributeChang
 
 test('adoptedCallback is left alone, since nothing implements it', () => {
   assert.match(
-    component('<script>export const prototype = { adoptedCallback() {} };</script><p>a</p>'),
+    component('<script element>export const prototype = { adoptedCallback() {} };</script><p>a</p>'),
     /adoptedCallback/,
   );
 });
 
-test('the client block gets a signal alongside host and shadow', () => {
-  assert.match(
-    component('<script>void signal;</script><p>a</p>'),
-    /init\(host, shadow, signal, internals\)/,
+test('connected is an ordinary member, so the runtime is what calls it', () => {
+  // No `init` export and no fourth argument to `define`. The hook is on the
+  // prototype beside `updated`, and the class reaches it through `this`.
+  const code = component(
+    '<script element>export const prototype = { connected({ signal }) { void signal; } };</script><p>a</p>',
   );
+  assert.match(code, /connected\(\{ signal \}\)/);
+  assert.match(code, /defineComponent\(def\);/);
+  assert.doesNotMatch(code, /function init/);
 });
 
 // ---- <script head> attributes ----------------------------------------------
@@ -481,8 +522,10 @@ test('an interpolated attribute is refused, since this is emitted before any dat
 const elementOf = (source, over = {}) =>
   compileComponent(source, { tag: 'a-a', runtime: '/rt.js', filename: 'a-a', ...over });
 
+// Behavior is what registers an element, so the fixture declares a member.
 const withScript = (markup, props = 'tags: []') =>
-  `<script properties>export default { ${props} };</script>${markup}<script>host.id;</script>`;
+  `<script element>export const properties = { ${props} };
+export const prototype = { connected() {} };</script>${markup}`;
 
 test('a light element writes text and attributes in place', () => {
   const { code } = elementOf(withScript('<p>${tags}</p>'));
@@ -507,7 +550,7 @@ test('a shadow element binds the structure instead of calling it volatile', () =
   // written rather than rebuilt. `volatile` is what the compiler could *not*
   // bind, which is why a light element's list ends up there and this does not.
   const source =
-    '<script properties>export default { tags: [] };export const shadow = true;</script>' +
+    '<script element>export const properties = { tags: [] };export const shadow = true;</script>' +
     '<ul><li each="t of tags">${t}</li></ul>';
   const { code } = elementOf(source);
 
@@ -517,7 +560,7 @@ test('a shadow element binds the structure instead of calling it volatile', () =
 
 test('an element with no behavior is not held to it, since it never re-renders', () => {
   // It ships nothing, so there is no repaint to refuse.
-  const source = '<script properties>export default { tags: [] };</script><ul><li each="t of tags">${t}</li></ul>';
+  const source = '<script element>export const properties = { tags: [] };</script><ul><li each="t of tags">${t}</li></ul>';
   assert.ok(elementOf(source).code, 'a markup-only element should still compile');
 });
 
@@ -545,7 +588,7 @@ test('what the block itself reads is still refused, and still names shadow', () 
 test('an element that can never update pays for no anchors', () => {
   // The fence is for the walk. Markup that ships nothing has no walk, so the
   // anchors would be bytes on every page that renders it.
-  const markupOnly = '<script properties>export default {};</script><li each="t of [1, 2]">x</li>';
+  const markupOnly = '<script element>export const properties = {};</script><li each="t of [1, 2]">x</li>';
   assert.doesNotMatch(elementOf(markupOnly).code, /<!--\[-->/);
   assert.match(elementOf(withScript('<li each="t of [1, 2]">x</li>')).code, /<!--\[-->/);
 });
@@ -554,7 +597,7 @@ test('state is held to the same structural rule as a prop', () => {
   // The guard reads what the template could not bind, whatever its name came
   // from. State getting a pass here would be a light element rebuilding.
   const source =
-    '<script state>export default { tags: [] };</script>' +
+    '<script element>export const state = { tags: [] };</script>' +
     '<ul><li each="t of tags">${t}</li></ul>';
 
   assert.throws(() => elementOf(source), /export const shadow = true/);
@@ -563,7 +606,7 @@ test('state is held to the same structural rule as a prop', () => {
 test('state a light element only writes is allowed, and is bound', () => {
   // Bound, not just compiled. Without the binding the accessor would set the
   // value and no node would ever hear about it.
-  const source = '<script state>export default { n: 0 };</script>\n<p>${n}</p>';
+  const source = '<script element>export const state = { n: 0 };</script>\n<p>${n}</p>';
   const { code } = elementOf(source);
 
   assert.match(code, /export const light = true;/);

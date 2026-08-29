@@ -48,9 +48,17 @@
       this.shadowRoot.addEventListener(
         "click",
         (event) => {
-          const tag = event.target.closest("[data-tag]")?.dataset.tag;
+          // `event.target` is an `EventTarget`, which has no `closest`: a click
+          // can land on a text node or on the document. Narrowed once here
+          // rather than asserted twice below.
+          const target = /** @type {Element | null} */ (event.target);
+          if (!target?.closest) return;
+
+          const tag = /** @type {HTMLElement | null} */ (
+            target.closest("[data-tag]")
+          )?.dataset.tag;
           if (tag) this.toggle(tag);
-          else if (event.target.closest("[data-open]")) this.open = !this.open;
+          else if (target.closest("[data-open]")) this.open = !this.open;
         },
         { signal },
       );

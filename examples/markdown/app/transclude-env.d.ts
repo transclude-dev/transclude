@@ -32,7 +32,7 @@ type Note = {
   body: string;
 };
 
-/** Properties of `<site-note>`, from its <script properties> block. */
+/** Properties of `<site-note>`, from its <script element> block. */
 export type SiteNoteProps = {
   tone: string;
 };

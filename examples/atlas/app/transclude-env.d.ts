@@ -77,7 +77,10 @@ type Lexicon = {
   did: string;
   uri: string;
   cid: string;
-  schema: object;
+  schema: {
+    id?: string | undefined;
+    defs?: Record<string, object> | undefined;
+  };
 };
 type AtUri = {
   authority: string;
@@ -87,17 +90,17 @@ type AtUri = {
   uri: string;
 };
 
-/** Properties of `<field-list>`, from its <script properties> block. */
+/** Properties of `<field-list>`, from its <script element> block. */
 export type FieldListProps = {
   fields: Field[];
 };
 
-/** Properties of `<link-list>`, from its <script properties> block. */
+/** Properties of `<link-list>`, from its <script element> block. */
 export type LinkListProps = {
   links: Backlink[];
 };
 
-/** Properties of `<record-card>`, from its <script properties> block. */
+/** Properties of `<record-card>`, from its <script element> block. */
 export type RecordCardProps = {
   uri: string;
   cid: string;
@@ -105,12 +108,12 @@ export type RecordCardProps = {
   schema: boolean;
 };
 
-/** Properties of `<record-row>`, from its <script properties> block. */
+/** Properties of `<record-row>`, from its <script element> block. */
 export type RecordRowProps = {
   rows: Row[];
 };
 
-/** Properties of `<trace-rail>`, from its <script properties> block. */
+/** Properties of `<trace-rail>`, from its <script element> block. */
 export type TraceRailProps = {
   hops: Row_2[];
   ms: number;
@@ -313,7 +316,7 @@ export type LexiconNsidData = __Shape<{
   lexicon: Lexicon;
   defs: {
     name: string;
-    def: any;
+    def: object;
   }[];
   properties: {
     name: string;

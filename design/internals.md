@@ -749,20 +749,31 @@ against.
   known errors is a job that is red on every build, and a job that is always red
   is the `.DS_Store` warning again. Flip it when the count is zero, and delete
   the ratchet in the same commit. Do not raise a ceiling. Lower one, or leave it.
-- **TypeScript 7.1 already prints a type the emitter cannot name.** The checker
-  drives `typescript/unstable/sync`, which says in its own path that it is
-  unstable, and is tested against exactly 7.0.2. `refuseMovedAPI` catches a
-  subpath or an enum that is gone. It cannot catch a printer that starts
-  spelling a type differently, and that is what happened: on
-  `7.1.0-dev.20260829.1` the generated `transclude-env.d.ts` came out referring
-  to `Person`, a name nothing in the file declares, and `checkAlone` refused it
-  with "Cannot find name 'Person'". That guard exists because nothing downstream
-  reads that file, so a bad identifier would otherwise ship in silence.
-  The `typescript-next` job in `ci.yml` runs the real checker against whatever
-  TypeScript ships next and is `continue-on-error`: a prerelease of somebody
-  else's compiler is not a reason to fail a pull request, and is a reason to
-  know. It found this the first time it ran. Before 1.0, decide whether the
-  answer is to pin, to adapt, or to stop driving an unstable API.
+- **A guard that exits first hides everything behind it.** `bin/check.js` writes
+  `transclude-env.d.ts`, hands it to `checkAlone`, and exits on a bad
+  identifier before it checks a single page. That guard is right: nothing
+  downstream reads that file, so a bad name would otherwise ship in silence.
+  What it also does is stop the run, and the showcase sat behind it for a day.
+  A migration dropped two `@typedef` blocks out of `card-list.html`, so `Person`
+  resolved to nothing, so the guard fired, so the twenty-two pages after it were
+  never checked. Four unrelated errors in `tag-picker.html` were sitting there
+  the whole time. Nothing noticed, because no job ran an example's `check` —
+  `ci.yml` built them and ran their tests, and that was all. It runs their
+  checks now.
+  Read the failure as "the run stopped here", not as "this is the error". The
+  first thing to do with a `checkAlone` refusal is fix the name and run it
+  again, because what comes back the second time is the real list.
+- **The first thing `typescript-next` reported was not about TypeScript.** It
+  went red on `7.1.0-dev`, and the reading that suggests itself is that the
+  printer moved: the checker drives `typescript/unstable/sync`, `refuseMovedAPI`
+  cannot see a printer that spells a type differently, and the failure was a
+  type name the generated file could not resolve. Every part of that is true and
+  it was still the wrong answer. The same failure reproduced on 7.0.2, and on
+  v0.19.0 and v0.18.1 before that. It was the dropped `@typedef` above, and the
+  job was the first thing that had ever run that check.
+  Establish the baseline before believing a new tool's first finding. Running it
+  on the pinned version costs one command, and it is the difference between
+  "the new thing broke it" and "the new thing found it".
 - **`npm test` reports `src/runtime/index.js` at 43%, and the number is an
   artifact.** `withDom` in `test/element.test.js` imports the runtime as
   `../src/runtime/index.js?${random}`, so nothing leaks between cases. Node's

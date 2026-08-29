@@ -5,6 +5,14 @@
     people: [],
   };
 
+  /** @typedef {{ name: string; role: string; tags: string[]; joined: Date }} Person */
+
+  /**
+   * What survives the attribute is JSON, and JSON has no date, so the shape on
+   * the wire is not the shape of the prop. That gap is why a converter exists.
+   *
+   * @typedef {Omit<Person, 'joined'> & { joined: string }} WirePerson
+   */
   export const attributes = {
     people: {
       from: (text) =>

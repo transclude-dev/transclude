@@ -25,7 +25,10 @@ import { getRecord } from './xrpc.js';
  * @property {string} did  Who published it.
  * @property {string} uri  The AT-URI of the schema record.
  * @property {string} cid
- * @property {object} schema  The lexicon document: `{ id, defs }`.
+ * @property {{ id?: string, defs?: Record<string, object> }} schema
+ *   The lexicon document. Written out rather than `object`, which says opaque:
+ *   every read of `schema.defs` is an error against that, and the page that
+ *   lists the definitions does exactly that.
  */
 
 /**

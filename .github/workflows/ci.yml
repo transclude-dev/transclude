@@ -238,7 +238,9 @@ jobs:
         # can do is fail a job that is already allowed to fail.
         run: |
           npm install --prefix examples/showcase --no-save typescript@next
-          node -p "'typescript ' + require('examples/showcase/node_modules/typescript/package.json').version"
+          # `./`, or node reads the path as a package name and MODULE_NOT_FOUND
+          # ends the job before the check it exists to run.
+          node -p "'typescript ' + require('./examples/showcase/node_modules/typescript/package.json').version"
           npm run check --prefix examples/showcase
 
   deploy:

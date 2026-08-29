@@ -732,20 +732,41 @@ against.
   `cd editor/vscode && npm install && npx @vscode/vsce package`. Publishing
   needs a Marketplace publisher whose id matches `publisher` in its
   `package.json`, and `npx ovsx publish` covers Open VSX.
-- **Sixty-one passing checks were the whole of what anybody knew.** The browser
-  half of `src/runtime/index.js` runs only in a browser, so `npm test` reported
-  the file at 43% and the number meant nothing: the element class, the paint and
-  the boundary are all on the other side of it. The checks in the showcase cover
-  that side, and they answer whether they pass, not how much they reach. Nobody
-  could say, which is why the shadow half sat in "still moving" for as long as
-  it did. `examples/showcase/scripts/coverage.js` asks V8: 98.5% over 63 checks.
+- **TypeScript 7.1 already prints a type the emitter cannot name.** The checker
+  drives `typescript/unstable/sync`, which says in its own path that it is
+  unstable, and is tested against exactly 7.0.2. `refuseMovedAPI` catches a
+  subpath or an enum that is gone. It cannot catch a printer that starts
+  spelling a type differently, and that is what happened: on
+  `7.1.0-dev.20260829.1` the generated `transclude-env.d.ts` came out referring
+  to `Person`, a name nothing in the file declares, and `checkAlone` refused it
+  with "Cannot find name 'Person'". That guard exists because nothing downstream
+  reads that file, so a bad identifier would otherwise ship in silence.
+  The `typescript-next` job in `ci.yml` runs the real checker against whatever
+  TypeScript ships next and is `continue-on-error`: a prerelease of somebody
+  else's compiler is not a reason to fail a pull request, and is a reason to
+  know. It found this the first time it ran. Before 1.0, decide whether the
+  answer is to pin, to adapt, or to stop driving an unstable API.
+- **`npm test` reports `src/runtime/index.js` at 43%, and the number is an
+  artifact.** `withDom` in `test/element.test.js` imports the runtime as
+  `../src/runtime/index.js?${random}`, so nothing leaks between cases. Node's
+  coverage does not attribute a query-string import back to the file, and the
+  element tests do drive the real element class. Read the 43% as "not measured
+  here", never as "not covered". Anyone tempted to raise it should check what a
+  test imports before writing one.
+- **Sixty-one passing checks were the whole of what anybody knew.** What a fake
+  DOM cannot answer is the part that needs a real one: `attachShadow`,
+  `setHTMLUnsafe`, a declarative shadow root the parser built. The checks in the
+  showcase cover that, and they answer whether they pass, not how much they
+  reach. Nobody could say, which is why the shadow half sat in "still moving"
+  for as long as it did. `examples/showcase/scripts/coverage.js` asks V8
+  directly, through the DevTools protocol: 98.5% over 63 checks.
   Measuring it is what found the gap. Every shadow check started from markup the
   server had sent, so `connectedCallback` always adopted a root the parser built
   and the first render was a bind over nodes that already existed. The other
   branch — `attachShadow` and a paint with nothing to bind to — is what
-  `document.createElement` takes, and it had no check at all. Two now. Note what
-  the shape of the failure was: not a wrong answer, but a question nobody had
-  asked, behind a number that looked answered.
+  `document.createElement` takes, and it had no check at all. Two now. Note the
+  shape of the failure: not a wrong answer, but a question nobody had asked,
+  behind two numbers that both looked like answers and were not.
 - **The four-runtime claim ran on one runtime.** The README opens by promising
   Node, Bun, Deno and workerd. CI ran Node 22, and only Node 22:
   `test/portable.test.js` proves the core imports nothing from `node:`, which is

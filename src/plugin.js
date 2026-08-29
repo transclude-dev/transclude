@@ -34,6 +34,7 @@ export default function transclude({
   appDir = 'app',
   elementsDir = 'elements',
   routesDir = 'routes',
+  publicDir = 'public',
   fragmentParam = 'fragment',
   watchElements = false,
   markdown = null,
@@ -48,6 +49,8 @@ export default function transclude({
   const read = (file) => sourceOf(file, readRaw(file), markdown);
 
   let root;
+  let publicRoot = null;
+  let serving = false;
   let app;
   let runtime;
   let components = new Map();
@@ -239,6 +242,8 @@ export default function transclude({
 
       root = config.root;
       app = path.resolve(root, appDir);
+      publicRoot = publicDir ? path.resolve(app, publicDir) : null;
+      serving = config.command === 'serve';
       runtime = '/' + path.relative(root, RUNTIME_FILE).split(path.sep).join('/');
       scan();
     },
@@ -265,6 +270,28 @@ export default function transclude({
       if (importer?.startsWith('virtual:transclude-') && /^\.\.?\//.test(id)) {
         const source = origin.get(importer);
         if (source) return path.resolve(path.dirname(source), id);
+      }
+
+      // Where a public file is, when dev asks. `dev.js` passes `publicDir: false`
+      // so Hono serves these the same way in dev as in production, and the cost
+      // is that Vite no longer knows they exist. `transformIndexHtml` scans a
+      // page for `<script type="module" src>` and warms each one, so a page with
+      // `<script src="/theme.js" type="module">` logged
+      // "Failed to load url /theme.js. Does the file exist?" on every request.
+      // It does exist, it is served, and the page works. A warning that is wrong
+      // every time is read as decoration.
+      //
+      // Answering with the file is what ends the warmup quietly. Nothing uses
+      // what it produces: the browser asks for `/theme.js` and Hono answers with
+      // the bytes, exactly as production does. Serve only, because in a build
+      // this same id would make rolldown bundle a public file as a module, and
+      // the build already copies it.
+      if (serving && publicRoot && id.startsWith('/') && !id.startsWith('/@')) {
+        const asset = path.join(publicRoot, id.slice(1));
+        // Inside the directory, not merely prefixed by its name: `/public-x` is
+        // not in `public/`, and `..` in a URL must not walk out of it.
+        const inside = asset.startsWith(publicRoot + path.sep);
+        if (inside && fs.existsSync(asset) && fs.statSync(asset).isFile()) return asset;
       }
       return null;
     },

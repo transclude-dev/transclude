@@ -183,6 +183,50 @@ jobs:
       - name: workerd
         run: scripts/smoke.sh workerd examples/todomvc 1984 npx wrangler dev --port 1984 --ip 127.0.0.1
 
+  # The TypeScript the checker drives is an API that says it is unstable.
+  #
+  # `src/typecheck.js` imports `typescript/unstable/sync` and is tested against
+  # exactly 7.0.2. `refuseMovedAPI` catches the loud half of a move: a subpath
+  # that is gone, an enum that is not there. The quiet half is a renamed flag,
+  # which ORs into TYPE_FORMAT as `undefined`, prints types wrong, and fails
+  # nowhere. This runs the real checker against whatever TypeScript ships next,
+  # so a move is found here rather than by somebody upgrading.
+  #
+  # `continue-on-error`, because a prerelease of somebody else's compiler is not
+  # a reason to fail a pull request. It is a reason to know.
+  typescript-next:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - run: npm ci
+      - run: npm ci --prefix examples/showcase
+
+      # The showcase, because it is the app that uses every feature, so its
+      # pages are the widest thing the checker is ever pointed at.
+      - name: The next TypeScript
+        # zizmor: ignore[adhoc-packages]
+        #
+        # Installing outside a lockfile is what this job is. A lockfile pins the
+        # version that already works, and the question here is what the next one
+        # does. Nothing is published from this job and it holds no identity, so
+        # the reason the audit exists does not apply: the worst a bad prerelease
+        # can do is fail a job that is already allowed to fail.
+        run: |
+          npm install --prefix examples/showcase --no-save typescript@next
+          node -p "'typescript ' + require('examples/showcase/node_modules/typescript/package.json').version"
+          npm run check --prefix examples/showcase
+
   deploy:
     needs: [test, browser, node, runtimes]
     # A pull request from a fork must not reach the Cloudflare secrets, and a

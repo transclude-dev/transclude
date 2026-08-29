@@ -165,7 +165,8 @@
   <doc-note label="The shadow half was here until 0.20">
     It was listed as still moving for two reasons. It is the harder half to keep
     correct. And nobody knew how much of it the tests reached. Now somebody does.
-    The checks in the showcase run the runtime in a real browser.
+    A shadow root, <code>setHTMLUnsafe</code> and a template the parser turned
+    into a boundary need a real browser. The checks in the showcase are that.
     <code>npm run test:coverage</code> reads V8's own numbers back: 98.5% of
     <code>src/runtime/index.js</code>, over 63 checks.
     <p>

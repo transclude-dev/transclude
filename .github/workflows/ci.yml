@@ -74,6 +74,20 @@ jobs:
 
       - run: npm run test:examples
 
+      # Every example's own type check. None of them ran here, and one had been
+      # red since the day a migration dropped two `@typedef` blocks out of an
+      # element: `transclude-check` refuses the file it generates when a name in
+      # it resolves to nothing, so it exited before it ever checked a page, and
+      # four more errors sat behind that guard unseen. Read rather than listed,
+      # for the reason the install loop above gives.
+      - name: Every example, checked
+        run: |
+          for dir in examples/*/; do
+            [ -f "$dir/package.json" ] || continue
+            node -e "process.exit(require('./$dir/package.json').scripts?.check ? 0 : 1)" || continue
+            npm run check --prefix "$dir"
+          done
+
       # The site is built before it is tested: two of those tests read what the
       # build wrote, and skip when there is nothing to read.
       - run: npm run check --prefix www

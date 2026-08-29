@@ -26,25 +26,25 @@ type __CookieOptions = {
   sameSite?: 'Strict' | 'Lax' | 'None'
 };
 
-/** Properties of `<person-card>`, from its <script properties> block. */
+/** Properties of `<person-card>`, from its <script element> block. */
 export type PersonCardProps = {
   name: string;
   role: string;
   tags: any[];
 };
 
-/** Properties of `<site-note>`, from its <script properties> block. */
+/** Properties of `<site-note>`, from its <script element> block. */
 export type SiteNoteProps = {
   tone: string;
   label: string;
 };
 
-/** Properties of `<tally-box>`, from its <script properties> block. */
+/** Properties of `<tally-box>`, from its <script element> block. */
 export type TallyBoxProps = {
   label: string;
 };
 
-/** Internal state of `<tally-box>`, from its <script state> block. */
+/** Internal state of `<tally-box>`, from its <script element> block. */
 export type TallyBoxState = {
   n: number;
 };
@@ -52,6 +52,11 @@ export type TallyBoxState = {
 /** Members of `<tally-box>`, from its `export const prototype`. */
 export type TallyBoxMembers = {
   bump(by?: number): void;
+  connected({
+    signal
+  }: {
+    signal: any;
+  }): void;
 };
 
 /** The `ctx` argument of `index`'s <script server> loader. */

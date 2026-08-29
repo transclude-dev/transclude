@@ -19,6 +19,6 @@
   "include": [
     "src/**/*.js",
     "bin/**/*.js",
-    "types/**/*.d.ts"
+    "types/runtimes.d.ts"
   ]
 }

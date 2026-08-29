@@ -4,6 +4,16 @@
   // emits nothing, and this one emits and checks nothing: `checkJs` off, because
   // a declaration is worth shipping before every annotation is right, and a red
   // check must not be what stops a release.
+  //
+  // The output is committed, which generated files here otherwise are not.
+  // `publish.yml` stages the tarball with `--ignore-scripts` and no `npm ci`,
+  // so nothing builds at publish time on purpose: that job holds the only
+  // identity that can release, and installing into it is what the split exists
+  // to prevent. A `prepack` would have run nowhere and the `types` conditions
+  // would have pointed at files no tarball carried.
+  //
+  // `npm run types` regenerates them and `test/package.test.js` fails when the
+  // committed output and the source disagree.
   "compilerOptions": {
     "allowJs": true,
     "checkJs": false,
@@ -17,7 +27,7 @@
     "strictNullChecks": false,
     "skipLibCheck": true,
     "rootDir": "src",
-    "outDir": "dist/types"
+    "outDir": "types/api"
   },
   "include": ["src/**/*.js"]
 }

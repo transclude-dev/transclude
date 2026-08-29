@@ -37,60 +37,59 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/types/plugin.d.ts",
+      "types": "./types/api/plugin.d.ts",
       "default": "./src/plugin.js"
     },
     "./app": {
-      "types": "./dist/types/app.d.ts",
+      "types": "./types/api/app.d.ts",
       "default": "./src/app.js"
     },
     "./compiler": {
-      "types": "./dist/types/compiler/index.d.ts",
+      "types": "./types/api/compiler/index.d.ts",
       "default": "./src/compiler/index.js"
     },
     "./cookies": {
-      "types": "./dist/types/cookies.d.ts",
+      "types": "./types/api/cookies.d.ts",
       "default": "./src/cookies.js"
     },
     "./document": {
-      "types": "./dist/types/document.d.ts",
+      "types": "./types/api/document.d.ts",
       "default": "./src/document.js"
     },
     "./production": {
-      "types": "./dist/types/production.d.ts",
+      "types": "./types/api/production.d.ts",
       "default": "./src/production.js"
     },
     "./routes": {
-      "types": "./dist/types/routes.d.ts",
+      "types": "./types/api/routes.d.ts",
       "default": "./src/routes.js"
     },
     "./runtime": {
-      "types": "./dist/types/runtime/index.d.ts",
+      "types": "./types/api/runtime/index.d.ts",
       "default": "./src/runtime/index.js"
     },
     "./serve.bun": "./bin/serve.bun.js",
     "./serve.deno": "./bin/serve.deno.js",
     "./typecheck": {
-      "types": "./dist/types/typecheck.d.ts",
+      "types": "./types/api/typecheck.d.ts",
       "default": "./src/typecheck.js"
     },
     "./worker": {
-      "types": "./dist/types/worker.d.ts",
+      "types": "./types/api/worker.d.ts",
       "default": "./src/worker.js"
     }
   },
   "files": [
     "LICENSE",
     "bin",
-    "dist/types",
     "editor/server.js",
     "skills",
-    "src"
+    "src",
+    "types/api"
   ],
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
     "types": "tsc -p tsconfig.types.json",
-    "prepack": "npm run types",
     "crap": "node scripts/crap.js",
     "test:examples": "npm test --prefix examples/showcase && npm test --prefix examples/todomvc && npm test --prefix examples/dungeon && npm test --prefix examples/lite-brite && npm test --prefix examples/blog && npm test --prefix examples/search && npm test --prefix examples/htmx && npm test --prefix examples/includes && npm test --prefix examples/auth && npm test --prefix examples/live && npm test --prefix examples/elements && npm test --prefix examples/markdown && npm test --prefix examples/atlas",
     "test:www": "npm test --prefix www",

@@ -16,8 +16,9 @@
 // No dependencies. `WebSocket` is a global in Node 22, and the protocol is
 // JSON over one socket.
 //
-//   npm run test:coverage            the runtime
-//   npm run test:coverage -- --all   every module the page loaded
+//   npm run test:coverage                  the runtime
+//   npm run test:coverage -- --all         every module the page loaded
+//   npm run test:coverage -- --floor 95    and refuse to pass under 95%
 
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -28,6 +29,14 @@ const port = Number(process.env.PORT ?? 1973);
 const debugPort = Number(process.env.CDP_PORT ?? 9333);
 const origin = `http://127.0.0.1:${port}`;
 const all = process.argv.includes('--all');
+
+// A number the shadow half is documented at is a number something has to keep
+// true. `docs/decisions.html` says 98.5%, and without a floor nothing would
+// notice it rotting: the checks would still pass, and the claim would go on
+// being made. Well under where it sits, so ordinary drift does not trip it and
+// a real loss of coverage does.
+const floorAt = process.argv.indexOf('--floor');
+const floor = floorAt === -1 ? null : Number(process.argv[floorAt + 1]);
 
 const candidates = [
   process.env.CHROME,
@@ -256,4 +265,16 @@ for (const entry of interesting) {
 
 const good = !report.crash && report.total > 0 && report.passed === report.total;
 if (!good) console.log('\n[coverage] the checks did not all pass, so the numbers describe a broken run.');
+
+// `worst` is the largest shortfall any measured module had, so one file falling
+// through the floor fails whatever else rose.
+const covered = 100 - worst;
+if (floor !== null && good) {
+  if (covered < floor) {
+    console.log(`[coverage] FAIL  ${covered.toFixed(1)}% is under the floor of ${floor}%.`);
+    process.exit(1);
+  }
+  console.log(`[coverage] ok    ${covered.toFixed(1)}%, floor ${floor}%`);
+}
+
 process.exit(good ? 0 : 1);

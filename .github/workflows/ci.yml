@@ -103,6 +103,14 @@ jobs:
       - run: npm run build --prefix examples/showcase
       - run: npm run test:browser --prefix examples/showcase
 
+      # How much of the runtime those checks reach, and a floor under it.
+      # `docs/decisions.html` calls the shadow half settled and prints a number
+      # to say why, and a number nothing keeps true is the failure this
+      # milestone spent its time on. The floor sits well under where coverage
+      # actually is, so ordinary drift does not trip it and a real loss does.
+      # A second Chrome, about ten seconds.
+      - run: npm run test:coverage --prefix examples/showcase -- --floor 95
+
   # Every Node this package says it supports. `engines` says >=22 and this
   # workflow ran 22 alone, so 24 and 26 were a claim with nothing behind them.
   # The suite only, not the examples: the framework's own tests need no app and

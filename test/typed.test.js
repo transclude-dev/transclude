@@ -7,8 +7,9 @@
 //
 // Fixing them is a long job and this is not it. This stops the bleeding: every
 // file has a ceiling, and a change that makes one worse fails here rather than
-// in a review nobody ran. Lowering a ceiling is the work, and the failure names
-// the number to write when a file improves.
+// in a review nobody ran. Lowering a ceiling is the work, and a file that
+// improves is reported rather than failed: a ceiling above where a file sits
+// is safe, and failing on one would hand a chore to whoever improved it.
 //
 // tsc costs a quarter of a second on this tree, which is why this can be a test
 // rather than a job somebody remembers.
@@ -95,26 +96,32 @@ test('the checker still runs, and the report is readable', () => {
   }
 });
 
-test('no file type checks worse than it did', () => {
+test('no file type checks worse than it did', (t) => {
   const counted = errors();
   const worse = [];
+  const better = [];
 
   for (const [file, count] of counted) {
     const allowed = CEILING[file] ?? 0;
     if (count > allowed) worse.push(`  ${file}: ${count}, and the ceiling is ${allowed}`);
   }
 
-  assert.deepEqual(worse, [], `these got worse:\n${worse.join('\n')}`);
-});
-
-test('a ceiling that is too high is named, so it can be lowered', () => {
-  const counted = errors();
-  const slack = [];
-
   for (const [file, allowed] of Object.entries(CEILING)) {
     const count = counted.get(file) ?? 0;
-    if (count < allowed) slack.push(`  '${file}': ${count},`);
+    if (count < allowed) better.push(`  '${file}': ${count},`);
   }
 
-  assert.deepEqual(slack, [], `these improved. Write the new ceilings:\n${slack.join('\n')}`);
+  // Reported, not failed. A ceiling above where a file actually sits is safe:
+  // it can only ever be lowered, and nothing can slip under it that the check
+  // above would not catch. Failing on it would mean a change that improves a
+  // file it never meant to touch turns the build red and hands the author a
+  // chore, which teaches people to leave files alone.
+  // One call per file: a diagnostic is one TAP line, so an embedded newline
+  // arrives as the characters `\n` rather than as a break.
+  if (better.length) {
+    t.diagnostic('these improved. Lower them when it suits:');
+    for (const line of better) t.diagnostic(line.trim());
+  }
+
+  assert.deepEqual(worse, [], `these got worse:\n${worse.join('\n')}`);
 });

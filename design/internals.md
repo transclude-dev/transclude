@@ -740,11 +740,15 @@ against.
   because every jsep node was `{object}`; one `@typedef` for the node took that
   file to zero and `codegen.js` from 12 to 9 along with it.
   Fixing the rest is a long job. `test/typed.test.js` is the ratchet in the
-  meantime: a ceiling per file, nothing may go up, and a file that improves
-  fails with the number to write down. tsc costs a quarter of a second on this
-  tree, which is why it can be a test rather than a job somebody remembers. CI
-  runs `check:src` too, `continue-on-error`, so the errors stay readable.
-  Do not raise a ceiling. Lower one, or leave it.
+  meantime: a ceiling per file, nothing may go up, and a file that improves is
+  reported rather than failed. A ceiling above where a file sits is safe, and
+  failing on one would hand a chore to whoever improved a file they never meant
+  to touch, which teaches people to leave files alone. tsc costs a quarter of a
+  second on this tree, which is why it can be a test rather than a job somebody
+  remembers. CI runs `check:src` too, `continue-on-error`, because gating on 430
+  known errors is a job that is red on every build, and a job that is always red
+  is the `.DS_Store` warning again. Flip it when the count is zero, and delete
+  the ratchet in the same commit. Do not raise a ceiling. Lower one, or leave it.
 - **TypeScript 7.1 already prints a type the emitter cannot name.** The checker
   drives `typescript/unstable/sync`, which says in its own path that it is
   unstable, and is tested against exactly 7.0.2. `refuseMovedAPI` catches a
@@ -780,6 +784,10 @@ against.
   `document.createElement` takes, and it had no check at all. Two now. Note the
   shape of the failure: not a wrong answer, but a question nobody had asked,
   behind two numbers that both looked like answers and were not.
+  The `browser` job runs the measurement with `--floor 95`, because a number the
+  documentation prints is a number something has to keep true. Without it the
+  checks would go on passing while the coverage rotted, and the claim would go
+  on being made: the same shape as the four-runtime claim below.
 - **The four-runtime claim ran on one runtime.** The README opens by promising
   Node, Bun, Deno and workerd. CI ran Node 22, and only Node 22:
   `test/portable.test.js` proves the core imports nothing from `node:`, which is

@@ -106,13 +106,9 @@
 
   <p>
     Below <code>1.0</code>, a minor version may break something. Every release
-    that does says so at the top of its notes, with the change to make.
-  </p>
-
-  <p>
-    Two releases have broken something so far. Both were narrow, and both were
-    the compiler starting to refuse code that was already not doing what it
-    looked like it did.
+    that does says so at the top of its notes, with the change to make. Two have
+    so far. Both were narrow, and both were the compiler starting to refuse code
+    that was already not doing what it looked like it did.
   </p>
 
   <h3>Settled</h3>
@@ -187,11 +183,16 @@
 
   <doc-note label="What a version number means here">
     A patch fixes something. A minor may add a refusal, which is the shape a
-    break takes. That rule holds at <code>1.0</code> and after: a refusal
-    rejects only code that was already not doing what it looked like it did.
-    Every release that adds one names it at the top of its notes, with the
-    change to make. Nothing renames or removes a documented field or key
-    without a major, and there has not been one.
+    break takes. A major renames or removes, and nothing else does.
+    <p>
+      The whole policy is
+      <a href="https://github.com/transclude-dev/transclude/blob/main/VERSIONING.md"
+        ><code>VERSIONING.md</code></a
+      >
+      in the repository. It says what is covered, what is not, and the test that
+      pins each promise to the code. It is the only copy: a promise kept in two
+      places gets made twice and differently.
+    </p>
   </doc-note>
 
   <h2>What it does not do</h2>

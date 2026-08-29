@@ -162,6 +162,47 @@ export interface UserCardProps { name: string; tags: string[] }
   return { dir, checker: createChecker({ root: dir, ...options }) };
 }
 
+// ---- the printer ------------------------------------------------------------
+
+test('TypeScript still prints a type the way this depends on it printing', () => {
+  // The canary for the risk `src/typecheck.js` names in its own comments. It
+  // drives `typescript/unstable/sync`, and `refuseMovedAPI` catches the loud
+  // half of a move: a subpath that is gone, an enum that is not there. The quiet
+  // half is a flag that is renamed, ORs into TYPE_FORMAT as `undefined`, and
+  // prints types differently with nothing failing. Descriptions would go on
+  // being written and would go on being wrong.
+  //
+  // So: a fixed element, and the exact strings the printer gives back. A change
+  // in how TypeScript renders a type fails here, by name, instead of reaching
+  // `transclude-env.d.ts` and looking like the author's mistake.
+  const { checker } = project({
+    'app/elements/probe-card.html': `<script element>
+  /** @typedef {{ name: string; joined: Date }} Person */
+  export const properties = {
+    heading: '',
+    /** @type {Person[]} */
+    people: [],
+    count: 0,
+  };
+</script>
+<p>\${heading}</p>`,
+  });
+
+  const described = checker.describe();
+  const card = described.partials.find((one) => one.tag === 'probe-card');
+
+  // An alias is printed by name, not expanded. That is what makes the next
+  // assertion necessary: the name has to be declared, or the generated file
+  // refers to something nothing defines.
+  assert.equal(card.type, '{ heading: string; people: Person[]; count: number; }');
+
+  // And it is declared, because `describe` collects what it printed the name of.
+  assert.deepEqual(
+    described.types.find((one) => one.name === 'Person'),
+    { name: 'Person', type: '{ name: string; joined: Date; }' },
+  );
+});
+
 test('a typo against loader data is an error at the right place', () => {
   const source = `<script server>export default () => ({ heading: 'x' });</script>
 <h1>\${headng}</h1>`;

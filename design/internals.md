@@ -749,6 +749,38 @@ against.
   known errors is a job that is red on every build, and a job that is always red
   is the `.DS_Store` warning again. Flip it when the count is zero, and delete
   the ratchet in the same commit. Do not raise a ceiling. Lower one, or leave it.
+  Zero is not obviously the target. `test/source-types.test.js` already fails on
+  a curated list of codes that cannot be a false positive — a name, an arity, a
+  call, and the drift class — and much of what sits under those is the shape of a
+  parse5 node, which the compiler walks loosely on purpose. Type what the
+  framework owns and promises. `Config` in `src/defaults.js` is the model:
+  `app.js` read fifty-four keys off an `{object}`, and that same table is one
+  `VERSIONING.md` calls settled, so the type and the promise are now one list.
+  It took `app.js` from 54 to 28 and found a real bug on the way — the first
+  `Config` said `onError` takes one argument, the code passes two, and the fatal
+  gate caught the annotation rather than the call. Write a type from the call
+  site, not from memory.
+- **The promise nothing pinned was the API itself.** The docs said the config
+  keys and the loader context are settled and that tests pin both to the code,
+  and both were true. The `exports` map was neither: a subpath could be renamed
+  in a manifest edit and nothing would read it as the major it is.
+  `test/package.test.js` holds the list now, and it fails in both directions —
+  a name gone is a major, a name added is a minor to acknowledge.
+  `VERSIONING.md` is the policy, and it is the only copy: the site's decisions
+  page links to it rather than restating it, because a promise kept in two
+  places gets made twice and differently. A test checks that the tests it names
+  still exist, since a policy naming a guarantee nothing keeps is worse than one
+  that claims nothing.
+- **The type printer is a dependency, and now there is a canary for it.**
+  `src/typecheck.js` drives `typescript/unstable/sync` and says in its own
+  comments what it cannot defend against: a flag that is renamed ORs into
+  TYPE_FORMAT as `undefined`, and types print differently with nothing failing.
+  `refuseMovedAPI` catches a gone subpath or a missing enum, which is the loud
+  half. `test/typecheck.test.js` now pins the exact strings the printer returns
+  for a fixed element: an alias printed by name rather than expanded, and the
+  definition `describe` collects for it. If TypeScript renders a type
+  differently the test says so, instead of the difference reaching
+  `transclude-env.d.ts` and reading as the author's mistake.
 - **A guard that exits first hides everything behind it.** `bin/check.js` writes
   `transclude-env.d.ts`, hands it to `checkAlone`, and exits on a bad
   identifier before it checks a single page. That guard is right: nothing

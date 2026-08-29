@@ -32,6 +32,52 @@ function targets() {
   ]);
 }
 
+/**
+ * The public API, written down.
+ *
+ * Every name here is a promise: an app that imports one and a version that
+ * removes or renames it is a major. Adding to this list is a minor and costs
+ * nothing; the point is that neither happens by accident, in a manifest edit
+ * nobody read as an API change.
+ *
+ * The docs say the config keys and the loader context are settled and pinned to
+ * the code. This is the third table that claim covers, and it was the one
+ * nothing pinned.
+ */
+const PUBLIC = [
+  '.',
+  './app',
+  './compiler',
+  './cookies',
+  './document',
+  './production',
+  './routes',
+  './runtime',
+  './serve.bun',
+  './serve.deno',
+  './typecheck',
+  './worker',
+];
+
+test('the public API is exactly what it was', () => {
+  const now = Object.keys(manifest.exports).sort();
+  const then = [...PUBLIC].sort();
+
+  const added = now.filter((one) => !then.includes(one));
+  const gone = then.filter((one) => !now.includes(one));
+
+  assert.deepEqual(
+    gone,
+    [],
+    `these subpaths are gone, which is a major:\n  ${gone.join('\n  ')}`,
+  );
+  assert.deepEqual(
+    added,
+    [],
+    `these subpaths are new. Add them to PUBLIC, and ship a minor:\n  ${added.join('\n  ')}`,
+  );
+});
+
 test('every exported subpath points at a file that is here', () => {
   for (const [subpath, target] of targets()) {
     assert.ok(target, `${subpath} has no default condition`);
@@ -79,6 +125,19 @@ test('every types condition points at a file that is here', () => {
       fs.existsSync(path.join(root, entry.types)),
       `${subpath} points at ${entry.types}, which nothing emitted`,
     );
+  }
+});
+
+test('the versioning policy names tests that exist', () => {
+  // `VERSIONING.md` says which test pins each promise. A table naming a test
+  // that was renamed or deleted is a policy claiming a guarantee nothing keeps,
+  // which is worse than not claiming it.
+  const policy = fs.readFileSync(path.join(root, 'VERSIONING.md'), 'utf8');
+  const named = [...policy.matchAll(/`(test\/[\w.-]+\.test\.js)`/g)].map((m) => m[1]);
+
+  assert.ok(named.length >= 3, 'the policy names no tests, so the table went missing');
+  for (const rel of named) {
+    assert.ok(fs.existsSync(path.join(root, rel)), `VERSIONING.md names ${rel}, which is gone`);
   }
 });
 

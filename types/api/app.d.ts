@@ -29,7 +29,7 @@ export declare const COMPRESSIBLE_FLOOR = 512;
  * `/api/notes` and a prerendered `/api/notes/index.html` look the same to a
  * matcher.
  *
- * @param {{ config: object, manifest: object, pages: Record<string, object>,
+ * @param {{ config: import('./defaults.js').Config, manifest: object, pages: Record<string, object>,
  *   endpoints?: Record<string, object>, statics?: object, assets?: object,
  *   notFound?: object|null, errorPage?: object|null, hash: Function,
  *   compress?: Function|null, publicFiles?: Function|null,
@@ -38,7 +38,7 @@ export declare const COMPRESSIBLE_FLOOR = 512;
  * @returns {object} a Hono app, ready to serve
  */
 export declare function createApp({ config: written, manifest, pages, endpoints, middleware, statics, assets, publicFiles, notFound, errorPage, hash, compress, precache, lookup, }: {
-    config: object;
+    config: import('./defaults.js').Config;
     manifest: object;
     pages: Record<string, object>;
     endpoints?: Record<string, object>;

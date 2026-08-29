@@ -141,7 +141,7 @@ function isShareable(html, ctx) {
  * `/api/notes` and a prerendered `/api/notes/index.html` look the same to a
  * matcher.
  *
- * @param {{ config: object, manifest: object, pages: Record<string, object>,
+ * @param {{ config: import('./defaults.js').Config, manifest: object, pages: Record<string, object>,
  *   endpoints?: Record<string, object>, statics?: object, assets?: object,
  *   notFound?: object|null, errorPage?: object|null, hash: Function,
  *   compress?: Function|null, publicFiles?: Function|null,

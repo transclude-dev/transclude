@@ -749,6 +749,17 @@ against.
   known errors is a job that is red on every build, and a job that is always red
   is the `.DS_Store` warning again. Flip it when the count is zero, and delete
   the ratchet in the same commit. Do not raise a ceiling. Lower one, or leave it.
+  Zero is not obviously the target. `test/source-types.test.js` already fails on
+  a curated list of codes that cannot be a false positive — a name, an arity, a
+  call, and the drift class — and much of what sits under those is the shape of a
+  parse5 node, which the compiler walks loosely on purpose. Type what the
+  framework owns and promises. `Config` in `src/defaults.js` is the model:
+  `app.js` read fifty-four keys off an `{object}`, and that same table is one
+  `VERSIONING.md` calls settled, so the type and the promise are now one list.
+  It took `app.js` from 54 to 28 and found a real bug on the way — the first
+  `Config` said `onError` takes one argument, the code passes two, and the fatal
+  gate caught the annotation rather than the call. Write a type from the call
+  site, not from memory.
 - **The promise nothing pinned was the API itself.** The docs said the config
   keys and the loader context are settled and that tests pin both to the code,
   and both were true. The `exports` map was neither: a subpath could be renamed

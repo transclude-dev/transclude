@@ -7,3 +7,6 @@ app/lib/version.js
 
 # Written by scripts/source-data.js on every dev, build and check.
 app/lib/source.js
+
+# Written by scripts/refusals-data.js, from the installed compiler.
+app/lib/refusals.js

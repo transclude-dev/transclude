@@ -1,0 +1,49 @@
+<script server>
+  import { refusals } from '../../lib/refusals.js';
+
+  export default async () => ({
+    refusals,
+    count: refusals.length,
+  });
+</script>
+
+<title>Refusals</title>
+<meta name="description" content="Every mistake the compiler refuses to compile, read out of the compiler." />
+
+<doc-page title="Refusals">
+  <p>
+    The compiler refuses <strong>${count}</strong> kinds of mistake. This page is
+    read out of the compiler itself. So it says what the version you have does,
+    rather than what somebody remembered.
+  </p>
+
+  <p>
+    A refusal rejects code that was already not doing what it looked like it did.
+    That is why the list can grow in a minor version, and why growing it is not
+    the same as breaking something. See
+    <a href="/docs/decisions">decisions and limits</a> for what a version number
+    means here.
+  </p>
+
+  <doc-note label="Reading one of these">
+    A <code>…</code> is a hole the message fills in: a tag name, an export, a
+    file. What is printed here is the fixed part, which is the sentence. What
+    the compiler prints you also names the thing and, usually, the change to
+    make.
+  </doc-note>
+
+  <table>
+    <thead>
+      <tr>
+        <th>It refuses</th>
+        <th>Where</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr each="one of refusals">
+        <td>${one.says}</td>
+        <td><code>${one.where}</code></td>
+      </tr>
+    </tbody>
+  </table>
+</doc-page>

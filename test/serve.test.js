@@ -457,7 +457,13 @@ const { publicFiles } = await import('../src/public-files.js');
  * audio file or a precompressed twin without every other test paying for one.
  */
 const withPublicServer = async (fn, files = {}) => {
-  const dir = fs.mkdtempSync(path.join(process.cwd(), '.public-test-'));
+  // `os.tmpdir()`, not `process.cwd()`. The `finally` below removes this, so it
+  // survives only when the process dies before that: a Ctrl-C, or a runner that
+  // timed out. Written into the repository root, what it leaves behind is an
+  // untracked directory, and `assertReleasable` in `bin/release.js` counts one
+  // of those as a dirty tree. So an interrupted test run refused the next
+  // release, naming a working tree the author had not touched.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'transclude-public-'));
   fs.writeFileSync(path.join(dir, 'thing.txt'), 'x'.repeat(500));
   for (const [name, body] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(dir, name)), { recursive: true });

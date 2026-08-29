@@ -1,8 +1,9 @@
-export default function transclude({ appDir, elementsDir, routesDir, fragmentParam, watchElements, markdown, }?: {
+export default function transclude({ appDir, elementsDir, routesDir, publicDir, fragmentParam, watchElements, markdown, }?: {
     appDir?: string;
     elementsDir?: string;
     fragmentParam?: string;
     markdown?: any;
+    publicDir?: string;
     routesDir?: string;
     watchElements?: boolean;
 }): {

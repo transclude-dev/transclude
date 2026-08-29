@@ -211,6 +211,61 @@
     return 'the assertion innerHTML would fail';
   });
 
+  await check('an element made in script attaches its own root and paints it', async () => {
+    // Every other shadow check on this page starts from markup the server sent,
+    // so `connectedCallback` adopts a root the parser already built and the
+    // first render is a bind over existing nodes. Nothing here reached the
+    // other branch: attachShadow, and a paint with no nodes to bind to. That is
+    // the path `document.createElement` takes, and it had no check at all.
+    const made = document.createElement('user-card');
+    made.name = 'Radia Perlman';
+    made.role = 'Engineer';
+    made.tags = ['spanning-tree'];
+
+    ok(!made.shadowRoot, 'a root before the element was connected');
+
+    document.body.append(made);
+    await made.updateComplete;
+
+    try {
+      ok(made.shadowRoot, 'connecting did not attach a shadow root');
+      is(made.shadowRoot.querySelector('h3')?.textContent, 'Radia Perlman', 'the paint wrote no heading');
+      ok(made.shadowRoot.querySelector('style'), 'the paint wrote no styles');
+      is(made.shadowRoot.querySelectorAll('template[shadowrootmode]').length, 0, 'inert templates');
+      return 'attachShadow and #paint, which server-rendered markup never reaches';
+    } finally {
+      made.remove();
+    }
+  });
+
+  await check('a paint replaces a bound render when a volatile prop changes', async () => {
+    // The other half of the same branch. A bound update writes into nodes that
+    // exist; a volatile change cannot, so `#apply` falls through to a paint.
+    // Made in script rather than reusing a server-rendered one, so the element
+    // has been through a paint already and this is the second.
+    const made = document.createElement('user-card');
+    made.name = 'Grace Hopper';
+    made.tags = ['compilers'];
+    document.body.append(made);
+    await made.updateComplete;
+
+    try {
+      const before = made.shadowRoot.querySelector('h3');
+      made.name = 'Ada Lovelace';
+      await made.updateComplete;
+      is(made.shadowRoot.querySelector('h3').textContent, 'Ada Lovelace', 'a bound write did not land');
+      ok(made.shadowRoot.querySelector('h3') === before, 'a bound name rebuilt the tree');
+
+      // `tags` drives an each, so the compiler could not bind it.
+      made.tags = ['compilers', 'COBOL', 'nanoseconds'];
+      await made.updateComplete;
+      is(made.shadowRoot.querySelectorAll('li').length, 3, 'the each did not rebuild');
+      return 'volatileChanged sending #apply to #paint instead of def.update';
+    } finally {
+      made.remove();
+    }
+  });
+
   await check('connected() ran and is wired to the element', async () => {
     // The attribute is written synchronously; only the render is deferred.
     ok(!solo.hasAttribute('compact'), 'compact was already set');

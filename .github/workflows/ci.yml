@@ -103,6 +103,14 @@ jobs:
       - run: npm run build --prefix examples/showcase
       - run: npm run test:browser --prefix examples/showcase
 
+      # How much of the runtime those checks reach, and a floor under it.
+      # `docs/decisions.html` calls the shadow half settled and prints a number
+      # to say why, and a number nothing keeps true is the failure this
+      # milestone spent its time on. The floor sits well under where coverage
+      # actually is, so ordinary drift does not trip it and a real loss does.
+      # A second Chrome, about ten seconds.
+      - run: npm run test:coverage --prefix examples/showcase -- --floor 95
+
   # Every Node this package says it supports. `engines` says >=22 and this
   # workflow ran 22 alone, so 24 and 26 were a claim with nothing behind them.
   # The suite only, not the examples: the framework's own tests need no app and
@@ -132,6 +140,12 @@ jobs:
 
       - run: npm ci
       - run: npm test
+
+      # The framework's own JSDoc, checked. `test/typed.test.js` holds a ceiling
+      # per file so this cannot get worse; the script is here so the errors are
+      # readable when it does. Not gating, because 430 of them are still open.
+      - run: npm run check:src
+        continue-on-error: true
 
   # The other three runtimes the README promises, against a running app.
   #
@@ -182,6 +196,50 @@ jobs:
       # wrangler runs the real workerd, not a simulation of it.
       - name: workerd
         run: scripts/smoke.sh workerd examples/todomvc 1984 npx wrangler dev --port 1984 --ip 127.0.0.1
+
+  # The TypeScript the checker drives is an API that says it is unstable.
+  #
+  # `src/typecheck.js` imports `typescript/unstable/sync` and is tested against
+  # exactly 7.0.2. `refuseMovedAPI` catches the loud half of a move: a subpath
+  # that is gone, an enum that is not there. The quiet half is a renamed flag,
+  # which ORs into TYPE_FORMAT as `undefined`, prints types wrong, and fails
+  # nowhere. This runs the real checker against whatever TypeScript ships next,
+  # so a move is found here rather than by somebody upgrading.
+  #
+  # `continue-on-error`, because a prerelease of somebody else's compiler is not
+  # a reason to fail a pull request. It is a reason to know.
+  typescript-next:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - run: npm ci
+      - run: npm ci --prefix examples/showcase
+
+      # The showcase, because it is the app that uses every feature, so its
+      # pages are the widest thing the checker is ever pointed at.
+      - name: The next TypeScript
+        # zizmor: ignore[adhoc-packages]
+        #
+        # Installing outside a lockfile is what this job is. A lockfile pins the
+        # version that already works, and the question here is what the next one
+        # does. Nothing is published from this job and it holds no identity, so
+        # the reason the audit exists does not apply: the worst a bad prerelease
+        # can do is fail a job that is already allowed to fail.
+        run: |
+          npm install --prefix examples/showcase --no-save typescript@next
+          node -p "'typescript ' + require('examples/showcase/node_modules/typescript/package.json').version"
+          npm run check --prefix examples/showcase
 
   deploy:
     needs: [test, browser, node, runtimes]

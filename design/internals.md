@@ -58,6 +58,10 @@ than into the next reader's evening.
   import that: it runs a build the moment it is loaded, so anything left in it
   is testable by hand only. Put logic worth checking here, and keep that file
   to wiring.
+- `examples/showcase/scripts/coverage.js`. Drives the same checks
+  `browser.js` does, through the DevTools protocol, and reads V8's precise
+  coverage back. The only way to learn what the browser half runs. Against the
+  dev server, so an offset is a line in a file somebody can open.
 - `scripts/smoke.sh`. Serves a built app on one runtime and asks it for a page.
   The only thing here that runs Bun, Deno and workerd; `ci.yml` calls it once
   per runtime.
@@ -728,6 +732,62 @@ against.
   `cd editor/vscode && npm install && npx @vscode/vsce package`. Publishing
   needs a Marketplace publisher whose id matches `publisher` in its
   `package.json`, and `npx ovsx publish` covers Open VSX.
+- **`npm run check:src` was red for 476 errors, and nothing ran it.** The script
+  existed, the framework type checks its own JSDoc through it, and no job called
+  it, so the count only ever went up. 451 of the 476 were one shape: a parameter
+  documented `@param {object}`, which says opaque rather than a shape, so every
+  read of a field on it is an error. `src/compiler/expr.js` alone held 43,
+  because every jsep node was `{object}`; one `@typedef` for the node took that
+  file to zero and `codegen.js` from 12 to 9 along with it.
+  Fixing the rest is a long job. `test/typed.test.js` is the ratchet in the
+  meantime: a ceiling per file, nothing may go up, and a file that improves is
+  reported rather than failed. A ceiling above where a file sits is safe, and
+  failing on one would hand a chore to whoever improved a file they never meant
+  to touch, which teaches people to leave files alone. tsc costs a quarter of a
+  second on this tree, which is why it can be a test rather than a job somebody
+  remembers. CI runs `check:src` too, `continue-on-error`, because gating on 430
+  known errors is a job that is red on every build, and a job that is always red
+  is the `.DS_Store` warning again. Flip it when the count is zero, and delete
+  the ratchet in the same commit. Do not raise a ceiling. Lower one, or leave it.
+- **TypeScript 7.1 already prints a type the emitter cannot name.** The checker
+  drives `typescript/unstable/sync`, which says in its own path that it is
+  unstable, and is tested against exactly 7.0.2. `refuseMovedAPI` catches a
+  subpath or an enum that is gone. It cannot catch a printer that starts
+  spelling a type differently, and that is what happened: on
+  `7.1.0-dev.20260829.1` the generated `transclude-env.d.ts` came out referring
+  to `Person`, a name nothing in the file declares, and `checkAlone` refused it
+  with "Cannot find name 'Person'". That guard exists because nothing downstream
+  reads that file, so a bad identifier would otherwise ship in silence.
+  The `typescript-next` job in `ci.yml` runs the real checker against whatever
+  TypeScript ships next and is `continue-on-error`: a prerelease of somebody
+  else's compiler is not a reason to fail a pull request, and is a reason to
+  know. It found this the first time it ran. Before 1.0, decide whether the
+  answer is to pin, to adapt, or to stop driving an unstable API.
+- **`npm test` reports `src/runtime/index.js` at 43%, and the number is an
+  artifact.** `withDom` in `test/element.test.js` imports the runtime as
+  `../src/runtime/index.js?${random}`, so nothing leaks between cases. Node's
+  coverage does not attribute a query-string import back to the file, and the
+  element tests do drive the real element class. Read the 43% as "not measured
+  here", never as "not covered". Anyone tempted to raise it should check what a
+  test imports before writing one.
+- **Sixty-one passing checks were the whole of what anybody knew.** What a fake
+  DOM cannot answer is the part that needs a real one: `attachShadow`,
+  `setHTMLUnsafe`, a declarative shadow root the parser built. The checks in the
+  showcase cover that, and they answer whether they pass, not how much they
+  reach. Nobody could say, which is why the shadow half sat in "still moving"
+  for as long as it did. `examples/showcase/scripts/coverage.js` asks V8
+  directly, through the DevTools protocol: 98.5% over 63 checks.
+  Measuring it is what found the gap. Every shadow check started from markup the
+  server had sent, so `connectedCallback` always adopted a root the parser built
+  and the first render was a bind over nodes that already existed. The other
+  branch — `attachShadow` and a paint with nothing to bind to — is what
+  `document.createElement` takes, and it had no check at all. Two now. Note the
+  shape of the failure: not a wrong answer, but a question nobody had asked,
+  behind two numbers that both looked like answers and were not.
+  The `browser` job runs the measurement with `--floor 95`, because a number the
+  documentation prints is a number something has to keep true. Without it the
+  checks would go on passing while the coverage rotted, and the claim would go
+  on being made: the same shape as the four-runtime claim below.
 - **The four-runtime claim ran on one runtime.** The README opens by promising
   Node, Bun, Deno and workerd. CI ran Node 22, and only Node 22:
   `test/portable.test.js` proves the core imports nothing from `node:`, which is

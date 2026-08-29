@@ -732,6 +732,19 @@ against.
   `cd editor/vscode && npm install && npx @vscode/vsce package`. Publishing
   needs a Marketplace publisher whose id matches `publisher` in its
   `package.json`, and `npx ovsx publish` covers Open VSX.
+- **`npm run check:src` was red for 476 errors, and nothing ran it.** The script
+  existed, the framework type checks its own JSDoc through it, and no job called
+  it, so the count only ever went up. 451 of the 476 were one shape: a parameter
+  documented `@param {object}`, which says opaque rather than a shape, so every
+  read of a field on it is an error. `src/compiler/expr.js` alone held 43,
+  because every jsep node was `{object}`; one `@typedef` for the node took that
+  file to zero and `codegen.js` from 12 to 9 along with it.
+  Fixing the rest is a long job. `test/typed.test.js` is the ratchet in the
+  meantime: a ceiling per file, nothing may go up, and a file that improves
+  fails with the number to write down. tsc costs a quarter of a second on this
+  tree, which is why it can be a test rather than a job somebody remembers. CI
+  runs `check:src` too, `continue-on-error`, so the errors stay readable.
+  Do not raise a ceiling. Lower one, or leave it.
 - **TypeScript 7.1 already prints a type the emitter cannot name.** The checker
   drives `typescript/unstable/sync`, which says in its own path that it is
   unstable, and is tested against exactly 7.0.2. `refuseMovedAPI` catches a

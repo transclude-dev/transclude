@@ -13,6 +13,57 @@ export declare class Scope {
     declare(name: any, js: any, shape: any): void;
     lookup(name: any): any;
 }
+export type Node = {
+    type: string;
+    name?: string;
+    raw?: string;
+    value?: unknown;
+    operator?: string;
+    left?: Node;
+    right?: Node;
+    argument?: Node;
+    object?: Node;
+    property?: Node;
+    computed?: boolean;
+    callee?: Node;
+    arguments?: Node[];
+    test?: Node;
+    consequent?: Node;
+    alternate?: Node;
+    elements?: Node[];
+};
+/**
+ * A jsep expression node.
+ *
+ * Written out because `{object}` says opaque, and every read of a field on an
+ * opaque value is an error: 43 of them in this file, which was most of what
+ * `npm run check:src` had to say about the compiler.
+ *
+ * One type with everything optional, rather than a union of jsep's node kinds.
+ * A union would say more, and would have to be kept in step with a list this
+ * file does not own. The code switches on `type` before it reads a field, and
+ * that switch is the real check.
+ *
+ * @typedef {{
+ *   type: string,
+ *   name?: string,
+ *   raw?: string,
+ *   value?: unknown,
+ *   operator?: string,
+ *   left?: Node,
+ *   right?: Node,
+ *   argument?: Node,
+ *   object?: Node,
+ *   property?: Node,
+ *   computed?: boolean,
+ *   callee?: Node,
+ *   arguments?: Node[],
+ *   test?: Node,
+ *   consequent?: Node,
+ *   alternate?: Node,
+ *   elements?: Node[],
+ * }} Node
+ */
 /**
  * A template expression as an AST.
  *
@@ -20,18 +71,18 @@ export declare class Scope {
  * no `${}` around it, so it is parsed rather than split.
  *
  * @param {string} source
- * @returns {object} a jsep node
+ * @returns {Node} a jsep node
  * @throws on an empty or unparseable expression
  */
-export declare function parseExpr(source: string): object;
+export declare function parseExpr(source: string): Node;
 /**
  * An AST back to JavaScript, with every free name resolved against `scope`.
  *
- * @param {object} node a jsep node
+ * @param {Node} node a jsep node
  * @param {Scope} scope
  * @returns {string} an expression, safe to place inside the generated render
  */
-export declare function emit(node: object, scope: Scope): string;
+export declare function emit(node: Node, scope: Scope): string;
 export type Chain = {
     /**
      * what the path is rooted at
@@ -68,22 +119,22 @@ export type Chain = {
  * literal). A computed access ends the path, so `a.b[i].c` gives `a.b`. Past `[i]`
  * there is no way to know what is being read.
  *
- * @param {object} node
+ * @param {Node} node
  * @param {Scope} scope
- * @param {object[]} [computed] collects the subscript expressions, which are
+ * @param {Node[]} [computed] collects the subscript expressions, which are
  *   themselves reads and have to be walked separately
  * @returns {Chain|null}
  */
-export declare function chainOf(node: object, scope: Scope, computed?: object[]): Chain | null;
+export declare function chainOf(node: Node, scope: Scope, computed?: Node[]): Chain | null;
 /**
  * Every data or loop-variable path an expression reads.
  *
  * This is what decides which bindings are volatile, and so whether a light
  * element can write an update in place or needs a shadow root to rebuild.
  *
- * @param {object} node
+ * @param {Node} node
  * @param {Scope} scope
  * @param {Chain[]} [out] accumulator, so a caller can collect across several
  * @returns {Chain[]} one entry per read, in the order they were found
  */
-export declare function collectRefs(node: object, scope: Scope, out?: Chain[]): Chain[];
+export declare function collectRefs(node: Node, scope: Scope, out?: Chain[]): Chain[];

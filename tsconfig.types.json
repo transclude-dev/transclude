@@ -1,0 +1,23 @@
+{
+  // Declarations for the published package, emitted from the JSDoc that is
+  // already there. Separate from `tsconfig.src.json` because that one checks and
+  // emits nothing, and this one emits and checks nothing: `checkJs` off, because
+  // a declaration is worth shipping before every annotation is right, and a red
+  // check must not be what stops a release.
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "module": "esnext",
+    "target": "es2023",
+    "moduleResolution": "bundler",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "strict": false,
+    "strictNullChecks": false,
+    "skipLibCheck": true,
+    "rootDir": "src",
+    "outDir": "dist/types"
+  },
+  "include": ["src/**/*.js"]
+}

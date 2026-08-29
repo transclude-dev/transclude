@@ -41,6 +41,13 @@ function newestSource() {
   const walk = (dir) => {
     if (!fs.existsSync(dir)) return;
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      // A dotfile is not a source file. Finder writes `.DS_Store` whenever
+      // somebody opens a directory, so on macOS this walk found one newer than
+      // the build almost every time and told the author to rebuild for an edit
+      // nobody made. A warning that is usually wrong is read as noise, and the
+      // one time it is right is the time it needed to be read.
+      if (entry.name.startsWith('.')) continue;
+
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) walk(full);
       else {

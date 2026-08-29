@@ -22,7 +22,7 @@ test('the notes page answers', async () => {
 const built = fs.existsSync('dist/routes.json');
 const describe = built ? test : test.skip;
 
-const { app } = built ? await import('transclude/production') : { app: null };`,
+const { app } = built ? await import('@transclude/core/production') : { app: null };`,
         'js',
       ],
       env: [

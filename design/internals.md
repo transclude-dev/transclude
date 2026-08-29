@@ -58,6 +58,12 @@ than into the next reader's evening.
   import that: it runs a build the moment it is loaded, so anything left in it
   is testable by hand only. Put logic worth checking here, and keep that file
   to wiring.
+- `scripts/smoke.sh`. Serves a built app on one runtime and asks it for a page.
+  The only thing here that runs Bun, Deno and workerd; `ci.yml` calls it once
+  per runtime.
+- `tsconfig.types.json`. Emits the published declarations from the JSDoc into
+  `dist/types`, which git ignores and `prepack` regenerates. Separate from
+  `tsconfig.src.json` because that one checks and emits nothing.
 - `test/`. They need no app, and a change that makes them need one is
   the boundary breaking.
 - `examples/showcase/`. An app, on the far side of the boundary. It depends on the
@@ -721,6 +727,51 @@ against.
   `cd editor/vscode && npm install && npx @vscode/vsce package`. Publishing
   needs a Marketplace publisher whose id matches `publisher` in its
   `package.json`, and `npx ovsx publish` covers Open VSX.
+- **The four-runtime claim ran on one runtime.** The README opens by promising
+  Node, Bun, Deno and workerd. CI ran Node 22, and only Node 22:
+  `test/portable.test.js` proves the core imports nothing from `node:`, which is
+  the shape of portability and not the fact of it, and workerd was exercised
+  only by deploying the site, which reports success for a page nobody asked for.
+  All four worked when `scripts/smoke.sh` was written, which is the point rather
+  than the relief: the claim was true and unwatched, so the day one of them
+  broke it would have kept its line in the README and nothing would have failed.
+  TodoMVC is the app it serves, because it renders a compiled page and has
+  nothing but forms, so one GET and one POST cover both paths through the app.
+- **A dotfile made the build look stale.** `newestSource` in
+  `src/production.js` walked every file under the app and the framework and took
+  the newest. Finder writes `.DS_Store` whenever somebody opens a directory, so
+  on macOS the newest file was usually that, and starting the server printed
+  "changed 13926s after the last build. Run `npm run build`" for an edit nobody
+  made. Nothing was wrong and nothing was broken, which is worse than either: a
+  warning that is usually wrong gets read as decoration, and the one time it is
+  right is the time it needed to be read. Dotfiles are skipped now.
+- **The package shipped no type declarations.** `exports` mapped every subpath
+  straight at a `.js` file, so a TypeScript project importing
+  `@transclude/core/app` got TS2307 and `any`, from a framework whose fourth
+  selling point is types without writing TypeScript. The JSDoc was already
+  there; nothing emitted it. `tsconfig.types.json` writes `dist/types`, `prepack`
+  runs it, and `test/package.test.js` pins the mapping, because a subpath added
+  to `exports` with no `types` condition fails nowhere: it types as `any` and
+  the build stays green. `types` is listed above `default` for the same reason
+  conditions have an order.
+- **`typescript` was a required peer for a command most projects never run.**
+  It is imported by `src/typecheck.js` and nothing else, which is
+  `transclude-check`. Every install pulled it anyway. It is optional now, and
+  `bin/check.js` loads the checker dynamically to say so: a static import is
+  hoisted above any guard, so the missing package would have spoken for itself
+  in `ERR_MODULE_NOT_FOUND`, naming a dependency the author never chose.
+- **A documented snippet named a package that does not exist.**
+  `docs/testing.html` imported `transclude/production`; the package is
+  `@transclude/core`. The same mistake the VS Code extension had already made
+  from the other side, one gotcha up, and both were silent for the same reason:
+  a specifier in prose is not run, and the reader who runs it gets a resolution
+  error naming a package they never wrote. `test/specifiers.test.js` reads every
+  `from`, `import()` and `require()` in every tracked file and checks the name
+  and the subpath against the two manifests. Only a real call counts, so prose
+  can name a wrong specifier, which is what lets the gotcha above quote one. It
+  cannot write one out as a call, though: this paragraph said
+  `import(…)` around the bad name and the test failed on its own
+  documentation, which is the check working.
 - **A directory in `files` publishes what git ignores.** `files` said `editor`,
   to ship the one file the extension starts. It shipped the directory: an
   installed `editor/vscode/node_modules` and a built `.vsix`, 324 files and

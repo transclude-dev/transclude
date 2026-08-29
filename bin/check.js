@@ -3,10 +3,28 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { checkAlone, createChecker, positionAt } from '../src/typecheck.js';
 import { emitTypes } from '../src/compiler/types.js';
 import { loadProject } from '../src/project.js';
 import { isMarkdown } from '../src/markdown.js';
+
+// `typescript` is an optional peer: this is the one command that drives it, and
+// a project that never runs it does not need the install. That makes a missing
+// TypeScript a normal state rather than a broken one, and the resolver's own
+// words for it name a package the author never wrote. Loaded here rather than
+// imported at the top because a static import is hoisted above any guard.
+const { checkAlone, createChecker, positionAt } = await import('../src/typecheck.js').catch(
+  (err) => {
+    const missing =
+      err?.code === 'ERR_MODULE_NOT_FOUND' && /'typescript(\/|')/.test(err.message ?? '');
+    if (!missing) throw err;
+
+    console.error(
+      '[transclude] transclude-check drives TypeScript 7, and this project does not have it.\n' +
+        '  Install it: npm install -D typescript@7',
+    );
+    process.exit(1);
+  },
+);
 
 const { root, config } = await loadProject();
 const checker = createChecker({ root, ...config });

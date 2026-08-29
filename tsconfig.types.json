@@ -1,0 +1,33 @@
+{
+  // Declarations for the published package, emitted from the JSDoc that is
+  // already there. Separate from `tsconfig.src.json` because that one checks and
+  // emits nothing, and this one emits and checks nothing: `checkJs` off, because
+  // a declaration is worth shipping before every annotation is right, and a red
+  // check must not be what stops a release.
+  //
+  // The output is committed, which generated files here otherwise are not.
+  // `publish.yml` stages the tarball with `--ignore-scripts` and no `npm ci`,
+  // so nothing builds at publish time on purpose: that job holds the only
+  // identity that can release, and installing into it is what the split exists
+  // to prevent. A `prepack` would have run nowhere and the `types` conditions
+  // would have pointed at files no tarball carried.
+  //
+  // `npm run types` regenerates them and `test/package.test.js` fails when the
+  // committed output and the source disagree.
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "module": "esnext",
+    "target": "es2023",
+    "moduleResolution": "bundler",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "strict": false,
+    "strictNullChecks": false,
+    "skipLibCheck": true,
+    "rootDir": "src",
+    "outDir": "types/api"
+  },
+  "include": ["src/**/*.js"]
+}

@@ -40,9 +40,10 @@ jobs:
         with:
           node-version: 22
 
-      # A package per install. `npm ci` reads one manifest, and the eleven
-      # examples and the site are separate projects that depend on this one by
-      # path.
+      # A package per install. `npm ci` reads one manifest, and the examples
+      # and the site are separate projects that depend on this one by path.
+      # Counted rather than named: the number was written out here as eleven and
+      # there are thirteen.
       - run: npm ci
 
       # Read rather than listed, the way `bin/release.js` reads it, so an example
@@ -102,8 +103,88 @@ jobs:
       - run: npm run build --prefix examples/showcase
       - run: npm run test:browser --prefix examples/showcase
 
+  # Every Node this package says it supports. `engines` says >=22 and this
+  # workflow ran 22 alone, so 24 and 26 were a claim with nothing behind them.
+  # The suite only, not the examples: the framework's own tests need no app and
+  # take fifteen seconds, and the thirteen example builds are what makes the
+  # `test` job long. Whatever a newer Node changes, it changes there first.
+  node:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    strategy:
+      # Every version reports. Stopping at the first failure hides whether the
+      # break is one version or all of them, which is the first thing to know.
+      fail-fast: false
+      matrix:
+        # The floor, Active LTS, and Current.
+        node: [22, 24, 26]
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+
+      - run: npm ci
+      - run: npm test
+
+  # The other three runtimes the README promises, against a running app.
+  #
+  # `test/portable.test.js` proves the core imports nothing from `node:`. That
+  # is the shape of portability and not the fact of it, and the README promises
+  # the fact. Until this job, Bun and Deno ran here exactly never, and workerd
+  # only as a deploy of the site, which reports success for a page nobody asked
+  # for. A runtime that stopped working would have kept its line in the README.
+  #
+  # TodoMVC because it is the smallest app that uses both paths: it renders a
+  # compiled page and it has nothing but forms, so a POST reaches a verb export.
+  runtimes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.x
+
+      - run: npm ci
+      - run: npm ci --prefix examples/todomvc
+      - run: npm run build --prefix examples/todomvc
+
+      # Node too, though the `test` job covers the suite: what is checked here
+      # is serving a built app, and Node is the baseline the other three are
+      # compared against. A failure on all four reads differently from a failure
+      # on one.
+      - name: Node
+        run: scripts/smoke.sh node examples/todomvc 1981 node node_modules/@transclude/core/bin/serve.js
+
+      - name: Bun
+        run: scripts/smoke.sh bun examples/todomvc 1982 bun node_modules/@transclude/core/bin/serve.bun.js
+
+      - name: Deno
+        run: scripts/smoke.sh deno examples/todomvc 1983 deno run -A node_modules/@transclude/core/bin/serve.deno.js
+
+      # wrangler runs the real workerd, not a simulation of it.
+      - name: workerd
+        run: scripts/smoke.sh workerd examples/todomvc 1984 npx wrangler dev --port 1984 --ip 127.0.0.1
+
   deploy:
-    needs: [test, browser]
+    needs: [test, browser, node, runtimes]
     # A pull request from a fork must not reach the Cloudflare secrets, and a
     # pull request has nothing to deploy anyway.
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'

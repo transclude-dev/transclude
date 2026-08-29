@@ -36,28 +36,60 @@
     "transclude-serve": "./bin/serve.js"
   },
   "exports": {
-    ".": "./src/plugin.js",
-    "./app": "./src/app.js",
-    "./compiler": "./src/compiler/index.js",
-    "./cookies": "./src/cookies.js",
-    "./document": "./src/document.js",
-    "./production": "./src/production.js",
-    "./routes": "./src/routes.js",
-    "./runtime": "./src/runtime/index.js",
+    ".": {
+      "types": "./types/api/plugin.d.ts",
+      "default": "./src/plugin.js"
+    },
+    "./app": {
+      "types": "./types/api/app.d.ts",
+      "default": "./src/app.js"
+    },
+    "./compiler": {
+      "types": "./types/api/compiler/index.d.ts",
+      "default": "./src/compiler/index.js"
+    },
+    "./cookies": {
+      "types": "./types/api/cookies.d.ts",
+      "default": "./src/cookies.js"
+    },
+    "./document": {
+      "types": "./types/api/document.d.ts",
+      "default": "./src/document.js"
+    },
+    "./production": {
+      "types": "./types/api/production.d.ts",
+      "default": "./src/production.js"
+    },
+    "./routes": {
+      "types": "./types/api/routes.d.ts",
+      "default": "./src/routes.js"
+    },
+    "./runtime": {
+      "types": "./types/api/runtime/index.d.ts",
+      "default": "./src/runtime/index.js"
+    },
     "./serve.bun": "./bin/serve.bun.js",
     "./serve.deno": "./bin/serve.deno.js",
-    "./typecheck": "./src/typecheck.js",
-    "./worker": "./src/worker.js"
+    "./typecheck": {
+      "types": "./types/api/typecheck.d.ts",
+      "default": "./src/typecheck.js"
+    },
+    "./worker": {
+      "types": "./types/api/worker.d.ts",
+      "default": "./src/worker.js"
+    }
   },
   "files": [
     "LICENSE",
     "bin",
     "editor/server.js",
     "skills",
-    "src"
+    "src",
+    "types/api"
   ],
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
+    "types": "tsc -p tsconfig.types.json",
     "crap": "node scripts/crap.js",
     "test:examples": "npm test --prefix examples/showcase && npm test --prefix examples/todomvc && npm test --prefix examples/dungeon && npm test --prefix examples/lite-brite && npm test --prefix examples/blog && npm test --prefix examples/search && npm test --prefix examples/htmx && npm test --prefix examples/includes && npm test --prefix examples/auth && npm test --prefix examples/live && npm test --prefix examples/elements && npm test --prefix examples/markdown && npm test --prefix examples/atlas",
     "test:www": "npm test --prefix www",
@@ -88,6 +120,11 @@
   "peerDependencies": {
     "typescript": "^7.0",
     "vite": "^8"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

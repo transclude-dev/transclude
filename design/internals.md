@@ -58,6 +58,10 @@ than into the next reader's evening.
   import that: it runs a build the moment it is loaded, so anything left in it
   is testable by hand only. Put logic worth checking here, and keep that file
   to wiring.
+- `examples/showcase/scripts/coverage.js`. Drives the same checks
+  `browser.js` does, through the DevTools protocol, and reads V8's precise
+  coverage back. The only way to learn what the browser half runs. Against the
+  dev server, so an offset is a line in a file somebody can open.
 - `scripts/smoke.sh`. Serves a built app on one runtime and asks it for a page.
   The only thing here that runs Bun, Deno and workerd; `ci.yml` calls it once
   per runtime.
@@ -728,6 +732,20 @@ against.
   `cd editor/vscode && npm install && npx @vscode/vsce package`. Publishing
   needs a Marketplace publisher whose id matches `publisher` in its
   `package.json`, and `npx ovsx publish` covers Open VSX.
+- **Sixty-one passing checks were the whole of what anybody knew.** The browser
+  half of `src/runtime/index.js` runs only in a browser, so `npm test` reported
+  the file at 43% and the number meant nothing: the element class, the paint and
+  the boundary are all on the other side of it. The checks in the showcase cover
+  that side, and they answer whether they pass, not how much they reach. Nobody
+  could say, which is why the shadow half sat in "still moving" for as long as
+  it did. `examples/showcase/scripts/coverage.js` asks V8: 98.5% over 63 checks.
+  Measuring it is what found the gap. Every shadow check started from markup the
+  server had sent, so `connectedCallback` always adopted a root the parser built
+  and the first render was a bind over nodes that already existed. The other
+  branch — `attachShadow` and a paint with nothing to bind to — is what
+  `document.createElement` takes, and it had no check at all. Two now. Note what
+  the shape of the failure was: not a wrong answer, but a question nobody had
+  asked, behind a number that looked answered.
 - **The four-runtime claim ran on one runtime.** The README opens by promising
   Node, Bun, Deno and workerd. CI ran Node 22, and only Node 22:
   `test/portable.test.js` proves the core imports nothing from `node:`, which is

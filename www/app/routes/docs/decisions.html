@@ -140,27 +140,42 @@
       A page ships JavaScript only for an element with behavior, so a page of
       plain markup ships none.
     </li>
+    <li>
+      A shadow element renders the same whether the server sent it or the
+      browser made it. <code>export const shadow = true</code> is a boundary,
+      not a second implementation.
+    </li>
   </ul>
 
   <h3>Still moving</h3>
 
   <p>
-    Each of these works and is documented. Each could also change shape before
-    <code>1.0</code>, so weigh that if you build on one.
+    This works and is documented. It could also change shape before
+    <code>1.0</code>, so weigh that if you build on it.
   </p>
 
   <ul>
-    <li>
-      <strong>The shadow half of the compiler.</strong> It answers a narrower
-      question than most pages ask, and it is the harder half to keep correct.
-      Light DOM is the part to lean on.
-    </li>
     <li>
       <strong>What the compiler refuses.</strong> The list grows when a mistake
       turns out to be silent, which is what both breaking releases were. Expect
       it to keep growing.
     </li>
   </ul>
+
+  <doc-note label="The shadow half was here until 0.20">
+    It was listed as still moving for two reasons. It is the harder half to keep
+    correct. And nobody knew how much of it the tests reached. Now somebody does.
+    The checks in the showcase run the runtime in a real browser.
+    <code>npm run test:coverage</code> reads V8's own numbers back: 98.5% of
+    <code>src/runtime/index.js</code>, over 63 checks.
+    <p>
+      Measuring it is what found the gap. Every shadow check started from
+      markup the server had sent, so the browser always adopted a root the
+      parser built. An element made with <code>document.createElement</code>
+      takes the other branch, attaches its own root and paints it, and that path
+      had no check at all. It has two now.
+    </p>
+  </doc-note>
 
   <p>
     The context a loader is handed and the config keys are settled ahead of

@@ -150,11 +150,31 @@ jobs:
       #
       # No `npm ci` above, and none here. The tarball is the tree the tag points
       # at, filtered by `files`, and neither package builds anything first.
+      # A prerelease goes to `next`, never to `latest`. Without `--tag`, npm
+      # writes `latest`, and a `1.0.0-rc.1` staged that way is what every
+      # `npm install @transclude/core` would get. The version decides, and it is
+      # read from the manifest rather than from the ref, which the step above has
+      # already checked they agree on: a ref name is somebody's input, and this
+      # is the one job holding an identity that can publish.
       - name: Stage @transclude/core
-        run: npm stage publish --access public --ignore-scripts
+        run: |
+          version=$(node -p "require('./package.json').version")
+          case "$version" in
+            *-*) dist=next ;;
+            *) dist=latest ;;
+          esac
+          echo "$version goes to $dist"
+          npm stage publish --access public --ignore-scripts --tag "$dist"
 
       - name: Stage @transclude/create
-        run: npm stage publish --access public --ignore-scripts
+        run: |
+          version=$(node -p "require('./package.json').version")
+          case "$version" in
+            *-*) dist=next ;;
+            *) dist=latest ;;
+          esac
+          echo "$version goes to $dist"
+          npm stage publish --access public --ignore-scripts --tag "$dist"
         working-directory: create
 
   release:

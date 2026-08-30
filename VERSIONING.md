@@ -48,6 +48,16 @@ are not promises.
 **The shape of the build output.** `dist/` is a build, reproducible from source.
 Read `routes.json` if you must, and expect it to move.
 
+## Prereleases
+
+A version with a suffix — `1.0.0-rc.1` — is staged to npm's `next` tag, never to
+`latest`. `npm install @transclude/core` keeps giving you the last real release.
+To ask for a candidate, ask for it:
+
+```sh
+npm install @transclude/core@next
+```
+
 ## Before 1.0
 
 Below `1.0` a minor may break something, and two releases have. Both were

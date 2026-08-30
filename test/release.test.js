@@ -147,3 +147,32 @@ test('a linked entry carries the dependencies the package declares', () => {
 test('both packages carry one version', () => {
   assert.equal(readJson('create/package.json').version, readJson('package.json').version);
 });
+
+// ---- what dist-tag a version takes -----------------------------------------
+
+test('a prerelease is staged to next, and a release to latest', () => {
+  // `npm stage publish` with no `--tag` writes `latest`. A `1.0.0-rc.1` staged
+  // that way is what every `npm install @transclude/core` would get, which is
+  // the opposite of what a release candidate is for, and it is not undoable by
+  // publishing again: the tag has to be moved by hand on a package that has
+  // already been installed by whoever was quick.
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/publish.yml'), 'utf8');
+
+  assert.match(workflow, /--tag "\$dist"/, 'the stage steps publish without a dist-tag');
+  assert.match(workflow, /\*-\*\) dist=next ;;/, 'nothing routes a prerelease to next');
+  assert.match(workflow, /\*\) dist=latest ;;/, 'nothing routes a release to latest');
+
+  // Both packages, not just the one somebody remembered.
+  assert.equal(
+    (workflow.match(/npm stage publish[^\n]*--tag "\$dist"/g) ?? []).length,
+    2,
+    'one of the two packages still stages without a dist-tag',
+  );
+});
+
+test('release.js accepts an explicit prerelease version', () => {
+  // `minor` and `patch` cannot express `1.0.0-rc.1`, so a candidate is cut by
+  // naming it. This is what makes the workflow rule above reachable at all.
+  const source = fs.readFileSync(path.join(root, 'bin/release.js'), 'utf8');
+  assert.match(source, /\(-\[\\w\.\]\+\)\?/, 'the version pattern no longer allows a prerelease');
+});

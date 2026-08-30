@@ -28,11 +28,48 @@ const BRANCH = ['if', 'else-if', 'else'];
 
 export class CompileError extends Error {
   constructor(message, node) {
-    const line = node?.sourceCodeLocation?.startLine;
-    super(line ? `${message} (line ${line})` : message);
+    const at = node?.sourceCodeLocation;
+    super(at?.startLine ? `${message} (line ${at.startLine})` : message);
     this.name = 'CompileError';
-    this.line = line;
+    this.line = at?.startLine;
+    // parse5 counts columns from 1, and so does every editor. Carried
+    // separately from the message because a reporter that can draw a caret
+    // wants a number, and one that cannot still has the sentence.
+    this.column = at?.startCol;
   }
+}
+
+/**
+ * The source around a refusal, with a caret under it.
+ *
+ * A line number tells a reader where to look. A frame shows them, which is the
+ * difference between reading an error and finding one. Two lines of lead-in,
+ * because a tag that opens on the line above is the usual reason the line the
+ * error names looks fine on its own.
+ *
+ * @param {string} source the file the error came from
+ * @param {number} [line] 1-based, as parse5 counts
+ * @param {number} [column] 1-based
+ * @returns {string} the frame, or '' when there is no position to draw
+ */
+export function frameOf(source, line, column) {
+  if (!line) return '';
+
+  const lines = String(source).split('\n');
+  const first = Math.max(1, line - 2);
+  const last = Math.min(lines.length, line + 2);
+  // Right-aligned so the source stays in one column whatever the line numbers do.
+  const width = String(last).length;
+  const out = [];
+
+  for (let n = first; n <= last; n++) {
+    const gutter = String(n).padStart(width);
+    out.push(`${n === line ? '>' : ' '} ${gutter} | ${lines[n - 1] ?? ''}`);
+    if (n === line && column) {
+      out.push(`  ${' '.repeat(width)} | ${' '.repeat(column - 1)}^`);
+    }
+  }
+  return out.join('\n');
 }
 
 /**

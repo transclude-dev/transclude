@@ -53,13 +53,7 @@ export default function transclude({ appDir, elementsDir, routesDir, publicDir, 
     };
     configResolved(config: any): void;
     resolveId(id: any, importer: any): any;
-    load(id: any): string | {
-        code: string;
-        map: string;
-    } | {
-        code: string;
-        map: object;
-    };
+    load(id: any): any;
     configureServer(server: any): void;
 };
 /**

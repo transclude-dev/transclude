@@ -102,16 +102,7 @@
     wins, and the compiler says the outer one became unreachable.
   </p>
 
-  <h2>Before 1.0</h2>
-
-  <p>
-    Below <code>1.0</code>, a minor version may break something. Every release
-    that does says so at the top of its notes, with the change to make. Two have
-    so far. Both were narrow, and both were the compiler starting to refuse code
-    that was already not doing what it looked like it did.
-  </p>
-
-  <h3>Settled</h3>
+  <h2>What will not change</h2>
 
   <p>
     These are what the framework is. Changing one would be a different project,
@@ -143,20 +134,20 @@
     </li>
   </ul>
 
-  <h3>Still moving</h3>
-
   <p>
-    This works and is documented. It could also change shape before
-    <code>1.0</code>, so weigh that if you build on it.
+    One thing does keep changing, and it is meant to:
+    <a href="/docs/refusals">what the compiler refuses</a>. The list grows when a
+    mistake turns out to be silent. A refusal rejects only code that was already
+    not doing what it looked like it did. That is why growing the list is a
+    minor rather than a major.
   </p>
 
-  <ul>
-    <li>
-      <strong>What the compiler refuses.</strong> The list grows when a mistake
-      turns out to be silent, which is what both breaking releases were. Expect
-      it to keep growing.
-    </li>
-  </ul>
+  <doc-note label="Still below 1.0">
+    A minor may break something, and two have. Both were narrow, and both were
+    the compiler starting to refuse code that was already wrong. Every release
+    that breaks anything says so at the top of its notes, with the change to
+    make. From <code>1.0</code> a new refusal is the only shape that takes.
+  </doc-note>
 
   <doc-note label="The shadow half was here until 0.20">
     It was listed as still moving for two reasons. It is the harder half to keep

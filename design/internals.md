@@ -760,6 +760,16 @@ against.
   `Config` said `onError` takes one argument, the code passes two, and the fatal
   gate caught the annotation rather than the call. Write a type from the call
   site, not from memory.
+- **A refusal knew where it was and could not say.** Every `CompileError` is
+  raised with a parse5 node, so every one has a line and a column. Only the line
+  was read, and it was appended to the message as `(line 84)`. That tells a
+  reader which row to open; it does not tell them which of the four elements on
+  it. `CompileError` carries `column` now, `frameOf` in `codegen.js` draws the
+  two lines either side with a caret, and `src/plugin.js` attaches `loc` and
+  `frame` to anything it catches — the shape Vite already renders, in the
+  overlay and in the terminal, so no reporter had to be written.
+  Attached in the plugin rather than in the error, because the compiler is
+  handed a source and never a path: the file name lives where the read happened.
 - **The promise nothing pinned was the API itself.** The docs said the config
   keys and the loader context are settled and that tests pin both to the code,
   and both were true. The `exports` map was neither: a subpath could be renamed

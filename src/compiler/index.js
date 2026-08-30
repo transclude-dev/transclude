@@ -1,7 +1,7 @@
 // Turns a single .html file into one JS module that serves both renders.
 
 import { parse, parseFragment } from 'parse5';
-import { compileFragment, childrenOf, CompileError } from './codegen.js';
+import { compileFragment, childrenOf, CompileError, frameOf } from './codegen.js';
 import { escapeAttr } from './html.js';
 import { lineMap, sourceMap } from './sourcemap.js';
 import { compileBindings } from './bind.js';
@@ -16,7 +16,7 @@ import {
   bindElementModule,
 } from './script.js';
 
-export { CompileError, ScriptError, ELEMENT_FLAGS };
+export { CompileError, ScriptError, ELEMENT_FLAGS, frameOf };
 
 // Everything the generated page and layout modules define at the top level. A
 // block naming one of these is checked whether it exports it or merely declares

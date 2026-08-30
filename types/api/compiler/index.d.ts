@@ -1,6 +1,6 @@
-import { CompileError } from './codegen.js';
+import { CompileError, frameOf } from './codegen.js';
 import { ELEMENT_FLAGS, ScriptError } from './script.js';
-export { CompileError, ScriptError, ELEMENT_FLAGS };
+export { CompileError, ScriptError, ELEMENT_FLAGS, frameOf };
 /**
  * An element's flags, read without compiling it.
  *

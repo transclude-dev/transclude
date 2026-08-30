@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { splitBlocks, compileComponent, compileLayout, compilePage } from '../src/compiler/index.js';
-import { compileFragment, CompileError } from '../src/compiler/codegen.js';
+import { compileFragment, CompileError, frameOf } from '../src/compiler/codegen.js';
 import { VOID } from '../src/compiler/html.js';
 import * as rt from '../src/runtime/index.js';
 
@@ -889,4 +889,47 @@ test('a construct the parser has no grammar for is refused before emit sees it',
   assert.throws(() => compile('<p>${() => 1}</p>'), /bad expression/);
   assert.throws(() => compile('<p>${({ a: 1 })}</p>'), /bad expression/);
   assert.throws(() => compile('<p>${a = 1}</p>'), /bad expression/);
+});
+
+// ---- where a refusal happened ----------------------------------------------
+
+test('a refusal carries a column, not only a line', () => {
+  // A line says which row to read. A column says which of the four elements on
+  // it. Every refusal passes a node, so every refusal has both; nothing read
+  // the column until something could draw with it.
+  const source = '<ul>\n  <li data-${key}="x">a</li>\n</ul>';
+  let err = null;
+  try {
+    compilePage(source, {});
+  } catch (thrown) {
+    err = thrown;
+  }
+
+  assert.ok(err instanceof CompileError, 'the compiler accepted an interpolated name');
+  assert.equal(err.line, 2);
+  assert.equal(err.column, 3, 'the column of the <li>, counting from 1');
+});
+
+test('a frame points at the line, and shows the ones around it', () => {
+  const source = ['one', 'two', 'three', 'four', 'five', 'six'].join('\n');
+
+  assert.equal(
+    frameOf(source, 4, 2),
+    ['  2 | two', '  3 | three', '> 4 | four', '    |  ^', '  5 | five', '  6 | six'].join('\n'),
+  );
+});
+
+test('a frame at the top of a file does not read off the end of it', () => {
+  // `line - 2` is 0 and -1 here, and both are lines that do not exist.
+  assert.equal(frameOf('only', 1, 1), ['> 1 | only', '    | ^'].join('\n'));
+});
+
+test('no position, no frame', () => {
+  // A refusal raised without a node still has a sentence, and a caret under
+  // nothing would be worse than none.
+  assert.equal(frameOf('a\nb', undefined, undefined), '');
+});
+
+test('a frame with no column marks the line and draws no caret', () => {
+  assert.equal(frameOf('a\nb', 2, undefined), ['  1 | a', '> 2 | b'].join('\n'));
 });

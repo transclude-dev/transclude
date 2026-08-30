@@ -12,6 +12,7 @@ import {
   compileClientEntry,
   compileElementsEntry,
   ELEMENTS_ENTRY,
+  frameOf,
   splitBlocks,
   usedComponents,
   readBehavior,
@@ -196,6 +197,29 @@ export default function transclude({
   // instance recognizes itself in the resolved list.
   let duplicate = false;
 
+  /**
+   * A compile, with the position attached in the shape Vite draws.
+   *
+   * A `CompileError` knows its line and column and nothing about which file it
+   * came from: the compiler is handed a source, not a path. Vite renders `loc`
+   * and `frame` into the overlay and the terminal, so filling them in here is
+   * the difference between a sentence about line 4 and a picture of line 4.
+   *
+   * @param {string} source what was compiled, for the frame
+   * @param {string} file the path an editor can open
+   * @param {Function} run the compile
+   */
+  const compiling = (source, file, run) => {
+    try {
+      return run();
+    } catch (err) {
+      if (err?.name !== 'CompileError' || !err.line) throw err;
+      err.loc = { file, line: err.line, column: err.column ?? 1 };
+      err.frame = frameOf(source, err.line, err.column);
+      throw err;
+    }
+  };
+
   const plugin = {
     name: 'transclude',
     enforce: 'pre',
@@ -354,7 +378,8 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
         // inside it.
         const inner = [...(safely(() => usedComponents(read(file), components)) ?? [])];
         const nested = inner.filter((child) => !shadowTags.has(child));
-        const out = compileComponent(read(file), {
+        const body = read(file);
+        const out = compiling(body, file, () => compileComponent(body, {
           tag,
           shadow: shadowTags.has(tag),
           components,
@@ -362,7 +387,7 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
           runtime,
           filename: tag,
           nested,
-        });
+        }));
         report(tag, out.warnings);
         return out.code;
       }
@@ -389,7 +414,8 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
         const route = pages.get(name);
         if (!route) throw new Error(`[transclude] no page "${name}" in ${routesDir}`);
         origin.set(id, route.file);
-        const out = compilePage(read(route.file), {
+        const pageBody = read(route.file);
+        const out = compiling(pageBody, route.file, () => compilePage(pageBody, {
           components,
           shadowTags,
           runtime,
@@ -401,7 +427,7 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
           sourcePath: route.file,
           layouts: chainFor(route),
           client: clientManifest(route),
-        });
+        }));
         report(name, out.warnings);
         // The map goes back with it. Vite composes what a load hook returns; a
         // comment on the code is not read, so a stack named the virtual module.

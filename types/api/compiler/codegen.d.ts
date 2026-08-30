@@ -5,8 +5,23 @@
 export declare const INCLUDE_TAG = "transclude";
 export declare class CompileError extends Error {
     line: any;
+    column: any;
     constructor(message: any, node: any);
 }
+/**
+ * The source around a refusal, with a caret under it.
+ *
+ * A line number tells a reader where to look. A frame shows them, which is the
+ * difference between reading an error and finding one. Two lines of lead-in,
+ * because a tag that opens on the line above is the usual reason the line the
+ * error names looks fine on its own.
+ *
+ * @param {string} source the file the error came from
+ * @param {number} [line] 1-based, as parse5 counts
+ * @param {number} [column] 1-based
+ * @returns {string} the frame, or '' when there is no position to draw
+ */
+export declare function frameOf(source: string, line?: number, column?: number): string;
 /**
  * @param {object[]} nodes
  * @param {object} [opts]

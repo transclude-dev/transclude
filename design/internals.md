@@ -1421,7 +1421,32 @@ against.
   is the behavior we want here, but for a reason worth stating: the content is
   inert, so a URL returning it would return markup the source document never
   showed. `kidsOf` returns `[]` for a template on purpose rather than by
-  accident.
+  accident. `src/rewrite.js` asks the other question and gets the other answer,
+  so the two files keep their own `kidsOf`.
+- **The cleaning descends into a template, because a declarative shadow root is
+  not inert.** `src/rewrite.js` read `childNodes` too, and there it was a hole
+  rather than a decision: nothing inside a `<template>` was visited, so a script,
+  an `on*` handler and a `javascript:` URL all traveled untouched. Inert content
+  would make that harmless, and `<template shadowrootmode="open">` is not inert.
+  It becomes a real shadow tree in the page that includes it and a `<script>` in
+  there runs, on the including page's origin. So `kidsOf` in that file reads
+  `.content` when a node has one, and asks for the field rather than the tag
+  name: `<template>` inside `<svg>` is an ordinary foreign element whose children
+  are on `childNodes`, and a check for the name walks past them. `baseOf` keeps
+  `ownKidsOf`, which does not descend, and takes a `<base>` only in the HTML
+  namespace. Both are the same rule: honor a base the browser would have honored.
+  Template content is inert and `<base>` inside `<svg>` is an SVG element of that
+  name, so either one would point every relative URL in the document at a host
+  the source never used.
+- **SVG animation is stripped, because it writes an attribute after the check has
+  read it.** `<animate attributeName="href" to="javascript:alert(1)">` inside an
+  `<a>` leaves an anchor navigating to a value the scheme check never saw, and
+  `<set>` does the same with no animation at all. `to` is not the only carrier:
+  `from` holds one, and `values` is a semicolon list where the URL can be any
+  item, so a scheme check there has to split the list and know which attribute
+  names hold a URL. Refusing `animate`, `set`, `animateMotion` and
+  `animateTransform` is the smaller rule. It costs animation in foreign SVG,
+  which is less than this sanitizer already spends on `<style>`.
 - **`${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the
   one way through.** Text in those two is raw text: escaping it would change what
   the browser reads, since `&amp;` is an ampersand in prose and four characters

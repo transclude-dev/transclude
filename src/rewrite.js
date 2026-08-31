@@ -10,7 +10,10 @@
 import { parse } from 'parse5';
 
 /** Removed outright. Their content goes with them. */
-const STRIP = new Set(['script', 'iframe', 'object', 'embed', 'base', 'link', 'style']);
+const STRIP = new Set([
+  'script', 'iframe', 'object', 'embed', 'base', 'link', 'style',
+  'animate', 'set', 'animateMotion', 'animateTransform',
+]);
 
 /** Attributes holding a URL, and what a URL there is allowed to be. */
 const NAVIGATIONAL = new Set(['href', 'action', 'formaction', 'ping', 'longdesc', 'cite']);
@@ -28,7 +31,35 @@ const isRefresh = (node) =>
   node.tagName === 'meta' &&
   node.attrs?.some((a) => a.name === 'http-equiv' && /^refresh$/i.test(a.value));
 
-const kidsOf = (node) => node.childNodes ?? [];
+/**
+ * Children, and a `<template>`'s from `.content`, where parse5 keeps them
+ * instead of on `childNodes`.
+ *
+ * A walk that reads `childNodes` alone stops at every template and everything
+ * inside one travels unread. Template content is inert, but a declarative
+ * shadow root is not: `<template shadowrootmode="open">` becomes a real shadow
+ * tree in the page that includes it, and a `<script>` in there runs. So the
+ * cleaning goes in. `src/extract.js` keeps its own `kidsOf` that stops at a
+ * template, because it answers the other question: what a fragment URL returns.
+ *
+ * The field is what is asked about, not the tag name. `<template>` inside
+ * `<svg>` is an ordinary SVG element that happens to be called that, and its
+ * children are on `childNodes` like anything else's.
+ */
+function kidsOf(node) {
+  if (node.content) return node.content.childNodes ?? [];
+  return node.childNodes ?? [];
+}
+
+/**
+ * Children as parse5 stored them, for the one reader that must not descend. A
+ * `<base>` inside a template does nothing in a browser, so reading one would
+ * let markup that never took effect retarget every URL in the document.
+ */
+const ownKidsOf = (node) => node.childNodes ?? [];
+
+const HTML_NS = 'http://www.w3.org/1999/xhtml';
+
 const isElement = (node) => typeof node.tagName === 'string';
 
 function remove(node) {
@@ -47,6 +78,12 @@ function remove(node) {
  * the fragment: both restyle the whole page the fragment lands in, one by
  * pulling a stylesheet from anywhere and one by carrying it. `<base>` and
  * `<link>` are read for their own purposes before this runs.
+ *
+ * SVG animation is on the list for a different reason: it changes an attribute
+ * after this has read it. `<animate attributeName="href" to="javascript:...">`
+ * leaves an `<a>` navigating to a value nothing checked, and the value can also
+ * arrive through `from` or as one item of a `values` list, so refusing the four
+ * animation elements is a smaller rule than reading all three.
  *
  * A `style` attribute is the other kind. It paints the element it sits on and
  * nothing else, so it is kept unless `styles` says otherwise. Dropping them by
@@ -130,7 +167,9 @@ const isXlink = (name) => name === 'xlink:href' || name === 'href';
  * The document's own idea of where it is.
  *
  * A `<base href>` wins over the URL the response came from, because that is
- * what the source document's own relative links were written against.
+ * what the source document's own relative links were written against. It has to
+ * be one the browser would have honored: `<base>` inside `<svg>` is an SVG
+ * element of that name and retargets nothing, and template content is inert.
  *
  * @param {string} html
  * @param {string} responseUrl the URL after every redirect
@@ -141,9 +180,9 @@ export function baseOf(html, responseUrl) {
   let href = null;
 
   const visit = (node) => {
-    for (const child of kidsOf(node)) {
+    for (const child of ownKidsOf(node)) {
       if (!isElement(child)) continue;
-      if (child.tagName === 'base' && !href) {
+      if (child.tagName === 'base' && child.namespaceURI === HTML_NS && !href) {
         href = child.attrs?.find((a) => a.name === 'href')?.value ?? null;
       }
       visit(child);

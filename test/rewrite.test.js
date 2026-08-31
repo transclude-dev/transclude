@@ -114,6 +114,55 @@ test('a data: URL survives on an image and nowhere else', () => {
   assert.doesNotMatch(html, /<a href/, 'the refused attribute stayed, emptied');
 });
 
+test('the cleaning goes inside a template, because a shadow root is not inert', () => {
+  // `<template shadowrootmode>` becomes a real shadow tree in the page that
+  // includes it, and a script in there runs. parse5 keeps a template's children
+  // on `.content`, so a walk over `childNodes` alone never sees them.
+  const { html, removed } = clean(
+    '<template shadowrootmode="open"><script>alert(1)</script></template>',
+  );
+
+  assert.doesNotMatch(html, /script|alert/);
+  assert.deepEqual(removed, ['script']);
+});
+
+test('a template inside svg is an ordinary element, and is walked as one', () => {
+  // Only an HTML `<template>` keeps its children on `.content`. In `<svg>` the
+  // name is an ordinary foreign element, so asking for the tag rather than the
+  // field would walk past its real children.
+  const { html, removed } = clean('<svg><template><script>alert(1)</script></template></svg>');
+
+  assert.doesNotMatch(html, /script|alert/);
+  assert.deepEqual(removed, ['script']);
+});
+
+test('an event handler inside a template goes too, at any depth', () => {
+  const { html } = clean(
+    '<template><div><template><img src="x" onerror="alert(1)"></template></div></template>',
+  );
+
+  assert.doesNotMatch(html, /onerror/);
+  assert.match(html, /<img src="x">/);
+});
+
+test('svg animation goes, because it sets an attribute after this has read it', () => {
+  // `<animate attributeName="href" to="javascript:...">` leaves the anchor
+  // navigating to a value nothing checked. `values` is a list, so a scheme
+  // check would have to read every item of it.
+  for (const markup of [
+    '<animate attributeName="href" to="javascript:alert(1)"/>',
+    '<set attributeName="href" to="javascript:alert(1)"/>',
+    '<animate attributeName="href" values="red;javascript:alert(1)"/>',
+    '<animateTransform attributeName="transform" to="x"/>',
+    '<animateMotion path="M0,0"/>',
+  ]) {
+    const { html } = clean(`<svg><a href="#x">y</a>${markup}</svg>`);
+
+    assert.doesNotMatch(html, /javascript:|animate|<set/, markup);
+    assert.match(html, /<a href="#x">y<\/a>/, markup);
+  }
+});
+
 test('ordinary content is left alone', () => {
   const source = '<section id="a"><h2>Title</h2><p class="lede">Words.</p><img src="x.png"></section>';
   const { html, removed } = clean(source);
@@ -128,6 +177,18 @@ test('ordinary content is left alone', () => {
 test('a base href in the document beats the URL it was fetched from', () => {
   const found = baseOf('<html><head><base href="/root/"></head><body></body></html>', BASE);
   assert.equal(found, 'https://source.example/root/');
+});
+
+test('a base is read only where the browser would have honored one', () => {
+  // Two places it would not. Template content is inert, so nothing resolves
+  // against a base in there, and `<base>` inside `<svg>` is an SVG element of
+  // that name which retargets nothing. Either one would otherwise point every
+  // relative URL in the document at a host the source never used.
+  const inTemplate = '<template><base href="https://elsewhere.example/"></template>';
+  const inSvg = '<svg><base href="https://elsewhere.example/"></svg>';
+
+  assert.equal(baseOf(inTemplate, BASE), BASE);
+  assert.equal(baseOf(inSvg, BASE), BASE);
 });
 
 test('with no base element the response URL is the base', () => {
@@ -146,6 +207,11 @@ test('a base that cannot be parsed falls back to the response URL', () => {
 });
 
 // ---- absolute URLs ---------------------------------------------------------
+
+test('a relative URL inside a template is made absolute like any other', () => {
+  const html = linked('<template shadowrootmode="open"><a href="/x">y</a></template>');
+  assert.match(html, /href="https:\/\/source\.example\/x"/);
+});
 
 test('relative hrefs and srcs point back at the source', () => {
   const html = linked('<a href="../other.html">x</a><img src="img/a.png">');

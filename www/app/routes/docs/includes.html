@@ -315,6 +315,20 @@
   </p>
 
   <p>
+    SVG animation goes with them. <code>&lt;animate&gt;</code> and
+    <code>&lt;set&gt;</code> write an attribute after the cleaning has read it.
+    That is a way to hand an <code>&lt;a&gt;</code> a <code>javascript:</code> URL
+    nothing checked.
+  </p>
+
+  <p>
+    A <code>&lt;template&gt;</code> is cleaned inside, like anything else. Its
+    content is inert on its own. A declarative shadow root is not:
+    <code>shadowrootmode</code> makes it a real shadow tree in your page. A script
+    in there would run on your origin.
+  </p>
+
+  <p>
     A <code>style</code> attribute is kept, because it paints the element it sits
     on and nothing else. A highlighted code block carries its colors that way.
     Set <code>styles: 'strip'</code> to drop them and leave the look to your own
@@ -332,6 +346,14 @@
     A custom element from the source arrives with no definition behind it. It is
     inert, so a section built out of them will look empty.
   </p>
+
+  <doc-note label="A form in the source still submits" tone="warn">
+    A <code>&lt;form&gt;</code> keeps its <code>action</code>, made absolute
+    against the source. Somebody who fills it in on your page posts to the
+    source's host, not yours. The allowlist says what the server may read, not
+    where the markup may point. Ask for a smaller fragment if a form arrives in
+    one you did not want.
+  </doc-note>
 
   <h3>Limits</h3>
 

@@ -8,6 +8,12 @@
  * pulling a stylesheet from anywhere and one by carrying it. `<base>` and
  * `<link>` are read for their own purposes before this runs.
  *
+ * SVG animation is on the list for a different reason: it changes an attribute
+ * after this has read it. `<animate attributeName="href" to="javascript:...">`
+ * leaves an `<a>` navigating to a value nothing checked, and the value can also
+ * arrive through `from` or as one item of a `values` list, so refusing the four
+ * animation elements is a smaller rule than reading all three.
+ *
  * A `style` attribute is the other kind. It paints the element it sits on and
  * nothing else, so it is kept unless `styles` says otherwise. Dropping them by
  * default would flatten the source's own meaning: a highlighted code block
@@ -24,7 +30,9 @@ export declare function sanitize(root: object, { styles }?: {
  * The document's own idea of where it is.
  *
  * A `<base href>` wins over the URL the response came from, because that is
- * what the source document's own relative links were written against.
+ * what the source document's own relative links were written against. It has to
+ * be one the browser would have honored: `<base>` inside `<svg>` is an SVG
+ * element of that name and retargets nothing, and template content is inert.
  *
  * @param {string} html
  * @param {string} responseUrl the URL after every redirect

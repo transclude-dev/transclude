@@ -167,6 +167,36 @@ test('a directory with something in it is refused rather than merged', () => {
   }
 });
 
+test('both templates can reach the fourth runtime', () => {
+  // "The same app runs on Node, Bun, Deno and workerd" is the second sentence
+  // of the README, and a scaffolded project was Node-only: reaching the fourth
+  // meant finding the runtimes page and writing two files by hand. Eleven
+  // examples had them to copy and a new project had neither.
+  for (const template of ['blank', 'minimal']) {
+    make(['--template', template], (dir) => {
+      const worker = read(dir, 'worker.js');
+      assert.match(worker, /workerFrom/, `${template}: worker.js does not use the adapter`);
+
+      const wrangler = read(dir, 'wrangler.jsonc');
+      assert.match(wrangler, /"name": "app-name"/, `${template}: the name was not substituted`);
+      // Left in, this is the date the template was written rather than the date
+      // the project was, and it decides which runtime behaviors the worker gets.
+      assert.doesNotMatch(wrangler, /__[A-Z]+__/, `${template}: a placeholder is still in`);
+      assert.match(
+        wrangler,
+        /"compatibility_date": "\d{4}-\d{2}-\d{2}"/,
+        `${template}: no compatibility date`,
+      );
+
+      const scripts = JSON.parse(read(dir, 'package.json')).scripts;
+      assert.equal(scripts.deploy, 'npm run build && npx wrangler deploy');
+      // npx, because wrangler is not a dependency here. A bare `wrangler` in a
+      // script does not fall back to it and fails with a command not found.
+      assert.match(scripts['start:worker'], /^npx wrangler/);
+    });
+  }
+});
+
 test('a template nobody has says so, and names the ones there are', () => {
   assert.throws(
     () => execFileSync('node', [create, 'x', '-t', 'nope', '--yes'], { stdio: 'pipe' }),

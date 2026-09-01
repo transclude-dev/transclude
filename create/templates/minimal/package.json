@@ -7,7 +7,9 @@
     "build": "transclude-build",
     "start": "node --env-file-if-exists=.env node_modules/.bin/transclude-serve",
     "preview": "npm run build && npm start",
-    "check": "transclude-check"
+    "check": "transclude-check",
+    "start:worker": "npx wrangler dev",
+    "deploy": "npm run build && npx wrangler deploy"
   },
   "dependencies": {
     "@transclude/core": "__TRANSCLUDE__"

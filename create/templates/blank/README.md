@@ -24,6 +24,15 @@ yours to change:
 | `npm run check` | types, from the shapes your loaders return |
 | `npm run preview` | build, then serve the build |
 | `npm run build` | write `dist/` |
+| `npm run deploy` | build, then send it to Cloudflare |
 
 `dist/static` is self-contained: any static host will serve it. Everything that
-reads a request is served by `npm start`.
+reads a request is served by `npm start`, on Node, Bun or Deno.
+
+## Deploying to Cloudflare
+
+`worker.js` and `wrangler.jsonc` are the fourth runtime. `npm run start:worker`
+runs the real workerd locally and `npm run deploy` sends the build. Neither
+needs anything installed until you run it.
+
+Deploying somewhere else? Delete both files. Nothing else refers to them.

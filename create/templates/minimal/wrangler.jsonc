@@ -1,0 +1,19 @@
+{
+  "name": "__NAME__",
+  "main": "worker.js",
+
+  // The day this project was made. It decides which runtime behaviors the
+  // worker gets, so moving it forward is a change to make on purpose.
+  "compatibility_date": "__DATE__",
+
+  // There is no JSON module type on this runtime, so the manifest arrives as
+  // text and the adapter parses it. `fallthrough` matters: without it this rule
+  // replaces the default text rule for .txt, .html and .sql rather than adding
+  // to it, and says nothing.
+  "rules": [{ "type": "Text", "globs": ["**/routes.json"], "fallthrough": true }]
+
+  // A custom domain goes here, and the deploy then makes the DNS record and the
+  // certificate, so the next person reads the address without logging in:
+  //
+  //   "routes": [{ "pattern": "example.com", "custom_domain": true }]
+}

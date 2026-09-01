@@ -1,7 +1,7 @@
 /**
  * @param {{ csrf?: object|boolean, csp?: object|boolean, trailingSlash?: string,
  *   publicFiles?: Function|null, middleware?: Function|null }} [options]
- * @returns {object} a Hono app
+ * @returns {import('hono').Hono} a Hono app
  * @throws on a key it does not know
  */
 export declare function baseApp(options?: {
@@ -10,7 +10,7 @@ export declare function baseApp(options?: {
     trailingSlash?: string;
     publicFiles?: Function | null;
     middleware?: Function | null;
-}): object;
+}): import('hono').Hono;
 /** Where an app puts its middleware. Relative to `appDir`. */
 export declare const SERVER_FILE = "server.js";
 /**

@@ -28,7 +28,7 @@ const OPTIONS = new Set(['csrf', 'csp', 'trailingSlash', 'publicFiles', 'middlew
 /**
  * @param {{ csrf?: object|boolean, csp?: object|boolean, trailingSlash?: string,
  *   publicFiles?: Function|null, middleware?: Function|null }} [options]
- * @returns {object} a Hono app
+ * @returns {import('hono').Hono} a Hono app
  * @throws on a key it does not know
  */
 export function baseApp(options = {}) {

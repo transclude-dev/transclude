@@ -12,10 +12,10 @@ export default function transclude({ appDir, elementsDir, routesDir, publicDir, 
     api: {
         manifest(): {
             routes: {
-                id: any;
-                pattern: any;
-                rel: any;
-                params: any;
+                id: string;
+                pattern: string;
+                rel: string;
+                params: string[];
                 client: {
                     tags: any[];
                     hasScript: boolean;
@@ -23,10 +23,10 @@ export default function transclude({ appDir, elementsDir, routesDir, publicDir, 
                 };
             }[];
             endpoints: {
-                id: any;
-                pattern: any;
-                rel: any;
-                params: any;
+                id: string;
+                pattern: string;
+                rel: string;
+                params: string[];
             }[];
             notFound: {
                 id: any;

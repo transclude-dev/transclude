@@ -157,7 +157,9 @@ jobs:
 
       # The framework's own JSDoc, checked. `test/typed.test.js` holds a ceiling
       # per file so this cannot get worse; the script is here so the errors are
-      # readable when it does. Not gating, because 430 of them are still open.
+      # readable when it does. Not gating, because the count is not zero yet and
+      # the ratchet is what keeps it honest. The number lives in that test's
+      # table rather than here: written in two places it goes stale in one.
       - run: npm run check:src
         continue-on-error: true
 

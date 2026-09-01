@@ -5,11 +5,19 @@
 // are one shape: a parameter documented `@param {object}`, which says "opaque"
 // rather than a shape, so every read of a field on it is an error.
 //
-// Fixing them is a long job and this is not it. This stops the bleeding: every
-// file has a ceiling, and a change that makes one worse fails here rather than
-// in a review nobody ran. Lowering a ceiling is the work, and a file that
-// improves is reported rather than failed: a ceiling above where a file sits
-// is safe, and failing on one would hand a chore to whoever improved it.
+// Fixing them is a long job. This stops the bleeding: every file has a ceiling,
+// and a change that makes one worse fails here rather than in a review nobody
+// ran. Lowering a ceiling is the work, and a file that improves is reported
+// rather than failed: a ceiling above where a file sits is safe, and failing on
+// one would hand a chore to whoever improved it.
+//
+// The job is being done in slices. Writing down `Config`, `Manifest`, `Route`,
+// `Entry` and the Hono app took it from 403 to 306, and cleared the path a
+// deploy runs through end to end. What is left sits mostly in two files:
+// `src/runtime/index.js`, whose values are DOM nodes and the data a compiled
+// page hands it, and `src/compiler/index.js`, whose values are parse5 nodes.
+// Both want a shape written for the thing itself rather than a wider annotation
+// on each function that touches it.
 //
 // tsc costs a quarter of a second on this tree, which is why this can be a test
 // rather than a job somebody remembers.
@@ -52,14 +60,11 @@ function errors() {
  * Lower one whenever you make a file better. Nothing here may go up.
  */
 const CEILING = {
-  'bin/build.js': 4,
-  'bin/check.js': 2,
-  'bin/dev.js': 25,
-  'bin/serve.bun.js': 1,
-  'bin/serve.deno.js': 1,
-  'bin/serve.js': 1,
+  'bin/build.js': 2,
+  'bin/check.js': 1,
+  'bin/dev.js': 6,
   'src/after.js': 1,
-  'src/app.js': 28,
+  'src/app.js': 5,
   'src/cache.js': 7,
   'src/compiler/bind.js': 2,
   'src/compiler/codegen.js': 9,
@@ -74,18 +79,16 @@ const CEILING = {
   'src/extract.js': 4,
   'src/feed.js': 11,
   'src/lookup.js': 1,
-  'src/plugin.js': 10,
+  'src/plugin.js': 1,
   'src/precache.js': 2,
   'src/prerender.js': 4,
-  'src/production.js': 3,
   'src/project.js': 1,
   'src/proxy.js': 11,
-  'src/routes.js': 11,
+  'src/routes.js': 1,
   'src/runtime/index.js': 82,
   'src/server.js': 1,
   'src/sitemap.js': 6,
-  'src/typecheck.js': 17,
-  'src/worker.js': 16,
+  'src/typecheck.js': 6,
 };
 
 test('the checker still runs, and the report is readable', () => {

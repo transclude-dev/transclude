@@ -51,6 +51,11 @@ export declare function findRoot(from?: string): string;
  * percent-encoded in a bare file path and `Atelier%20Dakroub` is not a directory.
  *
  * @param {string} [from]
- * @returns {Promise<object>} the root, the config and every resolved directory
+ * @returns {Promise<{ root: string, config: import('./defaults.js').Config,
+ *   configFile: string }>} the root, the config and the file it came from
  */
-export declare function loadProject(from?: string): Promise<object>;
+export declare function loadProject(from?: string): Promise<{
+    root: string;
+    config: import('./defaults.js').Config;
+    configFile: string;
+}>;

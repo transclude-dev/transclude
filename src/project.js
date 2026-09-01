@@ -94,7 +94,8 @@ export function findRoot(from = process.cwd()) {
  * percent-encoded in a bare file path and `Atelier%20Dakroub` is not a directory.
  *
  * @param {string} [from]
- * @returns {Promise<object>} the root, the config and every resolved directory
+ * @returns {Promise<{ root: string, config: import('./defaults.js').Config,
+ *   configFile: string }>} the root, the config and the file it came from
  */
 export async function loadProject(from = process.cwd()) {
   const root = findRoot(from);

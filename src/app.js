@@ -270,9 +270,18 @@ export function createApp({
   // cannot answer for it.
   if (config.sitemap) {
     app.get('/sitemap.xml', async (c) => {
-      const page = c.req.query('p');
-      const xml = await sitemap(manifest, pages, config.sitemap, page ?? null);
-      return c.body(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
+      // Caught like every other route: `sitemap` calls each dynamic page's
+      // `paths()`, which often reads a database, so a failure here is an
+      // ordinary request failure and belongs in the same `onError` seam and the
+      // same error page rather than in Hono's default handler, which the app
+      // never configured and cannot report through.
+      try {
+        const page = c.req.query('p');
+        const xml = await sitemap(manifest, pages, config.sitemap, page ?? null);
+        return c.body(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
+      } catch (err) {
+        return internalError(c, err, { route: null, phase: 'sitemap' });
+      }
     });
   }
 
@@ -292,8 +301,16 @@ export function createApp({
 
   if (config.feed) {
     app.get(feedPath(config.feed), async (c) => {
-      const xml = await feed(config.feed);
-      return c.body(xml, 200, { 'Content-Type': feedType(config.feed) });
+      // Caught for the reason the sitemap is: a feed's `items` is often a
+      // function that reads the app's own data, so a throw here is a request
+      // failure the app should see through its `onError` rather than one that
+      // slips past it to Hono's default.
+      try {
+        const xml = await feed(config.feed);
+        return c.body(xml, 200, { 'Content-Type': feedType(config.feed) });
+      } catch (err) {
+        return internalError(c, err, { route: null, phase: 'feed' });
+      }
     });
   }
 
@@ -488,7 +505,8 @@ export function createApp({
    * the way to useless. `route` and `phase` say where: the reader starts at the
    * loader of `people/[slug]` with `slug: 'ada'` rather than at a URL to
    * re-derive that from. The phases are page, fragment, action, endpoint,
-   * after and revalidate.
+   * after, revalidate, and the two route-less ones, sitemap and feed, where
+   * `route` is null because neither is a route in the table.
    *
    * It is called inside a `try`. A reporter that throws would otherwise replace
    * the error being reported, which is the one failure mode a reporting hook
@@ -504,7 +522,7 @@ export function createApp({
         request: c.req.raw,
         url: c.req.url,
         method: c.req.method,
-        route: at ? { id: at.route.id, pattern: at.route.pattern, params: c.req.param() } : null,
+        route: at?.route ? { id: at.route.id, pattern: at.route.pattern, params: c.req.param() } : null,
         phase: at?.phase ?? null,
       });
     } catch (failed) {

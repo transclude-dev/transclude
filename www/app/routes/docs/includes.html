@@ -318,7 +318,18 @@
     SVG animation goes with them. <code>&lt;animate&gt;</code> and
     <code>&lt;set&gt;</code> write an attribute after the cleaning has read it.
     That is a way to hand an <code>&lt;a&gt;</code> a <code>javascript:</code> URL
-    nothing checked.
+    nothing checked. A tab or a control character inside the scheme is another:
+    <code>href="java&amp;#9;script:…"</code> is a live URL to a browser. The
+    check reads the scheme the way a browser does before it decides.
+  </p>
+
+  <p>
+    Comments are dropped, and so are the deprecated raw-text elements —
+    <code>&lt;xmp&gt;</code>, <code>&lt;plaintext&gt;</code>,
+    <code>&lt;listing&gt;</code>, <code>&lt;noembed&gt;</code> and
+    <code>&lt;noframes&gt;</code>. A parser reads what is inside those as text.
+    The cleaning never sees it, and a browser that reads it as markup would run
+    whatever was hiding there.
   </p>
 
   <p>

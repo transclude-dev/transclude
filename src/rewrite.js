@@ -13,6 +13,12 @@ import { parse } from 'parse5';
 const STRIP = new Set([
   'script', 'iframe', 'object', 'embed', 'base', 'link', 'style',
   'animate', 'set', 'animateMotion', 'animateTransform',
+  // Deprecated raw-text elements. parse5 reads their content as text, so the
+  // walk never inspects it, and whether a browser reads it as text depends on
+  // flags parse5 does not have: `<noembed>` on embed support, `<noframes>` on
+  // frames. A `<img onerror>` hidden in one survives the clean here and can
+  // parse live in the page that includes it. None has a use in a fragment.
+  'xmp', 'plaintext', 'listing', 'noembed', 'noframes',
 ]);
 
 /** Attributes holding a URL, and what a URL there is allowed to be. */
@@ -21,7 +27,40 @@ const FETCHABLE = new Set(['src', 'poster', 'data', 'background']);
 const SRCSET = new Set(['srcset', 'imagesrcset']);
 
 /** Schemes an attribute may name. Anything else is dropped. */
-const SAFE_SCHEME = /^(https?:|mailto:|tel:|ftp:)/i;
+const SAFE_SCHEMES = new Set(['http', 'https', 'mailto', 'tel', 'ftp']);
+
+/** Schemes `absolutize` rebases a relative URL against. The rest it leaves. */
+const REBASE_SCHEMES = new Set(['http', 'https', 'ftp']);
+
+/**
+ * The scheme a browser will act on, which is not always the one the bytes spell.
+ *
+ * Before it reads a URL, the parser removes every ASCII tab and newline from it,
+ * wherever they sit, and ignores leading C0 controls and spaces. So
+ * `java&#9;script:` and a leading `\x01` both read as `javascript:` to a
+ * browser, while a checker matching the raw text sees a scheme-less string and
+ * calls it relative. That gap kept an executable `javascript:` past this
+ * sanitizer, on `href`, `xlink:href` and every other URL attribute. `new URL`
+ * normalizes the same way, so the value went on to be absolutized straight back
+ * into a live `javascript:`. Normalize the way the parser does, then read.
+ *
+ * Only tab (U+0009), LF (U+000A) and CR (U+000D) are stripped from the interior,
+ * because those are the three the URL parser removes; a form feed left inside a
+ * scheme is not, and stays scheme-breaking to the browser too.
+ *
+ * @param {string} value an attribute value
+ * @returns {string|null} the lowercased scheme, or null when there is none
+ */
+export function schemeOf(value) {
+  const normalized = value.replace(/[\t\n\r]/g, '').replace(/^[\x00-\x20]+/, '');
+  return normalized.match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase() ?? null;
+}
+
+/** A `data:` URL the browser reads as an image, after the same normalizing. */
+function isDataImage(value) {
+  const normalized = value.replace(/[\t\n\r]/g, '').replace(/^[\x00-\x20]+/, '');
+  return /^data:image\//i.test(normalized);
+}
 
 /**
  * `<meta http-equiv="refresh">` navigates the page it lands in. Nothing about a
@@ -100,6 +139,15 @@ export function sanitize(root, { styles = 'keep' } = {}) {
   const visit = (node) => {
     // A copy, because the walk removes from the live list.
     for (const child of [...kidsOf(node)]) {
+      // Comments are dropped, the way the compiler drops them from a page it
+      // built. A foreign comment renders nothing, and its boundary is a known
+      // confusion surface: a conditional comment or a stray `--!>` can carry
+      // markup the walk never sees and a browser re-parses live.
+      if (child.nodeName === '#comment') {
+        removed.push('#comment');
+        remove(child);
+        continue;
+      }
       if (!isElement(child)) continue;
 
       if (STRIP.has(child.tagName) || isRefresh(child)) {
@@ -147,16 +195,19 @@ function allowedUrl(element, attr) {
     NAVIGATIONAL.has(attr.name) || FETCHABLE.has(attr.name) || isXlink(attr.name);
   if (!holdsUrl) return true;
 
-  const value = attr.value.trim();
-  if (!value) return true;
+  if (!attr.value.trim()) return true;
 
-  const scheme = value.match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase();
+  // `schemeOf`, not a match on the raw value: a browser strips tab and newline
+  // and leading controls before it reads the scheme, so `java&#9;script:` is a
+  // live `javascript:` to it and a scheme-less string to a raw match. Reading
+  // the raw value here let exactly that through.
+  const scheme = schemeOf(attr.value);
   if (!scheme) return true; // relative, resolved later
 
   if (scheme === 'data') {
-    return element.tagName === 'img' && attr.name === 'src' && /^data:image\//i.test(value);
+    return element.tagName === 'img' && attr.name === 'src' && isDataImage(attr.value);
   }
-  return SAFE_SCHEME.test(value);
+  return SAFE_SCHEMES.has(scheme);
 }
 
 const isXlink = (name) => name === 'xlink:href' || name === 'href';
@@ -300,7 +351,14 @@ export function absolutize(root, base) {
         const holdsUrl =
           NAVIGATIONAL.has(attr.name) || FETCHABLE.has(attr.name) || isXlink(attr.name);
         if (!holdsUrl || !attr.value.trim()) continue;
-        if (/^(data|blob|mailto:|tel:|javascript:)/i.test(attr.value.trim())) continue;
+
+        // Only a relative URL or one of the rebasable schemes is made absolute.
+        // Anything else — `mailto:`, `tel:`, `data:`, and by the time this runs
+        // the sanitizer has dropped the dangerous ones — is left as written, so
+        // a scheme reached through a tab or a control character cannot be turned
+        // into a live absolute URL here the way `new URL` would.
+        const scheme = schemeOf(attr.value);
+        if (scheme && !REBASE_SCHEMES.has(scheme)) continue;
 
         // `ping` is the one attribute here holding a list rather than a URL.
         if (attr.name !== 'ping') {

@@ -258,3 +258,28 @@ test('no feed in the config, no route', async () => {
 
   assert.equal((await app.request('http://x/feed.xml')).status, 404);
 });
+
+
+test('a C0 control character is stripped rather than left to break the XML', async () => {
+  // XML 1.0 cannot carry a control other than tab, newline and return anywhere,
+  // escaped or not. One in a title an app built from user content would make the
+  // whole feed unparseable for every reader, which is a denial of service off a
+  // single item.
+  const rss = await feed({
+    hostname: 'https://x.example',
+    title: 'Feed',
+    format: 'rss',
+    items: [
+      {
+        title: 'a\x08b\x00c',
+        path: '/p',
+        description: 'ok\x1fbad',
+        content: '<b>c\x0bd</b>',
+        date: new Date('2026-01-01'),
+      },
+    ],
+  });
+
+  assert.doesNotMatch(rss, /[\x00-\x08\x0B\x0C\x0E-\x1F]/, 'a control character reached the feed');
+  assert.match(rss, /abc/);
+});

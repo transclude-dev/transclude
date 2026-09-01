@@ -608,3 +608,76 @@ test('a range is still answered, and the wrapper does not eat it', async () => {
     assert.equal((await res.text()).length, 100);
   });
 });
+
+
+test('a failing sitemap reaches onError, with a null route', async () => {
+  // `sitemap` calls each dynamic page's `paths()`, which often reads a
+  // database. That route had no catch, so a throw slipped past the app's own
+  // handler to Hono's default, and the operator's `onError` never fired for it.
+  const seen = [];
+  const app = createApp({
+    config: {
+      csrf: false,
+      trailingSlash: 'never',
+      cookieSecret: 's',
+      sitemap: { hostname: 'https://x.example' },
+      onError: (err, ctx) => seen.push({ err, ctx }),
+    },
+    manifest: {
+      routes: [{ id: 'p', pattern: '/people/:name', params: ['name'], client: null }],
+      endpoints: [],
+    },
+    pages: {
+      p: {
+        paths: async () => {
+          throw new Error('the database is down');
+        },
+      },
+    },
+    statics: { get: () => null },
+    assets: { get: () => null },
+    errorPage: { body: bytes('broke'), etag: '"e"', encodings: new Map(), type: 'text/html' },
+    hash: (b) => `"${b.length.toString(36)}"`,
+    compress: null,
+  });
+
+  const res = await quietly(() => app.request('http://x/sitemap.xml'));
+
+  assert.equal(res.status, 500);
+  assert.equal(seen.length, 1);
+  assert.match(seen[0].err.message, /database is down/);
+  assert.equal(seen[0].ctx.phase, 'sitemap');
+  assert.equal(seen[0].ctx.route, null);
+});
+
+test('a failing feed reaches onError, with a null route', async () => {
+  const seen = [];
+  const app = createApp({
+    config: {
+      csrf: false,
+      trailingSlash: 'never',
+      cookieSecret: 's',
+      feed: {
+        hostname: 'https://x.example',
+        title: 'F',
+        items: () => {
+          throw new Error('no items today');
+        },
+      },
+      onError: (err, ctx) => seen.push({ err, ctx }),
+    },
+    manifest: { routes: [], endpoints: [] },
+    pages: {},
+    statics: { get: () => null },
+    assets: { get: () => null },
+    errorPage: { body: bytes('broke'), etag: '"e"', encodings: new Map(), type: 'text/html' },
+    hash: (b) => `"${b.length.toString(36)}"`,
+    compress: null,
+  });
+
+  const res = await quietly(() => app.request('http://x/feed.xml'));
+
+  assert.equal(res.status, 500);
+  assert.equal(seen[0].ctx.phase, 'feed');
+  assert.equal(seen[0].ctx.route, null);
+});

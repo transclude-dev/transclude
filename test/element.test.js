@@ -23,7 +23,7 @@ class FakeHTMLElement {
     this.shadowRoot = createRoot();
     return this.shadowRoot;
   }
-  /** Enough ElementInternals to see what would be submitted. */
+  /** Enough ElementInternals to see what would be submitted, and custom states. */
   attachInternals() {
     this.reported = [];
     const reported = this.reported;
@@ -31,6 +31,8 @@ class FakeHTMLElement {
       form: null,
       setFormValue: (value) => reported.push(value),
       setValidity() {},
+      // A `CustomStateSet` is a Set of state names; the runtime uses add/delete.
+      states: new Set(),
     };
   }
   getAttribute(name) {
@@ -860,16 +862,23 @@ test('reset removes the attribute rather than blanking it', async () => {
   });
 });
 
-test('a form disabling its controls mirrors to the attribute, if declared', async () => {
+test('a form disabling its controls reflects to a state, not the attribute', async () => {
+  // The attribute is the trap this used to fall into: a form-associated element
+  // with its own `disabled` attribute is disabled by the browser's reckoning, so
+  // once set the browser stops firing `formDisabledCallback(false)` and the
+  // control stays disabled after its fieldset lets go. A custom state reflects
+  // the container without feeding back, so both calls arrive.
   await withDom(async ({ defineComponent }, registry) => {
     defineComponent(controlOf({ propDefs: { value: '', disabled: false } }));
     const element = new (registry.get('x-card'))();
     element.connect();
 
     element.formDisabledCallback(true);
-    assert.equal(element.getAttribute('disabled'), '');
+    assert.ok(element.internals.states.has('disabled'), 'disabled reflects to a state');
+    assert.equal(element.getAttribute('disabled'), null, 'and not to the latching attribute');
+
     element.formDisabledCallback(false);
-    assert.equal(element.getAttribute('disabled'), null);
+    assert.ok(!element.internals.states.has('disabled'), 're-enabling clears the state');
   });
 });
 

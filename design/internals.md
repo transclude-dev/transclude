@@ -1013,6 +1013,19 @@ against.
   the state and the markup it styles change in the same frame. A check asserting
   it synchronously after a setter fails, and it should: `updateComplete` is the
   point at which either is true.
+- **`formDisabledCallback` reflects to a state, not the `disabled` attribute.**
+  It wrote the attribute once, and that is a latch: a form-associated element
+  with its own `disabled` attribute is disabled by the browser's own reckoning,
+  so once it is set the browser stops firing `formDisabledCallback(false)` — the
+  element is still disabled, as far as it can tell, by the attribute it is
+  holding. A `<tag-picker>` a `<fieldset disabled>` turned off then stayed off
+  after the fieldset let go, because the `false` call that clears it never came.
+  A custom state reflects the container without feeding back into what disabled
+  means, so both calls arrive. Found by the browser check written to cover the
+  callback: the re-enable assertion failed, and the `else` branch that clears it
+  was dead code for exactly this reason. `:host(:state(disabled))` styles it,
+  and the showcase's `tag-picker` styles the element's own `[disabled]` attribute
+  and the container's state together.
 - **A prerender runs the page; a prefetch does not.** That is the whole split in
   `speculate.js`. A URL the build wrote to a file has no loader left, so the
   browser may run it. Everything in `dynamic` is a server render whose loader may
@@ -1509,7 +1522,51 @@ against.
   names hold a URL. Refusing `animate`, `set`, `animateMotion` and
   `animateTransform` is the smaller rule. It costs animation in foreign SVG,
   which is less than this sanitizer already spends on `<style>`.
-- **`${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the
+- **A scheme is what the browser reads, not what the bytes spell.** The
+  sanitizer read a URL attribute's scheme with a regex on the raw value, so
+  `href="java&#9;script:alert(1)"` — a tab inside the word — matched no scheme,
+  read as a relative URL, and was kept. Then `absolutize` ran it through
+  `new URL`, which strips the tab the way a browser does, and wrote a live
+  `javascript:` back out. A leading control character did the same, and it
+  reached `href`, `xlink:href`, `action` and every other URL attribute, so a
+  click on transcluded markup ran script on the including page's origin. The
+  browser removes ASCII tab, newline and return from a URL wherever they sit and
+  ignores leading C0 controls before it reads the scheme; `schemeOf` in
+  `src/rewrite.js` normalizes the same way before matching, and `absolutize` now
+  rebases only a relative URL or an `http`/`https`/`ftp` one rather than running
+  everything through `new URL`. A form feed inside the scheme is left alone,
+  because the URL parser does not strip that one either. Eight vectors in
+  `test/rewrite.test.js`.
+- **XML 1.0 cannot carry a C0 control, so one has to be dropped before it is
+  written.** A feed and a sitemap escape the five metacharacters and stop there,
+  which is right for injection and silent about control characters: a `\x00` or
+  a `\x08` in a title an app built from user content is legal in none of escaped
+  text, a CDATA section, or anywhere else, and one makes the whole document
+  unparseable for every reader — a denial of service off a single item.
+  `xmlSafe` in `src/feed.js` and `src/sitemap.js` strips the C0 range except
+  tab, newline and return, which are the three XML keeps. Stripped rather than
+  escaped, because none of them stands for a character.
+- **A parser reads some elements' content as text, and the walk never cleans
+  it.** parse5 keeps the content of `<xmp>`, `<plaintext>`, `<listing>`,
+  `<noembed>` and `<noframes>` as raw text, so `sanitize` recursed past a
+  `<img onerror>` hidden in one without seeing it, and it survived to the page
+  that included the fragment. Whether a browser reads that content as text is not
+  a settled question either: `<noembed>` depends on embed support and
+  `<noframes>` on the frames flag, neither of which parse5 models, so the two can
+  disagree and the markup parses live. The five are on `STRIP` now, next to
+  `<script>`. Comments go the same way and for a neighboring reason: a foreign
+  comment renders nothing, its boundary is a known confusion surface — a
+  conditional comment, a stray `--!>` — and the compiler already drops comments
+  from a page it builds, so a fragment matches. `test/rewrite.test.js` covers
+  both, and the mutation vectors that found them are in the commit.
+- **A route that is not in the table still fails like one.** `/sitemap.xml` and
+  the feed had no `try`, so a throw in a page's `paths()` or a feed's `items()`
+  — both usually a database read — slipped past the app's `internalError` to
+  Hono's default handler, which the app never configured and cannot report
+  through. Both are wrapped now, with phases `sitemap` and `feed` and a null
+  `route`, which is why `report` reads `at?.route` rather than assuming a truthy
+  `at` carries one. The seam that pages a human covers every failed request
+  again, not most of them.- **`${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the
   one way through.** Text in those two is raw text: escaping it would change what
   the browser reads, since `&amp;` is an ampersand in prose and four characters
   in JavaScript. So `emitText` emitted `__str`, which does not escape, and

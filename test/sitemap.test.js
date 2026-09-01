@@ -149,3 +149,13 @@ test('entries are reusable on their own, for a feed or anything else', async () 
   const entries = await sitemapEntries(manifest, pages, {});
   assert.deepEqual(entries.map((e) => e.path), ['/', '/about', '/people/ada', '/people/grace']);
 });
+
+
+test('a C0 control character in a path is stripped from the sitemap', async () => {
+  const xml = await sitemap(
+    { routes: [{ pattern: '/p\x00age', params: [] }], gated: [] },
+    {},
+    { hostname: 'https://x.example' },
+  );
+  assert.doesNotMatch(xml, /[\x00-\x08\x0B\x0C\x0E-\x1F]/);
+});

@@ -249,13 +249,20 @@ jobs:
             exit 1
           fi
 
-          # Unquoted on purpose: empty means no positional argument, which is a
-          # page with no asset rather than one with an argument named "".
+          # A version with a suffix is a candidate. npm already knows — the job
+          # above stages it to `next` — and GitHub has to be told separately, or
+          # the page shows as the latest release above the last real one.
+          prerelease=""
+          case "$GITHUB_REF_NAME" in *-*) prerelease="--prerelease" ;; esac
+
+          # Both unquoted on purpose: empty means no argument at all, rather
+          # than one argument that is the empty string.
           # shellcheck disable=SC2086
           gh release create "$GITHUB_REF_NAME" \
             --verify-tag \
             --title "$GITHUB_REF_NAME" \
             --notes-file release-notes.md \
+            $prerelease \
             ${VSIX:+"$VSIX#The VS Code extension"}
 
           # Last, so the notes are up before this decides the job. A release

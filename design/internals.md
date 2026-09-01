@@ -752,7 +752,15 @@ against.
   the page goes up either way, and the step exits 1 afterwards. A release with
   no extension on it is red rather than quiet. Recreating a page for a tag is
   the repair, and it does not move the tag: `gh release delete` then
-  `gh release create` with the notes read back out of it.
+  `gh release create` with the notes read back out of it. It cannot: a tag whose
+  release was immutable is refused a second one, and the page is gone. Editing
+  metadata on an existing page does work, which is how `v1.0.0-rc.2` got its
+  prerelease flag, and it is the only repair available. Prefer `gh release edit`
+  to anything that deletes.
+- **A candidate has to be marked a prerelease twice.** `publish.yml` stages a
+  suffixed version to npm's `next` tag, which VERSIONING promises, and GitHub
+  knows nothing about that: without `--prerelease` the page shows as the latest
+  release above the last real one. The tag carrying a `-` is what decides both.
 - **`npm run check:src` was red for 476 errors, and nothing ran it.** The script
   existed, the framework type checks its own JSDoc through it, and no job called
   it, so the count only ever went up. Nearly all of them were one shape: a

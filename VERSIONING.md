@@ -92,6 +92,27 @@ To ask for a candidate, ask for it:
 npm install @transclude/core@next
 ```
 
+## Moving 0.x code
+
+Four errors exist only to move code written against a spelling this framework
+used to have:
+
+| | |
+| --- | --- |
+| `pages/` | is `routes/` |
+| `partialsDir` and `componentsDir` | are one `elementsDir` |
+| `<script properties>`, `<script props>`, `<script state>` | are one `<script element>` |
+| `export const actions` | is one export per method |
+
+These are not refusals in the sense above. A refusal rejects code that was
+already not doing what it looked like it did. Each of these rejects code that
+was right once, and says what to write instead.
+
+They stay through `1.x` and go at the next major. `1.0` is when somebody
+upgrades from `0.x`, so deleting the messages there is the worst timing
+available. `test/migrations.test.js` keeps all four firing and names where each
+one is checked.
+
 ## Before 1.0
 
 Below `1.0` a minor may break something, and two releases have. Both were

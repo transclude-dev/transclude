@@ -14,10 +14,21 @@ const DEFAULT_MAX_BYTES = 64 * 1024 * 1024;
 
 /**
  * @typedef {object} Entry
- * @property {Buffer} body
+ * @property {Uint8Array} body `Buffer` here, and plain bytes on a runtime with
+ *   no `node:buffer`. `src/worker.js` builds the same shape from base64, so the
+ *   narrower type would describe one of the two servers.
  * @property {string} etag
- * @property {Map<string, { body: Buffer, etag: string }>} encodings one per content encoding
+ * @property {Map<string, { body: Uint8Array, etag: string }>} encodings one per content encoding
  * @property {string} type the Content-Type to send
+ */
+
+/**
+ * The half of a `Store` an app uses: ask for a pathname, get bytes or nothing.
+ *
+ * `src/worker.js` builds one of these out of base64 and has none of the counts
+ * below, because a worker holds no files and never left any on a disk.
+ *
+ * @typedef {{ get: (pathname: string) => Entry|null }} ByteStore
  */
 
 /**

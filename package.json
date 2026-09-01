@@ -91,7 +91,7 @@
     "test": "node --test \"test/**/*.test.js\"",
     "types": "tsc -p tsconfig.types.json",
     "crap": "node scripts/crap.js",
-    "test:examples": "npm test --prefix examples/showcase && npm test --prefix examples/todomvc && npm test --prefix examples/dungeon && npm test --prefix examples/lite-brite && npm test --prefix examples/blog && npm test --prefix examples/search && npm test --prefix examples/htmx && npm test --prefix examples/includes && npm test --prefix examples/auth && npm test --prefix examples/live && npm test --prefix examples/elements && npm test --prefix examples/markdown && npm test --prefix examples/atlas",
+    "test:examples": "npm test --prefix examples/showcase && npm test --prefix examples/todomvc && npm test --prefix examples/dungeon && npm test --prefix examples/lite-brite && npm test --prefix examples/blog && npm test --prefix examples/search && npm test --prefix examples/htmx && npm test --prefix examples/includes && npm test --prefix examples/auth && npm test --prefix examples/live && npm test --prefix examples/elements && npm test --prefix examples/markdown",
     "test:www": "npm test --prefix www",
     "showcase": "npm run dev --prefix examples/showcase",
     "todomvc": "npm run dev --prefix examples/todomvc",
@@ -105,7 +105,6 @@
     "live": "npm run dev --prefix examples/live",
     "elements": "npm run dev --prefix examples/elements",
     "markdown": "npm run dev --prefix examples/markdown",
-    "atlas": "npm run dev --prefix examples/atlas",
     "www": "npm run dev --prefix www",
     "check:src": "tsc -p tsconfig.src.json",
     "release": "node bin/release.js"
@@ -123,6 +122,9 @@
   },
   "peerDependenciesMeta": {
     "typescript": {
+      "optional": true
+    },
+    "vite": {
       "optional": true
     }
   },

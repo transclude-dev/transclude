@@ -25,13 +25,20 @@ function etagOf(bytes) {
 }
 
 /**
+ * A file the build turned into base64, which is how bytes cross into a worker
+ * bundle: there is no disk to read them from and no `Buffer` to hold them.
+ *
+ * @typedef {{ body: string, type: string }} Encoded
+ */
+
+/**
  * The same entry shape the Node server builds from a disk. `encodings` is empty
  * because nothing here is precompressed, and the code that reads it already
  * treats an empty map as "identity is all there is".
  *
- * @param {Record<string, { body: string, type: string }>} map base64 from the build
- * @returns {{ get: (pathname: string) => object|null }} the same entries with
- *   real bytes, behind the lookup `createApp` uses
+ * @param {Record<string, Encoded>} map base64 from the build
+ * @returns {import('./static-cache.js').ByteStore} the same entries with real
+ *   bytes, behind the lookup `createApp` uses
  */
 export function bytesFrom(map) {
   const built = new Map();
@@ -51,8 +58,8 @@ export function bytesFrom(map) {
  * Public files, as a handler rather than a directory. No byte ranges, because
  * those need a filesystem and this runtime has none.
  *
- * @param {Record<string, object>} map
- * @returns {Function} a Hono handler
+ * @param {Record<string, Encoded>} map
+ * @returns {import('hono').MiddlewareHandler} a Hono handler
  */
 export function fileHandler(map) {
   const files = bytesFrom(map);
@@ -61,15 +68,19 @@ export function fileHandler(map) {
     if (!hit) return next();
     c.header('Content-Type', hit.type);
     c.header('ETag', hit.etag);
-    return c.body(hit.body);
+    // Hono types a body as `string | ArrayBuffer | ReadableStream`, which is
+    // narrower than what a `Response` accepts: a typed array goes through
+    // untouched. Sending `hit.body.buffer` instead would be a different promise,
+    // because a view does not have to cover its buffer.
+    return c.body(/** @type {ArrayBuffer} */ (/** @type {unknown} */ (hit.body)));
   };
 }
 
 /**
  * A prerendered error page, which is sent as bytes and never revalidated.
  *
- * @param {{ body: string, type: string }|null|undefined} page base64 from the build
- * @returns {object|null} the entry shape `send` expects
+ * @param {Encoded|null|undefined} page base64 from the build
+ * @returns {import('./static-cache.js').Entry|null} the entry shape `send` expects
  */
 export const pageEntry = (page) =>
   page && { body: decode(page.body), type: page.type, etag: '"error"', encodings: new Map() };
@@ -77,7 +88,11 @@ export const pageEntry = (page) =>
 /**
  * Rendered responses get the real thing, which on this runtime is async.
  *
- * @param {Uint8Array} body
+ * `Uint8Array<ArrayBuffer>` rather than a bare `Uint8Array`, whose buffer could
+ * be a `SharedArrayBuffer` as far as the type is concerned, and `digest` takes
+ * neither that nor a union holding it.
+ *
+ * @param {Uint8Array<ArrayBuffer>} body
  * @returns {Promise<string>} a quoted ETag
  */
 export async function hash(body) {
@@ -103,11 +118,19 @@ export async function hash(body) {
  * than every shape.
  *
  * @param {object} options
- * @param {object} options.config the app's `transclude.config.js`
- * @param {string|object} options.manifest `dist/routes.json`, text or parsed
- * @param {object} options.entry everything `dist/server/entry.js` exports
- * @param {object} options.bundle everything `dist/server/assets.js` exports
- * @returns {{ fetch: (request: Request, env: object, ctx: object) => Response|Promise<Response> }}
+ * @param {import('./defaults.js').Config} options.config the app's `transclude.config.js`
+ * @param {string|import('./routes.js').Manifest} options.manifest `dist/routes.json`,
+ *   text or parsed
+ * @param {{ pages: Record<string, import('./document.js').PageModule>,
+ *   endpoints?: Record<string, object>,
+ *   middleware?: ((app: import('hono').Hono) => void)|null }} options.entry
+ *   everything `dist/server/entry.js` exports
+ * @param {{ statics: Record<string, Encoded>, assets: Record<string, Encoded>,
+ *   publicFiles: Record<string, Encoded>, notFound?: Encoded|null,
+ *   errorPage?: Encoded|null, precache?: string|null }} options.bundle everything
+ *   `dist/server/assets.js` exports
+ * @returns {{ fetch: (request: Request, env: { COOKIE_SECRET?: string },
+ *   ctx: object) => Response|Promise<Response> }}
  */
 export function workerFrom({ config, manifest, entry, bundle }) {
   // Built on the first request rather than at import, because that is when

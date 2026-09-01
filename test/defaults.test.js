@@ -34,6 +34,19 @@ test('no config at all is all the defaults', () => {
   assert.deepEqual(withDefaults(undefined), DEFAULTS);
 });
 
+test('the default typesFile follows appDir', () => {
+  // It is a path from the root, and its default used to write `app/` into
+  // itself. So an app that moved `appDir` kept its declarations in a directory
+  // it no longer had, and heard about it as an ENOENT naming a path nobody
+  // wrote. The value an author writes is still read from the root.
+  assert.equal(withDefaults({ appDir: 'src' }).typesFile, 'src/transclude-env.d.ts');
+  assert.equal(
+    withDefaults({ appDir: 'src', typesFile: 'types/env.d.ts' }).typesFile,
+    'types/env.d.ts',
+  );
+  assert.equal(withDefaults().typesFile, DEFAULTS.typesFile);
+});
+
 // ---- a key nothing reads ---------------------------------------------------
 //
 // An ignored key looks exactly like a key that worked, and the cost is not

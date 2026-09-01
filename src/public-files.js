@@ -68,7 +68,7 @@ function typeFor(file, encoding) {
  * a different entity and must not share an ETag.
  *
  * @param {string} root relative to the working directory
- * @returns {Function} Hono middleware
+ * @returns {import('hono').MiddlewareHandler} Hono middleware
  */
 export function publicFiles(root) {
   const inner = serveStatic({

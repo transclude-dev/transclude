@@ -1,3 +1,50 @@
+export type ParsedNode = {
+    nodeName: string;
+    tagName?: string;
+    /**
+     * text, and the body of a script or a style
+     */
+    value?: string;
+    /**
+     * a comment's text
+     */
+    data?: string;
+    attrs?: {
+        name: string;
+        value: string;
+    }[];
+    childNodes?: ParsedNode[];
+    /**
+     * a template's children
+     */
+    content?: {
+        childNodes?: ParsedNode[];
+    };
+    parentNode?: ParsedNode | null;
+    sourceCodeLocation?: any;
+};
+/**
+ * A parse5 node, as this compiler treats one.
+ *
+ * parse5's own types are a discriminated union, and every walk here reads
+ * across it: `value` on a text node, `content` on a template, `attrs` on an
+ * element, `data` on a comment, and `sourceCodeLocation` on whatever raised an
+ * error. Naming the union would mean narrowing at each of those reads, in a
+ * tree the walk already knows the shape of, so this is the permissive
+ * spelling. Everything is optional and the compiler's own guards decide what is
+ * there. Written here because three files walk the same tree.
+ *
+ * @typedef {object} ParsedNode
+ * @property {string} nodeName
+ * @property {string} [tagName]
+ * @property {string} [value] text, and the body of a script or a style
+ * @property {string} [data] a comment's text
+ * @property {{ name: string, value: string }[]} [attrs]
+ * @property {ParsedNode[]} [childNodes]
+ * @property {{ childNodes?: ParsedNode[] }} [content] a template's children
+ * @property {ParsedNode|null} [parentNode]
+ * @property {any} [sourceCodeLocation]
+ */
 /** Elements with no closing tag and no children. */
 export declare const VOID: Set<string>;
 /**

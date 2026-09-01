@@ -168,8 +168,16 @@
   <p>
     The context a loader is handed and the config keys are settled ahead of
     <code>1.0</code>. A field or key may still be added. None will be renamed
-    or removed without a major, and tests pin both documented tables to the
+    or removed without a major, and a test pins each documented table to the
     code.
+  </p>
+
+  <p>
+    A subpath in <code>exports</code> and a name behind it are two promises.
+    The paths are settled; the names an app may import are the shorter list, and
+    <code>VERSIONING.md</code> writes it out. A subpath like
+    <code>/runtime</code> is the framework talking to itself. Its path stays,
+    and the names behind it move: they are what the compiler emits calls to.
   </p>
 
   <doc-note label="What a version number means here">
@@ -183,6 +191,13 @@
       in the repository. It says what is covered, what is not, and the test that
       pins each promise to the code. It is the only copy: a promise kept in two
       places gets made twice and differently.
+    </p>
+    <p>
+      What changed in a release is the message on its tag, on
+      <a href="https://github.com/transclude-dev/transclude/releases"
+        >the releases page</a
+      >. There is no changelog file, for the same reason. A release that adds a
+      refusal names it in the first lines, with the change to make.
     </p>
   </doc-note>
 

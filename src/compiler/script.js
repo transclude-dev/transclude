@@ -15,6 +15,7 @@ export class ScriptError extends Error {
   }
 }
 
+/** @type {import('acorn').Options} */
 const PARSE_OPTIONS = {
   ecmaVersion: 'latest',
   sourceType: 'module',
@@ -82,6 +83,26 @@ export const ELEMENT_BINDINGS = {
 export const ELEMENT_FLAGS = ['shadow', 'formAssociated'];
 
 /**
+ * An acorn node, as this file treats one.
+ *
+ * acorn's types are a discriminated union and every walk here reads across it,
+ * the way `ParsedNode` does for parse5. Permissive on purpose: the walk has
+ * already established which kind it holds by the time it reads a field.
+ *
+ * @typedef {object} AcornNode
+ * @property {string} type
+ * @property {number} [start]
+ * @property {number} [end]
+ * @property {string} [name]
+ * @property {AcornNode} [id]
+ * @property {AcornNode[]} [body]
+ * @property {AcornNode[]} [specifiers]
+ * @property {AcornNode[]} [declarations]
+ * @property {AcornNode} [declaration]
+ * @property {AcornNode} [local]
+ */
+
+/**
  * Reads `<script element>`: a module whose reserved exports are rebound to the
  * names the generated module uses, and whose flags are read out as literals.
  *
@@ -91,10 +112,25 @@ export const ELEMENT_FLAGS = ['shadow', 'formAssociated'];
  * author wrote stay exactly where they were written, which is the whole point
  * of the block being a real module.
  *
+ * What `<script element>` declared.
+ *
+ * `nodes` is one acorn node per reserved export, so a later pass can read what
+ * the author wrote rather than re-parse it. `flags` are the two that have to be
+ * literals, because how a tag renders decides how every file that mentions it
+ * compiles.
+ *
+ * @typedef {object} ElementModule
+ * @property {string} code the block, with the reserved names rebound
+ * @property {{ properties?: object|null, state?: object|null,
+ *   prototype?: object|null, attributes?: object|null }} nodes
+ * @property {{ shadow?: boolean|null, formAssociated?: boolean|null }} flags
+ * @property {Array<object>} imports
+ * @property {string[]} declared everything else the block declared
+ * @property {string[]} warnings
+ *
  * @param {{ code: string, line?: number }} block
  * @param {string} label for an error
- * @returns {{ code: string, nodes: Record<string, object|null>, flags: object,
- *   imports: Array<object>, declared: string[], warnings: string[] }}
+ * @returns {ElementModule}
  */
 export function bindElementModule(block, label) {
   const { code, line = 1 } = block;
@@ -127,9 +163,13 @@ export function bindElementModule(block, label) {
     // `export const properties = {…}, shadow = true` matched the flag, blanked
     // the statement whole, and dropped `properties` with no error. The element
     // then coerced no attributes, and a template read the raw string.
-    const declared = statement.declaration?.declarations ?? [];
+    // acorn's statement union has no `declaration`, and only an export has one.
+    // The branch above has already established that this is one.
+    const declared =
+      /** @type {{ declaration?: { declarations?: AcornNode[] } }} */ (statement).declaration
+        ?.declarations ?? [];
     if (declared.length > 1) {
-      const names = declared.map((d) => (d.id.type === 'Identifier' ? d.id.name : '…'));
+      const names = declared.map((d) => (d.id?.type === 'Identifier' ? d.id.name : '…'));
       throw new ScriptError(
         `${label}: an export here declares one name, and this declares ` +
           `\`${names.join('`, `')}\`. Each is read on its own, so give each its own ` +
@@ -312,7 +352,7 @@ function namesExport(statement, name) {
  *
  * @param {Array<{ code: string, line?: number }>} blocks
  * @param {string} label
- * @returns {void}
+ * @returns {string} the blocks, joined
  * @throws with the offset mapped back to the .html file
  */
 export function assertModule(blocks, label) {
@@ -434,7 +474,7 @@ function namedExportsOf(ast, code, lineOffset, label) {
  * binds `elements` and exports nothing, so the export check never saw it and
  * the build failed inside rolldown, pointing at a virtual module.
  *
- * @param {object} ast
+ * @param {import('acorn').Program} ast
  * @returns {string[]}
  */
 function topLevelNames(ast) {

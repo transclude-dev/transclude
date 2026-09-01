@@ -213,3 +213,34 @@ jobs:
             --verify-tag \
             --title "$GITHUB_REF_NAME" \
             --notes-file release-notes.md
+
+      # The extension is on no marketplace, so the alternative to this is a
+      # clone, an install and a vsce run for somebody who took the framework
+      # from npm. Attached here, installing it is a download and
+      # `code --install-extension`. What it does not get is an update by itself.
+      #
+      # After the page rather than before it. A build that fails here leaves the
+      # notes up, and the upload is re-runnable by hand; the page is not.
+      # `package-manager-cache: false` for the reason the job above gives: a
+      # cache is written by whatever ran last and read by whatever runs next,
+      # and this one builds a file people download.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: The VS Code extension
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          npm ci --prefix editor/vscode
+          npm run package --prefix editor/vscode
+
+          # Read rather than globbed, so a name that is not what this expects
+          # fails here instead of uploading whatever it found. The version is
+          # the extension's own and is not the tag: it ships no checker, so a
+          # framework release changes what the diagnostics say and not what
+          # this file does.
+          version=$(node -p "require('./editor/vscode/package.json').version")
+          gh release upload "$GITHUB_REF_NAME" \
+            "editor/vscode/transclude-$version.vsix#The VS Code extension"

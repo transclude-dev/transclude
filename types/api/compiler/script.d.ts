@@ -45,6 +45,59 @@ export declare const ELEMENT_BINDINGS: {
  * value would look like a per-element choice and could not be one.
  */
 export declare const ELEMENT_FLAGS: string[];
+export type AcornNode = {
+    type: string;
+    start?: number;
+    end?: number;
+    name?: string;
+    id?: AcornNode;
+    body?: AcornNode[];
+    specifiers?: AcornNode[];
+    declarations?: AcornNode[];
+    declaration?: AcornNode;
+    local?: AcornNode;
+};
+export type ElementModule = {
+    /**
+     * the block, with the reserved names rebound
+     */
+    code: string;
+    nodes: {
+        properties?: object | null;
+        state?: object | null;
+        prototype?: object | null;
+        attributes?: object | null;
+    };
+    flags: {
+        shadow?: boolean | null;
+        formAssociated?: boolean | null;
+    };
+    imports: Array<object>;
+    /**
+     * everything else the block declared
+     */
+    declared: string[];
+    warnings: string[];
+};
+/**
+ * An acorn node, as this file treats one.
+ *
+ * acorn's types are a discriminated union and every walk here reads across it,
+ * the way `ParsedNode` does for parse5. Permissive on purpose: the walk has
+ * already established which kind it holds by the time it reads a field.
+ *
+ * @typedef {object} AcornNode
+ * @property {string} type
+ * @property {number} [start]
+ * @property {number} [end]
+ * @property {string} [name]
+ * @property {AcornNode} [id]
+ * @property {AcornNode[]} [body]
+ * @property {AcornNode[]} [specifiers]
+ * @property {AcornNode[]} [declarations]
+ * @property {AcornNode} [declaration]
+ * @property {AcornNode} [local]
+ */
 /**
  * Reads `<script element>`: a module whose reserved exports are rebound to the
  * names the generated module uses, and whose flags are read out as literals.
@@ -55,34 +108,42 @@ export declare const ELEMENT_FLAGS: string[];
  * author wrote stay exactly where they were written, which is the whole point
  * of the block being a real module.
  *
+ * What `<script element>` declared.
+ *
+ * `nodes` is one acorn node per reserved export, so a later pass can read what
+ * the author wrote rather than re-parse it. `flags` are the two that have to be
+ * literals, because how a tag renders decides how every file that mentions it
+ * compiles.
+ *
+ * @typedef {object} ElementModule
+ * @property {string} code the block, with the reserved names rebound
+ * @property {{ properties?: object|null, state?: object|null,
+ *   prototype?: object|null, attributes?: object|null }} nodes
+ * @property {{ shadow?: boolean|null, formAssociated?: boolean|null }} flags
+ * @property {Array<object>} imports
+ * @property {string[]} declared everything else the block declared
+ * @property {string[]} warnings
+ *
  * @param {{ code: string, line?: number }} block
  * @param {string} label for an error
- * @returns {{ code: string, nodes: Record<string, object|null>, flags: object,
- *   imports: Array<object>, declared: string[], warnings: string[] }}
+ * @returns {ElementModule}
  */
 export declare function bindElementModule(block: {
     code: string;
     line?: number;
-}, label: string): {
-    code: string;
-    nodes: Record<string, object | null>;
-    flags: object;
-    imports: Array<object>;
-    declared: string[];
-    warnings: string[];
-};
+}, label: string): ElementModule;
 /**
  * Module-level client code (a page entry) only needs validating.
  *
  * @param {Array<{ code: string, line?: number }>} blocks
  * @param {string} label
- * @returns {void}
+ * @returns {string} the blocks, joined
  * @throws with the offset mapped back to the .html file
  */
 export declare function assertModule(blocks: Array<{
     code: string;
     line?: number;
-}>, label: string): void;
+}>, label: string): string;
 /**
  * Guards against a block using a name the generated module already defines.
  *

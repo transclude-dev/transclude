@@ -1,3 +1,92 @@
+export type Definition = {
+    tag: string;
+    /**
+     * false when the file asked for a shadow root
+     */
+    light: boolean;
+    /**
+     * scoped with `@scope` for a light element, raw for a shadow one
+     */
+    css: string;
+    /**
+     * every element this one renders
+     */
+    elements?: Definition[];
+    /**
+     * prop name to its declared default
+     */
+    propDefs?: Record<string, unknown>;
+    propAttrs?: Record<string, {
+        from?: Function;
+        to?: Function;
+    }>;
+    stateDefs?: Record<string, unknown>;
+    /**
+     * what `export const prototype` declared
+     */
+    members?: Record<string, unknown>;
+    render: (props: object, slots?: object, fragment?: boolean) => string;
+    coerce?: (props: object) => Record<string, unknown>;
+    bind?: (root: Node | null, props: object) => object;
+    update?: (bindings: object, props: object) => boolean;
+    /**
+     * props whose change needs a full repaint
+     */
+    volatile?: string[];
+    formAssociated?: boolean;
+};
+export type Part = {
+    bind: (from: Node | null, props: object, ...rest: unknown[]) => object;
+    update: (bindings: object, props: object, ...rest: unknown[]) => boolean;
+};
+export type Block = {
+    html: (props: object, ...rest: unknown[]) => string;
+    /**
+     * an `each` with a key expression
+     */
+    keyed?: boolean;
+    /**
+     * an item that renders more than one node
+     */
+    ranged?: boolean;
+    /**
+     * which branch
+     */
+    pick?: (props: object, ...rest: unknown[]) => number;
+    /**
+     * one per branch, or one for every item of a loop
+     */
+    parts?: Part[];
+    list?: (props: object, ...rest: unknown[]) => Iterable<unknown>;
+    item?: (props: object, ...rest: unknown[]) => string;
+    key?: (props: object, ...rest: unknown[]) => unknown;
+};
+export type KeyedEntry = {
+    first: Node;
+    last: Node;
+    bindings: object | null;
+    html: string | null;
+};
+export type BlockState = {
+    /**
+     * the opening anchor
+     */
+    start: Comment;
+    /**
+     * the closing one, or null when the walk lost it
+     */
+    end: Comment | null;
+    /**
+     * the last markup, where there was nothing to bind
+     */
+    html: string | null;
+    keyed: Map<unknown, KeyedEntry> | null;
+    /**
+     * which arm of the chain is in the document
+     */
+    branch: number;
+    bindings: object | null;
+};
 declare class RawHtml {
     value: any;
     constructor(value: any);
@@ -123,20 +212,20 @@ export declare function setParts(node: Text, parts: unknown[]): boolean;
 export declare function afterBlock(open: Comment): Node | null;
 /**
  * @param {Comment} open the opening anchor
- * @param {object} block the compiled block
+ * @param {Block} block the compiled block
  * @param {object} props
  * @param {unknown[]} [args] enclosing loop variables
- * @returns {object} the state `updateBlock` writes through
+ * @returns {BlockState} the state `updateBlock` writes through
  */
-export declare function blockAt(open: Comment, block: object, props: object, args?: unknown[]): object;
+export declare function blockAt(open: Comment, block: Block, props: object, args?: unknown[]): BlockState;
 /**
- * @param {object} state from `blockAt`
- * @param {object} block
+ * @param {BlockState} state from `blockAt`
+ * @param {Block} block
  * @param {object} props
  * @param {unknown[]} [args]
  * @returns {boolean} false when the caller has to repaint instead
  */
-export declare function updateBlock(state: object, block: object, props: object, args?: unknown[]): boolean;
+export declare function updateBlock(state: BlockState, block: Block, props: object, args?: unknown[]): boolean;
 /**
  * What to parse this parent's new markup inside, as a tag to create and a tag
  * to wrap the markup in.
@@ -179,22 +268,22 @@ export declare function writeProp(element: Element, prop: string, value: unknown
  * The parent's template cannot know that a Date crosses the boundary as an ISO
  * string rather than as JSON. The child's `to` does.
  *
- * @param {object} def the compiled element module
+ * @param {Definition} def the compiled element module
  * @param {string} name
  * @param {unknown} value
  * @returns {string}
  */
-export declare function attrProp(def: object, name: string, value: unknown): string;
+export declare function attrProp(def: Definition, name: string, value: unknown): string;
 /**
  * The same, for an update writing into an already-rendered child.
  *
- * @param {object} def
+ * @param {Definition} def
  * @param {Element} element
  * @param {string} name
  * @param {unknown} value
  * @returns {void}
  */
-export declare function setAttrProp(def: object, element: Element, name: string, value: unknown): void;
+export declare function setAttrProp(def: Definition, element: Element, name: string, value: unknown): void;
 /**
  * Server side of the component: the shadow root, inline, so the page is correct
  * before any JS runs. Nested DSD works because the HTML parser handles it.
@@ -211,13 +300,13 @@ export declare function setAttrProp(def: object, element: Element, name: string,
  * rendering buys a correct first paint, and a fragment arrives long after first
  * paint.
  *
- * @param {object} def
+ * @param {Definition} def
  * @param {object} props
  * @param {boolean} [fragment] true returns empty: nothing that swaps HTML
  *   processes a declarative shadow root, so the element paints itself
  * @returns {string}
  */
-export declare function shadow(def: object, props: object, fragment?: boolean): string;
+export declare function shadow(def: Definition, props: object, fragment?: boolean): string;
 /**
  * What a template sees, on the server: state defaults under the props.
  *
@@ -225,11 +314,11 @@ export declare function shadow(def: object, props: object, fragment?: boolean): 
  * later one read the same shape. Rendering props alone wrote `undefined` wherever
  * a template named state.
  *
- * @param {object} def
+ * @param {Definition} def
  * @param {object} props
  * @returns {Record<string, unknown>} state underneath, props on top
  */
-export declare function data(def: object, props: object): Record<string, unknown>;
+export declare function data(def: Definition, props: object): Record<string, unknown>;
 /**
  * A light element rendered for insertion into a live document: its own markup,
  * with any shadow element inside it left bare for the client to paint.
@@ -255,12 +344,12 @@ export declare function data(def: object, props: object): Record<string, unknown
  */
 export declare function included(data: Record<string, unknown> | null | undefined, key: string, fallback: string | null): string;
 /**
- * @param {object} def
+ * @param {Definition} def
  * @param {object} [props]
  * @param {object} [slots]
  * @returns {string}
  */
-export declare function fragment(def: object, props?: object, slots?: object): string;
+export declare function fragment(def: Definition, props?: object, slots?: object): string;
 /**
  * A light element's styles, in <head>, at most once per tag.
  *
@@ -273,10 +362,10 @@ export declare function fragment(def: object, props?: object, slots?: object): s
  * Inserted *before* the document's own <style>, not appended, because that is
  * where the server would have put it: a page's rules override an element's.
  *
- * @param {object} def
+ * @param {Definition} def
  * @returns {void}
  */
-export declare function adoptStyles(def: object): void;
+export declare function adoptStyles(def: Definition): void;
 /**
  * Loads element definitions for tags that arrive after the page did.
  *
@@ -295,11 +384,14 @@ export declare function adoptStyles(def: object): void;
  * It does not look inside shadow roots. It does not need to: a component's own
  * `define` brings the elements it renders with it.
  *
- * @param {Record<string, () => Promise<unknown>>} loaders tag to dynamic import
+ * @param {Record<string, () => Promise<{ define?: () => void }>>} loaders tag to
+ *   dynamic import. Only `define` is called on what comes back.
  * @param {Document} [root]
  * @returns {() => void} stops the observer
  */
-export declare function watch(loaders: Record<string, () => Promise<unknown>>, root?: Document): () => void;
+export declare function watch(loaders: Record<string, () => Promise<{
+    define?: () => void;
+}>>, root?: Document): () => void;
 /**
  * Client side of the same component. On first connect the shadow root already
  * exists, because the parser attached it from the DSD template, so nothing
@@ -310,13 +402,13 @@ export declare function watch(loaders: Record<string, () => Promise<unknown>>, r
  * the children the page put inside it. So it upgrades for behavior only: the
  * markup it was served is the markup it keeps.
  *
- * @param {object} def
+ * @param {Definition} def
  * @returns {void}
  */
-export declare function defineLight(def: object): void;
+export declare function defineLight(def: Definition): void;
 /**
- * @param {object} def
+ * @param {Definition} def
  * @returns {void}
  */
-export declare function defineComponent(def: object): void;
+export declare function defineComponent(def: Definition): void;
 export {};

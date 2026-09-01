@@ -141,13 +141,18 @@ function isShareable(html, ctx) {
  * `/api/notes` and a prerendered `/api/notes/index.html` look the same to a
  * matcher.
  *
- * @param {{ config: import('./defaults.js').Config, manifest: object, pages: Record<string, object>,
- *   endpoints?: Record<string, object>, statics?: object, assets?: object,
- *   notFound?: object|null, errorPage?: object|null, hash: Function,
- *   compress?: Function|null, publicFiles?: Function|null,
- *   middleware?: Function|null, lookup?: Function|null,
+ * @param {{ config: import('./defaults.js').Config,
+ *   manifest: import('./routes.js').Manifest,
+ *   pages: Record<string, import('./document.js').PageModule>,
+ *   endpoints?: Record<string, object>,
+ *   statics?: import('./static-cache.js').ByteStore,
+ *   assets?: import('./static-cache.js').ByteStore,
+ *   notFound?: import('./static-cache.js').Entry|null,
+ *   errorPage?: import('./static-cache.js').Entry|null, hash: Function,
+ *   compress?: Function|null, publicFiles?: import('hono').MiddlewareHandler|null,
+ *   middleware?: ((app: import('hono').Hono) => void)|null, lookup?: Function|null,
  *   precache?: string|null }} options
- * @returns {object} a Hono app, ready to serve
+ * @returns {import('hono').Hono} a Hono app, ready to serve
  */
 export function createApp({
   // Filled in here rather than by the caller, because only one of the four

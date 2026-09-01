@@ -10,8 +10,8 @@
     "check": "transclude-check",
     "test": "node --test \"test/**/*.test.js\"",
     "preview": "npm run build && npm start",
-    "start:worker": "wrangler dev",
-    "deploy": "npm run build && wrangler deploy"
+    "start:worker": "npx wrangler dev",
+    "deploy": "npm run build && npx wrangler deploy"
   },
   "dependencies": {
     "@transclude/core": "file:../..",

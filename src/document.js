@@ -36,7 +36,7 @@ export function responseOf() {
  *
  * @param {string|null|undefined} base `metadataBase` from the config
  * @param {string} requestUrl
- * @returns {URL}
+ * @returns {(path: string) => string} `ctx.absolute`
  */
 export function absoluteFrom(base, requestUrl) {
   return (path) => {
@@ -52,6 +52,82 @@ export function absoluteFrom(base, requestUrl) {
     return new URL(path, origin).href;
   };
 }
+
+/**
+ * What a loader is handed.
+ *
+ * The eleven fields below are the promise `VERSIONING.md` makes, and
+ * `test/context-shape.test.js` is what keeps this list, `src/app.js` and
+ * `bin/dev.js` saying the same thing. Several are spelled as the return of the
+ * function that builds them, so there is one description of each and not two.
+ *
+ * @typedef {object} Ctx
+ * @property {string} url
+ * @property {Record<string, string>} params
+ * @property {{ id: string, pattern: string, path: string }} route
+ * @property {Request} request the platform's own, not a wrapper
+ * @property {string|null} fragment the region asked for, or null for a document
+ * @property {string|null} action
+ * @property {ReturnType<typeof responseOf>} response
+ * @property {ReturnType<typeof import('./cookies.js').cookiesOf>} cookies
+ * @property {(path: string) => string} absolute
+ * @property {(tag: string) => void} revalidateTag
+ * @property {(work: Promise<unknown>) => void} after
+ * @property {Record<string, unknown>} [layout] what the levels above returned.
+ *   Added by the fold rather than by the server, so it is not one of the eleven
+ *   and `test/context-shape.test.js` does not look for it.
+ */
+
+/**
+ * One compiled page or layout module.
+ *
+ * `src/compiler/index.js` emits every name here, and `PAGE_EXPORTS` there is
+ * the same list read from the other side: a block declaring one of these is
+ * refused, because both would land in the same scope.
+ *
+ * @typedef {object} PageModule
+ * @property {(ctx: Ctx) => Promise<Record<string, unknown>>} load
+ * @property {(data: object, slots?: object, fragment?: boolean) => Record<string, string>} render
+ * @property {(data: object) => string} renderHead
+ * @property {(data: object) => string} renderTitle
+ * @property {(data: object) => Record<string, unknown>} renderHtmlAttrs
+ * @property {(data: object) => Record<string, unknown>} renderBodyAttrs
+ * @property {boolean} hasTitle
+ * @property {string} headScript emitted verbatim, ahead of the stylesheet
+ * @property {string} css
+ * @property {import('./runtime/index.js').Definition[]} elements
+ * @property {PageModule[]} layouts outermost first
+ * @property {{ tags: string[], hasScript: boolean, needed: boolean }} client
+ * @property {{ key: string, kind: string, where: string, id: string }[]} includes
+ * @property {Record<string, (data: object) => string>} [regions]
+ * @property {number|{ seconds: number, tags?: string[] }|false|null} [revalidate]
+ *   what `export const revalidate` said, read by `src/cache.js`
+ * @property {() => Promise<Array<Record<string, string>>>} [paths] the params a
+ *   dynamic route can be built for, which is what the build and the sitemap ask
+ * @property {(ctx: Ctx) => unknown} [POST] the verb exports. One per method the
+ * @property {(ctx: Ctx) => unknown} [PUT] page answers, and `ACTION_METHODS` is
+ * @property {(ctx: Ctx) => unknown} [PATCH] the list of them
+ * @property {(ctx: Ctx) => unknown} [DELETE]
+ */
+
+/**
+ * What a render is told about the app around it.
+ *
+ * @typedef {object} RenderOptions
+ * @property {string|null} [clientEntry]
+ * @property {string|null} [stylesheet]
+ * @property {string} [lang]
+ * @property {string|null} [speculate]
+ * @property {string|null|boolean} [canonical]
+ * @property {boolean|object} [csp]
+ * @property {{ route?: (where: string, id: string, ctx: Ctx, options: RenderOptions)
+ *   => Promise<string|null>, resolve?: (where: string, id: string)
+ *   => Promise<string|null> } | null} [include] the resolver. `route` reads
+ *   another route of this app and `resolve` reads another site, and an app that
+ *   allows neither has neither.
+ * @property {Map<string, unknown>} [includeMemo] one request's worth
+ * @property {string[]} [includeChain] what is already being resolved, for a cycle
+ */
 
 /**
  * Which `<meta>` and `<link>` may appear once, and what identifies them.
@@ -254,10 +330,10 @@ function openTag(tag, attrs) {
  * is wrapped in: a 404 status on a page that renders its own "not found" body, an
  * `HX-Trigger` header, a `Set-Cookie`.
  *
- * @param {object} page a compiled page module
- * @param {object} ctx the request context
- * @param {object} [options] `clientEntry`, `stylesheet`, `csp`, `lang`, `include`,
- *   `canonical`
+ * @param {PageModule} page a compiled page module
+ * @param {Ctx} ctx the request context
+ * @param {RenderOptions} [options] `clientEntry`, `stylesheet`, `csp`, `lang`,
+ *   `include`, `canonical`
  * @returns {Promise<string|Response>} a Response when a loader answered for itself
  */
 export async function renderRoute(page, ctx, options = {}) {
@@ -364,8 +440,8 @@ export function urlFor(route, params) {
 
 /**
  * @param {Array<{ key: string, kind: string, where: string, id: string }>} includes
- * @param {object} ctx
- * @param {object} [options] carries `include`, `includeMemo` and `includeChain`
+ * @param {Ctx} ctx
+ * @param {RenderOptions} [options] carries `include`, `includeMemo` and `includeChain`
  * @returns {Promise<Record<string, string|null>>} keyed by the src as written
  */
 export async function resolveIncludes(includes, ctx, options = {}) {
@@ -434,8 +510,8 @@ export async function resolveIncludes(includes, ctx, options = {}) {
  * Returns null when the page has no region by that name, which is a 404 rather
  * than an empty swap: asking for something that does not exist should say so.
  *
- * @param {object} page
- * @param {object} ctx
+ * @param {PageModule} page
+ * @param {Ctx} ctx
  * @param {{ region?: string|null, include?: object, includeMemo?: Map<string, unknown> }}
  *   [options] everything but `region` travels on to the includes
  * @returns {Promise<string|Response|null>} null when no such region
@@ -500,8 +576,8 @@ export const ACTION_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
  * is a second run of every layout loader on an action request, and the price of
  * the render seeing what the action just did rather than what was true before it.
  *
- * @param {object} page a compiled page module
- * @param {object} ctx the request context
+ * @param {PageModule} page a compiled page module
+ * @param {Ctx} ctx the request context
  * @returns {Promise<Response|null>} the first layout that answered for itself
  */
 export async function runGuards(page, ctx) {
@@ -529,13 +605,17 @@ export async function runGuards(page, ctx) {
  * `null` is "this page does not answer that method", which is a 405 rather than
  * a 404. The URL exists.
  *
- * @param {object} page
- * @param {object} ctx
+ * @param {PageModule} page
+ * @param {Ctx} ctx
  * @param {string} method
- * @returns {Promise<object>} what the handler returned, for the render after it
+ * @returns {Promise<{ response?: Response, action?: object }|null>} what the
+ *   handler returned, for the render after it
  */
 export async function runAction(page, ctx, method) {
-  const action = page[method];
+  // `method` is whatever arrived on the wire, and reading a verb export by name
+  // off a shape with no index signature is not something the type allows. The
+  // shape deliberately has none: every other read of a page module is a name.
+  const action = /** @type {Record<string, unknown>} */ (page)[method];
   if (typeof action !== 'function') return null;
 
   const result = await action(ctx);
@@ -555,7 +635,7 @@ export async function runAction(page, ctx, method) {
  * and every header the author set, and comes with a mutable guard.
  *
  * @param {Response} response
- * @param {object} ctx
+ * @param {Ctx} ctx
  * @returns {Response} a copy, because a redirect's headers cannot be written to
  */
 export function withEnvelope(response, ctx) {
@@ -585,7 +665,7 @@ export function withEnvelope(response, ctx) {
  * `Object(data)` stringifies to. `hasRegion` is the check that an action runs
  * behind, so a name that gets past it gets past that too.
  *
- * @param {object|null|undefined} page a compiled page module
+ * @param {PageModule|null|undefined} page a compiled page module
  * @param {string} region             the name from the URL
  * @returns {Function|null}
  */
@@ -599,7 +679,7 @@ export function regionOf(page, region) {
  * Whether a page answers for this region. An empty name means the whole page,
  * which every page answers for.
  *
- * @param {object|null|undefined} page
+ * @param {PageModule|null|undefined} page
  * @param {string} region
  * @returns {boolean}
  */
@@ -624,7 +704,7 @@ export function methodsOf(page) {
  * returned, in the same order. Both are walked from the end, because a level
  * renders into the slot map of the one above it.
  *
- * @param {object[]} chain the compiled modules, outermost first
+ * @param {PageModule[]} chain the compiled modules, outermost first
  * @param {object[]} datas one per level, in the same order
  * @param {{ clientEntry?: string|null, stylesheet?: string|null, lang?: string,
  *   speculate?: string|null, canonical?: string|null }} [options] `canonical` is

@@ -4,12 +4,23 @@
  * Exported for its test, which is the only way to falsify a failure that needs
  * a TypeScript that does not exist yet.
  *
- * @param {object|null} unstable what importing `typescript/unstable/sync` gave
+ * @param {{ API?: object, DiagnosticCategory?: object,
+ *   NodeBuilderFlags?: Record<string, number> }|null} unstable what importing
+ *   `typescript/unstable/sync` gave
  * @param {string} version the TypeScript that gave it
- * @returns {object} the module, once its shape holds
+ * @returns {{ API: any, DiagnosticCategory: any, NodeBuilderFlags: Record<string, number> }}
+ *   the module, once its shape holds
  * @throws when the subpath or a name this file drives is gone
  */
-export declare function refuseMovedAPI(unstable: object | null, version: string): object;
+export declare function refuseMovedAPI(unstable: {
+    API?: object;
+    DiagnosticCategory?: object;
+    NodeBuilderFlags?: Record<string, number>;
+} | null, version: string): {
+    API: any;
+    DiagnosticCategory: any;
+    NodeBuilderFlags: Record<string, number>;
+};
 /**
  * The checker, and everything it needs held in one closure.
  *
@@ -30,19 +41,15 @@ export declare function refuseMovedAPI(unstable: object | null, version: string)
  * which is the only order that resolves: an element depends on nothing, a layout
  * on the layouts above it, a page on its whole chain.
  *
- * @param {{ root: string, appDir: string, routesDir: string, elementsDir: string,
- *   strict?: boolean, markdown?: ((source: string, file: string) => string)|null }} options
+ * @param {import('./defaults.js').Config & { root: string }} options the config,
+ *   with the root `loadProject` found. Everything past the four directories is
+ *   ignored, and taking the whole config is what lets a caller pass it through.
  * @returns {{ files: Function, sourceFor: Function, update: Function,
  *   rebuild: Function, check: Function, quickInfo: Function, describe: Function,
  *   dispose: Function }}
  */
-export declare function createChecker({ root, appDir, elementsDir, routesDir, strict, markdown, }: {
+export declare function createChecker({ root, appDir, elementsDir, routesDir, strict, markdown, }: import('./defaults.js').Config & {
     root: string;
-    appDir: string;
-    routesDir: string;
-    elementsDir: string;
-    strict?: boolean;
-    markdown?: ((source: string, file: string) => string) | null;
 }): {
     files: Function;
     sourceFor: Function;

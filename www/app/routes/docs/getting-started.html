@@ -9,7 +9,8 @@ cd my-app
 npm install
 npm run dev`, 'shell'],
       blank: ['npm create @transclude my-app -- --template blank', 'shell'],
-      install: ['npm install @transclude/core', 'shell'],
+      install: [`npm install @transclude/core
+npm install -D vite typescript`, 'shell'],
       config: [
         `export default {
   appDir: 'app',
@@ -91,9 +92,11 @@ export default defineConfig({
   ${html(s.install)}
 
   <p>
-    Vite and TypeScript come with it. On pnpm or Yarn, add Vite to your own
-    <code>package.json</code> as well. Neither one hoists a peer dependency the
-    way npm does.
+    Vite and TypeScript are optional peers, so neither arrives with the
+    framework and both go in your own <code>package.json</code>. Vite builds and
+    it serves in development; TypeScript is what
+    <code>npm run check</code> drives. A built app loads neither, which is why
+    a container that only serves one carries neither.
   </p>
 
   <p>

@@ -11,12 +11,14 @@ export declare const DEFAULT_PORT = 1960;
  * `PORT` beats the config, so a host that assigns one is obeyed without an edit.
  * Dev and production share this, so an app has one port rather than two.
  *
- * @param {object} [config]
+ * @param {{ port?: number|string }} [config]
  * @param {string|undefined} [env] `PORT`, which wins
  * @returns {number}
  * @throws when the value is set but not a port
  */
-export declare function portOf(config?: object, env?: string | undefined): number;
+export declare function portOf(config?: {
+    port?: number | string;
+}, env?: string | undefined): number;
 /**
  * The nearest directory at or above `from` holding the config file.
  *
@@ -51,6 +53,11 @@ export declare function findRoot(from?: string): string;
  * percent-encoded in a bare file path and `Atelier%20Dakroub` is not a directory.
  *
  * @param {string} [from]
- * @returns {Promise<object>} the root, the config and every resolved directory
+ * @returns {Promise<{ root: string, config: import('./defaults.js').Config,
+ *   configFile: string }>} the root, the config and the file it came from
  */
-export declare function loadProject(from?: string): Promise<object>;
+export declare function loadProject(from?: string): Promise<{
+    root: string;
+    config: import('./defaults.js').Config;
+    configFile: string;
+}>;

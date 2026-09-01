@@ -9,7 +9,6 @@ import { getRequestListener } from '@hono/node-server';
 import { TYPES } from '../src/mime.js';
 import { publicFiles as publicHandler } from '../src/public-files.js';
 import { buildSprite, readLibraries, refuseSpriteClash } from '../src/icons.js';
-import { createServer as createViteServer } from 'vite';
 import {
   ACTION_METHODS,
   hasRegion,
@@ -35,8 +34,11 @@ import { feed, feedPath, feedType } from '../src/feed.js';
 import { sitemap } from '../src/sitemap.js';
 import { documentStore, PROXY_PATH, proxyHandler } from '../src/proxy.js';
 import { afterFor } from '../src/after.js';
+import { loadVite } from '../src/vite.js';
 
 const { root, config } = await loadProject();
+// After the config, so an app with neither hears about the config first.
+const { createServer: createViteServer } = await loadVite();
 const routesDir = resolveRoutesDir(path.join(root, config.appDir), config.routesDir);
 const PORT = portOf(config, process.env.PORT);
 
@@ -180,13 +182,29 @@ function withResponse(c, extra) {
 }
 
 /** Whatever the loaders and actions put on `ctx.response`, on the way out. */
+/**
+ * The compiled module behind a route, through Vite so an edit is picked up.
+ *
+ * `ssrLoadModule` answers a `Record<string, any>`, and TypeScript will not let
+ * an index signature stand in for a declared property, so each of the three
+ * callers was told a page module was missing thirteen of them. One cast here
+ * rather than three out there.
+ *
+ * @param {string} id the route id
+ * @returns {Promise<import('../src/document.js').PageModule>}
+ */
+const pageFor = async (id) =>
+  /** @type {import('../src/document.js').PageModule} */ (
+    await vite.ssrLoadModule(pageModuleId(id))
+  );
+
 const sendWith = (c, { response }, html, status) => {
   for (const [name, value] of response.headers) c.header(name, value);
   return c.html(html, status ?? response.status);
 };
 
 const renderPage = async (route, c, status = null, extra = {}) => {
-  const page = await vite.ssrLoadModule(pageModuleId(route.id));
+  const page = await pageFor(route.id);
   const ctx = contextFor(route, c, extra);
 
   const html = await renderRoute(page, ctx, {
@@ -216,7 +234,7 @@ const fragmentOf = (c) => {
 };
 
 const sendFragment = async (route, c, region, extra = {}) => {
-  const page = await vite.ssrLoadModule(pageModuleId(route.id));
+  const page = await pageFor(route.id);
   const ctx = contextFor(route, c, extra);
   const html = await renderFragment(page, ctx, { region: region || null, include });
 
@@ -237,7 +255,7 @@ const sendFragment = async (route, c, region, extra = {}) => {
  * page uses.
  */
 const handleAction = async (route, c) => {
-  const page = await vite.ssrLoadModule(pageModuleId(route.id));
+  const page = await pageFor(route.id);
   const region = fragmentOf(c);
 
   // Before the action, not after: a request nobody can answer should not have
@@ -346,7 +364,9 @@ async function buildApp() {
     app.get('/:file{[^/]+\\.svg}', (c) => {
       const name = c.req.param('file').slice(0, -'.svg'.length);
       const { status, type, body } = sprite(name);
-      return c.body(body, status, { 'content-type': type });
+      // Hono types a status as its own union of the codes it knows, and this one
+      // is 200 or 404 either way.
+      return c.body(body, /** @type {200|404} */ (status), { 'content-type': type });
     });
   }
 
@@ -363,7 +383,7 @@ async function buildApp() {
       // rest would compile the whole site to answer one request.
       const pages = {};
       for (const route of routes) {
-        if (route.params.length) pages[route.id] = await vite.ssrLoadModule(pageModuleId(route.id));
+        if (route.params.length) pages[route.id] = await pageFor(route.id);
       }
 
       const xml = await sitemap({ routes }, pages, config.sitemap, c.req.query('p') ?? null);

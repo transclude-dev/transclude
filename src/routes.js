@@ -44,8 +44,8 @@ const ERROR = '500';
 
 /**
  * @param {string} dir
- * @returns {{ routes: object[], endpoints: object[], notFound: object|null,
- *   error: object|null }} the pages, the endpoints, and the two pages that are
+ * @returns {{ routes: Route[], endpoints: Route[], notFound: Route|null,
+ *   error: Route|null }} the pages, the endpoints, and the two pages that are
  *   reached for rather than routed to
  */
 export function scanRoutes(dir) {
@@ -85,9 +85,87 @@ export function scanRoutes(dir) {
 }
 
 /**
+ * A segment of a route's path, after the brackets are read.
+ *
+ * @typedef {{ kind: 'static'|'param'|'rest', name: string }} Segment
+ */
+
+/**
+ * One route, as the scanner knows it. `ManifestRoute` below is the half that
+ * survives into `dist/routes.json`: a runtime has no filesystem to resolve
+ * `file` against and nothing left to parse.
+ *
+ * @typedef {object} Route
+ * @property {'page'|'endpoint'} kind
+ * @property {string} id the path without its extension
+ * @property {string} file the absolute path on disk
+ * @property {string} rel the same, relative to the routes directory
+ * @property {Segment[]} segments
+ * @property {string} pattern what Hono matches on
+ * @property {string[]} params the dynamic segments, in order
+ * @property {boolean} hasRest whether a `[...rest]` segment is in there
+ */
+
+/**
+ * One route, as `plugin.api.manifest()` knows it at compile time.
+ *
+ * @typedef {object} ManifestRoute
+ * @property {string} id the route id, which is the path without its extension
+ * @property {string} pattern what Hono matches on
+ * @property {string[]} params the dynamic segments, in order
+ * @property {string} [rel] the file, relative to the routes directory
+ * @property {{ tags: string[], hasScript: boolean, needed: boolean }|null} [client]
+ *   what this route ships to a browser, or null for the many that ship nothing
+ */
+
+/**
+ * One route, as `dist/routes.json` carries it.
+ *
+ * `client` is the trap. At compile time it is what the route needs; here it is
+ * the hashed URL the build wrote, or null. Same name, two things, because each
+ * manifest answers the question its own reader asks.
+ *
+ * @typedef {object} BuiltRoute
+ * @property {string} id
+ * @property {string} pattern
+ * @property {string[]} params
+ * @property {string|null} [client] the client entry's URL
+ */
+
+/**
+ * `plugin.api.manifest()`: the route table read off the directory tree.
+ *
+ * @typedef {object} PluginManifest
+ * @property {ManifestRoute[]} routes
+ * @property {ManifestRoute[]} endpoints
+ * @property {{ id: string }|null} notFound
+ * @property {{ id: string }|null} error
+ */
+
+/**
+ * `dist/routes.json`: the route table the build serialized, and the few things a
+ * runtime cannot work out for itself.
+ *
+ * `createApp` reads this one, on four runtimes, which is why the shape is
+ * written here once rather than in each entry that passes it on.
+ *
+ * @typedef {object} Manifest
+ * @property {BuiltRoute[]} routes every page, whether it was prerendered or not
+ * @property {BuiltRoute[]} endpoints
+ * @property {BuiltRoute[]} [dynamic] the routes left to the server, build only
+ * @property {string[]} [gated] what `export const gated` said, so `/sitemap.xml`
+ *   at runtime leaves out what the build left out
+ * @property {{ id: string }|null} [notFound]
+ * @property {{ id: string }|null} [error]
+ * @property {string|null} [stylesheet]
+ * @property {string|null} [speculate] the rules, already rendered
+ * @property {string} [version]
+ */
+
+/**
  * @param {string} rel the path under the routes directory
  * @param {string} file
- * @returns {object} its id, URL pattern, params and kind
+ * @returns {Route} its id, URL pattern, params and kind
  */
 export function toRoute(rel, file) {
   const kind = rel.endsWith(ENDPOINT_EXT) ? 'endpoint' : 'page';
@@ -97,7 +175,7 @@ export function toRoute(rel, file) {
   // `blog/index.html` and `blog.html` both mean /blog; the trailing `index`
   // is addressing, not a path segment.
   const named = parts.at(-1) === 'index' ? parts.slice(0, -1) : parts;
-  const segments = named.map(parseSegment);
+  const segments = /** @type {Segment[]} */ (named.map(parseSegment));
 
   return {
     kind,

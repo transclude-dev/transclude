@@ -1,12 +1,27 @@
+export type Chunk = {
+    start: number;
+    text: string;
+    source: number | null;
+    pinned?: boolean;
+};
 /**
  * Maps an offset in the shim back to an offset in the .html file, or null when
  * it landed in generated scaffolding.
  *
- * @param {object[]} chunks what the Builder recorded
+ * One run of shim text, and where in the .html file it came from.
+ *
+ * `source` is null for text the Builder wrote itself, which is what makes a
+ * diagnostic landing there unmappable. `pinned` means every offset in the run
+ * maps to one source position rather than moving with it.
+ *
+ * @typedef {{ start: number, text: string, source: number|null,
+ *   pinned?: boolean }} Chunk
+ *
+ * @param {Chunk[]} chunks what the Builder recorded
  * @param {number} offset into the shim
  * @returns {number|null} the offset in the .html file, or null when it does not map
  */
-export declare function originalOffset(chunks: object[], offset: number): number | null;
+export declare function originalOffset(chunks: Chunk[], offset: number): number | null;
 /**
  * An endpoint is already a module. There is nothing to compile, only something to
  * annotate. So the shim is the file, verbatim, with a `@satisfies` spliced in

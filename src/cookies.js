@@ -22,7 +22,15 @@ import { parse, parseSigned, serialize, serializeSigned } from 'hono/utils/cooki
  * @param {Request} request
  * @param {{ headers: Headers }} response the shared envelope
  * @param {string|null} [secret] without one, `signed` throws rather than writing unsigned
- * @returns {object} `get`, `set`, `delete`, `all`, `signed`, and the `personal` flag the cache reads
+ * @returns {{ get: (name: string) => string|null,
+ *   set: (name: string, value: string, options?: object) => void,
+ *   delete: (name: string, options?: object) => void,
+ *   all: () => Record<string, string>,
+ *   signed: { get: (name: string) => Promise<string|undefined>,
+ *     all: () => Promise<Record<string, string>>,
+ *     set: (name: string, value: string, options?: object) => Promise<void> },
+ *   personal: boolean }} `get`, `set`, `delete`, `all`, `signed`, and the
+ *   `personal` flag the cache reads
  */
 export function cookiesOf(request, response, secret = null) {
   // Reading one is what makes a page personal, and a personal page must not be
@@ -117,8 +125,12 @@ export function cookiesOf(request, response, secret = null) {
       },
       async all() {
         const parsed = await parseSigned(header(), requireSecret('reading a signed cookie'));
-        return Object.fromEntries(
-          Object.entries(parsed).filter(([, value]) => typeof value === 'string'),
+        // The filter is what makes these strings, and `Object.entries` of a
+        // `string|false` map does not carry that through.
+        return /** @type {Record<string, string>} */ (
+          Object.fromEntries(
+            Object.entries(parsed).filter(([, value]) => typeof value === 'string'),
+          )
         );
       },
       async set(name, value, options = {}) {

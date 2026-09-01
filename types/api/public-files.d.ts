@@ -7,6 +7,6 @@
  * a different entity and must not share an ETag.
  *
  * @param {string} root relative to the working directory
- * @returns {Function} Hono middleware
+ * @returns {import('hono').MiddlewareHandler} Hono middleware
  */
-export declare function publicFiles(root: string): Function;
+export declare function publicFiles(root: string): import('hono').MiddlewareHandler;

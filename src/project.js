@@ -28,7 +28,7 @@ export const DEFAULT_PORT = 1960;
  * `PORT` beats the config, so a host that assigns one is obeyed without an edit.
  * Dev and production share this, so an app has one port rather than two.
  *
- * @param {object} [config]
+ * @param {{ port?: number|string }} [config]
  * @param {string|undefined} [env] `PORT`, which wins
  * @returns {number}
  * @throws when the value is set but not a port
@@ -94,7 +94,8 @@ export function findRoot(from = process.cwd()) {
  * percent-encoded in a bare file path and `Atelier%20Dakroub` is not a directory.
  *
  * @param {string} [from]
- * @returns {Promise<object>} the root, the config and every resolved directory
+ * @returns {Promise<{ root: string, config: import('./defaults.js').Config,
+ *   configFile: string }>} the root, the config and the file it came from
  */
 export async function loadProject(from = process.cwd()) {
   const root = findRoot(from);

@@ -70,8 +70,10 @@ export default function transclude({
 
     const scanned = scanRoutes(resolveRoutesDir(app, routesDir));
     pages = new Map(
+      // Not `.filter(Boolean)`: it drops the nulls and leaves them in the type,
+      // so every read of `route.id` after it is an error.
       [...scanned.routes, scanned.notFound, scanned.error]
-        .filter(Boolean)
+        .filter((route) => route !== null)
         .map((route) => [route.id, route]),
     );
     endpoints = new Map(scanned.endpoints.map((route) => [route.id, route]));

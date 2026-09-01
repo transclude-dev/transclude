@@ -23,7 +23,8 @@ import { blockedAddress } from './address.js';
  * TTL expires in between can change. The allowlist is what actually holds, and
  * this is defense behind it.
  *
- * @param {{ resolver?: object }} [deps] injected so a test needs no DNS
+ * @param {{ resolver?: { lookup: (hostname: string, options: { all: true })
+ *   => Promise<Array<{ address: string }>> } }} [deps] injected so a test needs no DNS
  * @returns {(hostname: string) => Promise<string|null>} why the name is refused, or null
  */
 export function nodeLookup({ resolver = dns } = {}) {

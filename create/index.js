@@ -132,7 +132,7 @@ async function ask(options) {
  * corrupting it.
  */
 function copy(from, to, replacements) {
-  const TEXT = new Set(['.json', '.js', '.html', '.css', '.md', '.txt']);
+  const TEXT = new Set(['.json', '.jsonc', '.js', '.html', '.css', '.md', '.txt']);
 
   for (const rel of walk(from)) {
     // A leading underscore stands for a dot. `.gitignore` in a template would
@@ -182,6 +182,11 @@ async function main() {
   copy(path.join(templates, template.name), target, {
     __NAME__: name,
     __TRANSCLUDE__: dependency(options.link),
+    // wrangler's `compatibility_date` decides which runtime behaviors a worker
+    // gets, and a date written into a template is the date the template was
+    // written rather than the date the project was. Today's, so a new project
+    // starts on current behavior and the author decides when to move it.
+    __DATE__: new Date().toISOString().slice(0, 10),
   });
 
   const where = path.relative(process.cwd(), target);

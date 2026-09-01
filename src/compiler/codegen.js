@@ -12,6 +12,8 @@ import { splitInterpolations } from './interp.js';
 import { parseEach as readEach } from './directives.js';
 import { escapeAttr, escapeText, RAW_TEXT, VOID } from './html.js';
 
+/** @typedef {import('./html.js').ParsedNode} ParsedNode */
+
 
 
 // Hoisted out of a page body into <head>.
@@ -78,7 +80,7 @@ export function frameOf(source, line, column) {
  * which made this the one interpolation mistake that rendered instead of
  * failing. A spread parses as an attribute name too, and is caught here.
  *
- * @param {object} el
+ * @param {ParsedNode} el
  * @throws {CompileError} when a name holds an interpolation
  */
 function assertStaticAttrNames(el) {
@@ -95,9 +97,51 @@ function assertStaticAttrNames(el) {
 }
 
 /**
- * @param {object[]} nodes
- * @param {object} [opts]
- * @returns {object} the render body, the regions, the slots, the includes and the warnings
+ * Where a `${}` in the emitted code came from, one source line per emitted line.
+ *
+ * @typedef {object} Lines
+ * @property {number[]} body
+ * @property {number[]} head
+ * @property {number[]} title
+ * @property {Record<string, number[]>} slots
+ * @property {Record<string, number[]>} regions
+ */
+
+/**
+ * One compiled template: every buffer the walk filled, and what it learned on
+ * the way.
+ *
+ * `blockOf` and `anchoredOf` are read by the binding pass, which walks the same
+ * tree again and has to agree with this one about which nodes got anchors.
+ *
+ * @typedef {object} Fragment
+ * @property {string} body the render function's body
+ * @property {Lines} at
+ * @property {string} blockDefs every block's own function, as source
+ * @property {Map<ParsedNode, string>} blockOf the node that opened each block
+ * @property {Set<ParsedNode>} anchoredOf every block that got anchors
+ * @property {Record<string, string>} slots
+ * @property {Record<string, string>} regions each `fragment` region's own render
+ * @property {{ id: string, node: ParsedNode, within: string|null }[]} regionIncludes
+ * @property {{ key: string, kind: string, where: string, id: string|false }[]} includes
+ * @property {string[]} consumed slot names this level renders
+ * @property {string} head
+ * @property {string} title kept apart so the innermost one wins outright
+ * @property {boolean} hasTitle
+ * @property {string|null} htmlAttrs
+ * @property {string|null} bodyAttrs
+ * @property {string[]} warnings
+ * @property {Set<string>} reads every field of the data the template names
+ * @property {{ tag: string, ref: string }[]} components
+ */
+
+/**
+ * @param {ParsedNode[]} nodes
+ * @param {{ components?: Map<string, string>, shadowTags?: Set<string>,
+ *   page?: boolean, layout?: boolean, blocks?: boolean, fragments?: boolean,
+ *   html?: ParsedNode|null, body?: ParsedNode|null }} [opts]
+ * @returns {Fragment} the render body, the regions, the slots, the includes and
+ *   the warnings
  */
 export function compileFragment(nodes, opts = {}) {
   const gen = new Codegen(opts);
@@ -362,7 +406,7 @@ class Codegen {
    * Every branch of an if-chain has to agree. One that mixes a hoisted tag with
    * an ordinary one has no single answer, so it is refused rather than guessed.
    *
-   * @param {{node: object}[]} chain the branches, or a single node in a list
+   * @param {{ node: ParsedNode }[]} chain the branches, or a single node in a list
    * @param {any[]} out the buffer this level is being written into
    * @param {boolean} topLevel
    * @returns {any[]} the buffer to use
@@ -1116,9 +1160,9 @@ export const ANCHOR_CLOSE = '<!--]-->';
  * `else` / `else-if` bind to the `if` before them, so a chain is one unit. Both
  * passes have to agree on where it ends, so they share the same walk.
  *
- * @param {object[]} nodes
+ * @param {ParsedNode[]} nodes
  * @param {number} i where the `if` is
- * @returns {{ chain: Array<{ node: object, kind: string, cond: string|null }>, next: number }|null}
+ * @returns {{ chain: Array<{ node: ParsedNode, kind: string, cond: string|null }>, next: number }|null}
  *   null when the element carries no `if`, so there is no chain to gather
  */
 export function gatherChain(nodes, i) {

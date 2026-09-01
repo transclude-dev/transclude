@@ -1,17 +1,63 @@
+export type ElementTypes = {
+    tag: string;
+    /**
+     * the props
+     */
+    type: string;
+    state?: string;
+    /**
+     * what `export const prototype` declared
+     */
+    members?: string;
+    /**
+     * whether anything registers the element
+     */
+    upgrades?: boolean;
+};
+export type RouteTypes = {
+    id: string;
+    /**
+     * what the loader returns
+     */
+    type: string;
+    /**
+     * the `ctx` it is handed
+     */
+    context?: string;
+    params?: string[];
+    pattern?: string;
+};
 /**
- * @param {{ components?: object[], partials?: object[], layouts?: object[],
- *   pages?: object[], types?: {name: string, type: string}[] }} [what] each
- *   element carries its `tag`, its props `type`, its `members`, its `state` and
- *   whether anything `upgrades` it. `partials` is the light elements: the key is
- *   the old name and is load-bearing until the callers change with it. `types`
- *   are the names the app declared that the strings below use.
+ * One element, as `src/typecheck.js` extracted it. Every field is a type
+ * *string* that tsc's own printer produced.
+ *
+ * @typedef {object} ElementTypes
+ * @property {string} tag
+ * @property {string} type the props
+ * @property {string} [state]
+ * @property {string} [members] what `export const prototype` declared
+ * @property {boolean} [upgrades] whether anything registers the element
+ *
+ * @typedef {object} RouteTypes
+ * @property {string} id
+ * @property {string} type what the loader returns
+ * @property {string} [context] the `ctx` it is handed
+ * @property {string[]} [params]
+ * @property {string} [pattern]
+ *
+ * @param {{ components?: ElementTypes[], partials?: ElementTypes[],
+ *   layouts?: RouteTypes[], pages?: RouteTypes[],
+ *   types?: { name: string, type: string }[] }} [what] `partials` is the light
+ *   elements: the key is the old name and is load-bearing until the callers
+ *   change with it. `types` are the names the app declared that the strings
+ *   below use.
  * @returns {string} the contents of transclude-env.d.ts
  */
 export declare function emitTypes({ components, partials, layouts, pages, types, }?: {
-    components?: object[];
-    partials?: object[];
-    layouts?: object[];
-    pages?: object[];
+    components?: ElementTypes[];
+    partials?: ElementTypes[];
+    layouts?: RouteTypes[];
+    pages?: RouteTypes[];
     types?: {
         name: string;
         type: string;

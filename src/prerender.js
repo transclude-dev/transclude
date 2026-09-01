@@ -31,7 +31,8 @@ import { cookiesOf } from './cookies.js';
  * @param {Record<string, string>} options.params
  * @param {string|null} [options.cookieSecret]
  * @param {string} [options.metadataBase]
- * @returns {object} the same shape a request gets, minus what a file cannot have
+ * @returns {import('./document.js').Ctx} the same shape a request gets, minus
+ *   what a file cannot have
  */
 export function prerenderContext({ route, url, params, cookieSecret = null, metadataBase }) {
   const response = responseOf();
@@ -75,7 +76,7 @@ export function prerenderContext({ route, url, params, cookieSecret = null, meta
  * Every message continues a sentence whose subject is the page, since that is
  * what the build prints above it.
  *
- * @param {object} ctx the context the render was given
+ * @param {import('./document.js').Ctx} ctx the context the render was given
  * @param {string|Response} html what the render answered
  * @throws when this URL cannot be one file
  */

@@ -25,11 +25,42 @@ alone.
 - `transclude.enable`: type check `.html` files in a transclude project. On by
   default.
 
+## Installing it
+
+It is on no marketplace. Every
+[release](https://github.com/transclude-dev/transclude/releases) carries the
+`.vsix`:
+
+```sh
+code --install-extension transclude-0.1.0.vsix
+```
+
+Nothing updates it for you. A new release means downloading the file again, and
+only when the extension itself changed — its version is its own, and a framework
+release usually leaves it alone.
+
 ## Building it yourself
 
 ```sh
 cd editor/vscode
 npm install
-npx @vscode/vsce package
+npm run package
 code --install-extension transclude-0.1.0.vsix
 ```
+
+## Releasing it
+
+The marketplace listing is published from this directory, by whoever holds the
+`transclude` publisher:
+
+```sh
+cd editor/vscode
+npm install
+npm run package        # writes transclude-<version>.vsix, for a local install
+npx @vscode/vsce login transclude
+npm run publish        # bumps nothing; set "version" first
+```
+
+The version here is the extension's own. It does not track the framework's: the
+extension ships no checker, so a framework release changes what the diagnostics
+say and not what this file does.

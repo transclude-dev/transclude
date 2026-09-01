@@ -13,7 +13,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { build } from 'vite';
 import transclude from '../src/plugin.js';
 import { loadProject } from '../src/project.js';
 import { renderRoute, urlFor } from '../src/document.js';
@@ -31,8 +30,11 @@ import { pool } from '../src/pool.js';
 import { mappedFrames } from '../src/stack.js';
 import { precompress } from '../src/compress.js';
 import { known, typeOf } from '../src/mime.js';
+import { loadVite } from '../src/vite.js';
 
 const { root, config } = await loadProject();
+// After the config, so an app with neither hears about the config first.
+const { build } = await loadVite();
 const dist = path.join(root, config.outDir);
 
 const plugin = transclude(config);

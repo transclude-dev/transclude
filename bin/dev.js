@@ -9,7 +9,6 @@ import { getRequestListener } from '@hono/node-server';
 import { TYPES } from '../src/mime.js';
 import { publicFiles as publicHandler } from '../src/public-files.js';
 import { buildSprite, readLibraries, refuseSpriteClash } from '../src/icons.js';
-import { createServer as createViteServer } from 'vite';
 import {
   ACTION_METHODS,
   hasRegion,
@@ -35,8 +34,11 @@ import { feed, feedPath, feedType } from '../src/feed.js';
 import { sitemap } from '../src/sitemap.js';
 import { documentStore, PROXY_PATH, proxyHandler } from '../src/proxy.js';
 import { afterFor } from '../src/after.js';
+import { loadVite } from '../src/vite.js';
 
 const { root, config } = await loadProject();
+// After the config, so an app with neither hears about the config first.
+const { createServer: createViteServer } = await loadVite();
 const routesDir = resolveRoutesDir(path.join(root, config.appDir), config.routesDir);
 const PORT = portOf(config, process.env.PORT);
 

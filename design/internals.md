@@ -53,6 +53,8 @@ than into the next reader's evening.
   and `bin/serve.deno.js` are adapters that only listen.
 - `src/project.js`. Finds the project root and loads its config. The one place
   that answers where the app is.
+- `src/vite.js`. The one import of `vite`, which is an optional peer. Not the
+  plugin: that is `plugin.js`.
 - `src/prerender.js`. What a page may be if it is going to be a file, and the
   `ctx` the build hands it. Split out of `bin/build.js` because nothing can
   import that: it runs a build the moment it is loaded, so anything left in it
@@ -1516,13 +1518,23 @@ against.
   every runtime, so it must not drag `prerender.js` and its context builder into
   a worker bundle. `test/portable.test.js` names every module the core reaches,
   so adding one there is a decision rather than a side effect.
-- **A `file:` dependency does not bring its peers.** npm installs a peer
-  dependency alongside a package from the registry, so `npm install @transclude/core`
-  gets Vite and TypeScript. It does not do that for `file:..`, which is how both
-  apps here depend on the package. So `examples/showcase` and `docs` each list
-  Vite and TypeScript again in their own `devDependencies`. Those entries look
-  redundant and are load-bearing. Measured both ways: from a tarball both land,
-  from a path neither does.
+- **Nothing installs Vite or TypeScript for you.** Both are optional peers, and
+  npm skips an optional peer rather than installing it alongside the package. It
+  also brings no peer at all for `file:..`, which is how the apps here depend on
+  the package. So every app in this repository lists Vite and TypeScript in its
+  own `devDependencies`, and so does what `create/templates/*` scaffolds. Those
+  entries look redundant and are load-bearing. Measured both ways when Vite was
+  still required: from a tarball it landed, from a path it did not.
+- **Only `src/vite.js` may import `vite`.** It is an optional peer because
+  `bin/build.js` and `bin/dev.js` are the only two things that load it and
+  nothing on the serve path does, so a container running a built app should not
+  carry a bundler it will never call. A static `import … from 'vite'` anywhere
+  else puts it back and says nothing: the module graph resolves at load, so the
+  first symptom is a server that will not start, with a resolver error naming a
+  file inside this package. `loadVite()` is a dynamic import behind a message
+  that says what to install, and `test/vite.test.js` runs a copy of the module
+  where vite cannot resolve, because that is the only way to see what the
+  author sees.
 
 ## Testing
 

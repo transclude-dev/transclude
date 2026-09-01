@@ -731,9 +731,17 @@ against.
   extension that quietly does nothing. `test/editor.test.js` pins the path to
   the name in `package.json`, and pins `editor/server.js` into the publish list,
   which is the same failure from the other side. To package it:
-  `cd editor/vscode && npm install && npx @vscode/vsce package`. Publishing
-  needs a Marketplace publisher whose id matches `publisher` in its
-  `package.json`, and `npx ovsx publish` covers Open VSX.
+  `cd editor/vscode && npm install && npm run package`. `publish.yml` runs that
+  on a tag and attaches the `.vsix` to the release page, so installing it is a
+  download and `code --install-extension` rather than a clone and a toolchain.
+  It does not update itself, which is the whole difference between that and a
+  marketplace. Listing it there needs a publisher whose id matches `publisher`
+  in the extension's `package.json` and a long-lived token, which is why it is
+  not done from CI; `npx ovsx publish` covers Open VSX, and Cursor, VSCodium and
+  Windsurf read that one rather than Microsoft's. `test/editor.test.js` pins the
+  script, the version and the filename to each other: three files have to agree
+  for the upload to carry anything, and a rename in one says so only in a job
+  nobody reads until a release.
 - **`npm run check:src` was red for 476 errors, and nothing ran it.** The script
   existed, the framework type checks its own JSDoc through it, and no job called
   it, so the count only ever went up. Nearly all of them were one shape: a

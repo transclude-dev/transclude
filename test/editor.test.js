@@ -109,3 +109,27 @@ test('a directive that takes a value consumes the whole attribute', () => {
     assert.ok(rule.end, `${name} never closes, so the value is not consumed`);
   }
 });
+
+test('the release workflow builds the extension it uploads', () => {
+  // The extension is on no marketplace, so the release page is how anyone gets
+  // it. Three things have to agree for that to work, and each is in a different
+  // file: the script the workflow runs, the name vsce writes, and the version
+  // in the manifest. A rename in any one of them uploads nothing and says so
+  // only in a job nobody reads until a release.
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/publish.yml'), 'utf8');
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'editor/vscode/package.json'), 'utf8'));
+
+  assert.ok(manifest.scripts?.package, 'the manifest has no `package` script to run');
+  assert.match(
+    workflow,
+    /npm run package --prefix editor\/vscode/,
+    'the workflow does not run the packaging script',
+  );
+
+  // vsce writes `<name>-<version>.vsix`, and the workflow reads the version out
+  // of the manifest rather than repeating it.
+  assert.ok(
+    workflow.includes(`editor/vscode/${manifest.name}-$version.vsix`),
+    `the workflow uploads a name vsce does not write for "${manifest.name}"`,
+  );
+});

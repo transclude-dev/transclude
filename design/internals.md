@@ -742,6 +742,17 @@ against.
   script, the version and the filename to each other: three files have to agree
   for the upload to carry anything, and a rename in one says so only in a job
   nobody reads until a release.
+- **A release page here is immutable, so an asset goes up with it or not at
+  all.** `gh release upload` against one that already exists is a 422, which is
+  how `v1.0.0-rc.1` shipped a page whose own notes said the extension was
+  attached below it. The vsix had built and had nowhere to go. So `publish.yml`
+  builds it *before* the page and passes the file to `gh release create`. That
+  ordering is the opposite of what it wants for a different reason — a registry
+  blip in `npm ci` must not cost the notes — so the build is allowed to fail,
+  the page goes up either way, and the step exits 1 afterwards. A release with
+  no extension on it is red rather than quiet. Recreating a page for a tag is
+  the repair, and it does not move the tag: `gh release delete` then
+  `gh release create` with the notes read back out of it.
 - **`npm run check:src` was red for 476 errors, and nothing ran it.** The script
   existed, the framework type checks its own JSDoc through it, and no job called
   it, so the count only ever went up. Nearly all of them were one shape: a

@@ -117,6 +117,11 @@ so a swap cannot drift from the page it replaces part of.
 | [`@transclude/core`](https://www.npmjs.com/package/@transclude/core) | the framework |
 | [`@transclude/create`](https://www.npmjs.com/package/@transclude/create) | `npm create @transclude` |
 
+What changed in a release is the message on its tag, on
+[the releases page](https://github.com/transclude-dev/transclude/releases).
+There is no changelog file: the tag carries the message already.
+[VERSIONING.md](VERSIONING.md) says what a version number promises.
+
 ## Working on it
 
 ```sh

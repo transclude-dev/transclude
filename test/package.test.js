@@ -20,6 +20,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import * as acorn from 'acorn';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
@@ -76,6 +77,104 @@ test('the public API is exactly what it was', () => {
     [],
     `these subpaths are new. Add them to PUBLIC, and ship a minor:\n  ${added.join('\n  ')}`,
   );
+});
+
+/**
+ * The names behind each promised subpath.
+ *
+ * A subpath is a path, and a path that resolves says nothing about what is
+ * behind it. `PUBLIC` pins the paths. This pins what an app may import from
+ * one, because those are two promises and only the first was being kept: ten of
+ * the twelve subpaths export eighty names between them, and most exist so the
+ * framework can talk to itself.
+ *
+ * Every name here is covered by `VERSIONING.md` and does not move without a
+ * major. Adding one is a minor and costs nothing. A subpath absent from this
+ * table is in `WIRING` below.
+ */
+const PROMISED = {
+  '.': ['default'],
+  './app': ['createApp'],
+  './cookies': ['cookiesOf'],
+  './document': ['renderFragment', 'renderRoute', 'responseOf'],
+  './production': ['app', 'noBuild', 'port', 'summary'],
+  './worker': ['workerFrom'],
+};
+
+/**
+ * Subpaths whose names are the framework's own wiring.
+ *
+ * The path stays — removing one is still a major — and the names behind it
+ * move between minors. `./runtime` is the clearest case: those names are what
+ * the compiler emits calls to, so they are an output format rather than an API,
+ * and an app that imports one has reached past the seam.
+ */
+const WIRING = ['./compiler', './routes', './runtime', './serve.bun', './serve.deno', './typecheck'];
+
+/**
+ * What a module exports, read rather than imported.
+ *
+ * `./production` loads the app's config the moment it is imported and throws
+ * where there is no app, and `src/plugin.js` writes `export const pages` inside
+ * a template literal, which a search for the word would count. A parse answers
+ * both: it runs nothing and it knows generated text from code.
+ *
+ * @param {string} target the `./src/…` path an export condition names
+ * @returns {string[]} every name the module exports, `default` included
+ */
+function exportsOf(target) {
+  const source = fs.readFileSync(path.join(root, target), 'utf8');
+  const ast = acorn.parse(source, { ecmaVersion: 'latest', sourceType: 'module' });
+
+  const names = [];
+  for (const node of ast.body) {
+    if (node.type === 'ExportDefaultDeclaration') names.push('default');
+    if (node.type !== 'ExportNamedDeclaration') continue;
+
+    for (const spec of node.specifiers) names.push(spec.exported.name);
+    const declared = node.declaration;
+    if (!declared) continue;
+    if (declared.id) names.push(declared.id.name);
+    for (const one of declared.declarations ?? []) names.push(one.id.name);
+  }
+  return names;
+}
+
+test('every subpath is either promised or wiring', () => {
+  // A subpath added to `exports` and to neither table is a promise nobody
+  // decided to make. The decision is which of the two it is, and this is where
+  // it gets asked.
+  const filed = new Set([...Object.keys(PROMISED), ...WIRING]);
+  const unfiled = Object.keys(manifest.exports).filter((subpath) => !filed.has(subpath));
+
+  assert.deepEqual(
+    unfiled,
+    [],
+    `these subpaths are in neither PROMISED nor WIRING:\n  ${unfiled.join('\n  ')}`,
+  );
+});
+
+test('every promised name is still exported', () => {
+  // The promise `VERSIONING.md` makes, kept here. A name that goes missing is a
+  // major, and this is what makes that a decision rather than a discovery
+  // somebody makes after upgrading.
+  for (const [subpath, names] of Object.entries(PROMISED)) {
+    const target = manifest.exports[subpath];
+    const file = typeof target === 'string' ? target : target.default;
+    const found = exportsOf(file);
+
+    const gone = names.filter((name) => !found.includes(name));
+    assert.deepEqual(gone, [], `${subpath} no longer exports ${gone.join(', ')}, which is a major`);
+  }
+});
+
+test('the policy names both tables', () => {
+  // `VERSIONING.md` is where the promise is written down and this file is where
+  // it is kept. A policy that stopped mentioning the names would leave the
+  // tables above pinning something nothing claims.
+  const policy = fs.readFileSync(path.join(root, 'VERSIONING.md'), 'utf8');
+  assert.match(policy, /PROMISED/, 'the policy does not name the promised table');
+  assert.match(policy, /WIRING/, 'the policy does not name the wiring table');
 });
 
 test('every exported subpath points at a file that is here', () => {

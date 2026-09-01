@@ -638,7 +638,10 @@
 
   const probe = document.getElementById('probe');
   const field = (id) => probe.shadowRoot.getElementById(id);
-  const rowFields = () => [...probe.shadowRoot.querySelectorAll('li input')];
+  // The text inputs only. The rows also carry a checkbox now, and `li input`
+  // would sweep both up.
+  const rowFields = () => [...probe.shadowRoot.querySelectorAll('li input[placeholder]')];
+  const rowFlags = () => [...probe.shadowRoot.querySelectorAll('li input.flag')];
 
   const typeInto = (input, value) => {
     input.value = value;
@@ -1170,6 +1173,72 @@
     ok(!document.getElementById('solo').internals, 'an ordinary element gets no internals');
     return 'no export, no association, and a light element can opt in too';
   });
+
+  // A malformed attribute is the author's to see, not the page's to break on.
+  // `card-list`'s `people` converter runs JSON.parse, which throws on this, so
+  // the runtime uses the declared default rather than letting it reach the page.
+  await check('a converter that throws on a bad attribute falls back to the default', async () => {
+    const el = document.createElement('card-list');
+    el.setAttribute('heading', 'Malformed');
+    el.setAttribute('people', 'not json at all');
+    document.body.append(el);
+    await el.updateComplete;
+
+    is(el.shadowRoot.querySelectorAll('user-card').length, 0, 'a broken attribute should render the default');
+    el.remove();
+    return 'a malformed attribute reads as the declared default, not a crash';
+  });
+
+  // A fieldset going disabled calls `formDisabledCallback` on every
+  // form-associated element inside it. `tag-picker` declares `disabled`, so the
+  // runtime mirrors the container's state onto the attribute, both directions.
+  await check('a container going disabled mirrors onto a formAssociated element', async () => {
+    const form = document.createElement('form');
+    const fieldset = document.createElement('fieldset');
+    const el = document.createElement('tag-picker');
+    el.setAttribute('name', 'tags');
+    el.setAttribute('options', '["a","b"]');
+    fieldset.append(el);
+    form.append(fieldset);
+    document.body.append(form);
+    await el.updateComplete;
+
+    ok(el.internals, 'a formAssociated element attaches internals');
+    ok(!el.hasAttribute('disabled'), 'it starts enabled');
+
+    fieldset.disabled = true;
+    ok(el.hasAttribute('disabled'), 'the container disable set the declared prop');
+
+    form.remove();
+    return 'formDisabledCallback mirrors a container disable onto disabled';
+    return 'formDisabledCallback mirrors a container disable onto disabled';
+  });
+
+  // Focus is carried across a move even for a field with no selection to carry.
+  // Reading `selectionStart` on a checkbox throws, which is the branch a text
+  // field never reaches, so the focused element is a checkbox here.
+  await check('a non-text field keeps focus across a move, with no caret to restore', () =>
+    withoutMoveBefore(async () => {
+      const rows = [
+        { id: 1, label: 'a', flagged: false },
+        { id: 2, label: 'b', flagged: false },
+        { id: 3, label: 'c', flagged: false },
+      ];
+      probe.rows = rows;
+      await probe.updateComplete;
+
+      const box = rowFlags()[1];
+      box.focus();
+
+      // [a,b,c] -> [b,c,a] moves the focused row.
+      probe.rows = [rows[1], rows[2], rows[0]];
+      await probe.updateComplete;
+
+      const after = rowFlags();
+      ok(after[0] === box, 'the checkbox row was rebuilt rather than moved');
+      ok(box.isConnected && probe.shadowRoot.activeElement === box, 'focus was lost');
+      return 'focus is restored even when there is no caret to restore with';
+    }));
 
   const passed = results.filter((r) => r.ok).length;
   const summary = document.getElementById('summary');

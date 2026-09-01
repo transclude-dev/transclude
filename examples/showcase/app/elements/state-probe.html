@@ -51,5 +51,9 @@
   <li each="row of rows" key="row.id">
     <b if="row.flagged">!</b>
     <input placeholder="${row.label}">
+    <!-- A non-text field in a keyed row. Reading `selectionStart` on a checkbox
+         throws, which is the branch focus preservation takes for anything that
+         is not a text field. -->
+    <input type="checkbox" class="flag" aria-label="flag ${row.label}">
   </li>
 </ul>

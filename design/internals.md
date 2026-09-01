@@ -1533,7 +1533,27 @@ against.
   `xmlSafe` in `src/feed.js` and `src/sitemap.js` strips the C0 range except
   tab, newline and return, which are the three XML keeps. Stripped rather than
   escaped, because none of them stands for a character.
-- **`${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the
+- **A parser reads some elements' content as text, and the walk never cleans
+  it.** parse5 keeps the content of `<xmp>`, `<plaintext>`, `<listing>`,
+  `<noembed>` and `<noframes>` as raw text, so `sanitize` recursed past a
+  `<img onerror>` hidden in one without seeing it, and it survived to the page
+  that included the fragment. Whether a browser reads that content as text is not
+  a settled question either: `<noembed>` depends on embed support and
+  `<noframes>` on the frames flag, neither of which parse5 models, so the two can
+  disagree and the markup parses live. The five are on `STRIP` now, next to
+  `<script>`. Comments go the same way and for a neighboring reason: a foreign
+  comment renders nothing, its boundary is a known confusion surface — a
+  conditional comment, a stray `--!>` — and the compiler already drops comments
+  from a page it builds, so a fragment matches. `test/rewrite.test.js` covers
+  both, and the mutation vectors that found them are in the commit.
+- **A route that is not in the table still fails like one.** `/sitemap.xml` and
+  the feed had no `try`, so a throw in a page's `paths()` or a feed's `items()`
+  — both usually a database read — slipped past the app's `internalError` to
+  Hono's default handler, which the app never configured and cannot report
+  through. Both are wrapped now, with phases `sitemap` and `feed` and a null
+  `route`, which is why `report` reads `at?.route` rather than assuming a truthy
+  `at` carries one. The seam that pages a human covers every failed request
+  again, not most of them.- **`${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the
   one way through.** Text in those two is raw text: escaping it would change what
   the browser reads, since `&amp;` is an ampersand in prose and four characters
   in JavaScript. So `emitText` emitted `__str`, which does not escape, and

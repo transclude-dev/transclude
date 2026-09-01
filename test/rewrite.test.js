@@ -362,3 +362,26 @@ test('a data: image survives, and a data: document does not', () => {
   const bad = clean('<a href="data:text/html,<b>x</b>">x</a>');
   assert.doesNotMatch(bad.html, /data:text\/html/);
 });
+
+
+test('a deprecated raw-text element is stripped, not passed through as text', () => {
+  // parse5 reads the content of these as text, so the walk never inspects it,
+  // and whether a browser reads it as text depends on flags parse5 has not.
+  // A handler hidden inside one survived the clean and could parse live in the
+  // page that includes the fragment.
+  for (const tag of ['xmp', 'plaintext', 'listing', 'noembed', 'noframes']) {
+    const { html } = clean(`<${tag}><img src=x onerror="alert(1)"></${tag}>`);
+    assert.doesNotMatch(html, /onerror/i, tag);
+    assert.doesNotMatch(html, new RegExp(tag, 'i'), tag);
+  }
+});
+
+test('a comment is dropped, and the markup around it is kept', () => {
+  const { html, removed } = clean(
+    '<p>one</p><!--[if IE]><img src=x onerror="alert(1)"><![endif]--><em>two</em>',
+  );
+  assert.doesNotMatch(html, /onerror|<!--/i);
+  assert.match(html, /<p>one<\/p>/);
+  assert.match(html, /<em>two<\/em>/);
+  assert.ok(removed.includes('#comment'));
+});

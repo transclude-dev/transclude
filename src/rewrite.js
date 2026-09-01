@@ -13,6 +13,12 @@ import { parse } from 'parse5';
 const STRIP = new Set([
   'script', 'iframe', 'object', 'embed', 'base', 'link', 'style',
   'animate', 'set', 'animateMotion', 'animateTransform',
+  // Deprecated raw-text elements. parse5 reads their content as text, so the
+  // walk never inspects it, and whether a browser reads it as text depends on
+  // flags parse5 does not have: `<noembed>` on embed support, `<noframes>` on
+  // frames. A `<img onerror>` hidden in one survives the clean here and can
+  // parse live in the page that includes it. None has a use in a fragment.
+  'xmp', 'plaintext', 'listing', 'noembed', 'noframes',
 ]);
 
 /** Attributes holding a URL, and what a URL there is allowed to be. */
@@ -133,6 +139,15 @@ export function sanitize(root, { styles = 'keep' } = {}) {
   const visit = (node) => {
     // A copy, because the walk removes from the live list.
     for (const child of [...kidsOf(node)]) {
+      // Comments are dropped, the way the compiler drops them from a page it
+      // built. A foreign comment renders nothing, and its boundary is a known
+      // confusion surface: a conditional comment or a stray `--!>` can carry
+      // markup the walk never sees and a browser re-parses live.
+      if (child.nodeName === '#comment') {
+        removed.push('#comment');
+        remove(child);
+        continue;
+      }
       if (!isElement(child)) continue;
 
       if (STRIP.has(child.tagName) || isRefresh(child)) {

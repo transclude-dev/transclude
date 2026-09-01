@@ -16,7 +16,6 @@
     "hypermedia",
     "language-server"
   ],
-  "private": true,
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -27,6 +26,10 @@
     "onLanguage:html"
   ],
   "main": "./extension.js",
+  "scripts": {
+    "package": "npx --yes @vscode/vsce package",
+    "publish": "npx --yes @vscode/vsce publish"
+  },
   "contributes": {
     "grammars": [
       {
@@ -58,7 +61,7 @@
         "transclude.enable": {
           "type": "boolean",
           "default": true,
-          "description": "Type check .html files in an transclude project."
+          "description": "Type check .html files in a transclude project."
         }
       }
     }

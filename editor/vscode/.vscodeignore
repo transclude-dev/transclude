@@ -1,0 +1,11 @@
+# What stays out of the .vsix. Everything else in this directory ships.
+#
+# `node_modules` is not here on purpose: `vscode-languageclient` is a runtime
+# dependency and the extension does not start without it. vsce carries the
+# production tree and leaves the rest.
+
+.vscode/**
+.gitignore
+**/*.vsix
+**/.DS_Store
+package-lock.json

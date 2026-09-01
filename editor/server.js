@@ -1,4 +1,4 @@
-// Language server for .html files in an transclude project.
+// Language server for .html files in a transclude project.
 //
 // Hand-written JSON-RPC rather than a dependency. The part of the protocol
 // needed here is small, and keeping it dependency-free means any editor that

@@ -129,9 +129,14 @@ test('the directory name becomes the package name and the heading', () => {
 });
 
 test('it depends on a published version, not on wherever this checkout is', () => {
+  // What this is really guarding is that `--link` did not leak into a scaffold
+  // nobody asked to link. A prerelease suffix is allowed: scaffolding from
+  // `@transclude/create@next` has to write the version that exists, and
+  // `^1.0.0` names one the registry does not serve yet.
   make(['--template', 'blank'], (dir) => {
     const { dependencies } = JSON.parse(read(dir, 'package.json'));
-    assert.match(dependencies['@transclude/core'], /^\^\d+\.\d+\.\d+$/);
+    assert.match(dependencies['@transclude/core'], /^\^\d+\.\d+\.\d+(-[\w.]+)?$/);
+    assert.doesNotMatch(dependencies['@transclude/core'], /^file:/);
   });
 });
 

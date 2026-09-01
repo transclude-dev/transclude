@@ -10,8 +10,27 @@
  * @param {Request} request
  * @param {{ headers: Headers }} response the shared envelope
  * @param {string|null} [secret] without one, `signed` throws rather than writing unsigned
- * @returns {object} `get`, `set`, `delete`, `all`, `signed`, and the `personal` flag the cache reads
+ * @returns {{ get: (name: string) => string|null,
+ *   set: (name: string, value: string, options?: object) => void,
+ *   delete: (name: string, options?: object) => void,
+ *   all: () => Record<string, string>,
+ *   signed: { get: (name: string) => Promise<string|undefined>,
+ *     all: () => Promise<Record<string, string>>,
+ *     set: (name: string, value: string, options?: object) => Promise<void> },
+ *   personal: boolean }} `get`, `set`, `delete`, `all`, `signed`, and the
+ *   `personal` flag the cache reads
  */
 export declare function cookiesOf(request: Request, response: {
     headers: Headers;
-}, secret?: string | null): object;
+}, secret?: string | null): {
+    get: (name: string) => string | null;
+    set: (name: string, value: string, options?: object) => void;
+    delete: (name: string, options?: object) => void;
+    all: () => Record<string, string>;
+    signed: {
+        get: (name: string) => Promise<string | undefined>;
+        all: () => Promise<Record<string, string>>;
+        set: (name: string, value: string, options?: object) => Promise<void>;
+    };
+    personal: boolean;
+};

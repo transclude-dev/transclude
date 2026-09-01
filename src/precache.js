@@ -29,9 +29,9 @@ function byUrl(a, b) {
 
 /**
  * @param {object} sources
- * @param {Iterable<[string, object]>} sources.pages prerendered documents
- * @param {Iterable<[string, object]>} sources.assets hashed build output
- * @param {Iterable<[string, object]>} [sources.files] the author's public files
+ * @param {Iterable<[string, { etag?: string }]>} sources.pages prerendered documents
+ * @param {Iterable<[string, unknown]>} sources.assets hashed build output
+ * @param {Iterable<[string, { etag?: string }]>} [sources.files] the author's public files
  * @returns {Entry[]} sorted by URL, so two builds of the same site agree
  */
 export function precacheList({ pages, assets, files = [] }) {

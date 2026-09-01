@@ -33,6 +33,38 @@ const DEFAULTS = {
 
 const STYLE_MODES = new Set(['keep', 'strip']);
 
+/**
+ * The `proxy` block of a config.
+ *
+ * @typedef {object} ProxyConfig
+ * @property {string[]} [allow] the hostnames that may be read
+ * @property {number} [maxBytes]
+ * @property {number} [timeout]
+ * @property {number} [redirects]
+ * @property {boolean} [sanitize]
+ * @property {'keep'|'strip'} [styles]
+ * @property {number} [cache] how many documents to hold
+ * @property {number} [maxAge]
+ * @property {Function|null} [lookup]
+ */
+
+/**
+ * One foreign document, held.
+ *
+ * @typedef {object} Held
+ * @property {import('./extract.js').Indexed} doc
+ * @property {string} base
+ * @property {string[]} removed what the sanitizer took out
+ * @property {number} at when it was read
+ * @property {string|null} etag
+ * @property {string|null} lastModified
+ *
+ * @typedef {object} DocumentStore
+ * @property {(key: string) => Held|null} get
+ * @property {(key: string, entry: Held) => void} set
+ * @property {number} size
+ */
+
 /** Every key `proxy` may set. `lookup` has no default: absent means the runtime's. */
 const KEYS = new Set([...Object.keys(DEFAULTS), 'lookup']);
 
@@ -151,7 +183,7 @@ async function bodyWithin(response, maxBytes) {
  * the requested one, so two requests that redirect to the same place hit.
  *
  * @param {number} [max] how many documents to hold
- * @returns {{ get: Function, set: Function, size: () => number }}
+ * @returns {DocumentStore}
  */
 export function documentStore(max = DEFAULTS.cache) {
   const held = new Map();
@@ -189,9 +221,10 @@ function present(headers) {
  * and index last so the table never names something the cleaning took out.
  *
  * @param {string} url
- * @param {object} [options] the `proxy` config
- * @param {{ fetch?: Function, store?: object, now?: Function, lookup?: Function }} [deps]
- * @returns {Promise<object>} the indexed document, its base, and what was removed
+ * @param {ProxyConfig} [options] the `proxy` config
+ * @param {{ fetch?: Function, store?: DocumentStore|null, now?: () => number,
+ *   lookup?: Function }} [deps]
+ * @returns {Promise<Held>} the indexed document, its base, and what was removed
  */
 export async function readForeign(url, options = {}, deps = {}) {
   const config = settings(options);
@@ -267,8 +300,9 @@ export async function readForeign(url, options = {}, deps = {}) {
  * render, and holding the parsed document is what makes ten of them off one page
  * cost one read.
  *
- * @param {object} [options]
- * @param {object} [deps]
+ * @param {ProxyConfig} [options]
+ * @param {{ store?: DocumentStore, fetch?: Function, now?: () => number,
+ *   lookup?: Function }} [deps]
  * @returns {{ resolve: (url: string, id: string) => Promise<string> }}
  */
 export function includeResolver(options = {}, deps = {}) {
@@ -284,8 +318,9 @@ export function includeResolver(options = {}, deps = {}) {
 }
 
 /**
- * @param {object} [options]
- * @param {object} [deps]
+ * @param {ProxyConfig} [options]
+ * @param {{ store?: DocumentStore, fetch?: Function, now?: () => number,
+ *   lookup?: Function }} [deps]
  * @returns {(request: Request) => Promise<Response>}
  */
 export function proxyHandler(options = {}, deps = {}) {

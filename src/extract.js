@@ -11,6 +11,8 @@
 
 import { parse, serializeOuter } from 'parse5';
 
+/** @typedef {import('./compiler/html.js').ParsedNode} ParsedNode */
+
 /** Inline elements that may be standing in for the thing after them. */
 const INLINE = new Set(['a', 'span', 'em', 'i', 'b', 'strong', 'small', 'sub', 'sup']);
 
@@ -96,7 +98,7 @@ export function slugify(text) {
  * requests.
  *
  * @param {string} html
- * @returns {object} the indexed document
+ * @returns {Indexed} the indexed document
  */
 export function readDocument(html) {
   return indexDocument(parse(html));
@@ -108,8 +110,18 @@ export function readDocument(html) {
  * The proxy sanitizes and rewrites a foreign document before indexing it, and
  * indexing first would leave the table naming elements the cleaning removed.
  *
- * @param {object} root a parse5 tree
- * @returns {object} the same root, with its id table
+ * A parsed document with the tables a fragment lookup needs.
+ *
+ * @typedef {object} Indexed
+ * @property {ParsedNode} root
+ * @property {Map<string, ParsedNode>} ids
+ * @property {Map<string, ParsedNode>} slugs a heading's text, slugified
+ * @property {Set<string>} duplicates ids written twice, which name nothing
+ * @property {Array<{ id: string, element: ParsedNode, implicit: boolean }>} order
+ *   every fragment the document offers, in document order
+ *
+ * @param {ParsedNode} root a parse5 tree
+ * @returns {Indexed} the same root, with its id table
  */
 export function indexDocument(root) {
   const ids = new Map();
@@ -243,7 +255,7 @@ function ancestorsOf(element) {
  * wrapping them in a container would mean the fetched fragment did not match
  * what the source document renders in that place.
  *
- * @param {string|object} input the HTML, or an already indexed document
+ * @param {string|Indexed} input the HTML, or an already indexed document
  * @param {string} id
  * @returns {{ id: string, implicit: boolean, nodes: object[], html: string,
  *   kind: string, standalone: boolean, diagnostics: object[] }|null} null when
@@ -318,7 +330,7 @@ export function resolveFragment(input, id) {
  * This is the claim that the rules work on markup nobody wrote for us: run it
  * over a page and the result should read like that page's outline.
  *
- * @param {string|object} input
+ * @param {string|Indexed} input
  * @returns {Array<{ id: string, implicit: boolean, tag: string, rank: number, kind: string, text: string }>}
  */
 export function listFragments(input) {

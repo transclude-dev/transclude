@@ -27,7 +27,10 @@ const OPTIONS = new Set(['csrf', 'csp', 'trailingSlash', 'publicFiles', 'middlew
 
 /**
  * @param {{ csrf?: object|boolean, csp?: object|boolean, trailingSlash?: string,
- *   publicFiles?: Function|null, middleware?: Function|null }} [options]
+ *   publicFiles?: import('hono').MiddlewareHandler|null,
+ *   middleware?: ((app: import('hono').Hono) => void)|null }} [options]
+ *   `middleware` is the app's own `server.js`, which is handed the Hono app
+ *   rather than mounted on it
  * @returns {import('hono').Hono} a Hono app
  * @throws on a key it does not know
  */

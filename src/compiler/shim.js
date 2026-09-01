@@ -110,7 +110,16 @@ class Builder {
  * Maps an offset in the shim back to an offset in the .html file, or null when
  * it landed in generated scaffolding.
  *
- * @param {object[]} chunks what the Builder recorded
+ * One run of shim text, and where in the .html file it came from.
+ *
+ * `source` is null for text the Builder wrote itself, which is what makes a
+ * diagnostic landing there unmappable. `pinned` means every offset in the run
+ * maps to one source position rather than moving with it.
+ *
+ * @typedef {{ start: number, text: string, source: number|null,
+ *   pinned?: boolean }} Chunk
+ *
+ * @param {Chunk[]} chunks what the Builder recorded
  * @param {number} offset into the shim
  * @returns {number|null} the offset in the .html file, or null when it does not map
  */

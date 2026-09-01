@@ -27,12 +27,16 @@ import { childrenOf, gatherChain } from './codegen.js';
 import { parseEach } from './directives.js';
 import { RAW_TEXT, VOID } from './html.js';
 
+/** @typedef {import('./html.js').ParsedNode} ParsedNode */
+
 const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each', 'key']);
 
 /**
- * @param {object[]} nodes the same parse5 nodes the renderer walked
- * @param {object} [opts]
- * @returns {{ locate: string, writes: string, cursors: object, parts: string,
+ * @param {ParsedNode[]} nodes the same parse5 nodes the renderer walked
+ * @param {{ components?: Map<string, string>, shadowTags?: Set<string>,
+ *   blockOf?: Map<ParsedNode, string>, anchoredOf?: Set<ParsedNode>,
+ *   refs?: Map<string, string>, rootOffset?: number }} [opts]
+ * @returns {{ locate: string, writes: string, cursors: number, parts: string,
  *   volatile: string[] }} `volatile` is what it could not bind, which is what
  *   decides whether a light element may update in place
  */

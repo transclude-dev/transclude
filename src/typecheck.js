@@ -48,9 +48,12 @@ const TESTED = '7.0.2';
  * Exported for its test, which is the only way to falsify a failure that needs
  * a TypeScript that does not exist yet.
  *
- * @param {object|null} unstable what importing `typescript/unstable/sync` gave
+ * @param {{ API?: object, DiagnosticCategory?: object,
+ *   NodeBuilderFlags?: Record<string, number> }|null} unstable what importing
+ *   `typescript/unstable/sync` gave
  * @param {string} version the TypeScript that gave it
- * @returns {object} the module, once its shape holds
+ * @returns {{ API: any, DiagnosticCategory: any, NodeBuilderFlags: Record<string, number> }}
+ *   the module, once its shape holds
  * @throws when the subpath or a name this file drives is gone
  */
 export function refuseMovedAPI(unstable, version) {
@@ -76,7 +79,11 @@ export function refuseMovedAPI(unstable, version) {
         `Pin the version that held still: npm install -D typescript@${TESTED}`,
     );
   }
-  return unstable;
+  // On one line on purpose. A block comment holding a newline between `return`
+  // and its operand is a line terminator to the parser, and ASI turns the whole
+  // thing into `return;`. Measured: the checker came back undefined.
+  const held = /** @type {{ API: any, DiagnosticCategory: any, NodeBuilderFlags: Record<string, number> }} */ (unstable);
+  return held;
 }
 
 const { API, DiagnosticCategory, NodeBuilderFlags } = refuseMovedAPI(
@@ -151,8 +158,9 @@ const LAYOUT_FILE = '_layout.html';
  * which is the only order that resolves: an element depends on nothing, a layout
  * on the layouts above it, a page on its whole chain.
  *
- * @param {{ root: string, appDir: string, routesDir: string, elementsDir: string,
- *   strict?: boolean, markdown?: ((source: string, file: string) => string)|null }} options
+ * @param {import('./defaults.js').Config & { root: string }} options the config,
+ *   with the root `loadProject` found. Everything past the four directories is
+ *   ignored, and taking the whole config is what lets a caller pass it through.
  * @returns {{ files: Function, sourceFor: Function, update: Function,
  *   rebuild: Function, check: Function, quickInfo: Function, describe: Function,
  *   dispose: Function }}
@@ -748,7 +756,7 @@ export function checkAlone(file) {
  * verdict with no evidence. 5.x flattened chains before handing them over; 7
  * sends them structured, so the joining moved here.
  *
- * @param {{ text: string, messageChain?: readonly object[] }} diagnostic
+ * @param {{ text: string, messageChain?: readonly any[] }} diagnostic
  * @returns {string}
  */
 function flatten(diagnostic) {

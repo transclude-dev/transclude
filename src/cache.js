@@ -9,10 +9,25 @@
 // of being out of date is bounded, and no visitor pays it.
 
 /**
- * What a page means by `export const revalidate`, in milliseconds.
+ * One entry in the store: the markup, when it goes stale, and what it answers to.
  *
- * @param {object|null|undefined} page a compiled page module
- * @returns {number} 0 for a page that is rendered every time
+ * @typedef {{ html: string, tags: string[], expires: number }} CacheEntry
+ *
+ * @typedef {object} CacheStore
+ * @property {(key: string) => CacheEntry|undefined} get
+ * @property {(key: string, entry: CacheEntry) => void} set
+ * @property {(key: string) => void} delete
+ * @property {(tag: string) => void} deleteByTag
+ *
+ * @typedef {{ seconds: number, tags: string[] }} Window how long an entry lives
+ */
+
+/**
+ * What a page means by `export const revalidate`.
+ *
+ * @param {{ revalidate?: number|{ seconds: number, tags?: string[] }|false|null }
+ *   |null|undefined} page a compiled page module
+ * @returns {Window|null} null for a page that is rendered every time
  */
 export function windowOf(page) {
   const value = page?.revalidate;
@@ -38,7 +53,7 @@ export function windowOf(page) {
  * own revalidation and moves back to the end.
  *
  * @param {{ max?: number }} [options]
- * @returns {{ get: Function, set: Function, delete: Function, deleteByTag: Function }}
+ * @returns {CacheStore}
  */
 export function memoryStore({ max = 1000 } = {}) {
   const entries = new Map();
@@ -100,9 +115,12 @@ function hold(work, after) {
  * cache is somebody else's session handed to the next visitor. That is the same
  * rule the build uses to decide a route can be a file.
  *
- * @param {object} [store] anything with the `memoryStore` shape
+ * @param {CacheStore} [store] anything with the `memoryStore` shape
  * @param {{ now?: () => number }} [deps] injected so a test can move time
- * @returns {{ read: Function, revalidateTag: Function, revalidatePath: Function }}
+ * @returns {{ read: (key: string, window: Window|null,
+ *   render: () => Promise<{ html: string|Response, cacheable: boolean }>,
+ *   after?: ((work: Promise<unknown>) => void)|null) => Promise<string|Response|null>,
+ *   revalidateTag: (tag: string) => void, revalidatePath: (key: string) => void }}
  */
 export function createCache(store = memoryStore(), { now = () => Date.now() } = {}) {
   // One render per key at a time. Without this the first request past the window

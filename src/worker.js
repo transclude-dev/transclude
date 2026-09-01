@@ -59,7 +59,7 @@ export function bytesFrom(map) {
  * those need a filesystem and this runtime has none.
  *
  * @param {Record<string, Encoded>} map
- * @returns {Function} a Hono handler
+ * @returns {import('hono').MiddlewareHandler} a Hono handler
  */
 export function fileHandler(map) {
   const files = bytesFrom(map);
@@ -68,7 +68,11 @@ export function fileHandler(map) {
     if (!hit) return next();
     c.header('Content-Type', hit.type);
     c.header('ETag', hit.etag);
-    return c.body(hit.body);
+    // Hono types a body as `string | ArrayBuffer | ReadableStream`, which is
+    // narrower than what a `Response` accepts: a typed array goes through
+    // untouched. Sending `hit.body.buffer` instead would be a different promise,
+    // because a view does not have to cover its buffer.
+    return c.body(/** @type {ArrayBuffer} */ (/** @type {unknown} */ (hit.body)));
   };
 }
 
@@ -117,9 +121,10 @@ export async function hash(body) {
  * @param {import('./defaults.js').Config} options.config the app's `transclude.config.js`
  * @param {string|import('./routes.js').Manifest} options.manifest `dist/routes.json`,
  *   text or parsed
- * @param {{ pages: Record<string, object>, endpoints?: Record<string, object>,
- *   middleware?: Function|null }} options.entry everything
- *   `dist/server/entry.js` exports
+ * @param {{ pages: Record<string, import('./document.js').PageModule>,
+ *   endpoints?: Record<string, object>,
+ *   middleware?: ((app: import('hono').Hono) => void)|null }} options.entry
+ *   everything `dist/server/entry.js` exports
  * @param {{ statics: Record<string, Encoded>, assets: Record<string, Encoded>,
  *   publicFiles: Record<string, Encoded>, notFound?: Encoded|null,
  *   errorPage?: Encoded|null, precache?: string|null }} options.bundle everything

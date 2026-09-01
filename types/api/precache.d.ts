@@ -4,15 +4,19 @@ export type Entry = {
 };
 /**
  * @param {object} sources
- * @param {Iterable<[string, object]>} sources.pages prerendered documents
- * @param {Iterable<[string, object]>} sources.assets hashed build output
- * @param {Iterable<[string, object]>} [sources.files] the author's public files
+ * @param {Iterable<[string, { etag?: string }]>} sources.pages prerendered documents
+ * @param {Iterable<[string, unknown]>} sources.assets hashed build output
+ * @param {Iterable<[string, { etag?: string }]>} [sources.files] the author's public files
  * @returns {Entry[]} sorted by URL, so two builds of the same site agree
  */
 export declare function precacheList({ pages, assets, files }: {
-    pages: Iterable<[string, object]>;
-    assets: Iterable<[string, object]>;
-    files?: Iterable<[string, object]>;
+    pages: Iterable<[string, {
+        etag?: string;
+    }]>;
+    assets: Iterable<[string, unknown]>;
+    files?: Iterable<[string, {
+        etag?: string;
+    }]>;
 }): Entry[];
 /**
  * The document served at `/precache.json`.

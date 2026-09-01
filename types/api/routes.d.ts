@@ -1,14 +1,14 @@
 /**
  * @param {string} dir
  * @returns {{ routes: Route[], endpoints: Route[], notFound: Route|null,
- *   error: object|null }} the pages, the endpoints, and the two pages that are
+ *   error: Route|null }} the pages, the endpoints, and the two pages that are
  *   reached for rather than routed to
  */
 export declare function scanRoutes(dir: string): {
     routes: Route[];
     endpoints: Route[];
     notFound: Route | null;
-    error: object | null;
+    error: Route | null;
 };
 export type Segment = {
     kind: 'static' | 'param' | 'rest';
@@ -68,16 +68,35 @@ export type ManifestRoute = {
         needed: boolean;
     } | null;
 };
+export type BuiltRoute = {
+    id: string;
+    pattern: string;
+    params: string[];
+    /**
+     * the client entry's URL
+     */
+    client?: string | null;
+};
+export type PluginManifest = {
+    routes: ManifestRoute[];
+    endpoints: ManifestRoute[];
+    notFound: {
+        id: string;
+    } | null;
+    error: {
+        id: string;
+    } | null;
+};
 export type Manifest = {
     /**
      * every page, whether it was prerendered or not
      */
-    routes: ManifestRoute[];
-    endpoints: ManifestRoute[];
+    routes: BuiltRoute[];
+    endpoints: BuiltRoute[];
     /**
      * the routes left to the server, build only
      */
-    dynamic?: ManifestRoute[];
+    dynamic?: BuiltRoute[];
     /**
      * what `export const gated` said, so `/sitemap.xml`
      * at runtime leaves out what the build left out
@@ -117,7 +136,7 @@ export type Manifest = {
  * @property {boolean} hasRest whether a `[...rest]` segment is in there
  */
 /**
- * One route, as `dist/routes.json` carries it.
+ * One route, as `plugin.api.manifest()` knows it at compile time.
  *
  * @typedef {object} ManifestRoute
  * @property {string} id the route id, which is the path without its extension
@@ -128,17 +147,38 @@ export type Manifest = {
  *   what this route ships to a browser, or null for the many that ship nothing
  */
 /**
+ * One route, as `dist/routes.json` carries it.
+ *
+ * `client` is the trap. At compile time it is what the route needs; here it is
+ * the hashed URL the build wrote, or null. Same name, two things, because each
+ * manifest answers the question its own reader asks.
+ *
+ * @typedef {object} BuiltRoute
+ * @property {string} id
+ * @property {string} pattern
+ * @property {string[]} params
+ * @property {string|null} [client] the client entry's URL
+ */
+/**
+ * `plugin.api.manifest()`: the route table read off the directory tree.
+ *
+ * @typedef {object} PluginManifest
+ * @property {ManifestRoute[]} routes
+ * @property {ManifestRoute[]} endpoints
+ * @property {{ id: string }|null} notFound
+ * @property {{ id: string }|null} error
+ */
+/**
  * `dist/routes.json`: the route table the build serialized, and the few things a
  * runtime cannot work out for itself.
  *
- * `plugin.api.manifest()` builds it at compile time and `bin/build.js` writes it
- * with three more fields. `createApp` reads both, on four runtimes, which is why
- * the shape is written here once rather than in each entry that passes it on.
+ * `createApp` reads this one, on four runtimes, which is why the shape is
+ * written here once rather than in each entry that passes it on.
  *
  * @typedef {object} Manifest
- * @property {ManifestRoute[]} routes every page, whether it was prerendered or not
- * @property {ManifestRoute[]} endpoints
- * @property {ManifestRoute[]} [dynamic] the routes left to the server, build only
+ * @property {BuiltRoute[]} routes every page, whether it was prerendered or not
+ * @property {BuiltRoute[]} endpoints
+ * @property {BuiltRoute[]} [dynamic] the routes left to the server, build only
  * @property {string[]} [gated] what `export const gated` said, so `/sitemap.xml`
  *   at runtime leaves out what the build left out
  * @property {{ id: string }|null} [notFound]

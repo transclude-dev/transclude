@@ -1,10 +1,44 @@
+export type CacheEntry = {
+    html: string;
+    tags: string[];
+    expires: number;
+};
+export type CacheStore = {
+    get: (key: string) => CacheEntry | undefined;
+    set: (key: string, entry: CacheEntry) => void;
+    delete: (key: string) => void;
+    deleteByTag: (tag: string) => void;
+};
+export type Window = {
+    seconds: number;
+    tags: string[];
+};
 /**
- * What a page means by `export const revalidate`, in milliseconds.
+ * One entry in the store: the markup, when it goes stale, and what it answers to.
  *
- * @param {object|null|undefined} page a compiled page module
- * @returns {number} 0 for a page that is rendered every time
+ * @typedef {{ html: string, tags: string[], expires: number }} CacheEntry
+ *
+ * @typedef {object} CacheStore
+ * @property {(key: string) => CacheEntry|undefined} get
+ * @property {(key: string, entry: CacheEntry) => void} set
+ * @property {(key: string) => void} delete
+ * @property {(tag: string) => void} deleteByTag
+ *
+ * @typedef {{ seconds: number, tags: string[] }} Window how long an entry lives
  */
-export declare function windowOf(page: object | null | undefined): number;
+/**
+ * What a page means by `export const revalidate`.
+ *
+ * @param {{ revalidate?: number|{ seconds: number, tags?: string[] }|false|null }
+ *   |null|undefined} page a compiled page module
+ * @returns {Window|null} null for a page that is rendered every time
+ */
+export declare function windowOf(page: {
+    revalidate?: number | {
+        seconds: number;
+        tags?: string[];
+    } | false | null;
+} | null | undefined): Window | null;
 /**
  * The default store: a bounded map, right for one server.
  *
@@ -14,16 +48,11 @@ export declare function windowOf(page: object | null | undefined): number;
  * own revalidation and moves back to the end.
  *
  * @param {{ max?: number }} [options]
- * @returns {{ get: Function, set: Function, delete: Function, deleteByTag: Function }}
+ * @returns {CacheStore}
  */
 export declare function memoryStore({ max }?: {
     max?: number;
-}): {
-    get: Function;
-    set: Function;
-    delete: Function;
-    deleteByTag: Function;
-};
+}): CacheStore;
 /**
  * One route's cache, wrapped around the render.
  *
@@ -33,16 +62,22 @@ export declare function memoryStore({ max }?: {
  * cache is somebody else's session handed to the next visitor. That is the same
  * rule the build uses to decide a route can be a file.
  *
- * @param {object} [store] anything with the `memoryStore` shape
+ * @param {CacheStore} [store] anything with the `memoryStore` shape
  * @param {{ now?: () => number }} [deps] injected so a test can move time
- * @returns {{ read: Function, revalidateTag: Function, revalidatePath: Function }}
+ * @returns {{ read: (key: string, window: Window|null,
+ *   render: () => Promise<{ html: string|Response, cacheable: boolean }>,
+ *   after?: ((work: Promise<unknown>) => void)|null) => Promise<string|Response|null>,
+ *   revalidateTag: (tag: string) => void, revalidatePath: (key: string) => void }}
  */
-export declare function createCache(store?: object, { now }?: {
+export declare function createCache(store?: CacheStore, { now }?: {
     now?: () => number;
 }): {
-    read: Function;
-    revalidateTag: Function;
-    revalidatePath: Function;
+    read: (key: string, window: Window | null, render: () => Promise<{
+        html: string | Response;
+        cacheable: boolean;
+    }>, after?: ((work: Promise<unknown>) => void) | null) => Promise<string | Response | null>;
+    revalidateTag: (tag: string) => void;
+    revalidatePath: (key: string) => void;
 };
 /**
  * Path plus query, because a page that reads `?q=` renders differently for each.

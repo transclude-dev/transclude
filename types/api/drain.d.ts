@@ -9,11 +9,17 @@
  * not clean. Both timers are unref'd, so neither keeps a finished process
  * alive.
  *
- * @param {object} server what `serve` returned: a `node:http` server
+ * @param {{ close: (done?: () => void) => void, closeIdleConnections?: () => void,
+ *   closeAllConnections?: () => void }} server what `serve` returned: a
+ *   `node:http` server
  * @param {{ signals?: string[], grace?: number, sweep?: number, exit?: Function }} [options]
  * @returns {() => void} the drain itself, so a test can run one without a signal
  */
-export declare function drainOn(server: object, options?: {
+export declare function drainOn(server: {
+    close: (done?: () => void) => void;
+    closeIdleConnections?: () => void;
+    closeAllConnections?: () => void;
+}, options?: {
     signals?: string[];
     grace?: number;
     sweep?: number;

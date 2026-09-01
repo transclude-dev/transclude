@@ -736,32 +736,62 @@ against.
   `package.json`, and `npx ovsx publish` covers Open VSX.
 - **`npm run check:src` was red for 476 errors, and nothing ran it.** The script
   existed, the framework type checks its own JSDoc through it, and no job called
-  it, so the count only ever went up. 451 of the 476 were one shape: a parameter
-  documented `@param {object}`, which says opaque rather than a shape, so every
-  read of a field on it is an error. `src/compiler/expr.js` alone held 43,
-  because every jsep node was `{object}`; one `@typedef` for the node took that
-  file to zero and `codegen.js` from 12 to 9 along with it.
-  Fixing the rest is a long job. `test/typed.test.js` is the ratchet in the
-  meantime: a ceiling per file, nothing may go up, and a file that improves is
-  reported rather than failed. A ceiling above where a file sits is safe, and
-  failing on one would hand a chore to whoever improved a file they never meant
-  to touch, which teaches people to leave files alone. tsc costs a quarter of a
-  second on this tree, which is why it can be a test rather than a job somebody
-  remembers. CI runs `check:src` too, `continue-on-error`, because gating on 430
-  known errors is a job that is red on every build, and a job that is always red
-  is the `.DS_Store` warning again. Flip it when the count is zero, and delete
-  the ratchet in the same commit. Do not raise a ceiling. Lower one, or leave it.
-  Zero is not obviously the target. `test/source-types.test.js` already fails on
-  a curated list of codes that cannot be a false positive — a name, an arity, a
-  call, and the drift class — and much of what sits under those is the shape of a
-  parse5 node, which the compiler walks loosely on purpose. Type what the
-  framework owns and promises. `Config` in `src/defaults.js` is the model:
-  `app.js` read fifty-four keys off an `{object}`, and that same table is one
-  `VERSIONING.md` calls settled, so the type and the promise are now one list.
-  It took `app.js` from 54 to 28 and found a real bug on the way — the first
-  `Config` said `onError` takes one argument, the code passes two, and the fatal
-  gate caught the annotation rather than the call. Write a type from the call
-  site, not from memory.
+  it, so the count only ever went up. Nearly all of them were one shape: a
+  parameter documented `@param {object}`, which says opaque rather than a shape,
+  so every read of a field on it is an error. It is zero now, and
+  `test/typed.test.js` fails on the first one that comes back.
+
+  What fixed it was not an annotation per function. It was a name for each thing
+  that gets passed around, written once where the thing lives, and then used.
+  `Config` in `src/defaults.js` was the model: `app.js` read fifty-four keys off
+  an `{object}`, and that same table is one `VERSIONING.md` calls settled, so the
+  type and the promise are one list. The rest followed the same rule.
+
+  | | |
+  | --- | --- |
+  | `Config` | `src/defaults.js` |
+  | `Manifest`, `BuiltRoute`, `PluginManifest`, `ManifestRoute`, `Route`, `Segment` | `src/routes.js` |
+  | `Ctx`, `PageModule`, `RenderOptions` | `src/document.js` |
+  | `Definition`, `Block`, `Part`, `BlockState`, `KeyedEntry` | `src/runtime/index.js` |
+  | `ParsedNode` | `src/compiler/html.js` |
+  | `AcornNode`, `ElementModule` | `src/compiler/script.js` |
+  | `Fragment`, `Lines` | `src/compiler/codegen.js` |
+  | `Blocks`, `HeadBlock` | `src/compiler/index.js` |
+  | `Entry`, `ByteStore`, `Store` | `src/static-cache.js` |
+  | `CacheStore`, `CacheEntry`, `Window` | `src/cache.js` |
+  | `Indexed` | `src/extract.js` |
+  | `ProxyConfig`, `Held`, `DocumentStore` | `src/proxy.js` |
+  | `FeedConfig`, `FeedItem` | `src/feed.js` |
+  | `SitemapConfig` | `src/sitemap.js` |
+  | `ElementTypes`, `RouteTypes` | `src/compiler/types.js` |
+  | `Chunk` | `src/compiler/shim.js` |
+  | `Encoded` | `src/worker.js` |
+
+  Two are permissive on purpose. `ParsedNode` and `AcornNode` have one required
+  field and everything else optional, because both walks read across a
+  discriminated union and have already established which kind they hold. Naming
+  the real union would mean narrowing at every read, in trees these files know
+  the shape of.
+
+  `ManifestRoute` and `BuiltRoute` look like one thing twice, and the reason is
+  `client`. In the plugin's manifest it is what the route needs: its tags, and
+  whether it has a script. In `dist/routes.json` it is the hashed URL the build
+  wrote. Same field, two answers, because each manifest answers the question its
+  own reader asks.
+
+  Write a type from the call site, not from memory. The first `Config` said
+  `onError` takes one argument and the code passes two, and the checker caught
+  the annotation rather than the call. Several `@returns` were simply wrong:
+  `absoluteFrom` was documented as returning a `URL` and returns a function,
+  `windowOf` as returning a number and returns an object or null, `assertModule`
+  as returning void and returns a string. Each was a sentence written from
+  memory about code somebody had just finished.
+- **`return` and a block comment holding a newline is `return;`.** Writing
+  `return /** @type {…} */ (value);` with the cast wrapped across two lines puts
+  a line terminator between `return` and its operand, ASI closes the statement,
+  and `refuseMovedAPI` came back `undefined`. The checker then failed to
+  destructure its own module at import, on the next line. Keep a cast on one
+  line, or name the value first and return the name.
 - **A refusal knew where it was and could not say.** Every `CompileError` is
   raised with a parse5 node, so every one has a line and a column. Only the line
   was read, and it was appended to the message as `(line 84)`. That tells a
@@ -1097,15 +1127,12 @@ against.
 - **Most of what `check:src` reported was the JSDoc being wrong, not the code
   being untypeable.** It was called noise from parse5 node shapes and it was not:
   of 180 diagnostics, 115 were annotations that disagreed with the thing they
-  described, nearly all of them written in one pass from memory rather than read
-  off the code. `scanRoutes` was documented as returning an array and returns
-  four named lists. `checkUrl` was documented as returning an object and returns
-  a string or null. `createApp`'s parameter never listed `endpoints`. Fixing them
-  is what took it to 65. The gate now includes TS2353, TS2741, TS2739 and TS2740,
-  which are that class in both directions, so it cannot come back. What is left
-  is genuine: `rendered` that TS cannot prove is set, `selectionStart` on an
-  `Element` the code has already checked, and `updated` on a class the author
-  supplies.
+  described, nearly all written in one pass from memory rather than read off the
+  code. `scanRoutes` was documented as returning an array and returns four named
+  lists. `checkUrl` was documented as returning an object and returns a string or
+  null. `createApp`'s parameter never listed `endpoints`. The gate in
+  `test/source-types.test.js` includes TS2353, TS2741, TS2739 and TS2740, which
+  are that class in both directions, so it cannot come back.
 - **A source map is handed back from `load`, not written into the code.** Vite
   composes a map a plugin returns and does not read a `//# sourceMappingURL`
   comment on the code it was given, so the inline version changed nothing and a

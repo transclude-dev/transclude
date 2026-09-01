@@ -41,16 +41,39 @@ const absolute = (hostname, path) => `${hostname.replace(/\/$/, '')}${path}`;
  * rather than being shuffled among the dated ones.
  */
 /**
- * @param {{ items?: object[] | (() => object[] | Promise<object[]>), limit?: number }} config
- *   `items` may be a function, so an app builds them from its own data
- * @returns {Promise<object[]>}
+ * One entry, as an app writes it.
+ *
+ * @typedef {object} FeedItem
+ * @property {string} [title]
+ * @property {string} [url]
+ * @property {string} [author]
+ * @property {string|number|Date} [date]
+ * @property {Date|null} [at] the parsed date, added on the way through
+ *
+ * @typedef {object} FeedConfig
+ * @property {string} [hostname] every link is absolute, so this is required
+ * @property {string} [title]
+ * @property {'rss'|'atom'} [format]
+ * @property {string} [author] required for Atom, unless every item has one
+ * @property {string|number|Date} [updated]
+ * @property {string} [path] where it is mounted
+ * @property {number} [limit]
+ * @property {FeedItem[]|(() => FeedItem[]|Promise<FeedItem[]>)} [items]
+ */
+
+/**
+ * @param {FeedConfig} config `items` may be a function, so an app builds them
+ *   from its own data
+ * @returns {Promise<FeedItem[]>}
  */
 async function itemsOf({ items = [], limit = LIMIT }) {
   const list = typeof items === 'function' ? await items() : await items;
 
   const dated = list.map((item, index) => ({ item, index, at: date(item.date) }));
   dated.sort((a, b) => {
-    if (a.at && b.at && a.at.getTime() !== b.at.getTime()) return b.at - a.at;
+    if (a.at && b.at && a.at.getTime() !== b.at.getTime()) {
+      return b.at.getTime() - a.at.getTime();
+    }
     if (a.at && !b.at) return -1;
     if (!a.at && b.at) return 1;
     return a.index - b.index;
@@ -142,7 +165,7 @@ function atom(items, config, stamp) {
 /**
  * What the response is served as. A reader picks the parser from this.
  *
- * @param {object|null|undefined} config
+ * @param {FeedConfig|null|undefined} config
  * @returns {string}
  */
 export const feedType = (config) =>
@@ -153,13 +176,13 @@ export const feedType = (config) =>
 /**
  * Where it is mounted, and where the build writes it.
  *
- * @param {object|null|undefined} config
+ * @param {FeedConfig|null|undefined} config
  * @returns {string}
  */
 export const feedPath = (config) => config?.path ?? '/feed.xml';
 
 /**
- * @param {object} [config] the `feed` block, plus its `items`
+ * @param {FeedConfig} [config] the `feed` block, plus its `items`
  * @returns {Promise<string>} an RSS or Atom document
  * @throws when Atom is asked for without an author or a date
  */

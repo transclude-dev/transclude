@@ -5,10 +5,15 @@
  * is to try. The `try` covers the getter and nothing else: a `waitUntil` that
  * throws is a real failure and belongs to the caller.
  *
- * @param {object} c a Hono context
+ * @param {{ executionCtx?: { waitUntil: (work: Promise<unknown>) => void } }} c a
+ *   Hono context
  * @returns {{ waitUntil: (work: Promise<unknown>) => void }|null}
  */
-export declare function executionCtxOf(c: object): {
+export declare function executionCtxOf(c: {
+    executionCtx?: {
+        waitUntil: (work: Promise<unknown>) => void;
+    };
+}): {
     waitUntil: (work: Promise<unknown>) => void;
 } | null;
 /**

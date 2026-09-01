@@ -48,13 +48,13 @@
  *   trailingSlash?: 'never'|'always'|'ignore',
  *   strict?: boolean,
  *   csrf?: boolean,
- *   csp?: boolean|object,
+ *   csp?: boolean|{ directives?: Record<string, string[]>, reportOnly?: boolean },
  *   speculate?: boolean|object,
  *   canonical?: boolean,
  *   markdown?: ((source: string, file: string) => string)|null,
- *   cache?: object,
+ *   cache?: import('./cache.js').CacheStore,
  *   cookieSecret?: string,
- *   feed?: object,
+ *   feed?: import('./feed.js').FeedConfig,
  *   fragmentHeader?: string,
  *   metadataBase?: string,
  *   onError?: (error: Error, at: {
@@ -64,8 +64,8 @@
  *   }) => unknown,
  *   port?: number|string,
  *   precache?: object,
- *   proxy?: { cache?: object, lookup?: unknown },
- *   sitemap?: object,
+ *   proxy?: import('./proxy.js').ProxyConfig,
+ *   sitemap?: import('./sitemap.js').SitemapConfig,
  *   watchElements?: boolean,
  * }} Config
  */
@@ -193,5 +193,9 @@ export function withDefaults(config = {}) {
     );
   }
 
-  return merged;
+  // `merged` is `DEFAULTS` widened by whatever the author wrote, and the spread
+  // of two object types is not the typedef: `trailingSlash` comes back as
+  // `string` rather than the three it may be. The table above is the promise,
+  // and this says the result keeps it.
+  return /** @type {Config} */ (merged);
 }

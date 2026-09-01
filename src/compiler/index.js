@@ -3,6 +3,8 @@
 import { parse, parseFragment } from 'parse5';
 import { compileFragment, childrenOf, CompileError, frameOf } from './codegen.js';
 import { escapeAttr } from './html.js';
+
+/** @typedef {import('./html.js').ParsedNode} ParsedNode */
 import { lineMap, sourceMap } from './sourcemap.js';
 import { compileBindings } from './bind.js';
 import {
@@ -107,8 +109,29 @@ function isDataBlock(node) {
  * Each block carries the line it starts on so parse errors can point back into
  * the .html file rather than into generated output.
  *
+ * One `<script>` or `<style>` block, with where it starts. Both are recorded so
+ * a parse error points into the .html file rather than into generated output.
+ *
+ * @typedef {object} Block
+ * @property {string} code
+ * @property {number} line
+ * @property {number} offset
+ *
+ * @typedef {Block & { attrs: { name: string, value: string }[] }} HeadBlock
+ *   a `<script head>`, which is emitted verbatim and keeps its attributes
+ *
+ * @typedef {object} Blocks
+ * @property {Block|null} server the loader, page only
+ * @property {Block|null} element the whole element declaration, element only
+ * @property {Block[]} client
+ * @property {HeadBlock[]} head
+ * @property {string[]} styles
+ * @property {ParsedNode[]} nodes everything that was not a block
+ * @property {ParsedNode|null} html from the second parse, for its attributes
+ * @property {ParsedNode|null} body the same
+ *
  * @param {string} source
- * @returns {object} the script blocks, the styles, the markup nodes and the
+ * @returns {Blocks} the script blocks, the styles, the markup nodes and the
  *   `<html>` element read from a second parse
  */
 export function splitBlocks(source) {
@@ -218,7 +241,14 @@ export function compileComponent(
 
   const element = blocks.element
     ? bindElementModule(blocks.element, where('element'))
-    : { code: '', nodes: {}, flags: {}, declared: [], warnings: [] };
+    : /** @type {import('./script.js').ElementModule} */ ({
+        code: '',
+        nodes: {},
+        flags: {},
+        imports: [],
+        declared: [],
+        warnings: [],
+      });
   assertNoCollisions(element.declared, COMPONENT_EXPORTS, where('element'), 'declares');
   assertNoLifecycle(element.nodes.prototype ?? null, where('element'));
   assertDistinct(element.nodes.properties ?? null, element.nodes.state ?? null, tag);
@@ -397,7 +427,7 @@ const MARK = {
  *   runtime: string, filename?: string, sourcePath?: string|null,
  *   layouts?: string[],
  *   client?: { tags: string[], hasScript: boolean, needed: boolean } }} options
- * @returns {{ code: string, map: object|null, warnings: string[],
+ * @returns {{ code: string, map: string|null, warnings: string[],
  *   components: string[] }} the module, a line-level map or null when there is
  *   no markup to map, whatever the template warned about, and the tags it used
  */
@@ -506,7 +536,7 @@ ${slotBodies(template)}
  * code is line `blocks.server.line + i` of the file. A page with no loader
  * maps nothing: the placeholder is the compiler's own line.
  *
- * @param {object} blocks what `splitBlocks` returned
+ * @param {Blocks} blocks what `splitBlocks` returned
  * @param {{ code: string }} server the bound loader
  * @returns {number[]} one source line per line of `server.code`
  */
@@ -524,7 +554,7 @@ function serverLines(blocks, server) {
  * access to the file.
  *
  * @param {string} code the assembled module, markers and all
- * @param {object} template what `compileFragment` returned
+ * @param {import('./codegen.js').Fragment} template what `compileFragment` returned
  * @param {string} source the original `.html`
  * @param {string} filename how it should be named in a stack
  * @param {Array<{ marker: string, at: (number|null)[] }>} [extra] blocks the
@@ -700,7 +730,9 @@ export function usedComponents(source, registry) {
  *
  * @param {Array<{ source: string, filename: string }>} sources the files whose
  *   `<script>` blocks run in the browser, layouts first and the page last
- * @param {{ tags?: string[] }} [what] the elements to define
+ * @param {{ tags?: string[] }} what the elements to define. Not bracketed even
+ *   though it has a default: JSDoc reads the tags positionally, and an optional
+ *   one cannot come before the required `options` below.
  * @param {{ runtime: string, elements?: boolean }} options required, not
  *   defaulted: `runtime` is written into the module's import, and without it the
  *   output says `from undefined` and fails only when something tries to load it

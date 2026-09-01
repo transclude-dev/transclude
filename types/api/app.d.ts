@@ -30,21 +30,22 @@ export declare const COMPRESSIBLE_FLOOR = 512;
  * matcher.
  *
  * @param {{ config: import('./defaults.js').Config,
- *   manifest: import('./routes.js').Manifest, pages: Record<string, object>,
+ *   manifest: import('./routes.js').Manifest,
+ *   pages: Record<string, import('./document.js').PageModule>,
  *   endpoints?: Record<string, object>,
  *   statics?: import('./static-cache.js').ByteStore,
  *   assets?: import('./static-cache.js').ByteStore,
  *   notFound?: import('./static-cache.js').Entry|null,
  *   errorPage?: import('./static-cache.js').Entry|null, hash: Function,
- *   compress?: Function|null, publicFiles?: Function|null,
- *   middleware?: Function|null, lookup?: Function|null,
+ *   compress?: Function|null, publicFiles?: import('hono').MiddlewareHandler|null,
+ *   middleware?: ((app: import('hono').Hono) => void)|null, lookup?: Function|null,
  *   precache?: string|null }} options
  * @returns {import('hono').Hono} a Hono app, ready to serve
  */
 export declare function createApp({ config: written, manifest, pages, endpoints, middleware, statics, assets, publicFiles, notFound, errorPage, hash, compress, precache, lookup, }: {
     config: import('./defaults.js').Config;
     manifest: import('./routes.js').Manifest;
-    pages: Record<string, object>;
+    pages: Record<string, import('./document.js').PageModule>;
     endpoints?: Record<string, object>;
     statics?: import('./static-cache.js').ByteStore;
     assets?: import('./static-cache.js').ByteStore;
@@ -52,8 +53,8 @@ export declare function createApp({ config: written, manifest, pages, endpoints,
     errorPage?: import('./static-cache.js').Entry | null;
     hash: Function;
     compress?: Function | null;
-    publicFiles?: Function | null;
-    middleware?: Function | null;
+    publicFiles?: import('hono').MiddlewareHandler | null;
+    middleware?: ((app: import('hono').Hono) => void) | null;
     lookup?: Function | null;
     precache?: string | null;
 }): import('hono').Hono;

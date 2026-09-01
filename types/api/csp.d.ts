@@ -65,17 +65,23 @@ export declare function policyFor(html: string, { directives }?: {
  * `null` when there are none, which is the default. Adding a header nobody asked
  * for is a header to explain later.
  *
- * @param {object|boolean|null} config
+ * @param {{ directives?: Record<string, string[]>, reportOnly?: boolean }|boolean|null} config
  * @returns {{ name: string, value: string }|null} the directives a meta tag
  *   cannot carry, and which header carries them
  */
-export declare function headerPolicy(config: object | boolean | null): {
+export declare function headerPolicy(config: {
+    directives?: Record<string, string[]>;
+    reportOnly?: boolean;
+} | boolean | null): {
     name: string;
     value: string;
 } | null;
 /**
  * @param {string} html
- * @param {object|boolean|null} config
+ * @param {{ directives?: Record<string, string[]>, reportOnly?: boolean }|boolean|null} config
  * @returns {Promise<string>} the document with its meta tag, or unchanged when off
  */
-export declare function withPolicy(html: string, config: object | boolean | null): Promise<string>;
+export declare function withPolicy(html: string, config: {
+    directives?: Record<string, string[]>;
+    reportOnly?: boolean;
+} | boolean | null): Promise<string>;

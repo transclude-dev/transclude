@@ -28,7 +28,7 @@ export const DEFAULT_PORT = 1960;
  * `PORT` beats the config, so a host that assigns one is obeyed without an edit.
  * Dev and production share this, so an app has one port rather than two.
  *
- * @param {object} [config]
+ * @param {{ port?: number|string }} [config]
  * @param {string|undefined} [env] `PORT`, which wins
  * @returns {number}
  * @throws when the value is set but not a port

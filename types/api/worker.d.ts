@@ -23,9 +23,9 @@ export declare function bytesFrom(map: Record<string, Encoded>): import('./stati
  * those need a filesystem and this runtime has none.
  *
  * @param {Record<string, Encoded>} map
- * @returns {Function} a Hono handler
+ * @returns {import('hono').MiddlewareHandler} a Hono handler
  */
-export declare function fileHandler(map: Record<string, Encoded>): Function;
+export declare function fileHandler(map: Record<string, Encoded>): import('hono').MiddlewareHandler;
 /**
  * A prerendered error page, which is sent as bytes and never revalidated.
  *
@@ -62,9 +62,10 @@ export declare function hash(body: Uint8Array<ArrayBuffer>): Promise<string>;
  * @param {import('./defaults.js').Config} options.config the app's `transclude.config.js`
  * @param {string|import('./routes.js').Manifest} options.manifest `dist/routes.json`,
  *   text or parsed
- * @param {{ pages: Record<string, object>, endpoints?: Record<string, object>,
- *   middleware?: Function|null }} options.entry everything
- *   `dist/server/entry.js` exports
+ * @param {{ pages: Record<string, import('./document.js').PageModule>,
+ *   endpoints?: Record<string, object>,
+ *   middleware?: ((app: import('hono').Hono) => void)|null }} options.entry
+ *   everything `dist/server/entry.js` exports
  * @param {{ statics: Record<string, Encoded>, assets: Record<string, Encoded>,
  *   publicFiles: Record<string, Encoded>, notFound?: Encoded|null,
  *   errorPage?: Encoded|null, precache?: string|null }} options.bundle everything
@@ -76,9 +77,9 @@ export declare function workerFrom({ config, manifest, entry, bundle }: {
     config: import('./defaults.js').Config;
     manifest: string | import('./routes.js').Manifest;
     entry: {
-        pages: Record<string, object>;
+        pages: Record<string, import('./document.js').PageModule>;
         endpoints?: Record<string, object>;
-        middleware?: Function | null;
+        middleware?: ((app: import('hono').Hono) => void) | null;
     };
     bundle: {
         statics: Record<string, Encoded>;

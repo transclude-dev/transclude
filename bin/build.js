@@ -86,13 +86,17 @@ if (Object.keys(clientInput).length) {
     },
   });
 
-  const chunks = (Array.isArray(output) ? output[0] : output).output;
+  // `build` answers a watcher when it is watching, and this one never is.
+  const chunks = /** @type {import('vite').Rollup.RollupOutput} */ (
+    Array.isArray(output) ? output[0] : output
+  ).output;
   for (const chunk of chunks) {
     if (chunk.type === 'asset' && chunk.fileName.endsWith('.css')) {
       stylesheet = `/${chunk.fileName}`;
       continue;
     }
-    if (chunk.isEntry && chunk.name && chunk.name !== '__global') {
+    // Past the asset branch above, so this one is a chunk.
+    if (/** @type {import('vite').Rollup.OutputChunk} */ (chunk).isEntry && chunk.name && chunk.name !== '__global') {
       assets.set(chunk.name, `/${chunk.fileName}`);
     }
   }
@@ -361,7 +365,11 @@ const prerendered = outcomes.filter((outcome) => outcome.ok).map((outcome) => ou
 // site with no sitemap there would be missing one only on the host that needs it
 // written down most.
 if (config.sitemap) {
-  write('sitemap.xml', await sitemap({ routes: manifest.routes, gated }, pages, config.sitemap));
+  // `manifest.routes` here is the plugin's, whose `client` is what a route
+  // needs rather than the URL the build wrote. The sitemap reads neither.
+  const forSitemap = /** @type {{ routes: import('../src/routes.js').BuiltRoute[],
+    gated: string[] }} */ (/** @type {unknown} */ ({ routes: manifest.routes, gated }));
+  write('sitemap.xml', await sitemap(forSitemap, pages, config.sitemap));
   prerendered.push('/sitemap.xml');
 }
 
@@ -591,6 +599,7 @@ function untypedExtensions(dir) {
 
 let precacheJson = null;
 if (config.precache) {
+  /** @type {Array<[string, { etag: string }]>} */
   const files = fs.existsSync(publicOut)
     ? walkAll(publicOut)
         .filter((file) => !file.endsWith('.br') && !file.endsWith('.gz'))
@@ -604,7 +613,11 @@ if (config.precache) {
   // large file on disk with no hash, and `precacheList` refuses that rather than
   // calling it immutable.
   const entries = precacheList({
-    pages: loadStatic(path.join(dist, 'static'), { maxBytes: Infinity }).entries,
+    // Read with no budget above, so every entry is bytes and an ETag rather
+    // than a filename left on disk.
+    pages: /** @type {Iterable<[string, { etag: string }]>} */ (
+      loadStatic(path.join(dist, 'static'), { maxBytes: Infinity }).entries
+    ),
     assets: loadAssets(path.join(dist, 'client'), { maxBytes: Infinity }).entries,
     files,
   });

@@ -1,6 +1,9 @@
 /**
  * @param {{ csrf?: object|boolean, csp?: object|boolean, trailingSlash?: string,
- *   publicFiles?: Function|null, middleware?: Function|null }} [options]
+ *   publicFiles?: import('hono').MiddlewareHandler|null,
+ *   middleware?: ((app: import('hono').Hono) => void)|null }} [options]
+ *   `middleware` is the app's own `server.js`, which is handed the Hono app
+ *   rather than mounted on it
  * @returns {import('hono').Hono} a Hono app
  * @throws on a key it does not know
  */
@@ -8,8 +11,8 @@ export declare function baseApp(options?: {
     csrf?: object | boolean;
     csp?: object | boolean;
     trailingSlash?: string;
-    publicFiles?: Function | null;
-    middleware?: Function | null;
+    publicFiles?: import('hono').MiddlewareHandler | null;
+    middleware?: ((app: import('hono').Hono) => void) | null;
 }): import('hono').Hono;
 /** Where an app puts its middleware. Relative to `appDir`. */
 export declare const SERVER_FILE = "server.js";

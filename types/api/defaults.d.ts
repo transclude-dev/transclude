@@ -12,13 +12,16 @@ export type Config = {
     trailingSlash?: 'never' | 'always' | 'ignore';
     strict?: boolean;
     csrf?: boolean;
-    csp?: boolean | object;
+    csp?: boolean | {
+        directives?: Record<string, string[]>;
+        reportOnly?: boolean;
+    };
     speculate?: boolean | object;
     canonical?: boolean;
     markdown?: ((source: string, file: string) => string) | null;
-    cache?: object;
+    cache?: import('./cache.js').CacheStore;
     cookieSecret?: string;
-    feed?: object;
+    feed?: import('./feed.js').FeedConfig;
     fragmentHeader?: string;
     metadataBase?: string;
     onError?: (error: Error, at: {
@@ -34,11 +37,8 @@ export type Config = {
     }) => unknown;
     port?: number | string;
     precache?: object;
-    proxy?: {
-        cache?: object;
-        lookup?: unknown;
-    };
-    sitemap?: object;
+    proxy?: import('./proxy.js').ProxyConfig;
+    sitemap?: import('./sitemap.js').SitemapConfig;
     watchElements?: boolean;
 };
 /**
@@ -72,13 +72,13 @@ export type Config = {
  *   trailingSlash?: 'never'|'always'|'ignore',
  *   strict?: boolean,
  *   csrf?: boolean,
- *   csp?: boolean|object,
+ *   csp?: boolean|{ directives?: Record<string, string[]>, reportOnly?: boolean },
  *   speculate?: boolean|object,
  *   canonical?: boolean,
  *   markdown?: ((source: string, file: string) => string)|null,
- *   cache?: object,
+ *   cache?: import('./cache.js').CacheStore,
  *   cookieSecret?: string,
- *   feed?: object,
+ *   feed?: import('./feed.js').FeedConfig,
  *   fragmentHeader?: string,
  *   metadataBase?: string,
  *   onError?: (error: Error, at: {
@@ -88,8 +88,8 @@ export type Config = {
  *   }) => unknown,
  *   port?: number|string,
  *   precache?: object,
- *   proxy?: { cache?: object, lookup?: unknown },
- *   sitemap?: object,
+ *   proxy?: import('./proxy.js').ProxyConfig,
+ *   sitemap?: import('./sitemap.js').SitemapConfig,
  *   watchElements?: boolean,
  * }} Config
  */

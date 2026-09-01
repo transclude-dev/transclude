@@ -29,9 +29,119 @@ export declare function responseOf(): {
  *
  * @param {string|null|undefined} base `metadataBase` from the config
  * @param {string} requestUrl
- * @returns {URL}
+ * @returns {(path: string) => string} `ctx.absolute`
  */
-export declare function absoluteFrom(base: string | null | undefined, requestUrl: string): URL;
+export declare function absoluteFrom(base: string | null | undefined, requestUrl: string): (path: string) => string;
+export type Ctx = {
+    url: string;
+    params: Record<string, string>;
+    route: {
+        id: string;
+        pattern: string;
+        path: string;
+    };
+    /**
+     * the platform's own, not a wrapper
+     */
+    request: Request;
+    /**
+     * the region asked for, or null for a document
+     */
+    fragment: string | null;
+    action: string | null;
+    response: ReturnType<typeof responseOf>;
+    cookies: ReturnType<typeof import('./cookies.js').cookiesOf>;
+    absolute: (path: string) => string;
+    revalidateTag: (tag: string) => void;
+    after: (work: Promise<unknown>) => void;
+    /**
+     * what the levels above returned.
+     * Added by the fold rather than by the server, so it is not one of the eleven
+     * and `test/context-shape.test.js` does not look for it.
+     */
+    layout?: Record<string, unknown>;
+};
+export type PageModule = {
+    load: (ctx: Ctx) => Promise<Record<string, unknown>>;
+    render: (data: object, slots?: object, fragment?: boolean) => Record<string, string>;
+    renderHead: (data: object) => string;
+    renderTitle: (data: object) => string;
+    renderHtmlAttrs: (data: object) => Record<string, unknown>;
+    renderBodyAttrs: (data: object) => Record<string, unknown>;
+    hasTitle: boolean;
+    /**
+     * emitted verbatim, ahead of the stylesheet
+     */
+    headScript: string;
+    css: string;
+    elements: import('./runtime/index.js').Definition[];
+    /**
+     * outermost first
+     */
+    layouts: PageModule[];
+    client: {
+        tags: string[];
+        hasScript: boolean;
+        needed: boolean;
+    };
+    includes: {
+        key: string;
+        kind: string;
+        where: string;
+        id: string;
+    }[];
+    regions?: Record<string, (data: object) => string>;
+    /**
+     * what `export const revalidate` said, read by `src/cache.js`
+     */
+    revalidate?: number | {
+        seconds: number;
+        tags?: string[];
+    } | false | null;
+    /**
+     * the params a
+     * dynamic route can be built for, which is what the build and the sitemap ask
+     */
+    paths?: () => Promise<Array<Record<string, string>>>;
+    /**
+     * the verb exports. One per method the
+     */
+    POST?: (ctx: Ctx) => unknown;
+    /**
+     * page answers, and `ACTION_METHODS` is
+     */
+    PUT?: (ctx: Ctx) => unknown;
+    /**
+     * the list of them
+     */
+    PATCH?: (ctx: Ctx) => unknown;
+    DELETE?: (ctx: Ctx) => unknown;
+};
+export type RenderOptions = {
+    clientEntry?: string | null;
+    stylesheet?: string | null;
+    lang?: string;
+    speculate?: string | null;
+    canonical?: string | null | boolean;
+    csp?: boolean | object;
+    /**
+     * the resolver. `route` reads
+     * another route of this app and `resolve` reads another site, and an app that
+     * allows neither has neither.
+     */
+    include?: {
+        route?: (where: string, id: string, ctx: Ctx, options: RenderOptions) => Promise<string | null>;
+        resolve?: (where: string, id: string) => Promise<string | null>;
+    } | null;
+    /**
+     * one request's worth
+     */
+    includeMemo?: Map<string, unknown>;
+    /**
+     * what is already being resolved, for a cycle
+     */
+    includeChain?: string[];
+};
 /**
  * Loads a page's chain and renders the document, or returns the `Response` a
  * loader answered with instead.
@@ -45,13 +155,13 @@ export declare function absoluteFrom(base: string | null | undefined, requestUrl
  * is wrapped in: a 404 status on a page that renders its own "not found" body, an
  * `HX-Trigger` header, a `Set-Cookie`.
  *
- * @param {object} page a compiled page module
- * @param {object} ctx the request context
- * @param {object} [options] `clientEntry`, `stylesheet`, `csp`, `lang`, `include`,
- *   `canonical`
+ * @param {PageModule} page a compiled page module
+ * @param {Ctx} ctx the request context
+ * @param {RenderOptions} [options] `clientEntry`, `stylesheet`, `csp`, `lang`,
+ *   `include`, `canonical`
  * @returns {Promise<string|Response>} a Response when a loader answered for itself
  */
-export declare function renderRoute(page: object, ctx: object, options?: object): Promise<string | Response>;
+export declare function renderRoute(page: PageModule, ctx: Ctx, options?: RenderOptions): Promise<string | Response>;
 /**
  * The markup for every `<transclude>` naming another document.
  *
@@ -93,8 +203,8 @@ export declare function urlFor(route: {
 }, params: Record<string, string>): string;
 /**
  * @param {Array<{ key: string, kind: string, where: string, id: string }>} includes
- * @param {object} ctx
- * @param {object} [options] carries `include`, `includeMemo` and `includeChain`
+ * @param {Ctx} ctx
+ * @param {RenderOptions} [options] carries `include`, `includeMemo` and `includeChain`
  * @returns {Promise<Record<string, string|null>>} keyed by the src as written
  */
 export declare function resolveIncludes(includes: Array<{
@@ -102,7 +212,7 @@ export declare function resolveIncludes(includes: Array<{
     kind: string;
     where: string;
     id: string;
-}>, ctx: object, options?: object): Promise<Record<string, string | null>>;
+}>, ctx: Ctx, options?: RenderOptions): Promise<Record<string, string | null>>;
 /**
  * One region of a page, for swapping into a document that already exists.
  *
@@ -114,13 +224,13 @@ export declare function resolveIncludes(includes: Array<{
  * Returns null when the page has no region by that name, which is a 404 rather
  * than an empty swap: asking for something that does not exist should say so.
  *
- * @param {object} page
- * @param {object} ctx
+ * @param {PageModule} page
+ * @param {Ctx} ctx
  * @param {{ region?: string|null, include?: object, includeMemo?: Map<string, unknown> }}
  *   [options] everything but `region` travels on to the includes
  * @returns {Promise<string|Response|null>} null when no such region
  */
-export declare function renderFragment(page: object, ctx: object, { region, ...options }?: {
+export declare function renderFragment(page: PageModule, ctx: Ctx, { region, ...options }?: {
     region?: string | null;
     include?: object;
     includeMemo?: Map<string, unknown>;
@@ -150,11 +260,11 @@ export declare const ACTION_METHODS: string[];
  * is a second run of every layout loader on an action request, and the price of
  * the render seeing what the action just did rather than what was true before it.
  *
- * @param {object} page a compiled page module
- * @param {object} ctx the request context
+ * @param {PageModule} page a compiled page module
+ * @param {Ctx} ctx the request context
  * @returns {Promise<Response|null>} the first layout that answered for itself
  */
-export declare function runGuards(page: object, ctx: object): Promise<Response | null>;
+export declare function runGuards(page: PageModule, ctx: Ctx): Promise<Response | null>;
 /**
  * Runs the page's handler for a request that is not a GET.
  *
@@ -168,12 +278,16 @@ export declare function runGuards(page: object, ctx: object): Promise<Response |
  * `null` is "this page does not answer that method", which is a 405 rather than
  * a 404. The URL exists.
  *
- * @param {object} page
- * @param {object} ctx
+ * @param {PageModule} page
+ * @param {Ctx} ctx
  * @param {string} method
- * @returns {Promise<object>} what the handler returned, for the render after it
+ * @returns {Promise<{ response?: Response, action?: object }|null>} what the
+ *   handler returned, for the render after it
  */
-export declare function runAction(page: object, ctx: object, method: string): Promise<object>;
+export declare function runAction(page: PageModule, ctx: Ctx, method: string): Promise<{
+    response?: Response;
+    action?: object;
+} | null>;
 /**
  * A short-circuiting `Response`, carrying whatever the envelope collected.
  *
@@ -187,10 +301,10 @@ export declare function runAction(page: object, ctx: object, method: string): Pr
  * and every header the author set, and comes with a mutable guard.
  *
  * @param {Response} response
- * @param {object} ctx
+ * @param {Ctx} ctx
  * @returns {Response} a copy, because a redirect's headers cannot be written to
  */
-export declare function withEnvelope(response: Response, ctx: object): Response;
+export declare function withEnvelope(response: Response, ctx: Ctx): Response;
 /**
  * Whether a page can answer for a region name. An empty name is the page's own
  * body, which always exists.
@@ -209,20 +323,20 @@ export declare function withEnvelope(response: Response, ctx: object): Response;
  * `Object(data)` stringifies to. `hasRegion` is the check that an action runs
  * behind, so a name that gets past it gets past that too.
  *
- * @param {object|null|undefined} page a compiled page module
+ * @param {PageModule|null|undefined} page a compiled page module
  * @param {string} region             the name from the URL
  * @returns {Function|null}
  */
-export declare function regionOf(page: object | null | undefined, region: string): Function | null;
+export declare function regionOf(page: PageModule | null | undefined, region: string): Function | null;
 /**
  * Whether a page answers for this region. An empty name means the whole page,
  * which every page answers for.
  *
- * @param {object|null|undefined} page
+ * @param {PageModule|null|undefined} page
  * @param {string} region
  * @returns {boolean}
  */
-export declare function hasRegion(page: object | null | undefined, region: string): boolean;
+export declare function hasRegion(page: PageModule | null | undefined, region: string): boolean;
 /**
  * What a page answers, for an `Allow` header. GET is not optional.
  *
@@ -237,7 +351,7 @@ export declare function methodsOf(page: object | null | undefined): string[];
  * returned, in the same order. Both are walked from the end, because a level
  * renders into the slot map of the one above it.
  *
- * @param {object[]} chain the compiled modules, outermost first
+ * @param {PageModule[]} chain the compiled modules, outermost first
  * @param {object[]} datas one per level, in the same order
  * @param {{ clientEntry?: string|null, stylesheet?: string|null, lang?: string,
  *   speculate?: string|null, canonical?: string|null }} [options] `canonical` is
@@ -245,7 +359,7 @@ export declare function methodsOf(page: object | null | undefined): string[];
  *   yes-or-no into one, because this function sees no request.
  * @returns {string} the document, starting at `<!doctype html>`
  */
-export declare function renderDocument(chain: object[], datas: object[], { clientEntry, stylesheet, lang, speculate, canonical }?: {
+export declare function renderDocument(chain: PageModule[], datas: object[], { clientEntry, stylesheet, lang, speculate, canonical }?: {
     clientEntry?: string | null;
     stylesheet?: string | null;
     lang?: string;

@@ -1,6 +1,92 @@
 // Runtime shared by the server render and the browser custom element.
 // Nothing here touches `document` at module scope, so it imports cleanly in Node.
 
+// ---- what the compiler hands this file ------------------------------------
+//
+// Three shapes cross from the compiler into here, and every function below took
+// them as `object`, which says opaque: each read of a field on one was an error
+// nobody saw. They are written down once, here, because this is where they are
+// read. `src/compiler/index.js` emits them as text and holds none of them.
+
+/**
+ * One compiled element module: the `def` object at the end of every generated
+ * component, and its `default` export.
+ *
+ * A light element has no `bind` or `update` unless it declared behavior, so both
+ * are optional. `elements` is the definitions this one renders, which is how a
+ * page collects the styles of an element it never names.
+ *
+ * @typedef {object} Definition
+ * @property {string} tag
+ * @property {boolean} light false when the file asked for a shadow root
+ * @property {string} css scoped with `@scope` for a light element, raw for a shadow one
+ * @property {Definition[]} [elements] every element this one renders
+ * @property {Record<string, unknown>} [propDefs] prop name to its declared default
+ * @property {Record<string, { from?: Function, to?: Function }>} [propAttrs]
+ * @property {Record<string, unknown>} [stateDefs]
+ * @property {Record<string, unknown>} [members] what `export const prototype` declared
+ * @property {(props: object, slots?: object, fragment?: boolean) => string} render
+ * @property {(props: object) => Record<string, unknown>} [coerce]
+ * @property {(root: Node|null, props: object) => object} [bind]
+ * @property {(bindings: object, props: object) => boolean} [update]
+ * @property {string[]} [volatile] props whose change needs a full repaint
+ * @property {boolean} [formAssociated]
+ */
+
+/**
+ * One branch of an `if` or one item of an `each`, compiled.
+ *
+ * `bind` finds the nodes an expression owns and `update` writes to them. A
+ * trailing `item` and `index` arrive as further arguments for a loop, which is
+ * why both are variadic rather than a fixed arity.
+ *
+ * @typedef {object} Part
+ * @property {(from: Node|null, props: object, ...rest: unknown[]) => object} bind
+ * @property {(bindings: object, props: object, ...rest: unknown[]) => boolean} update
+ */
+
+/**
+ * An `if` chain or an `each`, compiled.
+ *
+ * `parts` is absent where a branch has nothing to bind, and then `html` is the
+ * only thing left to compare a change against.
+ *
+ * @typedef {object} Block
+ * @property {(props: object, ...rest: unknown[]) => string} html
+ * @property {boolean} [keyed] an `each` with a key expression
+ * @property {boolean} [ranged] an item that renders more than one node
+ * @property {(props: object, ...rest: unknown[]) => number} [pick] which branch
+ * @property {Part[]} [parts] one per branch, or one for every item of a loop
+ * @property {(props: object, ...rest: unknown[]) => Iterable<unknown>} [list]
+ * @property {(props: object, ...rest: unknown[]) => string} [item]
+ * @property {(props: object, ...rest: unknown[]) => unknown} [key]
+ */
+
+/**
+ * One item of a keyed loop, as it sits in the document.
+ *
+ * `first` and `last` are the same node for an item that renders one, so
+ * everything downstream works on the range and never asks which case it has.
+ *
+ * @typedef {object} KeyedEntry
+ * @property {Node} first
+ * @property {Node} last
+ * @property {object|null} bindings
+ * @property {string|null} html
+ */
+
+/**
+ * What a bound block holds between updates.
+ *
+ * @typedef {object} BlockState
+ * @property {Comment} start the opening anchor
+ * @property {Comment|null} end the closing one, or null when the walk lost it
+ * @property {string|null} html the last markup, where there was nothing to bind
+ * @property {Map<unknown, KeyedEntry>|null} keyed
+ * @property {number} branch which arm of the chain is in the document
+ * @property {object|null} bindings
+ */
+
 const ESCAPES = {
   '&': '&amp;',
   '<': '&lt;',
@@ -336,10 +422,10 @@ const bindsFrom = (block, entry) => (block.ranged ? entry.first.nextSibling : en
 
 /**
  * @param {Comment} open the opening anchor
- * @param {object} block the compiled block
+ * @param {Block} block the compiled block
  * @param {object} props
  * @param {unknown[]} [args] enclosing loop variables
- * @returns {object} the state `updateBlock` writes through
+ * @returns {BlockState} the state `updateBlock` writes through
  */
 export function blockAt(open, block, props, args = []) {
   const end = closingAnchor(open);
@@ -383,8 +469,8 @@ function adoptKeyed(state, block, props, args) {
 }
 
 /**
- * @param {object} state from `blockAt`
- * @param {object} block
+ * @param {BlockState} state from `blockAt`
+ * @param {Block} block
  * @param {object} props
  * @param {unknown[]} [args]
  * @returns {boolean} false when the caller has to repaint instead
@@ -523,11 +609,21 @@ function removeRange(entry) {
 /**
  * The focused element, following shadow roots down. `document.activeElement`
  * only ever names the outermost host.
+ *
+ * A field with a selection is what `captureFocus` is really after, and which
+ * elements have one is not a question the DOM types answer for an
+ * `activeElement`. The optional members say what is read, and every read of
+ * them is already inside a `try`.
+ *
+ * @returns {(HTMLElement & { selectionStart?: number|null, selectionEnd?: number|null,
+ *   setSelectionRange?: (start: number, end: number|null) => void })|null}
  */
 function deepActiveElement() {
   if (typeof document === 'undefined') return null;
-  let active = document.activeElement;
-  while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+  let active = /** @type {HTMLElement|null} */ (document.activeElement);
+  while (active?.shadowRoot?.activeElement) {
+    active = /** @type {HTMLElement} */ (active.shadowRoot.activeElement);
+  }
   return active ?? null;
 }
 
@@ -839,7 +935,7 @@ function propFor(def, attr) {
  * The parent's template cannot know that a Date crosses the boundary as an ISO
  * string rather than as JSON. The child's `to` does.
  *
- * @param {object} def the compiled element module
+ * @param {Definition} def the compiled element module
  * @param {string} name
  * @param {unknown} value
  * @returns {string}
@@ -852,7 +948,7 @@ export function attrProp(def, name, value) {
 /**
  * The same, for an update writing into an already-rendered child.
  *
- * @param {object} def
+ * @param {Definition} def
  * @param {Element} element
  * @param {string} name
  * @param {unknown} value
@@ -879,7 +975,7 @@ export function setAttrProp(def, element, name, value) {
  * rendering buys a correct first paint, and a fragment arrives long after first
  * paint.
  *
- * @param {object} def
+ * @param {Definition} def
  * @param {object} props
  * @param {boolean} [fragment] true returns empty: nothing that swaps HTML
  *   processes a declarative shadow root, so the element paints itself
@@ -898,7 +994,7 @@ export function shadow(def, props, fragment = false) {
  * later one read the same shape. Rendering props alone wrote `undefined` wherever
  * a template named state.
  *
- * @param {object} def
+ * @param {Definition} def
  * @param {object} props
  * @returns {Record<string, unknown>} state underneath, props on top
  */
@@ -941,7 +1037,7 @@ export function included(data, key, fallback) {
 }
 
 /**
- * @param {object} def
+ * @param {Definition} def
  * @param {object} [props]
  * @param {object} [slots]
  * @returns {string}
@@ -962,7 +1058,7 @@ export function fragment(def, props = {}, slots = {}) {
  * Inserted *before* the document's own <style>, not appended, because that is
  * where the server would have put it: a page's rules override an element's.
  *
- * @param {object} def
+ * @param {Definition} def
  * @returns {void}
  */
 export function adoptStyles(def) {
@@ -994,7 +1090,8 @@ export function adoptStyles(def) {
  * It does not look inside shadow roots. It does not need to: a component's own
  * `define` brings the elements it renders with it.
  *
- * @param {Record<string, () => Promise<unknown>>} loaders tag to dynamic import
+ * @param {Record<string, () => Promise<{ define?: () => void }>>} loaders tag to
+ *   dynamic import. Only `define` is called on what comes back.
  * @param {Document} [root]
  * @returns {() => void} stops the observer
  */
@@ -1036,7 +1133,7 @@ export function watch(loaders, root = globalThis.document) {
  * the children the page put inside it. So it upgrades for behavior only: the
  * markup it was served is the markup it keeps.
  *
- * @param {object} def
+ * @param {Definition} def
  * @returns {void}
  */
 export function defineLight(def) {
@@ -1319,7 +1416,7 @@ function defineFormMembers(Class, def) {
 }
 
 /**
- * @param {object} def
+ * @param {Definition} def
  * @returns {void}
  */
 export function defineComponent(def) {

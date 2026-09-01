@@ -1,4 +1,5 @@
 import { CompileError, frameOf } from './codegen.js';
+export type ParsedNode = import('./html.js').ParsedNode;
 import { ELEMENT_FLAGS, ScriptError } from './script.js';
 export { CompileError, ScriptError, ELEMENT_FLAGS, frameOf };
 /**
@@ -33,6 +34,42 @@ export declare function readBehavior(source: string, label?: string): {
     formAssociated: boolean;
     behavior: boolean;
 };
+export type Block = {
+    code: string;
+    line: number;
+    offset: number;
+};
+export type HeadBlock = Block & {
+    attrs: {
+        name: string;
+        value: string;
+    }[];
+};
+export type Blocks = {
+    /**
+     * the loader, page only
+     */
+    server: Block | null;
+    /**
+     * the whole element declaration, element only
+     */
+    element: Block | null;
+    client: Block[];
+    head: HeadBlock[];
+    styles: string[];
+    /**
+     * everything that was not a block
+     */
+    nodes: ParsedNode[];
+    /**
+     * from the second parse, for its attributes
+     */
+    html: ParsedNode | null;
+    /**
+     * the same
+     */
+    body: ParsedNode | null;
+};
 /**
  * Top-level <script>/<style> blocks are pulled out; everything else is template.
  *
@@ -44,11 +81,32 @@ export declare function readBehavior(source: string, label?: string): {
  * Each block carries the line it starts on so parse errors can point back into
  * the .html file rather than into generated output.
  *
+ * One `<script>` or `<style>` block, with where it starts. Both are recorded so
+ * a parse error points into the .html file rather than into generated output.
+ *
+ * @typedef {object} Block
+ * @property {string} code
+ * @property {number} line
+ * @property {number} offset
+ *
+ * @typedef {Block & { attrs: { name: string, value: string }[] }} HeadBlock
+ *   a `<script head>`, which is emitted verbatim and keeps its attributes
+ *
+ * @typedef {object} Blocks
+ * @property {Block|null} server the loader, page only
+ * @property {Block|null} element the whole element declaration, element only
+ * @property {Block[]} client
+ * @property {HeadBlock[]} head
+ * @property {string[]} styles
+ * @property {ParsedNode[]} nodes everything that was not a block
+ * @property {ParsedNode|null} html from the second parse, for its attributes
+ * @property {ParsedNode|null} body the same
+ *
  * @param {string} source
- * @returns {object} the script blocks, the styles, the markup nodes and the
+ * @returns {Blocks} the script blocks, the styles, the markup nodes and the
  *   `<html>` element read from a second parse
  */
-export declare function splitBlocks(source: string): object;
+export declare function splitBlocks(source: string): Blocks;
 /**
  * Compiles one element. `export const shadow = true` in the file decides which
  * kind it is, so the file answers for itself.
@@ -67,10 +125,10 @@ export declare function compileComponent(source: any, { tag, shadow, components,
     tag: any;
 }): {
     code: string;
-    warnings: any[];
-    isShadow: any;
+    warnings: string[];
+    isShadow: boolean;
     hasScript: boolean;
-    components: any;
+    components: string[];
 };
 /**
  * A page: the `<script server>` block, the markup, and whatever layouts wrap it.
@@ -83,7 +141,7 @@ export declare function compileComponent(source: any, { tag, shadow, components,
  *   runtime: string, filename?: string, sourcePath?: string|null,
  *   layouts?: string[],
  *   client?: { tags: string[], hasScript: boolean, needed: boolean } }} options
- * @returns {{ code: string, map: object|null, warnings: string[],
+ * @returns {{ code: string, map: string|null, warnings: string[],
  *   components: string[] }} the module, a line-level map or null when there is
  *   no markup to map, whatever the template warned about, and the tags it used
  */
@@ -101,7 +159,7 @@ export declare function compilePage(source: string, { components, shadowTags, ru
     };
 }): {
     code: string;
-    map: object | null;
+    map: string | null;
     warnings: string[];
     components: string[];
 };
@@ -161,7 +219,9 @@ export declare function usedComponents(source: string, registry: Map<string, str
  *
  * @param {Array<{ source: string, filename: string }>} sources the files whose
  *   `<script>` blocks run in the browser, layouts first and the page last
- * @param {{ tags?: string[] }} [what] the elements to define
+ * @param {{ tags?: string[] }} what the elements to define. Not bracketed even
+ *   though it has a default: JSDoc reads the tags positionally, and an optional
+ *   one cannot come before the required `options` below.
  * @param {{ runtime: string, elements?: boolean }} options required, not
  *   defaulted: `runtime` is written into the module's import, and without it the
  *   output says `from undefined` and fails only when something tries to load it
@@ -170,7 +230,7 @@ export declare function usedComponents(source: string, registry: Map<string, str
 export declare function compileClientEntry(sources: Array<{
     source: string;
     filename: string;
-}>, { tags }?: {
+}>, { tags }: {
     tags?: string[];
 }, { runtime, elements }: {
     runtime: string;

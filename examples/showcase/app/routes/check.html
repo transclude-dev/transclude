@@ -1190,9 +1190,11 @@
   });
 
   // A fieldset going disabled calls `formDisabledCallback` on every
-  // form-associated element inside it. `tag-picker` declares `disabled`, so the
-  // runtime mirrors the container's state onto the attribute, both directions.
-  await check('a container going disabled mirrors onto a formAssociated element', async () => {
+  // form-associated element inside it. The runtime reflects that to the
+  // `disabled` custom state, both directions. Reflecting to the attribute
+  // instead would latch: the browser stops reporting the change once the
+  // element carries its own `disabled` attribute.
+  await check('a container disable reflects to a state, and re-enabling clears it', async () => {
     const form = document.createElement('form');
     const fieldset = document.createElement('fieldset');
     const el = document.createElement('tag-picker');
@@ -1204,14 +1206,17 @@
     await el.updateComplete;
 
     ok(el.internals, 'a formAssociated element attaches internals');
-    ok(!el.hasAttribute('disabled'), 'it starts enabled');
+    ok(!el.matches(':state(disabled)'), 'it starts enabled');
 
     fieldset.disabled = true;
-    ok(el.hasAttribute('disabled'), 'the container disable set the declared prop');
+    ok(el.matches(':state(disabled)'), 'the container disable set the state');
+    ok(!el.hasAttribute('disabled'), 'and did not write the latching attribute');
+
+    fieldset.disabled = false;
+    ok(!el.matches(':state(disabled)'), 're-enabling the fieldset cleared the state');
 
     form.remove();
-    return 'formDisabledCallback mirrors a container disable onto disabled';
-    return 'formDisabledCallback mirrors a container disable onto disabled';
+    return 'the state tracks the fieldset both ways, with no latch';
   });
 
   // Focus is carried across a move even for a field with no selection to carry.

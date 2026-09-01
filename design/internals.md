@@ -1013,6 +1013,19 @@ against.
   the state and the markup it styles change in the same frame. A check asserting
   it synchronously after a setter fails, and it should: `updateComplete` is the
   point at which either is true.
+- **`formDisabledCallback` reflects to a state, not the `disabled` attribute.**
+  It wrote the attribute once, and that is a latch: a form-associated element
+  with its own `disabled` attribute is disabled by the browser's own reckoning,
+  so once it is set the browser stops firing `formDisabledCallback(false)` — the
+  element is still disabled, as far as it can tell, by the attribute it is
+  holding. A `<tag-picker>` a `<fieldset disabled>` turned off then stayed off
+  after the fieldset let go, because the `false` call that clears it never came.
+  A custom state reflects the container without feeding back into what disabled
+  means, so both calls arrive. Found by the browser check written to cover the
+  callback: the re-enable assertion failed, and the `else` branch that clears it
+  was dead code for exactly this reason. `:host(:state(disabled))` styles it,
+  and the showcase's `tag-picker` styles the element's own `[disabled]` attribute
+  and the container's state together.
 - **A prerender runs the page; a prefetch does not.** That is the whole split in
   `speculate.js`. A URL the build wrote to a file has no loader left, so the
   browser may run it. Everything in `dynamic` is a server render whose loader may

@@ -486,6 +486,22 @@
     element the message points at.
   </p>
 
+  <h3>A disabling container</h3>
+
+  <p>
+    A <code>&lt;fieldset disabled&gt;</code> disables every control inside it,
+    and a form-associated element gets that as the <code>disabled</code> custom
+    state. Style it with <code>:host(:state(disabled))</code>. The state tracks
+    the container both ways, so a fieldset that re-enables clears it.
+  </p>
+
+  <p>
+    Not the <code>disabled</code> attribute. An element with its own
+    <code>disabled</code> attribute is disabled by the browser's own reckoning.
+    The browser then stops telling the element when the fieldset lets go, so a
+    control disabled that way would never come back.
+  </p>
+
   <doc-note label="A flag is a literal" tone="warn">
     Write <code>export const shadow = true</code> directly, and the same for
     <code>formAssociated</code>. Each becomes a static field on the class, the

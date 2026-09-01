@@ -73,7 +73,11 @@
   :host {
     display: inline-block;
   }
-  :host([disabled]) {
+  /* `[disabled]` is the element's own attribute; `:state(disabled)` is a
+     disabling container, which the runtime reflects rather than latching onto
+     the attribute. Both mean the control cannot be used. */
+  :host([disabled]),
+  :host(:state(disabled)) {
     opacity: 0.5;
     pointer-events: none;
   }

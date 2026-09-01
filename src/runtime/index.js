@@ -1390,12 +1390,26 @@ function defineFormMembers(Class, def) {
       configurable: true,
     },
 
-    /** A fieldset or form went disabled. Mirrored to an attribute if declared. */
+    /**
+     * A fieldset or form went disabled. Reflected to the `disabled` custom
+     * state, which `:host(:state(disabled))` styles.
+     *
+     * Not to the `disabled` content attribute, which is where this used to write
+     * and is a trap: a form-associated element with its own `disabled` attribute
+     * is disabled by the browser's own reckoning, so once it is set the browser
+     * stops firing `formDisabledCallback(false)` — the element is still disabled,
+     * as far as it can tell, by the attribute. A control a `<fieldset disabled>`
+     * turned off then stayed off after the fieldset let go, because the `false`
+     * call that would have cleared it never came. A custom state reflects the
+     * container without feeding back into what "disabled" means, so both calls
+     * arrive and the state tracks the fieldset exactly.
+     */
     formDisabledCallback: {
       value(disabled) {
-        if (!('disabled' in (def.propDefs ?? {}))) return;
-        if (disabled) this.setAttribute('disabled', '');
-        else this.removeAttribute('disabled');
+        const states = this.internals?.states;
+        if (!states) return;
+        if (disabled) states.add('disabled');
+        else states.delete('disabled');
       },
       configurable: true,
     },

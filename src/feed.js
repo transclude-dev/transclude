@@ -7,8 +7,15 @@
 /** How many items ship. A reader wants the recent ones, not the archive. */
 const LIMIT = 50;
 
+// XML 1.0 has no way to carry a C0 control other than tab, newline and return:
+// not escaped, not in a CDATA section, nowhere. One stray `\x00` in a title
+// pasted from somewhere makes the whole feed unparseable for every reader, so
+// they are dropped before anything else. Stripped rather than replaced, because
+// there is no character they legitimately stand for.
+const xmlSafe = (text) => String(text).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+
 const escape = (text) =>
-  String(text)
+  xmlSafe(text)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -23,7 +30,7 @@ const escape = (text) =>
  * sections is what the parser puts back together as the original three
  * characters.
  */
-const cdata = (html) => `<![CDATA[${String(html).replace(/]]>/g, ']]]]><![CDATA[>')}]]>`;
+const cdata = (html) => `<![CDATA[${xmlSafe(html).replace(/]]>/g, ']]]]><![CDATA[>')}]]>`;
 
 const date = (value) => {
   if (!value) return null;

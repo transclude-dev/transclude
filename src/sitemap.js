@@ -12,8 +12,13 @@ import { isGated } from './gate.js';
 /** The protocol's cap for one file. Past it the response is an index of files. */
 const LIMIT = 50000;
 
+// C0 controls other than tab, newline and return cannot appear in XML 1.0 at
+// all: a single one from a path or a changefreq an app built from its own data
+// would make the sitemap unparseable. Dropped, since none stands for anything.
+const xmlSafe = (text) => String(text).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+
 const escape = (text) =>
-  String(text)
+  xmlSafe(text)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')

@@ -1,4 +1,24 @@
 /**
+ * The scheme a browser will act on, which is not always the one the bytes spell.
+ *
+ * Before it reads a URL, the parser removes every ASCII tab and newline from it,
+ * wherever they sit, and ignores leading C0 controls and spaces. So
+ * `java&#9;script:` and a leading `\x01` both read as `javascript:` to a
+ * browser, while a checker matching the raw text sees a scheme-less string and
+ * calls it relative. That gap kept an executable `javascript:` past this
+ * sanitizer, on `href`, `xlink:href` and every other URL attribute. `new URL`
+ * normalizes the same way, so the value went on to be absolutized straight back
+ * into a live `javascript:`. Normalize the way the parser does, then read.
+ *
+ * Only tab (U+0009), LF (U+000A) and CR (U+000D) are stripped from the interior,
+ * because those are the three the URL parser removes; a form feed left inside a
+ * scheme is not, and stays scheme-breaking to the browser too.
+ *
+ * @param {string} value an attribute value
+ * @returns {string|null} the lowercased scheme, or null when there is none
+ */
+export declare function schemeOf(value: string): string | null;
+/**
  * Strip what must not travel.
  *
  * `<base>` is on the list for a reason that is easy to miss: it does not affect

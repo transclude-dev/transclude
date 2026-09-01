@@ -1509,6 +1509,30 @@ against.
   names hold a URL. Refusing `animate`, `set`, `animateMotion` and
   `animateTransform` is the smaller rule. It costs animation in foreign SVG,
   which is less than this sanitizer already spends on `<style>`.
+- **A scheme is what the browser reads, not what the bytes spell.** The
+  sanitizer read a URL attribute's scheme with a regex on the raw value, so
+  `href="java&#9;script:alert(1)"` — a tab inside the word — matched no scheme,
+  read as a relative URL, and was kept. Then `absolutize` ran it through
+  `new URL`, which strips the tab the way a browser does, and wrote a live
+  `javascript:` back out. A leading control character did the same, and it
+  reached `href`, `xlink:href`, `action` and every other URL attribute, so a
+  click on transcluded markup ran script on the including page's origin. The
+  browser removes ASCII tab, newline and return from a URL wherever they sit and
+  ignores leading C0 controls before it reads the scheme; `schemeOf` in
+  `src/rewrite.js` normalizes the same way before matching, and `absolutize` now
+  rebases only a relative URL or an `http`/`https`/`ftp` one rather than running
+  everything through `new URL`. A form feed inside the scheme is left alone,
+  because the URL parser does not strip that one either. Eight vectors in
+  `test/rewrite.test.js`.
+- **XML 1.0 cannot carry a C0 control, so one has to be dropped before it is
+  written.** A feed and a sitemap escape the five metacharacters and stop there,
+  which is right for injection and silent about control characters: a `\x00` or
+  a `\x08` in a title an app built from user content is legal in none of escaped
+  text, a CDATA section, or anywhere else, and one makes the whole document
+  unparseable for every reader — a denial of service off a single item.
+  `xmlSafe` in `src/feed.js` and `src/sitemap.js` strips the C0 range except
+  tab, newline and return, which are the three XML keeps. Stripped rather than
+  escaped, because none of them stands for a character.
 - **`${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the
   one way through.** Text in those two is raw text: escaping it would change what
   the browser reads, since `&amp;` is an ampersand in prose and four characters

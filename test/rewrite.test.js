@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parse, serialize } from 'parse5';
 
-import { absolutize, baseOf, parseSrcset, rewriteCss, sanitize } from '../src/rewrite.js';
+import { absolutize, baseOf, parseSrcset, rewriteCss, sanitize, schemeOf } from '../src/rewrite.js';
 
 const BASE = 'https://source.example/guide/page.html';
 
@@ -314,4 +314,51 @@ test('a data: url in CSS is left alone', () => {
 
 test('css with no url() is untouched', () => {
   assert.equal(rewriteCss('.a { color: red }', BASE), '.a { color: red }');
+});
+
+
+test('a scheme reached through a tab or a control character is dropped', () => {
+  // A browser strips ASCII tab and newline from a URL and ignores leading
+  // controls before it reads the scheme, so each of these is a live
+  // `javascript:` to it. A checker that matched the raw bytes saw a scheme-less
+  // string, called it relative, and `absolutize` then turned it straight back
+  // into an executable URL. Every one of these reached a real click.
+  const vectors = [
+    '<a href="java&#9;script:alert(1)">x</a>',
+    '<a href="java&#10;script:alert(1)">x</a>',
+    '<a href="java&#13;script:alert(1)">x</a>',
+    '<a href="&#1;javascript:alert(1)">x</a>',
+    '<a href="JAVA&#9;SCRIPT:alert(1)">x</a>',
+    '<form action="java&#9;script:alert(1)"></form>',
+    '<svg><a xlink:href="java&#9;script:alert(1)">x</a></svg>',
+    '<a href="da&#9;ta:text/html,<b>x</b>">x</a>',
+  ];
+
+  for (const markup of vectors) {
+    const root = parse(markup);
+    sanitize(root, {});
+    absolutize(root, BASE);
+    const html = serialize(root);
+    assert.doesNotMatch(html, /javascript:/i, markup);
+    assert.doesNotMatch(html, /data:text\/html/i, markup);
+  }
+});
+
+test('schemeOf reads the scheme a browser would act on, not the bytes', () => {
+  assert.equal(schemeOf('java\tscript:alert(1)'), 'javascript');
+  assert.equal(schemeOf('javascript:x'), 'javascript');
+  assert.equal(schemeOf('  \nHTTPS://x'), 'https');
+  assert.equal(schemeOf('/relative/path'), null);
+  assert.equal(schemeOf('#anchor'), null);
+  // A form feed inside the scheme is not stripped by the URL parser, so it
+  // stays scheme-breaking here too rather than reading as `javascript:`.
+  assert.equal(schemeOf('java\fscript:x'), null);
+});
+
+test('a data: image survives, and a data: document does not', () => {
+  const ok = clean('<img src="data:image/png;base64,AAAA">');
+  assert.match(ok.html, /data:image\/png/);
+
+  const bad = clean('<a href="data:text/html,<b>x</b>">x</a>');
+  assert.doesNotMatch(bad.html, /data:text\/html/);
 });

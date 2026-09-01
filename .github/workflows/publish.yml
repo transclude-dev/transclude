@@ -195,33 +195,19 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
-      # The page goes up while both packages are still staged, so it names a
-      # version the registry does not serve yet. That gap is the approval, and it
-      # lasts as long as it takes to press the button. The alternative is a
-      # release page that only appears after a human acts, which means a tag with
-      # no notes for anyone reading GitHub in the meantime.
-      - name: The release page
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          git tag -l --format='%(contents)' "$GITHUB_REF_NAME" > release-notes.md
-          if [ ! -s release-notes.md ]; then
-            echo "the tag carries no message, so there are no notes to publish"
-            exit 1
-          fi
-          gh release create "$GITHUB_REF_NAME" \
-            --verify-tag \
-            --title "$GITHUB_REF_NAME" \
-            --notes-file release-notes.md
-
       # The extension is on no marketplace, so the alternative to this is a
       # clone, an install and a vsce run for somebody who took the framework
       # from npm. Attached here, installing it is a download and
       # `code --install-extension`. What it does not get is an update by itself.
       #
-      # After the page rather than before it. A build that fails here leaves the
-      # notes up, and the upload is re-runnable by hand; the page is not.
-      # `package-manager-cache: false` for the reason the job above gives: a
+      # Before the page and not after, because releases in this repository are
+      # immutable: assets go up with the page or not at all, and `gh release
+      # upload` on one that already exists is a 422. So the build is allowed to
+      # fail, the page goes up either way, and the job goes red at the end.
+      # Losing the notes over a registry blip in `npm ci` would be the worse
+      # trade, and it is the one this ordering used to make.
+      #
+      # `package-manager-cache: false` for the reason the two jobs above give: a
       # cache is written by whatever ran last and read by whatever runs next,
       # and this one builds a file people download.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -230,17 +216,51 @@ jobs:
           package-manager-cache: false
 
       - name: The VS Code extension
+        id: extension
+        run: |
+          # Read rather than globbed, so a name that is not what this expects
+          # leaves the page without an asset instead of carrying whatever it
+          # found. The version is the extension's own and is not the tag: it
+          # ships no checker, so a framework release changes what the
+          # diagnostics say and not what this file does.
+          version=$(node -p "require('./editor/vscode/package.json').version")
+          vsix="editor/vscode/transclude-$version.vsix"
+
+          if npm ci --prefix editor/vscode && npm run package --prefix editor/vscode &&
+             [ -f "$vsix" ]; then
+            echo "vsix=$vsix" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::the extension did not build, so the page carries no vsix"
+          fi
+
+      # The page goes up while both packages are still staged, so it names a
+      # version the registry does not serve yet. That gap is the approval, and it
+      # lasts as long as it takes to press the button. The alternative is a
+      # release page that only appears after a human acts, which means a tag with
+      # no notes for anyone reading GitHub in the meantime.
+      - name: The release page
         env:
           GH_TOKEN: ${{ github.token }}
+          VSIX: ${{ steps.extension.outputs.vsix }}
         run: |
-          npm ci --prefix editor/vscode
-          npm run package --prefix editor/vscode
+          git tag -l --format='%(contents)' "$GITHUB_REF_NAME" > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "the tag carries no message, so there are no notes to publish"
+            exit 1
+          fi
 
-          # Read rather than globbed, so a name that is not what this expects
-          # fails here instead of uploading whatever it found. The version is
-          # the extension's own and is not the tag: it ships no checker, so a
-          # framework release changes what the diagnostics say and not what
-          # this file does.
-          version=$(node -p "require('./editor/vscode/package.json').version")
-          gh release upload "$GITHUB_REF_NAME" \
-            "editor/vscode/transclude-$version.vsix#The VS Code extension"
+          # Unquoted on purpose: empty means no positional argument, which is a
+          # page with no asset rather than one with an argument named "".
+          # shellcheck disable=SC2086
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release-notes.md \
+            ${VSIX:+"$VSIX#The VS Code extension"}
+
+          # Last, so the notes are up before this decides the job. A release
+          # without the extension is a release somebody has to finish by hand.
+          if [ -z "$VSIX" ]; then
+            echo "the page is up and the extension is not on it"
+            exit 1
+          fi

@@ -743,20 +743,26 @@ against.
   for the upload to carry anything, and a rename in one says so only in a job
   nobody reads until a release.
 - **A release page here is immutable, so an asset goes up with it or not at
-  all.** `gh release upload` against one that already exists is a 422, which is
+  all.** `gh release upload` against one that already exists is a 422. That is
   how `v1.0.0-rc.1` shipped a page whose own notes said the extension was
-  attached below it. The vsix had built and had nowhere to go. So `publish.yml`
-  builds it *before* the page and passes the file to `gh release create`. That
-  ordering is the opposite of what it wants for a different reason — a registry
-  blip in `npm ci` must not cost the notes — so the build is allowed to fail,
-  the page goes up either way, and the step exits 1 afterwards. A release with
-  no extension on it is red rather than quiet. Recreating a page for a tag is
-  the repair, and it does not move the tag: `gh release delete` then
-  `gh release create` with the notes read back out of it. It cannot: a tag whose
-  release was immutable is refused a second one, and the page is gone. Editing
-  metadata on an existing page does work, which is how `v1.0.0-rc.2` got its
-  prerelease flag, and it is the only repair available. Prefer `gh release edit`
-  to anything that deletes.
+  attached below it: the vsix had built and had nowhere to go. `publish.yml`
+  builds it *before* the page now and passes the file to `gh release create`.
+  That ordering is the opposite of what it wants for a different reason — a
+  registry blip in `npm ci` must not cost the notes — so the build is allowed to
+  fail, the page goes up either way, and the step exits 1 afterwards. A release
+  with no extension on it is red rather than quiet.
+
+  There is no repair. Deleting the page and making another for the same tag
+  looks like the obvious fix and is not available: a tag whose release was
+  immutable is refused a second one, so the delete is the end of it. That was
+  learned by doing it. `gh release edit` does work, which is how `v1.0.0-rc.2`
+  got its prerelease flag after the fact. Prefer it to anything that deletes.
+
+  Deleting the *tag* afterwards does not free the name either. GitHub keeps
+  refusing a release for it, while `assertUntagged` in `bin/release.js` sees no
+  tag and lets the version be cut again — so a re-run stages both packages to
+  npm and then fails at the page, which is the worst order for that to happen
+  in. A withdrawn version is spent. Take the next one.
 - **A candidate has to be marked a prerelease twice.** `publish.yml` stages a
   suffixed version to npm's `next` tag, which VERSIONING promises, and GitHub
   knows nothing about that: without `--prerelease` the page shows as the latest

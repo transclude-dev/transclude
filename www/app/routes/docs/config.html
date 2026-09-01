@@ -61,6 +61,17 @@
     configures it, and <code>false</code> is off.
   </p>
 
+  <p>
+    Paths read from two places. <code>routesDir</code>,
+    <code>elementsDir</code>, <code>publicDir</code> and <code>iconsDir</code>
+    sit inside <code>appDir</code>, because they are the app.
+    <code>outDir</code>, <code>stylesheet</code> and <code>typesFile</code> are
+    read from the project root, because a build output and a generated
+    declarations file are not. Move <code>appDir</code> and the first four
+    follow it. So does the default for <code>typesFile</code>, which is the one
+    root-relative key with a directory in its default.
+  </p>
+
   <div class="scroller">
     <table>
       <thead>
@@ -299,7 +310,10 @@
         <tr>
           <td><code>typesFile</code></td>
           <td><code>'app/transclude-env.d.ts'</code></td>
-          <td>Where the generated declarations go.</td>
+          <td>
+            Where the generated declarations go, relative to the project root.
+            The default follows <code>appDir</code>.
+          </td>
         </tr>
         <tr>
           <td><code>watchElements</code></td>

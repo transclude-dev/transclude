@@ -150,6 +150,24 @@ export function withDefaults(config = {}) {
 
   const merged = { ...DEFAULTS, ...config };
 
+  // Four keys name a directory inside `appDir`: `routesDir`, `elementsDir`,
+  // `publicDir` and `iconsDir`. Three name a path from the project root:
+  // `outDir`, `stylesheet` and this one. That rule is fine until the default
+  // for a root-relative key writes `app/` into itself, because then an app that
+  // moved `appDir` keeps its declarations in a directory it no longer has, and
+  // what it gets is an ENOENT naming a path nobody wrote. So the default
+  // follows `appDir`. A value the author wrote is still theirs, and still read
+  // from the root.
+  //
+  // The file name is written twice, here and in the table above, because the
+  // table is read as a table: the site's own test compares the documented
+  // defaults against these literals and a template string is not one. What
+  // keeps the pair honest is `test/defaults.test.js`, which asserts that an
+  // empty config still derives exactly what the table says.
+  if (config.typesFile === undefined) {
+    merged.typesFile = `${merged.appDir}/transclude-env.d.ts`;
+  }
+
   // Set but empty is refused at boot rather than at the first signed cookie,
   // because that first read happens in production, at request time, days after
   // the deploy that broke it. It happened: `wrangler secret put` took a blank

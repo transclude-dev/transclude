@@ -1252,7 +1252,11 @@ against.
   first time anything here rendered a page that writes its own viewport.
   `frameworkHead` is that level, and `canonical: true` puts its `<link>` there
   for the same reason. Anything else the shell ever writes belongs in that
-  function rather than in the template below it.
+  function rather than in the template below it. The default is
+  `width=device-width` alone: `initial-scale=1` worked around zoom bugs in old
+  iOS and a few other browsers, all of them fixed, so it costs 19 bytes on
+  every page and buys nothing. A test pins the omission, because the habit is
+  strong enough that somebody will put it back.
 - **A config key lives in two lists, and only one of them is checked against.**
   `withDefaults` refuses a key it does not know, and `KEYS` is what it knows:
   `DEFAULTS` plus `UNDEFAULTED`. A key with a default needs no second entry,

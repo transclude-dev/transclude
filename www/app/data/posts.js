@@ -20,6 +20,13 @@
 /** @type {Post[]} */
 export const posts = [
   {
+    slug: 'innerhtml-leaves-a-dead-template',
+    title: 'innerHTML leaves a dead template',
+    summary:
+      'Swap markup into a live page and every declarative shadow root inside it lands as an inert template. The component is in the DOM, the style never applies, and nothing throws.',
+    date: new Date('2026-09-08'),
+  },
+  {
     slug: 'what-the-shadow-boundary-costs',
     title: 'What the shadow boundary costs',
     summary:

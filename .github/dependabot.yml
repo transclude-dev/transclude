@@ -1,8 +1,21 @@
-# Two ecosystems, and majors kept out of the group.
+# Two ecosystems, majors kept out of a group, and what ships kept apart from
+# what does not.
 #
 # Grouping everything put TypeScript 7 in the same pull request as a Hono patch,
 # so one breaking change held three safe ones. A major is its own branch: it is
 # a decision, and the others are not.
+#
+# The npm groups split on `dependency-type`, because that is the line the risk
+# already falls on. A production dependency is one this package installs for
+# every app that installs it, so a fix there is ours to release. A development
+# one is `vite` or `typescript`: both optional peers, both installed by the app
+# itself, and neither loaded on the serve path. Holding the first behind the
+# second is what the split exists to stop.
+#
+# Neither group is the security path. Dependabot's security updates run on their
+# own trigger, ahead of this schedule and around the cooldown, and they are
+# switched on for the repository rather than here. Without them a monthly
+# interval and a seven day cooldown is how long an advisory waits.
 #
 # Only the root npm manifest is watched. The examples and the site depend on the
 # framework by path, so eight more manifests would be eight more pull requests
@@ -35,9 +48,17 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      # One pull request for everything that should not need reading.
-      safe:
-        patterns: ['*']
+      # What this package installs for everybody: hono, its Node adapter, acorn,
+      # jsep and parse5. A fix in one of these is ours to ship, so it travels
+      # alone rather than behind a bundler.
+      runtime:
+        dependency-type: production
+        update-types: [minor, patch]
+
+      # What an app installs for itself. Same cadence, its own pull request, and
+      # nothing here reaches a built app.
+      tooling:
+        dependency-type: development
         update-types: [minor, patch]
     ignore:
       # `@types/node` majors track Node majors, so this is a description of the

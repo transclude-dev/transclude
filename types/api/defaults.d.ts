@@ -8,10 +8,10 @@ export type Config = {
     typesFile?: string;
     stylesheet?: string | null;
     lang?: string;
-    fragmentParam?: string;
-    trailingSlash?: 'never' | 'always' | 'ignore';
+    fragmentParam?: string | null;
+    trailingSlash?: 'never' | 'ignore';
     strict?: boolean;
-    csrf?: boolean;
+    csrf?: boolean | object;
     csp?: boolean | {
         directives?: Record<string, string[]>;
         reportOnly?: boolean;
@@ -58,6 +58,14 @@ export type Config = {
  * the app. Where this file names one it names only what the framework itself
  * reaches for.
  *
+ * A key's type is what the runtime accepts, which is not always what reads well
+ * next to it. `trailingSlash` had `'always'` in the union and nothing ever
+ * implemented it: `baseApp` threw, `test/server.test.js` asserted the throw, the
+ * docs named two values, and this table shipped the third to every app's editor.
+ * `csrf` and `fragmentParam` drifted the other way and promised less than the
+ * docs did. `test/defaults.test.js` reads this union now, so the three cannot
+ * disagree again quietly.
+ *
  * @typedef {{
  *   appDir?: string,
  *   routesDir?: string,
@@ -68,10 +76,10 @@ export type Config = {
  *   typesFile?: string,
  *   stylesheet?: string|null,
  *   lang?: string,
- *   fragmentParam?: string,
- *   trailingSlash?: 'never'|'always'|'ignore',
+ *   fragmentParam?: string|null,
+ *   trailingSlash?: 'never'|'ignore',
  *   strict?: boolean,
- *   csrf?: boolean,
+ *   csrf?: boolean|object,
  *   csp?: boolean|{ directives?: Record<string, string[]>, reportOnly?: boolean },
  *   speculate?: boolean|object,
  *   canonical?: boolean,

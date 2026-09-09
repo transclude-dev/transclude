@@ -846,6 +846,21 @@ against.
   places gets made twice and differently. A test checks that the tests it names
   still exist, since a policy naming a guarantee nothing keeps is worse than one
   that claims nothing.
+- **The config table was pinned by its defaults and not by its types.** Two
+  tests read `DEFAULTS`: one asserts an empty config derives it, and the site's
+  own compares it against the documented table. Neither read the `Config`
+  typedef above it, and that is the half that ships. `tsconfig.types.json` emits
+  it to `types/api/defaults.d.ts`, so the union is what an app's editor
+  believes. `trailingSlash` named `'never'|'always'|'ignore'` from the first
+  commit and nothing ever implemented the middle one: `baseApp` threw on it,
+  `test/server.test.js` asserted the throw, `/docs/config` listed two values,
+  and every generated project was told there were three. `csrf` and
+  `fragmentParam` had drifted the other way, and the runtime took more than the
+  type admitted — an object and a `null`, both documented — so an app writing
+  what the docs said got a red line from its editor instead.
+  `test/defaults.test.js` reads the union out of the source now and hands
+  `baseApp` every value it names, which is the shape the context check two
+  hundred lines up already had.
 - **The type printer is a dependency, and now there is a canary for it.**
   `src/typecheck.js` drives `typescript/unstable/sync` and says in its own
   comments what it cannot defend against: a flag that is renamed ORs into

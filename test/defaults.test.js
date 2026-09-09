@@ -9,9 +9,15 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { DEFAULTS, KEYS, withDefaults } from '../src/defaults.js';
 import { createApp } from '../src/app.js';
+import { baseApp } from '../src/server.js';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // ---- the merge -------------------------------------------------------------
 
@@ -161,4 +167,70 @@ test('turning the parameter off is still possible', async () => {
   const out = await app.request('http://x/?fragment=list');
 
   assert.match(await out.text(), /the whole document/);
+});
+
+// ---- the type and the runtime ----------------------------------------------
+
+// The `Config` typedef ships. `tsconfig.types.json` emits it to
+// `types/api/defaults.d.ts`, so what it says is what an app's editor says.
+//
+// `trailingSlash` named `'never'|'always'|'ignore'` and nothing ever implemented
+// the middle one: `baseApp` threw on it, `test/server.test.js` asserted the
+// throw, `/docs/config` listed two values, and this table handed the third to
+// every generated project. `csrf` and `fragmentParam` drifted the other way and
+// promised less than the runtime takes, so an app writing what the docs said got
+// an error from its editor instead.
+//
+// A text check, because a type is a comment and there is nothing else to read it
+// from. What it catches is the failure that already happened: a union that
+// nobody made the runtime agree with.
+
+/** The `@typedef` block, as written. */
+function configType() {
+  const source = fs.readFileSync(path.join(root, 'src/defaults.js'), 'utf8');
+  const at = source.indexOf(' * @typedef {{');
+  const end = source.indexOf('}} Config', at);
+
+  assert.notEqual(at, -1, 'the Config typedef moved');
+  assert.notEqual(end, -1, 'the Config typedef moved');
+  return source.slice(at, end);
+}
+
+/**
+ * What a key's type names, one member per entry.
+ *
+ * @param {string} key
+ * @returns {string[]}
+ */
+function unionFor(key) {
+  const line = configType()
+    .split('\n')
+    .find((one) => one.includes(`${key}?:`));
+
+  assert.ok(line, `the Config typedef no longer names ${key}`);
+  return line
+    .slice(line.indexOf('?:') + 2)
+    .replace(/,\s*$/, '')
+    .split('|')
+    .map((one) => one.trim().replace(/^'|'$/g, ''));
+}
+
+test('every trailingSlash the type names is one baseApp takes', () => {
+  const named = unionFor('trailingSlash');
+  assert.deepEqual(named, ['never', 'ignore'], 'the union moved: make baseApp agree, or put it back');
+
+  for (const value of named) {
+    assert.doesNotThrow(
+      () => baseApp({ trailingSlash: value }),
+      `the type names ${value} and baseApp refuses it`,
+    );
+  }
+});
+
+test('csrf and fragmentParam promise what the runtime takes', () => {
+  assert.ok(unionFor('csrf').includes('object'), 'csrf takes an object, and the type should say so');
+  assert.ok(unionFor('fragmentParam').includes('null'), 'null turns the parameter off');
+
+  assert.doesNotThrow(() => baseApp({ csrf: { origin: 'https://acme.com' } }));
+  assert.equal(withDefaults({ fragmentParam: null }).fragmentParam, null);
 });

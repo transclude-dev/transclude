@@ -496,7 +496,7 @@ test('a link that is not canonical is never dropped', () => {
 test("a page's own viewport replaces the framework's, rather than doubling it", () => {
   // Found by generating a project and looking at the output: the shell wrote a
   // default viewport and the page wrote one, and both shipped.
-  const own = '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">';
+  const own = '<meta name="viewport" content="width=device-width, viewport-fit=cover">';
   const html = renderDocument([level('page', { head: own })], [{}], {});
 
   assert.equal(html.match(/name="viewport"/g).length, 1);
@@ -508,6 +508,14 @@ test('a page that writes none still gets the default', () => {
 
   assert.equal(html.match(/name="viewport"/g).length, 1);
   assert.match(html, /width=device-width/);
+});
+
+test('the default carries no initial-scale', () => {
+  // It worked around zoom bugs that no browser has now. Pinned because the
+  // habit of writing it is strong enough that somebody will put it back.
+  const html = renderDocument([level('page')], [{}], {});
+
+  assert.doesNotMatch(html, /initial-scale/);
 });
 
 test('the default stays above the title, where it is read early', () => {

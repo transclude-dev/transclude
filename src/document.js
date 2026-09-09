@@ -261,11 +261,16 @@ const escapeAttr = (value) => String(value).replace(/[&<>"]/g, (c) => ESCAPES[c]
  * copy. `charset` is not here: it has to be inside the first 1024 bytes, and it
  * is not something to override.
  *
+ * The viewport is `width=device-width` and nothing else. `initial-scale=1` was
+ * a workaround for zoom bugs in old iOS and a few other browsers, and every one
+ * of them is fixed. A page that wants `viewport-fit=cover` writes its own,
+ * which replaces this one.
+ *
  * @param {string|null} canonical the page's own URL, absolute, or null for none
  * @returns {string} one level's worth of head markup
  */
 function frameworkHead(canonical) {
-  const tags = ['<meta name="viewport" content="width=device-width, initial-scale=1">'];
+  const tags = ['<meta name="viewport" content="width=device-width">'];
   if (canonical) tags.push(`<link rel="canonical" href="${escapeAttr(canonical)}">`);
   return tags.join('\n');
 }

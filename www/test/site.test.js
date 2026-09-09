@@ -622,3 +622,76 @@ describe('every markup sample on the site compiles', async () => {
   assert.ok(checked.length > 40, `only ${checked.length} markup samples found`);
   assert.deepEqual(broken, [], `samples a reader would copy and could not compile:\n${broken.join('\n')}`);
 });
+
+// ---- what the pages weigh --------------------------------------------------
+//
+// "Ships nothing" is the claim this whole framework rests on, and until now the
+// only thing checking it was a sentence in `design/internals.md`. A page that
+// starts shipping a bundle does it quietly: the build prints a larger number and
+// the site looks the same.
+
+/** Every built page, by the URL it answers. */
+function builtPages() {
+  const found = [];
+
+  const walk = (dir, at) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const file = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(file, `${at}/${entry.name}`);
+      else if (entry.name === 'index.html') found.push([at || '/', fs.readFileSync(file, 'utf8')]);
+    }
+  };
+
+  walk(dist, '');
+  return found;
+}
+
+/**
+ * The scripts on a page that a browser runs.
+ *
+ * `type="speculationrules"` is JSON the browser reads and does not execute, and
+ * so is `application/ld+json`. Counting either as weight would make this test
+ * fail for something that costs no parse and no download.
+ */
+function executableScripts(html) {
+  return [...html.matchAll(/<script(\s[^>]*)?>/g)]
+    .map(([, attrs = '']) => attrs)
+    .filter((attrs) => {
+      const type = attrs.match(/type="([^"]*)"/)?.[1];
+      return !type || type === 'module' || type === 'text/javascript';
+    });
+}
+
+// The pages allowed to ship a bundle, and why. Adding one here is the decision;
+// the test exists so it is a decision rather than a thing that happened.
+const SHIPS_A_BUNDLE = new Set([
+  // A file tree the reader opens and closes, which is state no link can carry.
+  '/explorer',
+]);
+
+describe('no page starts shipping a bundle without saying so', () => {
+  const pages = builtPages();
+  assert.ok(pages.length > 20, `only ${pages.length} built pages found`);
+
+  const shipping = pages
+    .filter(([, html]) => executableScripts(html).some((attrs) => /\ssrc=/.test(attrs)))
+    .map(([at]) => at);
+
+  const added = shipping.filter((at) => !SHIPS_A_BUNDLE.has(at));
+  const gone = [...SHIPS_A_BUNDLE].filter((at) => !shipping.includes(at));
+
+  assert.deepEqual(added, [], `pages that now download JavaScript: ${added.join(', ')}`);
+  assert.deepEqual(gone, [], `listed as shipping a bundle and no longer does: ${gone.join(', ')}`);
+});
+
+describe('one inline script a page, which is the one that sets the theme', () => {
+  // The theme block runs before the first paint, so it cannot be a file. It is
+  // the only inline script the site has, and a second one on any page is either
+  // a duplicate of it or something new that nobody weighed.
+  const over = builtPages()
+    .map(([at, html]) => [at, executableScripts(html).filter((attrs) => !/\ssrc=/.test(attrs))])
+    .filter(([, inline]) => inline.length > 1)
+    .map(([at, inline]) => `${at}: ${inline.length}`);
+
+  assert.deepEqual(over, [], `pages with more than one inline script: ${over.join(', ')}`);
+});

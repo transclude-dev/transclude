@@ -1,0 +1,189 @@
+<script server>
+  import { all, tree } from '../../lib/code.js';
+
+  export default async () => ({
+    tree: tree(`app/routes/
+  [locale]/                 every page, once per language
+    index.html              /en, /cy
+    about.html              /en/about, /cy/about`),
+    s: await all({
+      config: [
+        `// transclude.config.js
+export default {
+  lang: 'en',
+};`,
+        'js',
+      ],
+      page: `<!-- app/routes/amdanom.html -->
+<html lang="cy" />
+
+<title>Amdanom ni</title>
+<h1>Amdanom ni</h1>`,
+      rtl: `<!-- app/routes/عن.html -->
+<html lang="ar" dir="rtl" />
+
+<title>من نحن</title>
+<h1>من نحن</h1>`,
+      logical: [
+        `.card {
+  padding-inline-start: 1rem;
+  border-inline-start: 2px solid var(--rule);
+  text-align: start;
+}`,
+        'css',
+      ],
+      loader: `<!-- app/routes/[locale]/about.html -->
+<script server>
+  import { copy } from '../../lib/copy.js';
+
+  export default async ({ params }) => ({
+    t: copy[params.locale] ?? copy.en,
+    locale: params.locale,
+  });
+<\/script>
+
+<html lang="\${locale}" />
+
+<title>\${t.aboutTitle}</title>
+<h1>\${t.aboutTitle}</h1>
+<p>\${t.aboutBody}</p>`,
+      copy: [
+        `// app/lib/copy.js
+export const copy = {
+  en: { aboutTitle: 'About us', aboutBody: 'We make things.' },
+  cy: { aboutTitle: 'Amdanom ni', aboutBody: 'Rydym yn gwneud pethau.' },
+};`,
+        'js',
+      ],
+      negotiate: [
+        `// app/server.js
+const LOCALES = ['en', 'cy'];
+
+export default (app) => {
+  app.get('/', (c) => {
+    const header = c.req.header('accept-language') ?? '';
+    const wanted = header.split(',').map((one) => one.split(';')[0].trim().slice(0, 2));
+    const found = wanted.find((code) => LOCALES.includes(code)) ?? 'en';
+
+    return c.redirect(\`/\${found}\`, 302);
+  });
+};`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
+<title>Languages · transclude</title>
+<meta
+  name="description"
+  content="The lang and dir on every page, a locale in the route, and what this framework leaves to you."
+/>
+
+<doc-page
+  heading="Languages"
+  lede="One key says what language your pages are written in. Anything past that is routing and data, which this framework already has."
+>
+  <h2>The language of every page</h2>
+
+  <p><code>lang</code> is what lands on <code>&lt;html&gt;</code>.</p>
+
+  ${html(s.config)}
+
+  <p>
+    It defaults to <code>en</code>. That default is a guess about your app, so a
+    generated project writes the key out where you can see it and change it.
+  </p>
+
+  <p>
+    A screen reader picks a voice from this, and a browser picks a dictionary and
+    a set of quotation marks. A wrong value is worse than a missing one.
+  </p>
+
+  <h2>One page in another language</h2>
+
+  <p>
+    A page sets its own attributes with a bare <code>&lt;html&gt;</code> tag. It
+    is merged into the document rather than rendered, and it wins over the
+    config.
+  </p>
+
+  ${html(s.page)}
+
+  <p>Direction rides along with it.</p>
+
+  ${html(s.rtl)}
+
+  <doc-note label="Write the CSS both directions read">
+    <code>padding-inline-start</code> flips with the text.
+    <code>padding-left</code> does not, so a right-to-left page gets its gutter on
+    the wrong side. The same holds for <code>margin</code>,
+    <code>border</code> and <code>text-align</code>.
+  </doc-note>
+
+  ${html(s.logical)}
+
+  <h2>A locale in the URL</h2>
+
+  <p>
+    A locale is a route parameter. The directory tree is already the route table,
+    so nothing new is needed to give each language its own URL.
+  </p>
+
+  ${html(tree)}
+
+  <p>
+    <code>/cy/about</code> and <code>/en/about</code> reach the same file, and the
+    loader reads which one was asked for.
+  </p>
+
+  ${html(s.loader)}
+
+  <p>Your strings are a module the loader imports.</p>
+
+  ${html(s.copy)}
+
+  <p>
+    <code>GET /cy/about</code> returns a Welsh page with
+    <code>&lt;html lang="cy"&gt;</code>. Both URLs are in the sitemap, and the
+    build prerenders both.
+  </p>
+
+  <h2>Sending a reader to their own language</h2>
+
+  <p>
+    <code>Accept-Language</code> is a request header, so reading it is middleware.
+    Redirect from the bare path and let each locale keep its own URL.
+  </p>
+
+  ${html(s.negotiate)}
+
+  <doc-note label="Redirect, do not vary" tone="warn">
+    Serving different languages at one URL needs <code>Vary</code>, and a cache
+    that ignores it hands one reader another reader's language. A redirect to a
+    URL per locale is one page per URL, which is what every cache and every link
+    already understands.
+  </doc-note>
+
+  <h2>What this framework does not ship</h2>
+
+  <p>
+    There is no message catalog, no plural rule engine and no locale negotiation
+    beyond what you write above.
+  </p>
+
+  <p>
+    This is the same answer <code>cache</code> and <code>markdown</code> get. Which
+    catalog format, which fallback chain and which plural library are decisions
+    about your app. A framework that picked one would be picking for every app.
+  </p>
+
+  <p>
+    The platform ships most of it.
+    <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl"
+      >Intl</a
+    >
+    formats dates, numbers, lists and plurals, and it runs on all four runtimes.
+    A loader calls it and the page gets text.
+  </p>
+</doc-page>

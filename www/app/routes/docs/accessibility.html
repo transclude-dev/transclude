@@ -1,0 +1,200 @@
+<script server>
+  import { all } from '../../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      skip: `<!-- app/routes/_layout.html -->
+<a class="skip" href="#main">Skip to content</a>
+
+<nav>
+  <a href="/" aria-current="\${path === '/' ? 'page' : 'false'}">Home</a>
+</nav>
+
+<main id="main"><slot></slot></main>`,
+      skipCss: [
+        `.skip {
+  position: absolute;
+  left: -9999px;
+}
+.skip:focus {
+  left: 1rem;
+  top: 1rem;
+}`,
+        'css',
+      ],
+      label: `<label for="email">Email</label>
+<input id="email" name="email" />`,
+      icons: `<button type="button">
+  <svg-icon name="trash"></svg-icon>
+  Delete
+</button>
+
+<a href="/inbox"><svg-icon name="inbox" label="Inbox"></svg-icon></a>`,
+      live: `<!-- app/routes/cart.html -->
+<p role="status">\${count} in your cart</p>`,
+      lang: [
+        `export default {
+  lang: 'en',
+};`,
+        'js',
+      ],
+    }),
+  });
+</script>
+
+<title>Accessibility · transclude</title>
+<meta
+  name="description"
+  content="What the defaults give you, and the markup that is yours to write."
+/>
+
+<doc-page
+  heading="Accessibility"
+  lede="A page here is a document. Most of what a screen reader and a keyboard need is already in the markup, and the defaults are chosen to keep it there."
+>
+  <h2>What the default already does</h2>
+
+  <p>
+    A page ships no JavaScript. The text is on screen before any script runs, so
+    a slow network or a blocked bundle changes nothing about what is readable.
+  </p>
+
+  <p>
+    Navigation is links and forms. Back, forward, find in page, open in new tab
+    and reader mode all work, because nothing replaced them.
+  </p>
+
+  <p>
+    An element renders into the page's own DOM. There is no boundary between a
+    label and the input it names, so this works.
+  </p>
+
+  ${html(s.label)}
+
+  <doc-note label="A shadow root breaks that pair" tone="warn">
+    <code>&lt;label for&gt;</code> cannot cross a shadow boundary. An element with
+    <code>export const shadow = true</code> has to carry the label inside its own
+    root. See <a href="/docs/elements">elements</a> for the rest of what the
+    boundary costs.
+  </doc-note>
+
+  <h2>What a new project starts with</h2>
+
+  <p>
+    <code>npm create @transclude</code> writes a layout with three things a page
+    is hard to add later.
+  </p>
+
+  ${html(s.skip)}
+
+  <p>
+    The skip link is first in the document, so a keyboard reaches it before the
+    nav. It is offscreen until it takes focus.
+  </p>
+
+  ${html(s.skipCss)}
+
+  <p>
+    <code>position: absolute</code>, not <code>display: none</code>. Nothing
+    hidden the second way can be focused at all, so the link would never appear.
+  </p>
+
+  <p>
+    <code>aria-current="page"</code> marks the link you are on. The nav reads as
+    a list of places with one of them named as here.
+  </p>
+
+  <h2>The language of the page</h2>
+
+  <p>
+    <code>lang</code> in <code>transclude.config.js</code> sets
+    <code>&lt;html lang&gt;</code> for every page. A screen reader picks a voice
+    from it, so a wrong value is worse than a missing one.
+  </p>
+
+  ${html(s.lang)}
+
+  <p>
+    A page that is written in another language sets its own. See
+    <a href="/docs/languages">languages</a>.
+  </p>
+
+  <h2>Icons</h2>
+
+  <p>
+    An icon beside its own label repeats it, so <code>svg-icon</code> hides it.
+    Pass <code>label</code> when the icon is the only thing saying what the
+    control does.
+  </p>
+
+  ${html(s.icons)}
+
+  <p>
+    The two are different elements in the output. A labeled icon is
+    <code>role="img"</code> with an <code>aria-label</code>, and a decorative one
+    is <code>aria-hidden="true"</code>. See <a href="/docs/icons">icons</a>.
+  </p>
+
+  <h2>Saying something changed</h2>
+
+  <p>
+    A form submits and the server sends a new page, so a screen reader reads the
+    result the way it reads any document. Nothing has to announce it.
+  </p>
+
+  <p>
+    A fragment swap is different. The browser stayed on the page, and only part of
+    it changed. Put the changed text in a live element and the change is spoken.
+  </p>
+
+  ${html(s.live)}
+
+  <p>
+    <code>role="status"</code> is polite: it waits for a pause.
+    <code>role="alert"</code> interrupts, so keep it for something that has gone
+    wrong.
+  </p>
+
+  <doc-note label="Focus survives an in-place update">
+    A light element writes text and attributes into the nodes already in the
+    page. It never replaces a child, so focus and selection stay where the reader
+    put them. Swapping a whole fragment is your own code, and moving focus after
+    one is yours to do.
+  </doc-note>
+
+  <h2>Color</h2>
+
+  <p>
+    The generated stylesheet declares both schemes on <code>:root</code>, and the
+    layout says so in a <code>&lt;meta&gt;</code> that is read before the CSS
+    arrives.
+  </p>
+
+  <p>
+    Do not carry meaning in color alone. This site's own warning notes carry an
+    icon as well as a border, because the border is the part some readers cannot
+    use.
+  </p>
+
+  <h2>What is still yours</h2>
+
+  <p>
+    The framework renders the markup you wrote. It adds no roles, invents no
+    labels and reorders nothing.
+  </p>
+
+  <ul>
+    <li>Headings in order, one <code>&lt;h1&gt;</code> a page.</li>
+    <li>A name on every control, and on every image that carries meaning.</li>
+    <li>A visible focus style, on everything a keyboard can reach.</li>
+    <li>Contrast that holds in both color schemes.</li>
+    <li>A keyboard path to anything a pointer can do.</li>
+  </ul>
+
+  <p>
+    The last one is the one a framework cannot help with. A tab list or a menu is
+    a keyboard contract, and writing one is
+    <a href="https://www.w3.org/WAI/ARIA/apg/patterns/">a pattern to follow</a>
+    rather than a component to install.
+  </p>
+</doc-page>

@@ -1,0 +1,167 @@
+<title>Principles · transclude</title>
+<meta
+  name="description"
+  content="The W3C Ethical Web Principles, and what this framework does about each of the twelve."
+/>
+
+<doc-page
+  heading="Principles"
+  lede="The W3C published twelve principles for what the web should be. This page reads them against this framework, and says where it falls short."
+>
+  <p>
+    <a href="https://www.w3.org/TR/ethical-web-principles/"
+      >Ethical Web Principles</a
+    >
+    is a W3C Statement from December 2024. It describes what web technology
+    should do for the people using it.
+  </p>
+
+  <p>
+    Most of what follows was chosen for other reasons. Sending HTML and shipping
+    no script is a decision about how a page should work, and it happens to
+    answer four of the twelve.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>The principle</th>
+          <th>What this framework does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>There is one web</td>
+          <td>
+            A page is HTML at a URL. Nothing here reads a country, and the build
+            writes one set of files for everybody.
+          </td>
+        </tr>
+        <tr>
+          <td>The web does not cause harm to society</td>
+          <td>
+            No telemetry, no analytics and no install script. This package reports
+            nothing anywhere.
+          </td>
+        </tr>
+        <tr>
+          <td>The web supports healthy community and debate</td>
+          <td>
+            A code of conduct, a contributing guide and a security policy, in the
+            repository.
+          </td>
+        </tr>
+        <tr>
+          <td>The web is for all people</td>
+          <td>
+            A page carries no bundle, so a slow network and an old phone still get
+            the text. See <a href="/docs/accessibility">accessibility</a> and
+            <a href="/docs/languages">languages</a>.
+          </td>
+        </tr>
+        <tr>
+          <td>The web is secure and respects people's privacy</td>
+          <td>
+            A policy built from the hashes of what a page inlines, cookies that
+            are <code>HttpOnly</code> and <code>SameSite=Lax</code>, and a refusal
+            to fetch a private address. See <a href="/docs/security">security</a>.
+          </td>
+        </tr>
+        <tr>
+          <td>The web enables freedom of expression</td>
+          <td>
+            The build writes a directory any static host serves. No account and no
+            service sits between you and a reader.
+          </td>
+        </tr>
+        <tr>
+          <td>The web makes it possible to verify information</td>
+          <td>
+            Nothing minifies the HTML. What a reader sees in view source is the
+            page you wrote.
+          </td>
+        </tr>
+        <tr>
+          <td>The web enhances individuals' control and power</td>
+          <td>
+            MIT, five dependencies, four runtimes. Nothing here needs a company to
+            keep running.
+          </td>
+        </tr>
+        <tr>
+          <td>The web is an environmentally sustainable platform</td>
+          <td>
+            No client entry unless a page asks for one, and no prefetching unless
+            you turn it on. A test holds the count.
+          </td>
+        </tr>
+        <tr>
+          <td>The web is transparent</td>
+          <td>
+            This site serves <a href="/explorer">its own source</a>, and the
+            <a href="/docs/refusals">refusals</a> page is read out of the compiler
+            rather than written by hand.
+          </td>
+        </tr>
+        <tr>
+          <td>The web is multi-browser, multi-OS, and multi-device</td>
+          <td>
+            Five platform features carry a date, and the rest is markup. See
+            <a href="/docs/browsers">browsers</a> and
+            <a href="/docs/runtimes">runtimes</a>.
+          </td>
+        </tr>
+        <tr>
+          <td>The web can be consumed in any way that people choose</td>
+          <td>
+            An element renders into the page's own DOM, so a user stylesheet, an
+            extension and reader mode all reach it.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>The last one is the load-bearing default</h2>
+
+  <p>
+    A shadow root hides content from a user stylesheet, from some extensions and
+    from some reader modes. This framework makes the shadow root the opt-in and
+    the page's own DOM the default.
+  </p>
+
+  <p>
+    Navigation is the other half. There is no client router, so back, forward,
+    find in page and open in new tab work because nothing replaced them.
+  </p>
+
+  <h2>Where this falls short</h2>
+
+  <p>
+    <strong>An element with styles needs a 2026 browser.</strong> Those styles are
+    scoped with <code>@scope</code>, and browsers agreed on it in March 2026. A
+    browser without it drops the block and the element renders unstyled. The
+    <a href="/docs/browsers">browsers</a> page says what to do about that.
+  </p>
+
+  <p>
+    <strong>Two headers are off by default.</strong>
+    <code>csp</code> and <code>permissionsPolicy</code> each take something away
+    from an app that may want it, so both stay yours to set. A generated project
+    turns both on, which is where the decision can be read.
+  </p>
+
+  <p>
+    <strong>There is no message catalog.</strong> Routing and
+    <code>Intl</code> cover a multilingual site, and this package ships neither a
+    catalog format nor a fallback chain.
+    <a href="/docs/languages">Languages</a> says why.
+  </p>
+
+  <p>
+    <strong>A widget's keyboard behavior is yours.</strong> The framework renders
+    the markup you wrote and adds no roles. A tab list or a menu is a contract
+    with a keyboard, and nothing here writes one for you.
+  </p>
+</doc-page>

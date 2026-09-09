@@ -1,0 +1,192 @@
+<script server>
+  import { all } from '../../lib/code.js';
+
+  export default async () => ({
+    s: await all({
+      styled: `<!-- app/elements/site-note.html -->
+<style>
+  :scope {
+    display: block;
+    border-inline-start: 3px solid var(--rule);
+  }
+</style>
+
+<p><slot></slot></p>`,
+      global: [
+        `/* app/styles/global.css */
+site-note {
+  display: block;
+  border-inline-start: 3px solid var(--rule);
+}`,
+        'css',
+      ],
+    }),
+  });
+</script>
+
+<title>Browsers · transclude</title>
+<meta
+  name="description"
+  content="The platform features this framework is built on, when each became interoperable, and what happens in a browser without one."
+/>
+
+<doc-page
+  heading="Browsers"
+  lede="A page is HTML, CSS and links, so most of what this framework renders runs in any browser ever shipped. Five features are the exception, and this page names them."
+>
+  <h2>The floor</h2>
+
+  <p>
+    A page of plain markup has no floor. It is a document, and a browser from any
+    year displays it.
+  </p>
+
+  <p>
+    An element with its own <code>&lt;style&gt;</code> block is the one common
+    thing that does. Those styles are wrapped in <code>@scope</code>, which
+    browsers agreed on in March 2026.
+  </p>
+
+  <div class="scroller">
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>What needs it</th>
+          <th>Interoperable since</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/@scope"
+              ><code>@scope</code></a
+            >
+          </td>
+          <td>An element's own style block</td>
+          <td>March 2026</td>
+        </tr>
+        <tr>
+          <td>
+            <a
+              href="https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTMLUnsafe"
+              ><code>setHTMLUnsafe()</code></a
+            >
+          </td>
+          <td>A shadow element inside swapped markup</td>
+          <td>September 2025</td>
+        </tr>
+        <tr>
+          <td>
+            <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/:state"
+              ><code>:state()</code></a
+            >
+          </td>
+          <td>Styling on a state field</td>
+          <td>May 2024</td>
+        </tr>
+        <tr>
+          <td>
+            <a
+              href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM"
+              >Declarative shadow DOM</a
+            >
+          </td>
+          <td><code>export const shadow = true</code></td>
+          <td>February 2024</td>
+        </tr>
+        <tr>
+          <td>
+            <a
+              href="https://developer.mozilla.org/en-US/docs/Web/API/ElementInternals"
+              >Form-associated custom elements</a
+            >
+          </td>
+          <td><code>export const formAssociated = true</code></td>
+          <td>March 2023</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    The dates are
+    <a href="https://web-platform-dx.github.io/web-features/">Baseline</a>: when
+    the last of the major engines shipped the feature, rather than when the first
+    one did.
+  </p>
+
+  <h2>What happens below each</h2>
+
+  <p>
+    <strong>No <code>@scope</code>.</strong> The browser skips an at-rule it does
+    not know, and it skips everything inside it. So the element renders with the
+    page's markup and none of its own styles. Nothing errors.
+  </p>
+
+  <p>
+    <strong>No declarative shadow DOM.</strong> The
+    <code>&lt;template&gt;</code> stays a template and its content is never shown.
+    A shadow element renders as an empty tag until its script defines it, and then
+    it paints.
+  </p>
+
+  <p>
+    <strong>No <code>:state()</code>.</strong> The state is still there and the
+    element still works. Only the CSS that selected on it does nothing.
+  </p>
+
+  <p>
+    <strong>No form association.</strong> The element renders, and its value is
+    left out of the form it sits in.
+  </p>
+
+  <h2>Styling an element that has to work everywhere</h2>
+
+  <p>An element's own style block is scoped, and scoping is the part that is new.</p>
+
+  ${html(s.styled)}
+
+  <p>
+    Move the same rules into the stylesheet and the floor goes away. A light
+    element is in the page's own DOM, so page CSS reaches it, and the tag name is
+    the selector.
+  </p>
+
+  ${html(s.global)}
+
+  <p>
+    You give up the scoping and get a rule that any browser applies. For a
+    site that has to reach old devices, that trade is worth knowing about.
+  </p>
+
+  <h2>Things that are already optional</h2>
+
+  <p>
+    <a
+      href="https://developer.mozilla.org/en-US/docs/Web/API/Speculation_Rules_API"
+      >Speculation rules</a
+    >
+    ship in one engine. <code>speculate</code> is off by default, and a browser
+    that does not read the block navigates the ordinary way.
+  </p>
+
+  <p>
+    A <a href="/docs/security">Content-Security-Policy</a> is ignored by a browser
+    that has none, which leaves that browser where it was rather than worse off.
+  </p>
+
+  <h2>The server side</h2>
+
+  <p>
+    The same app runs on Node, Bun, Deno and workerd. The core imports nothing
+    from <code>node:</code>, and a test reads its whole import graph to keep that
+    true. See <a href="/docs/runtimes">runtimes</a>.
+  </p>
+
+  <doc-note label="Nothing here sniffs a browser">
+    No feature detection runs, and no bundle is built twice. Each of the five
+    above either works or does nothing, which is why this page is a table rather
+    than a build setting.
+  </doc-note>
+</doc-page>

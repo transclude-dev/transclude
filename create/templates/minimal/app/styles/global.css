@@ -20,5 +20,16 @@ body {
 h1 { font-size: 1.6rem; margin: 0 0 1rem; }
 a { color: inherit; }
 
+/* Offscreen until it is focused, so a keyboard finds it and a mouse never sees
+   it. `position: absolute` and not `display: none`, because nothing hidden that
+   way can take focus at all. */
+.skip {
+  position: absolute;
+  left: -100vw;
+}
+.skip:focus {
+  position: static;
+}
+
 nav { display: flex; gap: 1rem; margin-bottom: 2rem; }
 nav a[aria-current='page'] { font-weight: 600; }

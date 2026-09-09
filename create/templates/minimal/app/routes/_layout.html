@@ -6,6 +6,16 @@
 
 <title>__NAME__</title>
 
+<!-- `global.css` says the same thing, and this is read before it arrives. On a
+     cold cache that window is a white flash for somebody whose system asks for
+     dark. Drop it if you take the dark rules out of the stylesheet: it promises
+     both, and a page that handles one gets dark controls on a light page. -->
+<meta name="color-scheme" content="light dark" />
+
+<!-- First in the DOM, so a keyboard reaches it before the nav. It is offscreen
+     until focused, which is the `.skip` rule in `global.css`. -->
+<a class="skip" href="#main">Skip to content</a>
+
 <nav>
   <a href="/" aria-current="${path === '/' ? 'page' : 'false'}">Home</a>
   <a href="/about" aria-current="${path === '/about' ? 'page' : 'false'}">About</a>
@@ -13,4 +23,4 @@
 
 <!-- The page renders here. A layout with no <slot> is a warning, because
      nothing inside it could appear. -->
-<main><slot></slot></main>
+<main id="main"><slot></slot></main>

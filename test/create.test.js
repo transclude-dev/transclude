@@ -51,6 +51,47 @@ test('the minimal template has a layout, a second page and a 404', () => {
   });
 });
 
+test('both templates say which color schemes they handle, before the CSS lands', () => {
+  // The stylesheet says it too, and the stylesheet is a second request. The tag
+  // is parsed before that request finishes, which is the window it exists for.
+  //
+  // On `:root` in the CSS and not on `body`: the canvas and the scrollbars take
+  // their scheme from the root element, so `body` dresses the controls and
+  // leaves the page behind them light.
+  for (const [template, page] of [
+    ['blank', 'app/routes/index.html'],
+    ['minimal', 'app/routes/_layout.html'],
+  ]) {
+    make(['--template', template], (dir) => {
+      assert.match(read(dir, page), /<meta name="color-scheme" content="light dark"/);
+
+      const css = read(dir, 'app/styles/global.css');
+      assert.match(css, /:root\s*\{[^}]*color-scheme:\s*light dark/);
+      assert.doesNotMatch(css, /body\s*\{[^}]*color-scheme/, 'color-scheme on body');
+    });
+  }
+});
+
+test('the minimal layout opens with a skip link, and something to skip to', () => {
+  // First in the DOM so a keyboard reaches it before the nav, offscreen until
+  // focused, and pointing at an id that exists. `position: absolute` rather than
+  // `display: none`, because nothing hidden that way can be focused at all.
+  make(['--template', 'minimal'], (dir) => {
+    const layout = read(dir, 'app/routes/_layout.html');
+    assert.match(layout, /<a class="skip" href="#main">/);
+    assert.match(layout, /<main id="main">/);
+    assert.ok(
+      layout.indexOf('class="skip"') < layout.indexOf('<nav>'),
+      'the skip link comes after the nav it exists to skip',
+    );
+
+    const css = read(dir, 'app/styles/global.css');
+    assert.match(css, /\.skip\s*\{[^}]*position:\s*absolute/);
+    assert.match(css, /\.skip:focus/);
+    assert.doesNotMatch(css, /\.skip\s*\{[^}]*display:\s*none/);
+  });
+});
+
 test('neither template ships the demo of things a starter should not decide', () => {
   // Fragments and includes are what the showcase is for. A project starts
   // without an opinion about them, and without an opinion about its own markup:

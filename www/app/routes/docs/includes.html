@@ -390,11 +390,19 @@
   </p>
 
   <doc-note label="What the allowlist is holding up" tone="warn">
-    On Node and Deno a hostname is resolved and every address it answers with is
-    checked. <code>workerd</code> has no resolver, so there that check does not run
-    and the allowlist is the whole defense. Name hosts you trust, and treat a
-    wildcard as trust in everything under it.
+    On Node, Bun and Deno a hostname is resolved and every address it answers
+    with is checked. That covers all four spellings that carry an IPv4 address
+    inside an IPv6 one. <code>workerd</code> has no resolver, so there the check
+    does not run and the allowlist is the whole defense.
   </doc-note>
+
+  <p>
+    Even where it runs, the resolver is asked twice: once for the check, and
+    again by the connection. A record short enough to expire in between can come
+    back different. Nothing this side of the socket closes that window. So the
+    allowlist is what actually holds. Name hosts you trust, and treat a wildcard
+    as trust in everything under it.
+  </p>
 
   <h3>The endpoint</h3>
 

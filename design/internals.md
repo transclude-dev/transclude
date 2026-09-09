@@ -1483,6 +1483,20 @@ against.
   second, which `portable.test.js` now asserts by name. On workerd there is no
   resolver at all, so the allowlist is the whole defense and the docs say so
   rather than implying the address checks are running everywhere.
+- **One IPv4 address has four spellings in IPv6, and only one was read.**
+  `::ffff:169.254.169.254` was classified and `::ffff:0:169.254.169.254`,
+  `64:ff9b::169.254.169.254` and `::169.254.169.254` all came back allowed. In a
+  URL that costs nothing, because the allowlist runs first and nobody writes a
+  NAT64 address on one. On the DNS path it costs everything: `lookup.js` hands
+  `blockedAddress` whatever the resolver answered, a DNS64 resolver answers in
+  `64:ff9b::/96` for a name with no A record, and there the name is allowed and
+  only the address is not. `V6_EMBEDS_V4` holds the four prefixes now. The rules
+  are disjoint by construction, and the unspecified address and the loopback are
+  decided before the table is read, so `::` and `::1` keep their own answers
+  rather than reading as an embedded `0.0.0.0`. Two tests were missing in the
+  other direction too: nothing asserted that a hat over a *public* address is
+  still public, so a rule that matched a prefix and blocked whatever it held
+  would have passed the suite.
 - **Sanitize, then rewrite, then index.** The base is read before `<base>` is
   stripped, cleaning happens before rewriting so nothing rewrites a URL on an
   element about to be removed, and the id table is built last. Indexing first

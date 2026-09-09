@@ -54,6 +54,36 @@ test('an IPv4 address wearing an IPv6 hat is refused', () => {
   assert.match(blockedAddress('::ffff:10.0.0.1'), /private.*IPv4-mapped/);
 });
 
+test('all four hats, not just the one somebody writes on purpose', () => {
+  // `::ffff:` was the only prefix read, and it is the only one a person types.
+  // The other three arrive from a resolver: a DNS64 answer for a name with no A
+  // record is in `64:ff9b::/96`, and `lookup.js` hands what it resolved to
+  // `blockedAddress`. The allowlist cannot help there, because the name is
+  // allowed and only the address it came back with is not.
+  assert.match(blockedAddress('::ffff:0:169.254.169.254'), /metadata.*IPv4-translated/);
+  assert.match(blockedAddress('64:ff9b::169.254.169.254'), /metadata.*NAT64/);
+  assert.match(blockedAddress('64:ff9b::10.0.0.1'), /private.*NAT64/);
+  assert.match(blockedAddress('::169.254.169.254'), /metadata.*IPv4-compatible/);
+  assert.match(blockedAddress('::127.0.0.1'), /loopback.*IPv4-compatible/);
+});
+
+test('a hat over a public address is still public', () => {
+  // The other direction, which the refusals above cannot see: a rule that
+  // matched the prefix and blocked whatever it held would pass every test up to
+  // here. `::1` and `::` are decided before the prefixes are read, so they keep
+  // their own answers rather than being read as an embedded 0.0.0.1.
+  assert.equal(blockedAddress('::ffff:93.184.216.34'), null);
+  assert.match(blockedAddress('::1'), /loopback/);
+  assert.match(blockedAddress('::'), /unspecified/);
+});
+
+test('the documentation range is refused, written either way', () => {
+  // The full form has no `::` at all, which is its own branch of the parser and
+  // was reached by nothing.
+  assert.match(blockedAddress('2001:db8::1'), /documentation/);
+  assert.match(blockedAddress('2001:0db8:0000:0000:0000:0000:0000:0001'), /documentation/);
+});
+
 test('the other v6 ranges that are not the public internet are refused', () => {
   assert.match(blockedAddress('fc00::1'), /unique local/);
   assert.match(blockedAddress('fd12:3456::1'), /unique local/);

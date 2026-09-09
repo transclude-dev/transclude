@@ -28,6 +28,36 @@ const V4_BLOCKED = [
 ];
 
 /**
+ * Prefixes that carry an IPv4 address in their last 32 bits, as [test, what].
+ *
+ * One IPv4 address has four spellings in IPv6 and only `::ffff:` was read. The
+ * other three matter on the DNS path rather than in a URL. Nobody writes
+ * `64:ff9b::169.254.169.254` on an allowlist, but a DNS64 resolver synthesizes
+ * exactly that for a name with no A record, and `lookup.js` hands whatever it
+ * resolved to this function. A name that is allowed and an address that is not
+ * is the case these close.
+ *
+ * Disjoint by construction: the first needs group 4 to be zero and the second
+ * needs it to be `ffff`, and the last two are pinned to their own prefixes. The
+ * unspecified address and the loopback are decided before this is read, so
+ * neither reaches the fourth rule.
+ *
+ * @type {Array<[(g: number[]) => boolean, string]>}
+ */
+const V6_EMBEDS_V4 = [
+  // ::ffff:0:0/96, RFC 4291. The one form somebody writes on purpose.
+  [(g) => g.slice(0, 5).every((z) => z === 0) && g[5] === 0xffff, 'an IPv4-mapped address'],
+  // ::ffff:0:0:0/96, RFC 2765.
+  [(g) => g.slice(0, 4).every((z) => z === 0) && g[4] === 0xffff && g[5] === 0,
+    'an IPv4-translated address'],
+  // 64:ff9b::/96, RFC 6052. What a DNS64 resolver answers with.
+  [(g) => g[0] === 0x0064 && g[1] === 0xff9b && g.slice(2, 6).every((z) => z === 0),
+    'a NAT64 address'],
+  // ::/96, RFC 4291, deprecated. Deprecated is not the same as unroutable.
+  [(g) => g.slice(0, 6).every((z) => z === 0), 'an IPv4-compatible address'],
+];
+
+/**
  * An IPv4 address as four numbers, or null if the text is not one.
  *
  * @param {string} text
@@ -123,11 +153,13 @@ export function blockedAddress(host) {
   const [a, b] = v6;
   if (v6.every((g) => g === 0)) return 'unspecified';
   if (v6.slice(0, 7).every((g) => g === 0) && v6[7] === 1) return 'loopback';
-  // An IPv4 address wearing an IPv6 hat. `::ffff:10.0.0.1` reaches the same
-  // host `10.0.0.1` does.
-  if (v6.slice(0, 5).every((g) => g === 0) && v6[5] === 0xffff) {
+  // An IPv4 address wearing an IPv6 hat. `::ffff:10.0.0.1` reaches the same host
+  // `10.0.0.1` does, and it has four hats rather than one.
+  for (const [embeds, what] of V6_EMBEDS_V4) {
+    if (!embeds(v6)) continue;
+
     const mapped = [v6[6] >> 8, v6[6] & 255, v6[7] >> 8, v6[7] & 255];
-    for (const [test, why] of V4_BLOCKED) if (test(mapped)) return `${why}, through an IPv4-mapped address`;
+    for (const [test, why] of V4_BLOCKED) if (test(mapped)) return `${why}, through ${what}`;
     return null;
   }
   if ((a & 0xfe00) === 0xfc00) return 'unique local';

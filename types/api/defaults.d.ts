@@ -16,6 +16,9 @@ export type Config = {
         directives?: Record<string, string[]>;
         reportOnly?: boolean;
     };
+    permissionsPolicy?: boolean | {
+        features?: Record<string, string[]>;
+    };
     speculate?: boolean | object;
     canonical?: boolean;
     markdown?: ((source: string, file: string) => string) | null;
@@ -81,6 +84,7 @@ export type Config = {
  *   strict?: boolean,
  *   csrf?: boolean|object,
  *   csp?: boolean|{ directives?: Record<string, string[]>, reportOnly?: boolean },
+ *   permissionsPolicy?: boolean|{ features?: Record<string, string[]> },
  *   speculate?: boolean|object,
  *   canonical?: boolean,
  *   markdown?: ((source: string, file: string) => string)|null,
@@ -117,6 +121,7 @@ export declare const DEFAULTS: {
     strict: boolean;
     csrf: boolean;
     csp: boolean;
+    permissionsPolicy: boolean;
     speculate: boolean;
     canonical: boolean;
     markdown: any;

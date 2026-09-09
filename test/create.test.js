@@ -72,6 +72,33 @@ test('both templates say which color schemes they handle, before the CSS lands',
   }
 });
 
+test('both templates ship the two headers a new project should not have to find', () => {
+  // `csp` and `permissionsPolicy` are off in `DEFAULTS`, because each takes away
+  // something an app may want and that stays the author's call. A generated
+  // project is where the call can be made for them and still be read: the key is
+  // in the file they own, with the sentence saying what to do when a page wants
+  // a camera.
+  for (const template of ['blank', 'minimal']) {
+    make(['--template', template], (dir) => {
+      const config = read(dir, 'transclude.config.js');
+
+      assert.match(config, /^\s*csp: true,/m, `${template} starts with no policy`);
+      assert.match(config, /^\s*permissionsPolicy: true,/m, `${template} refuses nothing`);
+    });
+  }
+});
+
+test('both templates say what language they are written in', () => {
+  // `lang` defaults to 'en' for every app in the world, which is a guess the
+  // framework makes quietly. Writing it into the generated config is how the
+  // guess becomes a line the author can see and change.
+  for (const template of ['blank', 'minimal']) {
+    make(['--template', template], (dir) => {
+      assert.match(read(dir, 'transclude.config.js'), /^\s*lang: 'en',/m, template);
+    });
+  }
+});
+
 test('the minimal layout opens with a skip link, and something to skip to', () => {
   // First in the DOM so a keyboard reaches it before the nav, offscreen until
   // focused, and pointing at an id that exists. `position: absolute` rather than

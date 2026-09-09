@@ -57,6 +57,7 @@
  *   strict?: boolean,
  *   csrf?: boolean|object,
  *   csp?: boolean|{ directives?: Record<string, string[]>, reportOnly?: boolean },
+ *   permissionsPolicy?: boolean|{ features?: Record<string, string[]> },
  *   speculate?: boolean|object,
  *   canonical?: boolean,
  *   markdown?: ((source: string, file: string) => string)|null,
@@ -94,6 +95,10 @@ export const DEFAULTS = {
   strict: false,
   csrf: true,
   csp: false,
+  // The powerful features a page refuses. Off here for the reason `server.js`
+  // gives for `X-Frame-Options`: it takes away something an app may want, so
+  // it stays the author's to set. A generated project turns it on.
+  permissionsPolicy: false,
   speculate: false,
   // `<link rel="canonical">` on every page, pointing at the page's own URL. Off
   // by default because a page mounted at a second URL on purpose would get a

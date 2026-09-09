@@ -23,6 +23,7 @@
   metadataBase: 'https://acme.com',
   onError: null,
   outDir: 'dist',
+  permissionsPolicy: false,
   port: 1960,
   precache: false,
   proxy: false,
@@ -223,6 +224,14 @@
           <td><code>outDir</code></td>
           <td><code>'dist'</code></td>
           <td>Where the build writes.</td>
+        </tr>
+        <tr>
+          <td><code>permissionsPolicy</code></td>
+          <td><code>false</code></td>
+          <td>
+            A <code>Permissions-Policy</code> header naming the features this app
+            refuses. <code>true</code>, or an object with <code>features</code>.
+          </td>
         </tr>
         <tr>
           <td><code>port</code></td>

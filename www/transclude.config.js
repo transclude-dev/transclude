@@ -30,6 +30,11 @@ export default {
   // no server.
   csp: true,
 
+  // A documentation site asks for no camera, no location and no sensor. Saying so
+  // is a header, and `/docs/principles` claims this framework does it, so the site
+  // that makes the claim sets it.
+  permissionsPolicy: true,
+
   // Every page here is a file, so the browser may run one early rather than
   // only fetch it. The block is inline script, and `csp: true` hashes it with
   // everything else the page inlines.

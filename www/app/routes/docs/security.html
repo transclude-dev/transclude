@@ -13,10 +13,20 @@ export default (app) => {
   app.use('*', async (c, next) => {
     await next();
     c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    c.header('Permissions-Policy', 'camera=(), geolocation=(), microphone=()');
     c.header('Referrer-Policy', 'no-referrer');
   });
 };`, 'js'],
+      permissions: [`// transclude.config.js
+export default {
+  permissionsPolicy: true,
+};`, 'js'],
+      features: [`permissionsPolicy: {
+  features: {
+    camera: ['self'],
+    geolocation: [],
+    microphone: [],
+  },
+},`, 'js'],
       custom: [`csp: {
   directives: {
     'default-src': ["'self'"],
@@ -223,21 +233,54 @@ export default (app) => {
 
   ${html(s.report)}
 
+  <h2>The features a page refuses</h2>
+
+  <p>
+    <code>permissionsPolicy</code> sends a <code>Permissions-Policy</code> header
+    naming what this app never asks for.
+  </p>
+
+  ${html(s.permissions)}
+
+  <p>
+    <code>true</code> turns off eleven: cameras, microphones, location, the motion
+    sensors, screen capture, MIDI, USB, payment and topic inference. Each is a
+    device or an inference a document does not reach for by rendering.
+  </p>
+
+  <p>
+    A page that wants one says so, and <code>features</code> replaces the list
+    rather than adding to it.
+  </p>
+
+  ${html(s.features)}
+
+  <p>
+    An empty array is nobody, including this page. <code>['self']</code> is this
+    page and no frame it holds.
+  </p>
+
+  <doc-note label="Off unless you ask, and on in a new project">
+    Refusing a camera takes something away from an app that may want one, which
+    is why the default is <code>false</code>. A generated project sets it to
+    <code>true</code>, where the key sits in the config you own and can read.
+  </doc-note>
+
   <h2>The headers left to you</h2>
 
   <p>
-    The framework sets what it can judge for every app: the policy above, and
-    <code>X-Content-Type-Options: nosniff</code> on every response. Three more
-    are worth having and refuse something an app may want, so they are yours to
-    set in <a href="/docs/middleware">app/server.js</a>.
+    The framework sets what it can judge for every app: the policy above,
+    the features above, and <code>X-Content-Type-Options: nosniff</code> on every
+    response. Two more refuse something an app may want and cannot be read from
+    the config, so they are yours to set in
+    <a href="/docs/middleware">app/server.js</a>.
   </p>
 
   ${html(s.headers)}
 
   <p>
     <code>Strict-Transport-Security</code> commits every visitor to HTTPS for a
-    year. <code>Permissions-Policy</code> turns platform features off, so name
-    only the ones your app never uses. <code>Referrer-Policy</code> tightens a
-    browser default that already strips the path cross-origin.
+    year. <code>Referrer-Policy</code> tightens a browser default that already
+    strips the path cross-origin.
   </p>
 </doc-page>

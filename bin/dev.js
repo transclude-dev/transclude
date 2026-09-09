@@ -350,6 +350,7 @@ async function buildApp() {
   });
   const app = baseApp({
     csrf: config.csrf,
+    permissionsPolicy: config.permissionsPolicy,
     trailingSlash: config.trailingSlash,
     publicFiles,
     middleware: await loadMiddleware(),

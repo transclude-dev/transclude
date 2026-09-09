@@ -8,6 +8,7 @@
 import { Hono } from 'hono';
 import { csrf } from 'hono/csrf';
 import { headerPolicy } from './csp.js';
+import { permissionsHeader } from './permissions.js';
 import { trimTrailingSlash } from 'hono/trailing-slash';
 
 /**
@@ -23,10 +24,18 @@ import { trimTrailingSlash } from 'hono/trailing-slash';
  * `middleware` is the app's own `server.js`, and it runs after, so it can add
  * anything and cannot register itself ahead of the guard by mistake.
  */
-const OPTIONS = new Set(['csrf', 'csp', 'trailingSlash', 'publicFiles', 'middleware']);
+const OPTIONS = new Set([
+  'csrf',
+  'csp',
+  'permissionsPolicy',
+  'trailingSlash',
+  'publicFiles',
+  'middleware',
+]);
 
 /**
- * @param {{ csrf?: object|boolean, csp?: object|boolean, trailingSlash?: string,
+ * @param {{ csrf?: object|boolean, csp?: object|boolean,
+ *   permissionsPolicy?: object|boolean, trailingSlash?: string,
  *   publicFiles?: import('hono').MiddlewareHandler|null,
  *   middleware?: ((app: import('hono').Hono) => void)|null }} [options]
  *   `middleware` is the app's own `server.js`, which is handed the Hono app
@@ -38,6 +47,7 @@ export function baseApp(options = {}) {
   const {
     csrf: csrfOption = true,
     csp: cspOption = false,
+    permissionsPolicy: permissionsOption = false,
     trailingSlash = 'never',
     publicFiles = null,
     middleware = null,
@@ -111,6 +121,16 @@ export function baseApp(options = {}) {
     app.use('*', async (c, next) => {
       await next();
       c.header(header.name, header.value);
+    });
+  }
+
+  // The features this app says nobody may reach. A header only: no `<meta>`
+  // carries it, and it names no hash, so a prerendered page pays nothing for it.
+  const permissions = permissionsHeader(permissionsOption);
+  if (permissions) {
+    app.use('*', async (c, next) => {
+      await next();
+      c.header(permissions.name, permissions.value);
     });
   }
   if (typeof middleware === 'function') middleware(app);

@@ -423,6 +423,14 @@
     <code>if="query"</code> reads the field called <code>query</code>.
   </p>
 
+  <p>
+    An expression reads data and calls functions. There is no assignment, no
+    arrow function, no object literal and no <code>await</code>. Work like that
+    goes in <code>&lt;script server&gt;</code>, which passes its result in. The
+    same grammar is what <code>${empty}</code> takes, and
+    <a href="/docs/decisions">decisions and limits</a> says why it is small.
+  </p>
+
   <h3>if, else-if, else</h3>
 
   <p>The first one whose expression is true renders. The others are left out.</p>

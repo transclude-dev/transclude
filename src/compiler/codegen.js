@@ -42,6 +42,33 @@ export class CompileError extends Error {
 }
 
 /**
+ * Why an expression did not compile, and what one may contain.
+ *
+ * The parser underneath is jsep, and its message describes jsep's grammar
+ * rather than this one. `${items.map((i) => i.name)}` came back as "Expected
+ * comma at character 12", which sends a reader looking for a missing comma
+ * instead of telling them arrow functions are not in the language here. The
+ * three that read worst are the ones somebody reaches for first: an arrow
+ * function, an `await`, and a backtick.
+ *
+ * So the parser's sentence stays, because it carries the position, and the rule
+ * follows it. The rule itself is on `/docs/decisions`, which is where the reason
+ * for it lives.
+ *
+ * @param {string} source what sat between the braces
+ * @param {{ message?: string }} err what the parser or the emitter threw
+ * @returns {string} the sentence a reader gets
+ */
+function badExpression(source, err) {
+  return (
+    `bad expression ${JSON.stringify(String(source).trim())}: ${err.message}. ` +
+    `A template expression reads data and calls functions. ` +
+    `There is no assignment, no arrow function, no object literal and no \`await\`. ` +
+    `Work like that belongs in \`<script server>\`, which passes its result in`
+  );
+}
+
+/**
  * The source around a refusal, with a caret under it.
  *
  * A line number tells a reader where to look. A frame shows them, which is the
@@ -307,7 +334,7 @@ class Codegen {
     try {
       return emit(ast, scope);
     } catch (err) {
-      throw new CompileError(`bad expression ${JSON.stringify(String(source).trim())}: ${err.message}`, node);
+      throw new CompileError(badExpression(source, err), node);
     }
   }
 
@@ -315,7 +342,7 @@ class Codegen {
     try {
       return parseExpr(source);
     } catch (err) {
-      throw new CompileError(`bad expression ${JSON.stringify(String(source).trim())}: ${err.message}`, node);
+      throw new CompileError(badExpression(source, err), node);
     }
   }
 
@@ -627,7 +654,10 @@ class Codegen {
       );
     }
     if (this.regions.has(id)) {
-      throw new CompileError(`two regions are both named "${id}"`, node);
+      throw new CompileError(
+        `two regions are both named "${id}". A region is addressed by its id, so one of the two would never be reachable. Rename one`,
+        node,
+      );
     }
     return id;
   }

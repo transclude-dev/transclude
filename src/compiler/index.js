@@ -214,6 +214,39 @@ export function splitBlocks(source) {
 }
 
 /**
+ * The warning for a `<script server>` that exports nothing, or null.
+ *
+ * Nothing can read such a block. The loader is the default export and a handler
+ * is a named one, so a block with neither runs its top level once and then has
+ * no way to reach the page.
+ *
+ * What a beginner writes there is `const notes = [...]`, expecting the markup to
+ * see the name. That is how Svelte works and it is not how this works. Nothing
+ * said so: the page compiled, the interpolation read undefined, and the only
+ * clue was a blank spot where a value should be.
+ *
+ * A warning and not a refusal. Top-level code with a side effect and nothing to
+ * export is rare, and it is real, and a refusal would leave it nowhere to go.
+ *
+ * @param {object|null} block the `<script server>` block, or null for no block
+ * @param {{ exports: string[], defaultNode: object|null }} server what
+ *   `bindDefaultExport` made of it
+ * @param {string} where the block, named the way an error names it
+ * @returns {string|null} the sentence, or null when the block exports something
+ */
+function exportsNothing(block, server, where) {
+  if (!block) return null;
+  if (server.defaultNode) return null;
+  if (server.exports.length) return null;
+
+  return (
+    `${where} exports nothing, so nothing reads it. ` +
+    `The loader is \`export default\`, and a handler is \`export const POST\`. ` +
+    `A name declared here and not exported is not in scope for the markup`
+  );
+}
+
+/**
  * Compiles one element. `export const shadow = true` in the file decides which
  * kind it is, so the file answers for itself.
  *
@@ -521,10 +554,14 @@ ${slotBodies(template)}
     { marker: MARK.server, at: serverAt },
   ]);
 
+  const warnings = [...template.warnings];
+  const deadBlock = exportsNothing(blocks.server, server, where);
+  if (deadBlock) warnings.push(deadBlock);
+
   return {
     code: mapped.code,
     map: mapped.map,
-    warnings: template.warnings,
+    warnings,
     components: template.components.map((c) => c.tag),
   };
 }
@@ -618,6 +655,8 @@ export function compileLayout(
   });
 
   const warnings = [...template.warnings];
+  const deadBlock = exportsNothing(blocks.server, server, where);
+  if (deadBlock) warnings.push(deadBlock);
   if (!/__slots\[/.test(template.body)) {
     warnings.push('no <slot>, so nothing rendered inside this layout would appear');
   }

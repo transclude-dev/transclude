@@ -74,6 +74,38 @@ test('each over a missing list renders nothing', () => {
   assert.equal(render('<li each="x of nope">${x}</li>'), '');
 });
 
+test('a <script server> that exports nothing says so', () => {
+  // What somebody writes on their first day, expecting the markup to see the
+  // name: that is Svelte's rule, not this one. It compiled, the interpolation
+  // read undefined, and a blank spot on the page was the only clue.
+  const page = compilePage('<script server>\nconst notes = [1, 2];\n</script>\n<p>${notes.length}</p>', {
+    runtime: 'x',
+    filename: 'notes',
+  });
+  assert.equal(page.warnings.length, 1);
+  assert.match(page.warnings[0], /notes\.html <script server> exports nothing/);
+  assert.match(page.warnings[0], /export default/);
+
+  const layout = compileLayout('<script server>\nconst x = 1;\n</script>\n<slot></slot>', {
+    runtime: 'x',
+    id: 'root',
+  });
+  assert.match(layout.warnings[0], /exports nothing/);
+});
+
+test('a block that exports something is not warned about', () => {
+  // A handler and no loader is a page that takes a form and reads no data. It
+  // was the case a refusal here would have broken, which is why this is a
+  // warning and why the check reads the exports rather than the default alone.
+  const only = (block) =>
+    compilePage(`<script server>\n${block}\n</script>\n<p>hi</p>`, { runtime: 'x', filename: 'n' })
+      .warnings;
+
+  assert.deepEqual(only('export const POST = () => new Response("");'), []);
+  assert.deepEqual(only('export default () => ({});'), []);
+  assert.deepEqual(compilePage('<p>hi</p>', { runtime: 'x', filename: 'n' }).warnings, []);
+});
+
 test('nested each shadowing warns but inner wins', () => {
   const source = '<div each="row of rows"><span each="row of row">${row}</span></div>';
   const { warnings } = compile(source);

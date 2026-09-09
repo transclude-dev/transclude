@@ -846,6 +846,27 @@ against.
   places gets made twice and differently. A test checks that the tests it names
   still exist, since a policy naming a guarantee nothing keeps is worse than one
   that claims nothing.
+- **Five of the seven mistakes a beginner makes compiled silently.** Run them
+  through and only two were caught: `each="note in notes"` and a `fragment` with
+  no id. The other five said nothing, and the worst was a `<script server>` that
+  exports nothing. Somebody writes `const notes = [...]` there and expects the
+  markup to see the name, because that is Svelte's rule; here the page compiles,
+  the interpolation reads undefined, and a blank spot is the only clue.
+  `exportsNothing` warns on it now, for pages and for layouts. A warning and not
+  a refusal: a block exporting only `POST` is a page that takes a form and reads
+  no data, which is why the check reads `exports` and not the default alone, and
+  top-level code with a side effect and nothing to export is rare but real.
+  `{{ name }}` and `v-if` still compile silently and should: the first is
+  legitimate text, and this site's own pages write it.
+- **The expression error described jsep's grammar, not this one.**
+  `${items.map((i) => i.name)}` came back "Expected comma at character 12", which
+  sends a reader hunting a comma instead of telling them arrow functions are not
+  in the language. `await` and a backtick read just as badly, and those three are
+  what somebody reaches for first. `badExpression` keeps the parser's sentence,
+  because it carries the position, and names the rule after it. The rule was
+  already written down on `/docs/decisions`, which is the page explaining why it
+  is small, and nowhere near where `${}` is taught. `/docs/routing` states it now
+  and links there for the reason.
 - **The config table was pinned by its defaults and not by its types.** Two
   tests read `DEFAULTS`: one asserts an empty config derives it, and the site's
   own compares it against the documented table. Neither read the `Config`

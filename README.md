@@ -51,7 +51,7 @@ npm run dev
   export const POST = async ({ request, url }) => {
     notes.add((await request.formData()).get('text'));
     // 303, so a reload is a GET and does not submit again.
-    return Response.redirect(new URL(url).origin + '/notes', 303);
+    return Response.redirect(new URL('/notes', url), 303);
   };
 </script>
 

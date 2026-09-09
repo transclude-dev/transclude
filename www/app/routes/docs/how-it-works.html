@@ -13,7 +13,7 @@
 
   export const POST = async ({ request, url }) => {
     notes.add((await request.formData()).get('text'));
-    return Response.redirect(new URL(url).origin + '/notes', 303);
+    return Response.redirect(new URL('/notes', url), 303);
   };
 <\/script>
 

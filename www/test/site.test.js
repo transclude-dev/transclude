@@ -551,3 +551,74 @@ test('the card image and the stylesheet agree about the colors', () => {
     assert.ok(css.includes(color), `the stylesheet no longer uses ${color}`);
   }
 });
+
+// ---- the samples a reader copies ------------------------------------------
+
+// Every markup sample on the site, put through the compiler it is a sample for.
+//
+// One was wrong for as long as it had existed. `/docs/includes` showed three
+// refusals in one block, and two of the three were written `<transclude src="…">`
+// with no closing tag. That is refused on its own, and earlier: the reader got
+// "`<transclude>` is never closed" instead of the sentence the comment beside it
+// promised, and the block quietly taught a spelling the compiler rejects.
+//
+// Read out of the built pages rather than the sources, because a sample is a
+// template literal inside a loader and the built page is where it is finished
+// text. That means the highlighter's markup has to come off first.
+const SHOWS_A_REFUSAL = [
+  // Each of these teaches a rule by breaking it. The match is on the sample, so
+  // a page that starts failing for some other reason is still a failure.
+  ['/docs/decisions', 'if="ready" each="row of rows"'],
+  ['/docs/routing', 'if="note.done" each="note of notes"'],
+  ['/docs/includes', 'src="#nope"'],
+];
+
+const NAMED = { lt: '<', gt: '>', quot: '"', apos: "'", amp: '&', nbsp: ' ' };
+const NAMED_OR_NUMERIC = /&(?:([a-z]+)|#x([0-9a-f]+)|#(\d+));/gi;
+
+/** The text of every highlighted sample on a built page. */
+function samplesOn(html) {
+  const out = [];
+  for (const block of html.matchAll(/<pre class="shiki[^"]*"[^>]*>(.*?)<\/pre>/gs)) {
+    // One pass over every reference, because a list of the six that came to mind
+    // missed `&#x26;`, and `&&` read back as `&#x26;&#x26;` and would not parse.
+    // A single pass also avoids decoding `&amp;lt;` twice.
+    const text = block[1].replace(/<[^>]+>/g, '').replace(NAMED_OR_NUMERIC, (ref, name, hex, dec) => {
+      if (hex) return String.fromCodePoint(parseInt(hex, 16));
+      if (dec) return String.fromCodePoint(Number(dec));
+      return NAMED[name] ?? ref;
+    });
+    out.push(text);
+  }
+  return out;
+}
+
+const MARKUP = /<script server>|<script element>|\seach=|\sif=|<slot|<transclude|\sfragment[\s>]/;
+
+describe('every markup sample on the site compiles', async () => {
+  const { compileComponent, compilePage } = await import('@transclude/core/compiler');
+
+  const routes = ['/', ...navLinks(), ...listedPosts().map((slug) => `/blog/${slug}`)];
+  const checked = [];
+  const broken = [];
+
+  for (const route of [...new Set(routes)]) {
+    for (const code of samplesOn(built(route))) {
+      if (!MARKUP.test(code)) continue;
+      checked.push(code);
+
+      const teaches = SHOWS_A_REFUSAL.some(([at, needle]) => at === route && code.includes(needle));
+      try {
+        if (/<script element>/.test(code)) compileComponent(code, { tag: 'x-sample', runtime: 'r' });
+        else compilePage(code, { runtime: 'r', filename: 'sample' });
+        if (teaches) broken.push(`${route}: a sample listed as a refusal compiles now`);
+      } catch (error) {
+        if (!teaches) broken.push(`${route}: ${error.message.replace(/\s+/g, ' ').slice(0, 100)}`);
+      }
+    }
+  }
+
+  // A run that found no samples would pass every line above.
+  assert.ok(checked.length > 40, `only ${checked.length} markup samples found`);
+  assert.deepEqual(broken, [], `samples a reader would copy and could not compile:\n${broken.join('\n')}`);
+});

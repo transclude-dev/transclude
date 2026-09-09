@@ -609,7 +609,7 @@ class Codegen {
 
     if (!this.page || this.layout) {
       throw new CompileError(
-        `<${node.tagName}> carries "fragment", which addresses a region of a page over ` +
+        `<${node.tagName}> carries "fragment", which addresses a fragment of a page over ` +
           `HTTP. A component re-renders itself and has no URL to be asked for.`,
         node,
       );
@@ -617,7 +617,7 @@ class Codegen {
     const clash = ['if', 'else-if', 'else', 'each'].find((name) => dirs.has(name));
     if (clash) {
       throw new CompileError(
-        `<${node.tagName}> carries both "fragment" and "${clash}". A region is one ` +
+        `<${node.tagName}> carries both "fragment" and "${clash}". A fragment is one ` +
           `element with one id, so it cannot be conditional or repeated. Put the ` +
           `"${clash}" on something inside it.`,
         node,
@@ -626,7 +626,7 @@ class Codegen {
     if (this.loops.length || this.inBlock) {
       throw new CompileError(
         `<${node.tagName}> carries "fragment" inside a loop, so it has no id of its own ` +
-          `and its markup depends on a loop variable the region could not be given.`,
+          `and its markup depends on a loop variable the fragment could not be given.`,
         node,
       );
     }
@@ -634,7 +634,7 @@ class Codegen {
     const id = node.attrs.find((a) => a.name === 'id')?.value;
     if (!id) {
       throw new CompileError(
-        `<${node.tagName}> carries "fragment" but has no id. The id is the region's ` +
+        `<${node.tagName}> carries "fragment" but has no id. The id is the fragment's ` +
           `name. It is what the URL asks for and what a swap targets.`,
         node,
       );
@@ -648,14 +648,14 @@ class Codegen {
     }
     if (attr.value !== '') {
       throw new CompileError(
-        `"fragment" takes no value. The region is named by its id, which is ` +
+        `"fragment" takes no value. The fragment is named by its id, which is ` +
           `"${id}" here.`,
         node,
       );
     }
     if (this.regions.has(id)) {
       throw new CompileError(
-        `two regions are both named "${id}". A region is addressed by its id, so one of the two would never be reachable. Rename one`,
+        `two fragments are both named "${id}". A fragment is addressed by its id, so one of the two would never be reachable. Rename one`,
         node,
       );
     }
@@ -918,7 +918,7 @@ class Codegen {
     }
     if (!this.page || this.layout) {
       throw new CompileError(
-        `<${INCLUDE_TAG}> includes a region of a page, and only a page has regions. ` +
+        `<${INCLUDE_TAG}> includes a fragment of a page, and only a page has them. ` +
           `Put it in a route rather than in an element or a layout.`,
         el,
       );
@@ -981,7 +981,7 @@ class Codegen {
         url = new URL(where);
       } catch {
         throw new CompileError(
-          `<${INCLUDE_TAG} src="${src}"> is none of "#id" for a region of this page, ` +
+          `<${INCLUDE_TAG} src="${src}"> is none of "#id" for a fragment of this page, ` +
             `"/path#id" for another route, or an absolute URL for a document elsewhere.`,
           el,
         );

@@ -1080,8 +1080,8 @@ function assertIncludesResolve(includes, regions) {
   for (const { id, node } of includes ?? []) {
     if (names.has(id)) continue;
     throw new CompileError(
-      `<transclude src="#${id}"> names no region of this page. ` +
-        `A region is an element with an id and a "fragment" attribute.`,
+      `<transclude src="#${id}"> names no fragment of this page. ` +
+        `A fragment is an element with an id and a "fragment" attribute.`,
       node,
     );
   }

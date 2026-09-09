@@ -846,6 +846,31 @@ against.
   places gets made twice and differently. A test checks that the tests it names
   still exist, since a policy naming a guarantee nothing keeps is worse than one
   that claims nothing.
+- **Nine refusals said `region`, a word no page of the documentation
+  contains.** `design/voice.md` spends its jargon on three words and `fragment`
+  is one; `region` is what the compiler calls the same thing inside itself. The
+  site has checked its own prose for the word since the day it leaked in there,
+  and that check says "only what a reader sees is checked" and then reads prose
+  alone. A refusal is read too. So a reader learned `fragment` from every page,
+  wrote a bad one, and was told about regions. One of the nine was written while
+  improving that same message two passes earlier, which is how quietly it
+  spreads. `test/spelling.test.js` holds the rule now, for the compiler and for
+  `src/`, and it parses rather than greps: `export const regions` is generated
+  code inside a template literal and `this.regions` is a field, so reading only
+  what is handed to an `Error` says exactly the rule. Identifiers keep their own
+  names, which is what the site's check already allowed.
+- **A docs sample was wrong for as long as it had existed, and nothing read
+  it.** `/docs/includes` showed three refusals in one block, and two of the
+  three were written `<transclude src="…">` with no closing tag. That is refused
+  on its own and earlier, so the reader got "`<transclude>` is never closed"
+  rather than the sentence in the comment beside it, and the block taught a
+  spelling the compiler rejects. `site.test.js` puts every markup sample on the
+  site through the compiler now, with the three that teach a rule by breaking it
+  named. Two things it needed on the way: samples are read out of the built
+  pages, because in the source they are template literals inside a loader; and
+  the highlighter's entities have to be decoded in one pass over every
+  reference, since a list of the six that came to mind missed `&#x26;` and `&&`
+  read back as `&#x26;&#x26;` and would not parse.
 - **Five of the seven mistakes a beginner makes compiled silently.** Run them
   through and only two were caught: `each="note in notes"` and a `fragment` with
   no id. The other five said nothing, and the worst was a `<script server>` that

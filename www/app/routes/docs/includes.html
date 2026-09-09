@@ -38,7 +38,7 @@
         'html',
       ],
       refused: [
-        `<transclude src="#nope">
+        `<transclude src="#nope"></transclude>
 <!-- names no fragment of this page -->
 
 <div id="a" fragment>
@@ -46,7 +46,7 @@
 </div>
 <!-- #a includes #a, which would not finish -->
 
-<transclude src="/docs/\${slug}#intro">
+<transclude src="/docs/\${slug}#intro"></transclude>
 <!-- the set has to be known before the render that would produce it -->`,
         'html',
       ],

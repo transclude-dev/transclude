@@ -126,19 +126,24 @@ test('a region may include another one', async () => {
 
 // ---- what it refuses -------------------------------------------------------
 
-test('a src naming no region of this page is a compile error', () => {
+test('a src naming no fragment of this page is a compile error', () => {
   const message = fails('<p id="a" fragment>x</p><transclude src="#nope"></transclude>');
 
-  assert.match(message, /names no region of this page/);
+  // `fragment`, not `region`. The docs spend the word `fragment` on this and a
+  // reader who meets `region` for the first time in an error is being told about
+  // something no page of the documentation mentions. `test/spelling.test.js`
+  // holds the rule for every refusal.
+  assert.match(message, /names no fragment of this page/);
+  assert.doesNotMatch(message, /\bregion/i);
   assert.match(message, /"fragment" attribute/, 'the message does not say how to make one');
 });
 
-test('an element with an id but no fragment attribute is not a region', () => {
-  // The distinction the whole model rests on: an id is a handle, and a region is
-  // something the author published.
+test('an element with an id but no fragment attribute is not a fragment', () => {
+  // The distinction the whole model rests on: an id is a handle, and a fragment
+  // is something the author published.
   assert.match(
     fails('<p id="a">x</p><transclude src="#a"></transclude>'),
-    /names no region/,
+    /names no fragment/,
   );
 });
 

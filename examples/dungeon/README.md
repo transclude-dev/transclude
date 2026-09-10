@@ -68,7 +68,7 @@ fine.
 
 ## What the framework does here
 
-**`export const prerender = false` on `dungeon/[room].html` is load-bearing.**
+**`export const prerender = false` on `dungeon/[room].html` is what keeps a room live.**
 The static handler keys on the path alone, so a file written at build time would
 answer every run with whatever state the build had, which is none.
 

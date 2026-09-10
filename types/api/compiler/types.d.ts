@@ -48,9 +48,9 @@ export type RouteTypes = {
  * @param {{ components?: ElementTypes[], partials?: ElementTypes[],
  *   layouts?: RouteTypes[], pages?: RouteTypes[],
  *   types?: { name: string, type: string }[] }} [what] `partials` is the light
- *   elements: the key is the old name and is load-bearing until the callers
- *   change with it. `types` are the names the app declared that the strings
- *   below use.
+ *   elements: the key is the old name, and renaming it here breaks every caller
+ *   until they change with it. `types` are the names the app declared that the
+ *   strings below use.
  * @returns {string} the contents of transclude-env.d.ts
  */
 export declare function emitTypes({ components, partials, layouts, pages, types, }?: {

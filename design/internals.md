@@ -338,7 +338,7 @@ against.
   the attribute holds, which is a string. `assertNoHookShadow` refuses the name
   where it is declared. `RESERVED_LIFECYCLE` is the other half of this and covers
   the `*Callback` spellings on the prototype itself.
-- **A synchronous cleanup runs synchronously, and that is load-bearing.**
+- **A synchronous cleanup runs synchronously, and the order depends on it.**
   `release` handed every cleanup to `Promise.resolve().then()`, so it was
   deferred by a microtask even when it was already a function. Moving an element
   is a disconnect and a connect in one task, so the first connection's cleanup
@@ -687,9 +687,8 @@ against.
 - **The `release` job's checkout is not shallow.** `%(contents)` reads the tag
   object, and a shallow checkout of a tag gives the commit without it. The notes
   come back empty and the release page is blank, which looks like the notes were
-  never written. `fetch-depth: 0` and `fetch-tags` in `publish.yml` are
-  load-bearing, in that job. The other two jobs read files rather than tag
-  objects and stay shallow.
+  never written. `fetch-depth: 0` and `fetch-tags` are set on that job and no
+  other. The other two read files rather than tag objects and stay shallow.
 - **One job in `publish.yml` holds `id-token: write`, and it installs nothing.**
   That permission mints the identity npm accepts in place of a token, so
   everything running beside it can publish. The tests install the framework, the
@@ -1272,7 +1271,7 @@ against.
   `dist/server/entry.js.map` listed no `.html` at all while the `load` hook
   returned a valid map for every page. The ids now carry no prefix,
   `sourcemap: true` is on for the SSR build, and every page and layout is a
-  source, loader lines included. Three traps around it are load-bearing. The
+  source, loader lines included. Three things around it have to stay right. The
   `// @ts-nocheck` banner is prepended after the bundle is written, so the
   build shifts the map one line to match, or every position is off by one. A
   failure's stack is resolved by `src/stack.js`, exactly, not by Node: Node's
@@ -1733,8 +1732,9 @@ against.
   also brings no peer at all for `file:..`, which is how the apps here depend on
   the package. So every app in this repository lists Vite and TypeScript in its
   own `devDependencies`, and so does what `create/templates/*` scaffolds. Those
-  entries look redundant and are load-bearing. Measured both ways when Vite was
-  still required: from a tarball it landed, from a path it did not.
+  entries look redundant and are the only thing that installs either one.
+  Measured both ways when Vite was still required: from a tarball it landed, from
+  a path it did not.
 - **Only `src/vite.js` may import `vite`.** It is an optional peer because
   `bin/build.js` and `bin/dev.js` are the only two things that load it and
   nothing on the serve path does, so a container running a built app should not

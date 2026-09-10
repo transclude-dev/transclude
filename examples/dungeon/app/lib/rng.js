@@ -25,9 +25,9 @@ export function mint() {
 /**
  * FNV-1a, and then a mix.
  *
- * The mix is the load-bearing half. Without it two strings differing in their
- * last character land next to each other, and `% 3` reads both as the same roll,
- * which is exactly what `${seed}:${room}:${key}` produces.
+ * Without the mix, two strings differing in their last character land next to
+ * each other, and `% 3` reads both as the same roll. That is exactly what
+ * `${seed}:${room}:${key}` produces.
  */
 function hash(text) {
   let h = 2166136261;

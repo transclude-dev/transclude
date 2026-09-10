@@ -304,6 +304,35 @@ test('rewriting an entry moves it back, so a busy page is not evicted', async ()
   assert.equal(store.get('b'), undefined);
 });
 
+test('reading an entry keeps it, so a scan of unique keys cannot evict the hot page', async () => {
+  // Eviction used to follow write order alone. A page read constantly inside
+  // its window is never rewritten, so a crawl of `?q=` keys walked the one
+  // entry doing any work to the front and out.
+  const store = memoryStore({ max: 2 });
+  store.set('hot', { html: 'hot', tags: [] });
+  store.set('a', { html: 'a', tags: [] });
+
+  store.get('hot');
+  store.set('b', { html: 'b', tags: [] });
+
+  assert.ok(store.get('hot'), 'the entry just read was evicted');
+  assert.equal(store.get('a'), undefined, 'the unread entry should have gone');
+});
+
+test('a miss changes no order', async () => {
+  // `get` re-inserts on a hit, and a miss must not touch the map: asking for a
+  // key that is not there is most requests on a cold store.
+  const store = memoryStore({ max: 2 });
+  store.set('a', { html: 'a', tags: [] });
+  store.set('b', { html: 'b', tags: [] });
+
+  store.get('nothing');
+  store.set('c', { html: 'c', tags: [] });
+
+  assert.equal(store.get('a'), undefined, 'the oldest should still be the one to go');
+  assert.ok(store.get('b'));
+});
+
 test('a store can be swapped for one that is shared', async () => {
   // The seam that makes this work on more than one instance.
   const calls = [];

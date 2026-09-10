@@ -143,3 +143,56 @@ test('a build answers for nothing, so rolldown does not bundle a public file', a
   // module as well, and it would ship twice.
   assert.equal(plugin.resolveId('/theme.js'), null);
 });
+
+// ---- the virtual modules a page depends on ----------------------------------
+//
+// `load` is where an element and a layout become modules, and nothing exercised
+// either branch: the tests resolved ids and stopped, so a compile error in the
+// wiring — the wrong `nested` list, a missing `origin` entry — would have shipped
+// with every resolveId test green.
+
+/** An app with an element and a layout, resolved so `scan()` has run. */
+async function appWith() {
+  const root = project();
+  fs.mkdirSync(path.join(root, 'app', 'elements'), { recursive: true });
+  fs.writeFileSync(
+    path.join(root, 'app', 'elements', 'site-note.html'),
+    '<style>:scope { display: block }</style>\n<p><slot></slot></p>\n',
+  );
+  fs.writeFileSync(path.join(root, 'app', 'routes', '_layout.html'), '<main><slot></slot></main>\n');
+
+  const plugin = transclude({ appDir: 'app' });
+  await resolve(root, [plugin]);
+  return plugin;
+}
+
+test('an element loads as a compiled module', async () => {
+  const plugin = await appWith();
+
+  const code = plugin.load('virtual:transclude-component/site-note');
+  assert.match(code, /export/, 'nothing compiled');
+  assert.match(code, /@scope \(site-note\)/, 'the styles lost their scope');
+});
+
+test('a layout loads as a compiled module', async () => {
+  const plugin = await appWith();
+
+  const out = plugin.load('virtual:transclude-layout/root');
+  const code = typeof out === 'string' ? out : out.code;
+  assert.match(code, /export/, 'nothing compiled');
+});
+
+test('an element nobody has is an error naming the directory', async () => {
+  const plugin = await appWith();
+
+  assert.throws(
+    () => plugin.load('virtual:transclude-component/x-missing'),
+    /no element <x-missing> in elements/,
+  );
+});
+
+test('a layout nobody has is an error naming it', async () => {
+  const plugin = await appWith();
+
+  assert.throws(() => plugin.load('virtual:transclude-layout/nope'), /no layout "nope"/);
+});

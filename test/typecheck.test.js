@@ -21,6 +21,18 @@ test('a shim is a module, so its types cannot leak into another file', () => {
   assert.match(shim('<p>x</p>').code, /^export \{\};/m);
 });
 
+test('a branch, a negation and an array all reach their data', () => {
+  // `collectRoots` walks identifiers, members and calls on named cases and
+  // everything else through a default. Nothing exercised the default, so a
+  // ternary in a template — the generated layout writes one — could have lost
+  // its `__d.` prefixes and every name in it would have checked as a global.
+  const { code } = shim('<p>${active ? yes : no} ${!hidden} ${[first, second]}</p>');
+
+  assert.match(code, /__d\.active \? __d\.yes : __d\.no/);
+  assert.match(code, /!__d\.hidden/);
+  assert.match(code, /\[__d\.first, __d\.second\]/);
+});
+
 test('data identifiers are prefixed, loop variables are not', () => {
   const { code } = shim('<li each="p of people">${p.name} ${heading}</li>');
   assert.match(code, /for \(const p of __d\.people\)/);

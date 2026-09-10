@@ -43,9 +43,12 @@ export declare function windowOf(page: {
  * The default store: a bounded map, right for one server.
  *
  * Bounded because the key carries the query string, so a route reading `?q=`
- * has as many entries as there are searches. Oldest out first, which is not
- * least-recently-used and is enough: an entry that matters is rewritten by its
- * own revalidation and moves back to the end.
+ * has as many entries as there are searches. Least-recently-used out first: a
+ * read moves an entry to the end, the same way a write does. Eviction by write
+ * order alone looked enough, since revalidation rewrites a windowed page, but a
+ * page read constantly inside its window is never rewritten, so a crawl of
+ * unique `?q=` keys walked it to the front and out while it was the one entry
+ * doing any work.
  *
  * @param {{ max?: number }} [options]
  * @returns {CacheStore}

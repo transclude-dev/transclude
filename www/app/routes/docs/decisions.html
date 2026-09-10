@@ -216,6 +216,11 @@
       <code>fetch</code> does the swapping.
     </li>
     <li>
+      <strong>A type error does not stop a page rendering.</strong> The dev
+      server reports one and serves the page anyway.
+      <code>transclude-check</code> is what fails, and it is the step CI runs.
+    </li>
+    <li>
       <strong>No session store and no database opinion.</strong>
       <a href="/docs/cookies">Signed cookies</a> are the building block. A store needs
       a choice this does not make.
@@ -289,11 +294,6 @@
       code in <code>&lt;style&gt;</code> and <code>&lt;script element&gt;</code>
       and skips the comments, so a prop written about is still reported. A prop
       whose name turns up in either for another reason is assumed used.
-    </li>
-    <li>
-      <strong><code>transclude-check</code> is a separate step.</strong> The dev
-      server compiles without it, so a type error does not stop a page rendering.
-      It stops the check.
     </li>
   </ul>
 </doc-page>

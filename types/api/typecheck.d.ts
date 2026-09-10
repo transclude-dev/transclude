@@ -21,6 +21,19 @@ export declare function refuseMovedAPI(unstable: {
     DiagnosticCategory: any;
     NodeBuilderFlags: Record<string, number>;
 };
+export type Checker = {
+    files: () => string[];
+    sourceFor: (file: string) => string;
+    update: (file: string, source: string) => void;
+    rebuild: () => void;
+    dispose: () => void;
+    check: (file: string) => import('./diagnostics.js').Diagnostic[];
+    quickInfo: (file: string, offset: number) => {
+        text: string;
+        documentation: string;
+    } | null;
+    describe: () => Parameters<typeof import('./compiler/types.js').emitTypes>[0];
+};
 /**
  * The checker, and everything it needs held in one closure.
  *
@@ -48,18 +61,36 @@ export declare function refuseMovedAPI(unstable: {
  *   rebuild: Function, check: Function, quickInfo: Function, describe: Function,
  *   dispose: Function }}
  */
-export declare function createChecker({ root, appDir, elementsDir, routesDir, strict, markdown, }: import('./defaults.js').Config & {
-    root: string;
-}): {
-    files: Function;
-    sourceFor: Function;
-    update: Function;
-    rebuild: Function;
-    check: Function;
-    quickInfo: Function;
-    describe: Function;
-    dispose: Function;
-};
+/**
+ * The checker, as its callers use it.
+ *
+ * Written out because two of them are not `bin/check.js`: the editor server
+ * holds one open, and the dev server reports through one in the background. A
+ * member typed `Function` satisfies every call and checks none of them.
+ *
+ * @typedef {{
+ *   files: () => string[],
+ *   sourceFor: (file: string) => string,
+ *   update: (file: string, source: string) => void,
+ *   rebuild: () => void,
+ *   dispose: () => void,
+ *   check: (file: string) => import('./diagnostics.js').Diagnostic[],
+ *   quickInfo: (file: string, offset: number) =>
+ *     { text: string, documentation: string }|null,
+ *   describe: () => Parameters<typeof import('./compiler/types.js').emitTypes>[0],
+ * }} Checker
+ */
+/**
+ * @returns {Checker}
+ */
+export declare function createChecker({ root, appDir, elementsDir, routesDir, strict, markdown, }: {
+    appDir?: string;
+    elementsDir?: string;
+    markdown?: any;
+    root: any;
+    routesDir?: string;
+    strict?: boolean;
+}): Checker;
 /**
  * Diagnostics for one TypeScript file, compiled alone.
  *

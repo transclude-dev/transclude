@@ -54,6 +54,7 @@
  *   lang?: string,
  *   fragmentParam?: string|null,
  *   trailingSlash?: 'never'|'ignore',
+ *   typecheck?: boolean,
  *   strict?: boolean,
  *   csrf?: boolean|object,
  *   csp?: boolean|{ directives?: Record<string, string[]>, reportOnly?: boolean },
@@ -92,6 +93,11 @@ export const DEFAULTS = {
   lang: 'en',
   fragmentParam: 'fragment',
   trailingSlash: 'never',
+  // The dev server reports type errors in the background. On, because the cost
+  // of the other default is a type error nobody hears about until CI. It does
+  // nothing without TypeScript, which is an optional peer, and it never blocks
+  // a render.
+  typecheck: true,
   strict: false,
   csrf: true,
   csp: false,

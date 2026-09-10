@@ -165,6 +165,29 @@ const LAYOUT_FILE = '_layout.html';
  *   rebuild: Function, check: Function, quickInfo: Function, describe: Function,
  *   dispose: Function }}
  */
+/**
+ * The checker, as its callers use it.
+ *
+ * Written out because two of them are not `bin/check.js`: the editor server
+ * holds one open, and the dev server reports through one in the background. A
+ * member typed `Function` satisfies every call and checks none of them.
+ *
+ * @typedef {{
+ *   files: () => string[],
+ *   sourceFor: (file: string) => string,
+ *   update: (file: string, source: string) => void,
+ *   rebuild: () => void,
+ *   dispose: () => void,
+ *   check: (file: string) => import('./diagnostics.js').Diagnostic[],
+ *   quickInfo: (file: string, offset: number) =>
+ *     { text: string, documentation: string }|null,
+ *   describe: () => Parameters<typeof import('./compiler/types.js').emitTypes>[0],
+ * }} Checker
+ */
+
+/**
+ * @returns {Checker}
+ */
 export function createChecker({
   root,
   appDir = 'app',

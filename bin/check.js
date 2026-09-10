@@ -6,6 +6,7 @@ import path from 'node:path';
 import { emitTypes } from '../src/compiler/types.js';
 import { loadProject } from '../src/project.js';
 import { isMarkdown } from '../src/markdown.js';
+import { reportFor, summarize } from '../src/diagnostics.js';
 
 // `typescript` is an optional peer: this is the one command that drives it, and
 // a project that never runs it does not need the install. That makes a missing
@@ -62,48 +63,20 @@ for (const file of files) {
   const diagnostics = checker.check(file);
   if (!diagnostics.length) continue;
 
-  // What the checker measured, not what is on disk. They are the same file for
-  // an `.html` page. For a Markdown page they are not, and reading disk here put
-  // a caret under an unrelated word several lines from the mistake.
-  const source = checker.sourceFor(file);
-  const lines = source.split('\n');
-  const relative = path.relative(root, file);
-  const converted = isMarkdown(file);
-
-  for (const diagnostic of diagnostics) {
-    const { line, column } = positionAt(source, diagnostic.offset);
-    if (diagnostic.severity === 'error') errors++;
-    else warnings++;
-
-    // Said plainly rather than left to be worked out. The line and column are
-    // real, and they are not positions in the file the author opens.
-    const where = converted ? `${relative}  (converted HTML, line ${line})` : `${relative}:${line}:${column + 1}`;
-    console.log(`\n${where}  ${diagnostic.severity}  TS${diagnostic.code}`);
-    console.log(`  ${diagnostic.message}`);
-
-    const text = lines[line - 1] ?? '';
-    const trimmed = text.replace(/^\s+/, '');
-    const shift = text.length - trimmed.length;
-    // The caret line is drawn under the trimmed source, so the column moves left
-    // by however much indentation was cut. A run is capped so one long span does
-    // not wrap the terminal.
-    const pad = ' '.repeat(Math.max(0, column - shift));
-    const run = '~'.repeat(Math.max(1, Math.min(diagnostic.length, 60)));
-
-    console.log(`\n    ${trimmed}`);
-    console.log(`    ${pad}${run}`);
-  }
+  const report = reportFor(file, diagnostics, {
+    root,
+    source: checker.sourceFor(file),
+    converted: isMarkdown(file),
+    positionAt,
+  });
+  errors += report.errors;
+  warnings += report.warnings;
+  console.log(report.lines.join('\n'));
 }
 
 // The compiler is a child process. Closed here, or the exit waits on it.
 checker.dispose();
 
-const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
-
-if (errors + warnings) {
-  console.log(`\n${plural(errors, 'error')}, ${plural(warnings, 'warning')} in ${files.length} files`);
-} else {
-  console.log(`\nNo type errors in ${files.length} files.`);
-}
+console.log(`\n${summarize({ errors, warnings, files: files.length })}`);
 
 process.exitCode = errors ? 1 : 0;

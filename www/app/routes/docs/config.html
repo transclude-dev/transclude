@@ -34,6 +34,7 @@
   strict: false,
   stylesheet: 'app/styles/global.css',
   trailingSlash: 'never',
+  typecheck: true,
   typesFile: 'app/transclude-env.d.ts',
   watchElements: false,
 };`,
@@ -315,6 +316,14 @@
           <td>
             <code>'never'</code> is strict routing and a 301.
             <code>'ignore'</code> is the loose router.
+          </td>
+        </tr>
+        <tr>
+          <td><code>typecheck</code></td>
+          <td><code>true</code></td>
+          <td>
+            The dev server reports type errors in the background. It never blocks
+            a render, and it does nothing without TypeScript installed.
           </td>
         </tr>
         <tr>

@@ -23,7 +23,7 @@ import {
 } from '../src/document.js';
 import transclude, { clientEntryUrl, pageModuleId } from '../src/plugin.js';
 import { resolveRoutesDir, scanRoutes } from '../src/routes.js';
-import { MARKDOWN_EXT } from '../src/markdown.js';
+import { MARKDOWN_EXT, isMarkdown } from '../src/markdown.js';
 import { baseApp, endpointMethods, runEndpoint, SERVER_FILE } from '../src/server.js';
 import { randomBytes } from 'node:crypto';
 import { cookiesOf } from '../src/cookies.js';
@@ -35,12 +35,39 @@ import { sitemap } from '../src/sitemap.js';
 import { documentStore, PROXY_PATH, proxyHandler } from '../src/proxy.js';
 import { afterFor } from '../src/after.js';
 import { loadVite } from '../src/vite.js';
+import { loadTypecheck, typeReporter } from '../src/dev-check.js';
 
 const { root, config } = await loadProject();
 // After the config, so an app with neither hears about the config first.
 const { createServer: createViteServer } = await loadVite();
-const routesDir = resolveRoutesDir(path.join(root, config.appDir), config.routesDir);
+const appRoot = path.join(root, config.appDir);
+const routesDir = resolveRoutesDir(appRoot, config.routesDir);
 const PORT = portOf(config, process.env.PORT);
+
+/**
+ * The background type check, or null.
+ *
+ * Null two ways, and the second one says so out loud. `typecheck: false` is the
+ * author's decision and needs no line. A missing TypeScript is not: the check
+ * would be off for a reason nobody chose, and silence there is the same shape of
+ * nothing as a clean run.
+ */
+const types = await (async () => {
+  if (!config.typecheck) return null;
+
+  const loaded = await loadTypecheck();
+  if (!loaded) {
+    console.log('[types] off. transclude-check drives TypeScript 7, and this project has none');
+    return null;
+  }
+
+  return typeReporter({
+    checker: loaded.createChecker({ root, ...config }),
+    root,
+    positionAt: loaded.positionAt,
+    isMarkdown,
+  });
+})();
 
 // Built the same way the production server and the build build theirs. Dev used
 // to get only half of it, so a route include worked in production and threw
@@ -486,6 +513,14 @@ vite.watcher.on('all', async (event, file) => {
   // pages meant adding one needed a restart, with a 404 as the only hint. `.md`
   // for the same reason: a Markdown page is a page.
   const extension = path.extname(file);
+
+  // Before the routing branch, which returns early for a plain edit. An edit is
+  // the change types react to most, so scheduling after it would report only on
+  // a file being added or removed. `rebuild` for those, because the type of
+  // every other page can depend on which files exist.
+  const typed = extension === '.html' || extension === MARKDOWN_EXT || extension === '.js';
+  if (typed && file.startsWith(appRoot)) types?.schedule({ rebuild: event !== 'change' });
+
   const routing =
     file.startsWith(routesDir) &&
     (extension === '.html' || extension === MARKDOWN_EXT || extension === '.js') &&
@@ -509,4 +544,7 @@ server.on('request', (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`http://localhost:${PORT}`);
+  // After the URL, so the thing you came for is the first line. The run is
+  // awaited by nothing: a slow first pass must not hold the server closed.
+  types?.run();
 });

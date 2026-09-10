@@ -432,6 +432,34 @@ against.
   allowed to ship one and fails on any other, so a page that grows a bundle is a
   decision somebody made rather than a number that moved.
 
+- **The dev check is synchronous, and the yield between files is why that is
+  fine.** `checker.check` drives the Go compiler through
+  `typescript/unstable/sync`, so a pass blocks the loop. Measured on the
+  showcase: 92ms to start the compiler, 100ms for a pass over 22 files, 29ms to
+  rebuild, and 26ms for the slowest single file. The `await Promise.resolve()`
+  in `typeReporter`'s loop is what keeps that slowest file from sitting in front
+  of a request, and it is the reason this needs no worker. The 0.785s that
+  `npm run check` takes is mostly Node starting and the types file being
+  written, neither of which happens here.
+- **The dev check prints on a clean run, and that is not noise.** A checker that
+  prints only on failure makes a run that passed and a run that never happened
+  look the same, which is the whole subject of
+  `/blog/no-output-looks-like-good-output`. The same rule is why a missing
+  TypeScript says so once at startup: `typecheck: false` is a decision somebody
+  made and needs no line, and an absent optional peer is not.
+- **The dev check writes no `transclude-env.d.ts`, and scheduling comes before
+  the routing branch.** The file belongs to `transclude-check`. Writing it here
+  would land inside `appDir`, wake Vite's watcher and schedule the run that
+  wrote it. And in `bin/dev.js` the watcher's routing branch returns early for a
+  plain edit, so `types?.schedule` sits above it: an edit is what types react to
+  most, and scheduling after that return reported only on a file being added or
+  removed.
+- **`createChecker` has a `Checker` typedef because three callers hold one.**
+  `bin/check.js` runs one pass and disposes, the editor server keeps one for the
+  session, and the dev server reports through one in the background. Every
+  member was `Function` before that, which satisfies every call and checks
+  none: passing the real checker into `typeReporter` was the first thing to ask
+  for a signature, and it got `Type 'Function' is not assignable`.
 - **The `No-Vary-Search` guard reads a header instead of writing one, and it
   has to run at request time.** A fragment is a different body at the same path,
   so `except=()` on that header lets a cache answer `?fragment=list` with the

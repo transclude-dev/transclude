@@ -10,6 +10,7 @@ export type Config = {
     lang?: string;
     fragmentParam?: string | null;
     trailingSlash?: 'never' | 'ignore';
+    typecheck?: boolean;
     strict?: boolean;
     csrf?: boolean | object;
     csp?: boolean | {
@@ -81,6 +82,7 @@ export type Config = {
  *   lang?: string,
  *   fragmentParam?: string|null,
  *   trailingSlash?: 'never'|'ignore',
+ *   typecheck?: boolean,
  *   strict?: boolean,
  *   csrf?: boolean|object,
  *   csp?: boolean|{ directives?: Record<string, string[]>, reportOnly?: boolean },
@@ -118,6 +120,7 @@ export declare const DEFAULTS: {
     lang: string;
     fragmentParam: string;
     trailingSlash: string;
+    typecheck: boolean;
     strict: boolean;
     csrf: boolean;
     csp: boolean;

@@ -100,6 +100,25 @@
     says how to package and install it.
   </p>
 
+  <h2>While you work</h2>
+
+  <p>
+    <code>npm run dev</code> checks in the background and prints what it finds.
+    The page still compiles and the server still sends it. A type error is
+    something you read rather than something that stops you.
+  </p>
+
+  <p>
+    It says how many files it read on every run, a clean one included. A checker
+    that prints only on failure makes a run that passed and a run that never
+    happened look the same.
+  </p>
+
+  <p>
+    Set <code>typecheck: false</code> to turn it off. It does nothing without
+    TypeScript installed, and says so once at startup.
+  </p>
+
   <doc-note label="An existing project adds it by hand">
     The setting is scaffolded, not applied by the framework, so a project without
     the file writes it by hand. The symptom is

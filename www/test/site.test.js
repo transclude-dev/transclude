@@ -245,6 +245,36 @@ test('nothing is sold and nothing is hedged', () => {
   assert.deepEqual(found, [], `words design/voice.md rules out: ${found.join(', ')}`);
 });
 
+test('nothing dates itself', () => {
+  // `design/voice.md`: say what it does, never what it did and now does not. A
+  // reader who never knew about a `pages/` directory does not need to be told it
+  // is gone, and a sentence naming the version something changed in is wrong for
+  // everybody who arrives after it.
+  //
+  // The list is short on purpose, and it is the strong tells only. Ordinary past
+  // tense is everywhere and belongs there: "the markup was placed once"
+  // describes what happens now. `used to` and `no longer` are out for the same
+  // reason, because "a reader it no longer needs" is a live mechanism rather
+  // than a history. Every violation this repository has actually written was one
+  // of the phrases below, so those are what it reads for. The rest is judgment.
+  const dating =
+    /\b(formerly|previously|used to be|at one point|nowadays|these days|since then|in earlier versions|was here until|before that|as they always were)\b/gi;
+
+  const found = [];
+  for (const [name, source] of pages()) {
+    // `/docs/decisions` says what a version number promises, so it is the one
+    // page that may look backwards. `design/internals.md` is the other, and it
+    // is not a page.
+    if (name === path.join('docs', 'decisions.html')) continue;
+
+    for (const paragraph of prose(source)) {
+      for (const [word] of paragraph.matchAll(dating)) found.push(`${name}: ${word}`);
+    }
+  }
+
+  assert.deepEqual(found, [], `pages naming their own history: ${found.join(', ')}`);
+});
+
 test('the word is fragment, never region', () => {
   // `design/voice.md` spends its jargon on three words: hypermedia, element and
   // fragment. `region` is what the compiler calls the same thing internally,

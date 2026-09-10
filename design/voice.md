@@ -60,12 +60,35 @@ followed along.
 
 ## Current, not historical
 
-Describe what the framework is today. Never name a concept only to deny it.
-A reader who never knew about a `pages/` directory does not need to be told
-it is gone.
+Describe what the framework is today. Say what it does, never what it did and
+now does not.
 
-Commit messages are the opposite. They record why, including what was tried
-and what broke.
+So a page never names:
+
+- A feature, key, directory or spelling that has been removed or renamed. A
+  reader who never knew about a `pages/` directory does not need to be told it
+  is gone.
+- A version this changed in. "A project made before this" dates the sentence
+  and tells a reader with a current project nothing.
+- A bug we hit, a release that broke something, or a gap the tests used to
+  have. Keep the mechanism, drop our history with it: "a loader that reaches
+  WebAssembly fails on workerd" is the sentence, and what it cost this site
+  on which afternoon is not.
+- A behavior we replaced, even as the reason for the current one. "A key
+  nothing reads looks exactly like a key that worked" says it. "A misspelled
+  key was ignored before that" says the same thing and dates it.
+
+Two places are the exception, and both are read by someone who came looking
+for history. `/docs/decisions` says what a version number promises, which
+means it may say a minor has broken something. `design/internals.md` is
+nothing but history: a gotcha exists because something broke quietly, and
+naming the failure is the whole value.
+
+Commit messages are the opposite of a docs page. They record why, including
+what was tried and what broke.
+
+`www/test/site.test.js` checks the words that only turn up when a page is
+dating itself.
 
 ## Depth
 

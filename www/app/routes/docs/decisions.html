@@ -143,25 +143,23 @@
   </p>
 
   <doc-note label="Still below 1.0">
-    A minor may break something, and two have. Both were narrow, and both were
-    the compiler starting to refuse code that was already wrong. Every release
+    A minor may break something, and two have. Each was the compiler starting to
+    refuse code that was already wrong. Every release
     that breaks anything says so at the top of its notes, with the change to
     make. From <code>1.0</code> a new refusal is the only shape that takes.
   </doc-note>
 
-  <doc-note label="The shadow half was here until 0.20">
-    It was listed as still moving for two reasons. It is the harder half to keep
-    correct. And nobody knew how much of it the tests reached. Now somebody does.
-    A shadow root, <code>setHTMLUnsafe</code> and a template the parser turned
-    into a boundary need a real browser. The checks in the showcase are that.
+  <doc-note label="The shadow half is checked in a browser">
+    It is the harder half to keep correct. A shadow root,
+    <code>setHTMLUnsafe</code> and a template the parser turned into a boundary
+    all need a real browser. The checks in the showcase are that.
     <code>npm run test:coverage</code> reads V8's own numbers back: 98.5% of
     <code>src/runtime/index.js</code>, over 63 checks.
     <p>
-      Measuring it is what found the gap. Every shadow check started from
-      markup the server had sent, so the browser always adopted a root the
-      parser built. An element made with <code>document.createElement</code>
-      takes the other branch, attaches its own root and paints it, and that path
-      had no check at all. It has two now.
+      Both branches are covered, which is what the measuring is for. A root the
+      parser built and the browser adopted is one. A root an element made with
+      <code>document.createElement</code> attaches and paints for itself is the
+      other.
     </p>
   </doc-note>
 

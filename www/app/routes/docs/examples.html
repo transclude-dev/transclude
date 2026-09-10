@@ -427,7 +427,7 @@ npm run dungeon    # http://localhost:1973`,
     <code>request.signal</code>. The consumer letting go of the reader runs the
     stream's own <code>cancel()</code>. Handle one and not the other and you
     either leak a listener holding a dead connection, or close a controller that
-    is already closed. Both happened while this was written.
+    is already closed.
   </doc-note>
 
   <h2>Running them</h2>

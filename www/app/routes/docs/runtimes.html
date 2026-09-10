@@ -111,12 +111,11 @@ export default async () => {
   </p>
 
   <doc-note label="A loader runs wherever the page does" tone="warn">
-    <code>workerd</code> refuses to compile WebAssembly at runtime. A loader that reaches
-    something built on it fails there and nowhere else. This site hit exactly
-    that. Its highlighter compiled Wasm, so every prerendered page was fine and
-    the one URL that renders live returned 500. The highlighter runs on a
-    JavaScript engine now. A prerendered page never runs its loader in
-    production, which is what hides this until something asks for a fragment.
+    <code>workerd</code> refuses to compile WebAssembly at runtime. A loader that
+    reaches something built on it fails there and nowhere else. A prerendered page
+    never runs its loader in production, which is what hides this until something
+    asks for a fragment. Syntax highlighting is the one that catches people: pick
+    a highlighter that runs on a JavaScript engine.
   </doc-note>
 
   <p>
@@ -138,8 +137,7 @@ export default async () => {
 
   <p>
     An app wanting something else calls <code>createApp</code> from
-    <code>@transclude/core/app</code> and does the wiring itself. That is what
-    this was before there were nine copies of it.
+    <code>@transclude/core/app</code> and does the wiring itself.
   </p>
 
   <h2>What differs</h2>

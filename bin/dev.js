@@ -351,6 +351,7 @@ async function buildApp() {
   const app = baseApp({
     csrf: config.csrf,
     permissionsPolicy: config.permissionsPolicy,
+    fragmentParam: config.fragmentParam,
     trailingSlash: config.trailingSlash,
     publicFiles,
     middleware: await loadMiddleware(),

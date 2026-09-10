@@ -35,6 +35,14 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
   hx-trigger="input changed delay:200ms"
 />`,
       header: [`fragmentHeader: 'HX-Target',`, "js"],
+      novary: [`// app/server.js
+export default (app) => {
+  app.use('*', async (c, next) => {
+    await next();
+    // Named, not \`except=()\`. The campaign tags are noise; \`fragment\` is not.
+    c.header('No-Vary-Search', 'params=("utm_source" "utm_medium" "gclid")');
+  });
+};`, "js"],
     }),
   });
 </script>
@@ -168,6 +176,34 @@ document.getElementById('matches').setHTMLUnsafe(await res.text());`,
     whole document. <code>HX-Target</code> from htmx works this way. Naming a
     header in <code>fragmentHeader</code> adds it to <code>Vary</code>.
   </p>
+
+  <h2>Caches and the parameter</h2>
+
+  <p>
+    A fragment is a different body at the same path, so a cache has to keep the
+    two apart. It does that on its own: the query string is part of the URL it
+    keys on.
+  </p>
+
+  <p>
+    <a
+      href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/No-Vary-Search"
+      ><code>No-Vary-Search</code></a
+    >
+    is how a response takes that apart. It tells a cache which parameters make no
+    difference, which is true of a campaign tag and false of this one. Name the
+    parameters you mean.
+  </p>
+
+  ${html(s.novary)}
+
+  <doc-note label="A header that hides the parameter is refused" tone="warn">
+    <code>except=()</code> is the short way to write "ignore every parameter",
+    and it would let a cache answer <code>?fragment=list</code> with the whole
+    document. A swap would then write the page into the element it should have
+    replaced. The server reads this header on the way out and throws, naming the
+    value it read.
+  </doc-note>
 
   <h2>Actions</h2>
 

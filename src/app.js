@@ -197,6 +197,7 @@ export function createApp({
     csrf: config.csrf,
     csp: config.csp,
     permissionsPolicy: config.permissionsPolicy,
+    fragmentParam: config.fragmentParam,
     trailingSlash: config.trailingSlash,
     publicFiles,
     middleware,

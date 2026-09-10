@@ -419,6 +419,22 @@ against.
   allowed to ship one and fails on any other, so a page that grows a bundle is a
   decision somebody made rather than a number that moved.
 
+- **The `No-Vary-Search` guard reads a header instead of writing one, and it
+  has to run at request time.** A fragment is a different body at the same path,
+  so `except=()` on that header lets a cache answer `?fragment=list` with the
+  whole document and a swap writes the page into the element. Neither half of
+  that reports anything: both responses are a 200 with markup. It cannot be a
+  compile-time refusal, because the realistic way in is a middleware in
+  `app/server.js` that no page mentions, and middleware does not run during a
+  build. It cannot be a boot check either, since a loader can write the header
+  from `ctx.response`. So `no-vary-search.js` is a reader, called from a
+  `baseApp` middleware registered ahead of the app's own, which is what lets it
+  see a header that middleware set on the way out. `bin/dev.js` passes
+  `fragmentParam` where it deliberately does not pass `csp`: a value that would
+  break production has to break dev first, and this one costs dev nothing
+  because it writes no header of its own. An unreadable value counts as hiding.
+  Wrong that way is an error naming the author's own header; wrong the other way
+  is the silent swap.
 - **`baseApp` refuses an option it does not know.** `dev.js` passed `publicRoot`
   to a function that takes `publicFiles`, so dev served no public files at all
   while production served them. The only sign was a Vite warning about one of the

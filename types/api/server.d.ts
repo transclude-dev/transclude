@@ -1,6 +1,7 @@
 /**
  * @param {{ csrf?: object|boolean, csp?: object|boolean,
- *   permissionsPolicy?: object|boolean, trailingSlash?: string,
+ *   permissionsPolicy?: object|boolean, fragmentParam?: string|null,
+ *   trailingSlash?: string,
  *   publicFiles?: import('hono').MiddlewareHandler|null,
  *   middleware?: ((app: import('hono').Hono) => void)|null }} [options]
  *   `middleware` is the app's own `server.js`, which is handed the Hono app
@@ -12,6 +13,7 @@ export declare function baseApp(options?: {
     csrf?: object | boolean;
     csp?: object | boolean;
     permissionsPolicy?: object | boolean;
+    fragmentParam?: string | null;
     trailingSlash?: string;
     publicFiles?: import('hono').MiddlewareHandler | null;
     middleware?: ((app: import('hono').Hono) => void) | null;

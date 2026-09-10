@@ -9,6 +9,7 @@ import { Hono } from 'hono';
 import { csrf } from 'hono/csrf';
 import { headerPolicy } from './csp.js';
 import { permissionsHeader } from './permissions.js';
+import { refuseHiddenFragment } from './no-vary-search.js';
 import { trimTrailingSlash } from 'hono/trailing-slash';
 
 /**
@@ -28,6 +29,7 @@ const OPTIONS = new Set([
   'csrf',
   'csp',
   'permissionsPolicy',
+  'fragmentParam',
   'trailingSlash',
   'publicFiles',
   'middleware',
@@ -35,7 +37,8 @@ const OPTIONS = new Set([
 
 /**
  * @param {{ csrf?: object|boolean, csp?: object|boolean,
- *   permissionsPolicy?: object|boolean, trailingSlash?: string,
+ *   permissionsPolicy?: object|boolean, fragmentParam?: string|null,
+ *   trailingSlash?: string,
  *   publicFiles?: import('hono').MiddlewareHandler|null,
  *   middleware?: ((app: import('hono').Hono) => void)|null }} [options]
  *   `middleware` is the app's own `server.js`, which is handed the Hono app
@@ -48,6 +51,7 @@ export function baseApp(options = {}) {
     csrf: csrfOption = true,
     csp: cspOption = false,
     permissionsPolicy: permissionsOption = false,
+    fragmentParam = null,
     trailingSlash = 'never',
     publicFiles = null,
     middleware = null,
@@ -131,6 +135,17 @@ export function baseApp(options = {}) {
     app.use('*', async (c, next) => {
       await next();
       c.header(permissions.name, permissions.value);
+    });
+  }
+
+  // Read rather than written. A `No-Vary-Search` that hides `?fragment=` turns
+  // every fragment URL into the whole document, and nothing downstream would
+  // report it. Registered before the app's own middleware, so it sees a header
+  // that middleware set on the way out as well as one a loader wrote.
+  if (fragmentParam) {
+    app.use('*', async (c, next) => {
+      await next();
+      refuseHiddenFragment(c.res.headers.get('No-Vary-Search'), fragmentParam);
     });
   }
   if (typeof middleware === 'function') middleware(app);

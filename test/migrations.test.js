@@ -1,4 +1,4 @@
-// The four errors that exist only to move code written against 0.x.
+// The five errors that exist only to move code written against 0.x.
 //
 // Each one names a spelling this framework used to have and says what it is
 // now. They are not refusals in the sense `VERSIONING.md` uses: a refusal
@@ -8,12 +8,13 @@
 // from 0.x, so removing the messages there would be the worst timing there is.
 //
 // Until then each has to keep firing, and two of them had nothing checking they
-// did. All four:
+// did. All five:
 //
 //   `pages/` -> `routes/`                      test/routes.test.js
 //   `partialsDir`, `componentsDir` -> `elementsDir`   test/project.test.js
 //   `<script properties|props|state>` -> `<script element>`   here
 //   `export const actions` -> a verb export    here
+//   `strict` -> `typecheckStrict`              here
 //
 // What the message says is not a promise, so these assert that an error is
 // raised and that it names the new spelling, not the sentence around it.
@@ -49,6 +50,21 @@ test('a 0.x actions object says handlers are named for their method', () => {
     (error) => {
       assert.match(error.message, /actions/);
       assert.match(error.message, /POST/);
+      return true;
+    },
+  );
+});
+
+test('a 0.x strict key says what its name is now', async () => {
+  // `strict` beside `trailingSlash` in a Hono app read as a routing option, and
+  // it always meant TypeScript strictness. Renamed at 1.0, which is the one
+  // release a rename is allowed, and this error carries movers through 1.x.
+  const { withDefaults } = await import('../src/defaults.js');
+
+  assert.throws(
+    () => withDefaults({ strict: true }),
+    (error) => {
+      assert.match(error.message, /typecheckStrict/);
       return true;
     },
   );

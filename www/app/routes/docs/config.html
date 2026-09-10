@@ -31,10 +31,10 @@
   routesDir: 'routes',
   sitemap: false,
   speculate: false,
-  strict: false,
   stylesheet: 'app/styles/global.css',
   trailingSlash: 'never',
   typecheck: true,
+  typecheckStrict: false,
   typesFile: 'app/transclude-env.d.ts',
   watchElements: false,
 };`,
@@ -298,11 +298,6 @@
           </td>
         </tr>
         <tr>
-          <td><code>strict</code></td>
-          <td><code>false</code></td>
-          <td>Full TypeScript strictness.</td>
-        </tr>
-        <tr>
           <td><code>stylesheet</code></td>
           <td><code>null</code></td>
           <td>
@@ -324,6 +319,14 @@
           <td>
             The dev server reports type errors in the background. It never blocks
             a render, and it does nothing without TypeScript installed.
+          </td>
+        </tr>
+        <tr>
+          <td><code>typecheckStrict</code></td>
+          <td><code>false</code></td>
+          <td>
+            Full TypeScript strictness, in <code>transclude-check</code>, the
+            editor and the dev server's reporting.
           </td>
         </tr>
         <tr>

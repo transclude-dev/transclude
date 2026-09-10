@@ -83,13 +83,13 @@ export type Checker = {
 /**
  * @returns {Checker}
  */
-export declare function createChecker({ root, appDir, elementsDir, routesDir, strict, markdown, }: {
+export declare function createChecker({ root, appDir, elementsDir, routesDir, typecheckStrict, markdown, }: {
     appDir?: string;
     elementsDir?: string;
     markdown?: any;
     root: any;
     routesDir?: string;
-    strict?: boolean;
+    typecheckStrict?: boolean;
 }): Checker;
 /**
  * Diagnostics for one TypeScript file, compiled alone.

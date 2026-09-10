@@ -51,7 +51,7 @@ export default {
   // still catches a misspelled field, an unknown prop and a wrong-typed one
   // without any. Set true for full TypeScript strictness, which additionally
   // requires every parameter to have a declared type.
-  strict: false,
+  typecheckStrict: false,
 
   // The query parameter that asks a page for one of its `[fragment]` regions
   // instead of the whole document: `/search?fragment=results`.

@@ -14,7 +14,7 @@ export default {
 
   stylesheet: 'app/styles/global.css',
 
-  strict: false,
+  typecheckStrict: false,
 
   // The landing page says a fragment is a URL and links to one, so this site has
   // to answer it. Every page here is still written to a file at build time: a

@@ -140,6 +140,21 @@ export default async () => {
     <code>@transclude/core/app</code> and does the wiring itself.
   </p>
 
+  <h2>The floor</h2>
+
+  <p>
+    Node 22 is the oldest Node this runs on, and the <code>engines</code> field
+    in both packages says so. CI runs the suite on 22, on Active LTS and on
+    Current. The floor is tested rather than remembered.
+  </p>
+
+  <p>
+    Bun, Deno and workerd carry no version floor of their own. On every push, CI
+    builds an app and serves it on the current release of each. The version that
+    works is the one you can install today, and a regression in one of them is
+    caught by that run.
+  </p>
+
   <h2>What differs</h2>
 
   <p>Each difference from Node is one argument to <code>createApp</code>.</p>

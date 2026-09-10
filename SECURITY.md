@@ -18,8 +18,8 @@ credited in the notes unless you would rather not be.
 
 ## Supported versions
 
-The latest release. This project is below `1.0`, so a fix goes into the next
-version rather than back into an old one.
+The latest release. A fix goes out as a new version rather than back into an
+old one, so the way to have the fix is to update.
 
 ## What this framework does about it
 

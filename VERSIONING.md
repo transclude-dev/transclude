@@ -103,22 +103,37 @@ used to have:
 | `partialsDir` and `componentsDir` | are one `elementsDir` |
 | `<script properties>`, `<script props>`, `<script state>` | are one `<script element>` |
 | `export const actions` | is one export per method |
+| `strict` | is `typecheckStrict` |
 
 These are not refusals in the sense above. A refusal rejects code that was
 already not doing what it looked like it did. Each of these rejects code that
-was right once, and says what to write instead.
+was right once, and says what to write instead. `strict` is the newest: it was
+renamed at `1.0`, the one release a rename is allowed.
 
 They stay through `1.x` and go at the next major. `1.0` is when somebody
 upgrades from `0.x`, so deleting the messages there is the worst timing
-available. `test/migrations.test.js` keeps all four firing and names where each
+available. `test/migrations.test.js` keeps all five firing and names where each
 one is checked.
 
-## Before 1.0
+## Maintenance
 
-Below `1.0` a minor may break something, and two releases have. Both were
-narrow, and both were the compiler starting to refuse code that was already not
-doing what it looked like it did — the same shape a minor is allowed after
-`1.0`.
+From `1.0` this framework is maintained rather than grown. A release fixes
+something, keeps a dependency current, or supports a platform feature that
+shipped. The promises above are what makes that possible: nothing renames or
+moves without a major, and the intent is that no major comes.
 
-Nothing has renamed or removed a documented field or key. There has not been a
-major, and the intent is that `1.0` is the first one that could be.
+Three dependencies carry known exposure, written down here so a future reader
+knows each is a choice:
+
+- **Vite majors.** The plugin and the dev server lean on `resolveId`, `load`,
+  `configResolved`, the module graph and `ssrLoadModule`, which are the
+  surfaces Vite has moved at majors before. The peer says `^8`; a Vite 9 needs
+  a real pass, not a version bump.
+- **TypeScript is pinned on purpose.** `transclude-check` drives an unstable
+  compiler API, and `refuseMovedAPI` in `src/typecheck.js` refuses a TypeScript
+  whose API moved, naming what moved and the version that held still. A
+  TypeScript release breaking the check loudly is the designed failure.
+- **The browser floor is documented, not managed.** A light element's styles
+  need `@scope`, and the docs' browsers page carries the dates and the
+  fallback. A new platform feature is the one thing that reopens design work,
+  and that page is where its floor gets written down.

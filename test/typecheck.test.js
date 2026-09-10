@@ -379,7 +379,7 @@ test('a typo inside connected() is now reported, where it used to be invisible',
   assert.match(first.message, /colums/);
 });
 
-test('strict: true puts the annotations back on the critical path', () => {
+test('typecheckStrict: true puts the annotations back on the critical path', () => {
   const { dir, checker } = project(
     {
       'app/elements/data-table.html': `<script element>
@@ -391,7 +391,7 @@ test('strict: true puts the annotations back on the critical path', () => {
 </script>
 <th>x</th>`,
     },
-    { strict: true },
+    { typecheckStrict: true },
   );
   const [diagnostic] = checker.check(path.join(dir, 'app/elements/data-table.html'));
   assert.match(diagnostic.message, /implicitly has an 'any' type/);

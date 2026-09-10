@@ -99,7 +99,7 @@ const { API, DiagnosticCategory, NodeBuilderFlags } = refuseMovedAPI(
  * `${user.nmae}` is still an error.
  *
  * `strictNullChecks` stays on: `querySelector` really can return null, and that
- * is a bug rather than a matter of taste. `strict: true` in the config turns the
+ * is a bug rather than a matter of taste. `typecheckStrict: true` in the config turns the
  * rest on for anyone who wants it.
  *
  * Written as tsconfig JSON rather than option objects, because the 7.x API
@@ -193,7 +193,7 @@ export function createChecker({
   appDir = 'app',
   elementsDir = 'elements',
   routesDir = 'routes',
-  strict = false,
+  typecheckStrict = false,
   markdown = null,
 }) {
   const app = path.resolve(root, appDir);
@@ -216,7 +216,7 @@ export function createChecker({
     fs: {
       fileExists: (name) => (name === configPath || shims.has(name) ? true : undefined),
       readFile: (name) => {
-        if (name === configPath) return configJson(Boolean(strict), [...shims.keys()]);
+        if (name === configPath) return configJson(Boolean(typecheckStrict), [...shims.keys()]);
         return shims.get(name)?.code;
       },
     },

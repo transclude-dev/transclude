@@ -55,7 +55,7 @@
  *   fragmentParam?: string|null,
  *   trailingSlash?: 'never'|'ignore',
  *   typecheck?: boolean,
- *   strict?: boolean,
+ *   typecheckStrict?: boolean,
  *   csrf?: boolean|object,
  *   csp?: boolean|{ directives?: Record<string, string[]>, reportOnly?: boolean },
  *   permissionsPolicy?: boolean|{ features?: Record<string, string[]> },
@@ -98,7 +98,10 @@ export const DEFAULTS = {
   // nothing without TypeScript, which is an optional peer, and it never blocks
   // a render.
   typecheck: true,
-  strict: false,
+  // Full TypeScript strictness in `transclude-check`, the editor and the dev
+  // server's reporting. Named for what it touches: `strict` alone read as a
+  // routing option beside `trailingSlash`.
+  typecheckStrict: false,
   csrf: true,
   csp: false,
   // The devices and sensors a page refuses. Off here for the reason `server.js`
@@ -159,6 +162,15 @@ export function withDefaults(config = {}) {
   // failure it replaces is silent and expensive: `stylesheeet` cost a site its
   // whole stylesheet and said nothing, because an ignored key looks exactly like
   // a key that worked.
+  // A spelling this framework used to have, named before the generic refusal
+  // below reads it as a typo. `VERSIONING.md` lists these and says when they go.
+  if ('strict' in config) {
+    throw new Error(
+      `[transclude] \`strict\` is \`typecheckStrict\` now. The old name read as a ` +
+        `routing option, and it always meant full TypeScript strictness.`,
+    );
+  }
+
   const unknown = Object.keys(config).filter((key) => !KEYS.has(key));
   if (unknown.length) {
     throw new Error(

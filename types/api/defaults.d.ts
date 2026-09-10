@@ -11,7 +11,7 @@ export type Config = {
     fragmentParam?: string | null;
     trailingSlash?: 'never' | 'ignore';
     typecheck?: boolean;
-    strict?: boolean;
+    typecheckStrict?: boolean;
     csrf?: boolean | object;
     csp?: boolean | {
         directives?: Record<string, string[]>;
@@ -83,7 +83,7 @@ export type Config = {
  *   fragmentParam?: string|null,
  *   trailingSlash?: 'never'|'ignore',
  *   typecheck?: boolean,
- *   strict?: boolean,
+ *   typecheckStrict?: boolean,
  *   csrf?: boolean|object,
  *   csp?: boolean|{ directives?: Record<string, string[]>, reportOnly?: boolean },
  *   permissionsPolicy?: boolean|{ features?: Record<string, string[]> },
@@ -121,7 +121,7 @@ export declare const DEFAULTS: {
     fragmentParam: string;
     trailingSlash: string;
     typecheck: boolean;
-    strict: boolean;
+    typecheckStrict: boolean;
     csrf: boolean;
     csp: boolean;
     permissionsPolicy: boolean;

@@ -81,8 +81,8 @@
   <h2>What a new project starts with</h2>
 
   <p>
-    <code>npm create @transclude</code> writes a layout with three things a page
-    is hard to add later.
+    The layout <code>npm create @transclude</code> writes already carries the
+    parts that are hard to add to a page later.
   </p>
 
   ${html(s.skip)}
@@ -100,8 +100,8 @@
   </p>
 
   <p>
-    <code>aria-current="page"</code> marks the link you are on. The nav reads as
-    a list of places with one of them named as here.
+    <code>aria-current="page"</code> marks the link you are on. A screen reader
+    announces that one as the current page.
   </p>
 
   <h2>The language of the page</h2>
@@ -144,13 +144,14 @@
 
   <p>
     A fragment swap is different. The browser stayed on the page, and only part of
-    it changed. Put the changed text in a live element and the change is spoken.
+    it changed. Put the changed text in a live element, and a screen reader reads
+    it out.
   </p>
 
   ${html(s.live)}
 
   <p>
-    <code>role="status"</code> is polite: it waits for a pause.
+    <code>role="status"</code> is polite, so it waits for a pause.
     <code>role="alert"</code> interrupts, so keep it for something that has gone
     wrong.
   </p>

@@ -34,8 +34,8 @@ test('an empty allowlist is nobody, and self is written bare', () => {
 });
 
 test('features replace the list rather than adding to it', () => {
-  // The whole point of writing one: an app that wants a camera says so, and
-  // does not have to know which eleven names it is overriding.
+  // This is what writing a list is for. An app that wants a camera says so, and
+  // never has to know which eleven names it is overriding.
   const header = permissionsHeader({ features: { camera: ['self'] } });
 
   assert.equal(header?.value, 'camera=(self)');

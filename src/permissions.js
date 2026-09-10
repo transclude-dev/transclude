@@ -1,25 +1,25 @@
 // What a page says it will never ask for.
 //
-// A `Permissions-Policy` names the powerful features a document, and anything it
-// frames, is allowed to reach. A page here ships no script by default, so the
-// honest answer for most of them is nobody, and saying so costs a byte count
-// rather than a behavior.
+// A `Permissions-Policy` names what a document may reach, and what the frames
+// inside it may reach. A page here ships no script by default, so the answer for
+// most of them is nobody. Writing that down costs one header and takes nothing
+// away.
 //
 // Off unless the config says otherwise, which is the rule `server.js` states for
-// every header with a judgment in it. Refusing the camera is a judgment: an app
-// that wants one has to be able to say so. The generated project turns this on,
-// because that is where the author can read the key and change it.
+// every header with a judgment in it. Refusing the camera is a judgment, and an
+// app that wants one has to be able to say so. The generated project turns this
+// on, because that is where the author can read the key and change it.
 //
 // No `node:` imports. This builds a string, and every runtime sends it.
 
 /**
  * The features off when the config says `true`.
  *
- * Each is a sensor, a capture surface or an inference, and a document reaches
- * for none of them by rendering. What is missing is as deliberate as what is
- * here: `fullscreen` and `publickey-credentials-get` already default to the
- * page's own origin, so listing them would restate the browser's answer, and
- * getting one of them wrong would take a passkey login away.
+ * Every one is a device, a location, a recording or a guess about the reader,
+ * and rendering a document asks for none of them. What is left out took longer
+ * to decide than what is here. `fullscreen` and `publickey-credentials-get`
+ * already default to the page's own origin, so naming them would restate the
+ * browser, and getting the second one wrong takes a passkey login away.
  *
  * `[]` is nobody, including this page. `['self']` is this page and no frame.
  */

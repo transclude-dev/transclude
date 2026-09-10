@@ -365,14 +365,14 @@ against.
   rule, because a volatile name is whatever the template read and not where the
   value came from.
 - **A light element's styles are `@scope`, and `@scope` reached the last engine
-  in March 2026.** The wrapper is written by `scopeCss` in `compiler/index.js`
-  and there is no fallback, because there is no fallback to write: a browser skips
-  an at-rule it does not know, and everything inside it. So an element in an older
-  browser renders with its markup and none of its own styles, and nothing errors
-  anywhere. The same rules put in the app's stylesheet reach a light element
-  perfectly well, since it is in the page's own DOM, and that is the answer for a
-  site that has to go back further. `/docs/browsers` is the reader-facing half of
-  this and carries the dates for the other four platform features.
+  in March 2026.** `scopeCss` in `compiler/index.js` writes the wrapper, and there
+  is no fallback because there is no fallback to write: a browser skips an at-rule
+  it does not know, and everything inside it. So an element in an older browser
+  renders with its markup and none of its own styles, and nothing errors anywhere.
+  The same rules in the app's stylesheet reach a light element, since it sits in
+  the page's own DOM, and that is the answer for a site that has to go back
+  further. `/docs/browsers` says this to a reader, with the dates for the other
+  four platform features.
 - **Both halves fence a block. Only the shadow half compiles one.** `anchored()`
   and `standalone()` in `codegen.js` are two questions, and they were one until
   the answers had to differ. A light element is compiled as a layout, where

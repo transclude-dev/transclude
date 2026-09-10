@@ -95,7 +95,7 @@ export const DEFAULTS = {
   strict: false,
   csrf: true,
   csp: false,
-  // The powerful features a page refuses. Off here for the reason `server.js`
+  // The devices and sensors a page refuses. Off here for the reason `server.js`
   // gives for `X-Frame-Options`: it takes away something an app may want, so
   // it stays the author's to set. A generated project turns it on.
   permissionsPolicy: false,

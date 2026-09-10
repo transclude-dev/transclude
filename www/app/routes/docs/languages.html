@@ -103,9 +103,9 @@ export default (app) => {
   <h2>One page in another language</h2>
 
   <p>
-    A page sets its own attributes with a bare <code>&lt;html&gt;</code> tag. It
-    is merged into the document rather than rendered, and it wins over the
-    config.
+    A page sets its own attributes with a bare <code>&lt;html&gt;</code> tag. The
+    renderer merges it into the document rather than printing it, and it wins
+    over the config.
   </p>
 
   ${html(s.page)}

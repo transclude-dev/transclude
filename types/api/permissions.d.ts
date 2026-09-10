@@ -1,11 +1,11 @@
 /**
  * The features off when the config says `true`.
  *
- * Each is a sensor, a capture surface or an inference, and a document reaches
- * for none of them by rendering. What is missing is as deliberate as what is
- * here: `fullscreen` and `publickey-credentials-get` already default to the
- * page's own origin, so listing them would restate the browser's answer, and
- * getting one of them wrong would take a passkey login away.
+ * Every one is a device, a location, a recording or a guess about the reader,
+ * and rendering a document asks for none of them. What is left out took longer
+ * to decide than what is here. `fullscreen` and `publickey-credentials-get`
+ * already default to the page's own origin, so naming them would restate the
+ * browser, and getting the second one wrong takes a passkey login away.
  *
  * `[]` is nobody, including this page. `['self']` is this page and no frame.
  */

@@ -126,7 +126,7 @@ site-note {
 
   <p>
     <strong>No declarative shadow DOM.</strong> The
-    <code>&lt;template&gt;</code> stays a template and its content is never shown.
+    <code>&lt;template&gt;</code> stays a template, and its content never appears.
     A shadow element renders as an empty tag until its script defines it, and then
     it paints.
   </p>
@@ -156,8 +156,9 @@ site-note {
   ${html(s.global)}
 
   <p>
-    You give up the scoping and get a rule that any browser applies. For a
-    site that has to reach old devices, that trade is worth knowing about.
+    You give up the scoping and get a rule any browser applies. Two elements
+    with a rule of the same name now reach each other, which the scope was
+    stopping.
   </p>
 
   <h2>Things that are already optional</h2>
@@ -172,8 +173,9 @@ site-note {
   </p>
 
   <p>
-    A <a href="/docs/security">Content-Security-Policy</a> is ignored by a browser
-    that has none, which leaves that browser where it was rather than worse off.
+    A browser that knows no
+    <a href="/docs/security">Content-Security-Policy</a> ignores the one a page
+    carries, which leaves it where it was rather than worse off.
   </p>
 
   <h2>The server side</h2>

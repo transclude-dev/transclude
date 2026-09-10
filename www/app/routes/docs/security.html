@@ -244,8 +244,8 @@ export default {
 
   <p>
     <code>true</code> turns off eleven: cameras, microphones, location, the motion
-    sensors, screen capture, MIDI, USB, payment and topic inference. Each is a
-    device or an inference a document does not reach for by rendering.
+    sensors, screen capture, MIDI, USB, payment and topic inference. Rendering a
+    document asks for none of them.
   </p>
 
   <p>
@@ -269,8 +269,8 @@ export default {
   <h2>The headers left to you</h2>
 
   <p>
-    The framework sets what it can judge for every app: the policy above,
-    the features above, and <code>X-Content-Type-Options: nosniff</code> on every
+    The framework sets what it can judge for every app: the policy and the
+    features above, and <code>X-Content-Type-Options: nosniff</code> on every
     response. Two more refuse something an app may want and cannot be read from
     the config, so they are yours to set in
     <a href="/docs/middleware">app/server.js</a>.

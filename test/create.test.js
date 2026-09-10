@@ -75,9 +75,9 @@ test('both templates say which color schemes they handle, before the CSS lands',
 test('both templates ship the two headers a new project should not have to find', () => {
   // `csp` and `permissionsPolicy` are off in `DEFAULTS`, because each takes away
   // something an app may want and that stays the author's call. A generated
-  // project is where the call can be made for them and still be read: the key is
-  // in the file they own, with the sentence saying what to do when a page wants
-  // a camera.
+  // project is where that call can be made for them and still be read. The key
+  // sits in a file they own, beside the sentence saying what to do when a page
+  // wants a camera.
   for (const template of ['blank', 'minimal']) {
     make(['--template', template], (dir) => {
       const config = read(dir, 'transclude.config.js');

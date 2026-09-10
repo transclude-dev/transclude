@@ -60,3 +60,72 @@ test('an inexact props object disables the check', () => {
   assert.deepEqual(warnings, []);
 });
 
+
+// ---- prose is not a use ----------------------------------------------------
+//
+// The match is a word match against <style> and <script>, which is what keeps
+// it quiet enough to leave on. It reads code and not comments: a name left in a
+// sentence is the most common thing a half-done rename leaves behind, and
+// counting that as a use took the check away from the case it exists for.
+
+test('a prop named only in a JavaScript comment is reported', () => {
+  const warnings = compile(`
+    <script element>
+      // \`tone\` drove the border once. The page sets it now.
+      export const properties = { tone: 'neutral' };
+    </script>
+    <p>hi</p>
+  `);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /prop `tone` is declared but never used/);
+});
+
+test('a prop named only in a block comment is reported', () => {
+  const warnings = compile(`
+    <script element>
+      /* tone picks the border color */
+      export const properties = { tone: 'neutral' };
+    </script>
+    <p>hi</p>
+  `);
+  assert.equal(warnings.length, 1);
+});
+
+test('a prop named only in a CSS comment is reported', () => {
+  const warnings = compile(`
+    <script element>
+      export const properties = { tone: 'neutral' };
+    </script>
+    <style>/* tone picks the border color */
+    :scope { display: block }</style>
+    <p>hi</p>
+  `);
+  assert.equal(warnings.length, 1);
+});
+
+test('a URL in CSS is not a comment', () => {
+  // `//` after a colon is a scheme. Reading it as a comment would take the rest
+  // of the line with it, and a prop used on the line below would go quiet.
+  const warnings = compile(`
+    <script element>
+      export const properties = { tone: 'neutral' };
+    </script>
+    <style>
+      :scope { background: url(https://x/y.png) }
+      :scope[tone='warn'] { border-color: red }
+    </style>
+    <p>hi</p>
+  `);
+  assert.deepEqual(warnings, []);
+});
+
+test('a real use on the same line as a comment still counts', () => {
+  const warnings = compile(`
+    <script element>
+      export const properties = { compact: false };
+    </script>
+    <style>:scope[compact] { padding: 0 } /* tight */</style>
+    <p>hi</p>
+  `);
+  assert.deepEqual(warnings, []);
+});

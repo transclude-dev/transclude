@@ -364,6 +364,19 @@ against.
   the guard failed no test until one was written for it. State is held to the same
   rule, because a volatile name is whatever the template read and not where the
   value came from.
+- **The unused-prop check reads code and skips comments, and the `[^:]` in that
+  regex is doing real work.** `unusedProps` in `compiler/index.js` matches a
+  declared name by word against `<style>` and `<script element>`, because a prop
+  can fairly never appear in a template: `compact` drives `:host([compact])` and
+  is toggled from the block. A word match is what keeps the warning quiet enough
+  to leave on. Comments are cut first, since a name left in a sentence is what a
+  half-done rename leaves behind most often, and counting that as a use took the
+  check away from the one case it exists for. The guard is that `//` after a
+  colon is a scheme: without it `url(https://x/tone.png)` reads as a CSS comment,
+  which has no such thing, and the rest of that line goes with it along with any
+  prop used on it. Measured across the 19 elements in this repository before and
+  after: no new warning, and a synthetic prop named only in a comment goes from
+  quiet to reported.
 - **A light element's styles are `@scope`, and `@scope` reached the last engine
   in March 2026.** `scopeCss` in `compiler/index.js` writes the wrapper, and there
   is no fallback because there is no fallback to write: a browser skips an at-rule

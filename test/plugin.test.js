@@ -76,3 +76,70 @@ test('nothing shipped registers the plugin itself', async () => {
 
   assert.deepEqual(wrong, [], `these register the plugin a second time: ${wrong.join(', ')}`);
 });
+
+// ---- public files in dev ---------------------------------------------------
+//
+// `dev.js` passes `publicDir: false` to Vite so Hono serves these the same way
+// in dev as in production. The cost is that Vite no longer knows they exist, and
+// `transformIndexHtml` warms every `<script type="module" src>` it finds, so a
+// layout with `<script head src="/theme.js" type="module">` logged "Failed to
+// load url /theme.js. Does the file exist?" on every request. Answering with the
+// file is what ends that quietly. A warning that is wrong every time gets read
+// as decoration, so this is pinned rather than left to be noticed again.
+
+/** An app with a public file, and the plugin resolved the way `dev.js` does. */
+async function serving(file = 'theme.js') {
+  const root = project();
+  fs.mkdirSync(path.join(root, 'app', 'public'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'app', 'public', file), 'export default 1\n');
+
+  const plugin = transclude({ appDir: 'app' });
+  await resolveConfig(
+    { root, plugins: [plugin], logLevel: 'silent', publicDir: false, configFile: false },
+    'serve',
+  );
+  // Vite resolves its root through symlinks, and on macOS `os.tmpdir()` is one:
+  // `/var/folders/…` is `/private/var/folders/…`. Comparing against the path
+  // `mkdtemp` handed back fails on that alone.
+  return { root: fs.realpathSync(root), plugin };
+}
+
+test('dev answers for a public file, so Vite stops warning about it', async () => {
+  const { root, plugin } = await serving();
+
+  assert.equal(plugin.resolveId('/theme.js'), path.join(root, 'app', 'public', 'theme.js'));
+});
+
+test('a public file it does not have is left alone', async () => {
+  const { plugin } = await serving();
+
+  assert.equal(plugin.resolveId('/nothing.js'), null);
+});
+
+test("Vite's own ids are never answered for", async () => {
+  const { plugin } = await serving();
+
+  assert.equal(plugin.resolveId('/@vite/client'), null);
+});
+
+test('a URL cannot walk out of the public directory', async () => {
+  const { plugin } = await serving();
+
+  // `/public-x` is prefixed by the directory name and is not inside it, and a
+  // `..` in a URL must not reach the project either.
+  assert.equal(plugin.resolveId('/../transclude.config.js'), null);
+  assert.equal(plugin.resolveId('/../../etc/hosts'), null);
+});
+
+test('a build answers for nothing, so rolldown does not bundle a public file', async () => {
+  const root = project();
+  fs.mkdirSync(path.join(root, 'app', 'public'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'app', 'public', 'theme.js'), 'export default 1\n');
+
+  const plugin = transclude({ appDir: 'app' });
+  await resolve(root, [plugin]);
+
+  // The build copies the directory. Resolving the id here would make the file a
+  // module as well, and it would ship twice.
+  assert.equal(plugin.resolveId('/theme.js'), null);
+});

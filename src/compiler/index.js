@@ -948,10 +948,27 @@ function escapeRegExp(text) {
 }
 
 /**
+ * Comments in either language, so a name written about is not a name used.
+ *
+ * The `[^:]` guard is what keeps `url(https://x/tone.png)` from reading as a
+ * CSS comment that swallows the rest of the line. CSS has no `//` comment, and
+ * a `//` inside a JavaScript string is rare enough to be worth the trade: the
+ * cost there is a warning an author can answer, and the cost of the other
+ * direction is a dead prop nobody hears about.
+ */
+function withoutComments(text) {
+  return text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
+/**
  * A prop nobody reads is usually a rename that only got half done. A prop can
  * fairly never appear in the template. `compact` drives `:host([compact])` in CSS
  * and is toggled from the client block. So a plain word match against <style> and
  * <script> is what keeps this quiet enough to leave on.
+ *
+ * The match reads code and not prose. A name mentioned in a comment is what a
+ * half-done rename leaves behind most often, and counting that as a use is how
+ * the check went quiet on the case it exists for.
  */
 function unusedProps(defaultNode, reads, blocks) {
   if (defaultNode?.type !== 'ObjectExpression') return [];
@@ -969,7 +986,7 @@ function unusedProps(defaultNode, reads, blocks) {
   const script = blocks.element?.code ?? '';
   const rest =
     script.slice(0, defaultNode.start) + script.slice(defaultNode.end);
-  const elsewhere = [...blocks.styles, rest].join('\n');
+  const elsewhere = withoutComments([...blocks.styles, rest].join('\n'));
 
   return declared
     .filter((name) => !reads.has(name))

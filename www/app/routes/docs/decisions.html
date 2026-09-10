@@ -285,16 +285,10 @@
 
   <ul>
     <li>
-      <strong>The unused-prop check reads <code>&lt;style&gt;</code> and
-      <code>&lt;script&gt;</code> by word</strong>, so a prop mentioned in either
-      is assumed used.
-    </li>
-    <li>
-      <strong>In dev, Vite logs <code>Failed to load url</code> for a
-      <code>&lt;script head src&gt;</code> pointing at a public file.</strong> The
-      file exists and the server sends it. Vite does not own it, and silencing
-      the warning would mean letting Vite serve the public directory, which is
-      the split that keeps dev and production honest.
+      <strong>The unused-prop check matches names by word.</strong> It reads the
+      code in <code>&lt;style&gt;</code> and <code>&lt;script element&gt;</code>
+      and skips the comments, so a prop written about is still reported. A prop
+      whose name turns up in either for another reason is assumed used.
     </li>
     <li>
       <strong><code>transclude-check</code> is a separate step.</strong> The dev

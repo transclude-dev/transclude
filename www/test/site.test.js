@@ -725,3 +725,23 @@ describe('one inline script a page, which is the one that sets the theme', () =>
 
   assert.deepEqual(over, [], `pages with more than one inline script: ${over.join(', ')}`);
 });
+
+describe('robots.txt is a file, and it names the sitemap', () => {
+  // Written after Search Console reported it as a 404. A crawler asks for this
+  // before it asks for a page, and the answer was the 404 page.
+  const file = path.join(root, '..', 'dist', 'public', 'robots.txt');
+
+  assert.ok(fs.existsSync(file), 'app/public/robots.txt is missing');
+  assert.match(fs.readFileSync(file, 'utf8'), /^Sitemap: https:\/\/transclude\.dev\/sitemap\.xml$/m);
+});
+
+describe('a fragment says noindex, and a whole page does not', async () => {
+  // A fragment is a region of a page with no <head>, so it carries no
+  // canonical link back to the page it came from. Nothing else tells a search
+  // engine which of the two URLs is the address.
+  const { app } = await import('@transclude/core/production');
+  const ask = (at) => app.request(`http://transclude.dev${at}`);
+
+  assert.equal((await ask('/?fragment=demo')).headers.get('x-robots-tag'), 'noindex');
+  assert.equal((await ask('/')).headers.get('x-robots-tag'), null);
+});

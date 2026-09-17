@@ -1,0 +1,8 @@
+# A crawler asks for this file before it asks for a page. Every page here is
+# written to be read, so nothing is disallowed, and the line that earns the
+# file is the sitemap.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://transclude.dev/sitemap.xml

@@ -21,4 +21,15 @@ export default function server(app) {
     url.hostname = 'transclude.dev';
     return c.redirect(url.toString(), 301);
   });
+
+  // A fragment URL answers with one region of a page and no <head>, so it
+  // carries no <link rel="canonical"> naming the page it came from. Two URLs,
+  // one piece of markup, and nothing saying which of them is the address: a
+  // search engine reads that as a duplicate and picks for itself. The header
+  // says read this, do not index it, which keeps the fragment fetchable and
+  // leaves the whole page as the only address.
+  app.use('*', async (c, next) => {
+    await next();
+    if (new URL(c.req.url).searchParams.has('fragment')) c.header('X-Robots-Tag', 'noindex');
+  });
 }

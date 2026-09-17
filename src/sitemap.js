@@ -120,7 +120,8 @@ function index(count, hostname, limit) {
  * @property {object[]|(() => object[]|Promise<object[]>)} [entries] URLs the
  *   route table cannot know. A function, so an app builds them from its own
  *   data rather than listing them.
- * @property {string[]} [exclude]
+ * @property {Array<string|RegExp>} [exclude] a path to leave out, or a pattern
+ *   the path has to match. Tested against the path, not the absolute URL.
  */
 
 /**

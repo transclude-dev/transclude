@@ -385,3 +385,54 @@ test('a comment is dropped, and the markup around it is kept', () => {
   assert.match(html, /<em>two<\/em>/);
   assert.ok(removed.includes('#comment'));
 });
+
+// ---- what a form in a fragment can reach --------------------------------------
+
+test('a form in a fragment submits to the source, not the page it lands in', () => {
+  // A form with no action, or an empty one, submits to the document it is in.
+  // After the swap that is the host page, same-origin, past the CSRF check and
+  // into the host's own POST. The source is where it belongs.
+  const html = linked(
+    '<form></form><form action=""></form><a href="">here</a><button formaction="">go</button>',
+  );
+
+  assert.equal((html.match(/<form action="https:\/\/source\.example\/guide\/page\.html">/g) ?? []).length, 2);
+  assert.match(html, /href="https:\/\/source\.example\/guide\/page\.html"/);
+  assert.match(html, /formaction="https:\/\/source\.example\/guide\/page\.html"/);
+});
+
+test('an empty fetch attribute stays empty, since it fetches nothing', () => {
+  assert.match(linked('<img src="">'), /<img src="">/);
+});
+
+test('a control cannot name a form by id, because the ids in reach are the host page\'s', () => {
+  const { html, removed } = clean('<button form="login" formaction="https://x.example/c">Go</button>');
+
+  assert.doesNotMatch(html, /form=/);
+  assert.ok(removed.includes('@form'));
+});
+
+// ---- what a url() may cost -------------------------------------------------
+
+test('a url( with a run of spaces and no close is walked past, not backtracked in', () => {
+  // The regex had \s* on both sides of a class that also matched spaces, and
+  // 2,000 of them held the event loop for a second and a half.
+  const css = `background:url(${' '.repeat(5000)}"`;
+  const started = performance.now();
+
+  assert.equal(rewriteCss(css, BASE), css);
+  assert.ok(performance.now() - started < 100, 'took longer than a linear pass should');
+});
+
+test('a quoted url() may hold a space or the other quote', () => {
+  assert.equal(rewriteCss('url("a b.png")', BASE), 'url("https://source.example/guide/a%20b.png")');
+  assert.equal(rewriteCss("url('it\"s.png')", BASE), "url('https://source.example/guide/it%22s.png')");
+});
+
+test('a url() inside a rewritten url() is not read twice', () => {
+  const css = 'a{background:url("x.png")} b{background:url(y.png)}';
+  assert.equal(
+    rewriteCss(css, BASE),
+    'a{background:url("https://source.example/guide/x.png")} b{background:url(https://source.example/guide/y.png)}',
+  );
+});

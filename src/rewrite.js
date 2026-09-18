@@ -162,6 +162,14 @@ export function sanitize(root, { styles = 'keep' } = {}) {
           removed.push(`@${attr.name}`);
           return false;
         }
+        // `form=` points a control at a form by id, and once the fragment lands
+        // the ids in reach are the host page's: a button that submits the login
+        // form it was dropped beside, to wherever its formaction says. A
+        // fragment's control submits a fragment's form by sitting inside it.
+        if (attr.name === 'form') {
+          removed.push('@form');
+          return false;
+        }
         if (styles === 'strip' && attr.name === 'style') {
           removed.push('@style');
           return false;
@@ -300,21 +308,76 @@ export function parseSrcset(value) {
   return out;
 }
 
-const CSS_URL = /url\(\s*(['"]?)([^'")]*)\1\s*\)/gi;
+/** Where a `url(` opens, whatever its case. A literal, so it cannot backtrack. */
+const URL_OPEN = /url\(/gi;
 
 /**
  * `url()` references inside a style attribute or a `<style>` block.
+ *
+ * Read by hand, the way `parseSrcset` is. The regex that did this had `\s*` on
+ * both sides of a URL class that also matched spaces, so `url(` followed by
+ * two thousand spaces and no close held the event loop for a second and a
+ * half, and a style attribute on a foreign page is where that arrives from.
  *
  * @param {string} css
  * @param {string} base
  * @returns {string}
  */
 export function rewriteCss(css, base) {
-  return css.replace(CSS_URL, (whole, quote, url) => {
-    const value = url.trim();
-    if (!value || /^(data|blob):/i.test(value)) return whole;
-    return `url(${quote}${absolute(value, base)}${quote})`;
-  });
+  let out = '';
+  let done = 0;
+
+  for (const open of css.matchAll(URL_OPEN)) {
+    // Inside a url() this pass already rewrote.
+    if (open.index < done) continue;
+
+    const token = readUrlToken(css, open.index + open[0].length);
+    if (!token) continue;
+
+    const value = token.url.trim();
+    const kept = !value || /^(data|blob):/i.test(value);
+    const written = kept
+      ? css.slice(open.index, token.end)
+      : `url(${token.quote}${absolute(value, base)}${token.quote})`;
+
+    out += css.slice(done, open.index) + written;
+    done = token.end;
+  }
+  return out + css.slice(done);
+}
+
+/**
+ * The URL after a `url(`, as the CSS tokenizer reads it: optional space, an
+ * optional quote, the URL up to its closing quote or the paren, optional space,
+ * `)`. Null where the close never comes, and the text is left as written.
+ *
+ * @param {string} css
+ * @param {number} from the index after `url(`
+ * @returns {{ quote: string, url: string, end: number }|null} `end` is the
+ *   index after the closing paren
+ */
+function readUrlToken(css, from) {
+  const space = (i) => i < css.length && SRCSET_SPACE.has(css[i]);
+  let i = from;
+  while (space(i)) i += 1;
+
+  const quote = css[i] === '"' || css[i] === "'" ? css[i] : '';
+  if (quote) i += 1;
+
+  const start = i;
+  if (quote) {
+    while (i < css.length && css[i] !== quote) i += 1;
+    if (i >= css.length) return null;
+  } else {
+    const ends = (c) => SRCSET_SPACE.has(c) || c === ')' || c === '"' || c === "'";
+    while (i < css.length && !ends(css[i])) i += 1;
+  }
+  const url = css.slice(start, i);
+  if (quote) i += 1;
+
+  while (space(i)) i += 1;
+  if (css[i] !== ')') return null;
+  return { quote, url, end: i + 1 };
 }
 
 /**
@@ -350,7 +413,16 @@ export function absolutize(root, base) {
 
         const holdsUrl =
           NAVIGATIONAL.has(attr.name) || FETCHABLE.has(attr.name) || isXlink(attr.name);
-        if (!holdsUrl || !attr.value.trim()) continue;
+        if (!holdsUrl) continue;
+
+        // An empty `href` or `action` means this document, and this document is
+        // the source, not the page the fragment lands in: the same rule as the
+        // hash-only href above. A fetch attribute left empty fetches nothing and
+        // stays as written.
+        if (!attr.value.trim()) {
+          if (NAVIGATIONAL.has(attr.name)) attr.value = base;
+          continue;
+        }
 
         // Only a relative URL or one of the rebasable schemes is made absolute.
         // Anything else — `mailto:`, `tel:`, `data:`, and by the time this runs
@@ -368,6 +440,13 @@ export function absolutize(root, base) {
 
         const urls = attr.value.split(/\s+/).filter(Boolean);
         attr.value = urls.map((url) => absolute(url, base)).join(' ');
+      }
+
+      // A form with no `action` submits to the document it is in, which after
+      // the swap is the host page. The source is where it belongs.
+      const attrs = child.attrs ?? [];
+      if (child.tagName === 'form' && !attrs.some((attr) => attr.name === 'action')) {
+        child.attrs = [...attrs, { name: 'action', value: base }];
       }
 
       if (child.tagName === 'style') {

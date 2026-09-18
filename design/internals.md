@@ -1381,7 +1381,11 @@ against.
   carries them in the same form as the entry. Dynamic imports are left out on
   purpose: the `watch` loaders are on demand by design, and preloading every
   element in the app would undo that. Dev has no list, because Vite serves the
-  modules unbundled and there is nothing to name.
+  modules unbundled and there is nothing to name. The two render paths in
+  `app.js` spell their options once, in `renderOptions`, because they drifted
+  the day this landed: the build passed `preload` and neither app path did, and
+  the showcase test saw nothing wrong because it rendered through a helper of
+  its own that did pass it. A serve test now reads the links off a response.
 - **The precache list is a build artifact, and cannot be anything else.** Only
   the build knows an asset's hashed name, and a runtime with no disk cannot be
   asked: `bytesFrom` in `worker.js` returns `{ get }` and nothing that

@@ -197,6 +197,30 @@ export function createApp({
     lookup,
   });
 
+  /**
+   * What a render is told about the app around it, spelled once.
+   *
+   * There were two spellings, one per render path, and they drifted: the build
+   * passed `preload` and neither of these did, so a prerendered page listed the
+   * chunks its entry imports and a server-rendered one did not. The test that
+   * would have caught it rendered through a helper of its own.
+   *
+   * @param {import('./routes.js').BuiltRoute} route
+   * @returns {import('./document.js').RenderOptions}
+   */
+  const renderOptions = (route) => ({
+    clientEntry: route.client,
+    preload: route.preload ?? [],
+    stylesheet: manifest.stylesheet,
+    csp: config.csp,
+    lang: config.lang,
+    canonical: config.canonical,
+    // Written by the build and carried here, so a server-rendered page says the
+    // same thing about speculation that a file does.
+    speculate: manifest.speculate ?? null,
+    include,
+  });
+
   const app = baseApp({
     csrf: config.csrf,
     csp: config.csp,
@@ -386,17 +410,7 @@ export function createApp({
         });
         const html =
           region === undefined
-            ? await renderRoute(page, ctx, {
-                clientEntry: route.client,
-                stylesheet: manifest.stylesheet,
-                csp: config.csp,
-                lang: config.lang,
-                canonical: config.canonical,
-                // Written by the build and carried here, so a server-rendered
-                // page says the same thing about speculation that a file does.
-                speculate: manifest.speculate ?? null,
-                include,
-              })
+            ? await renderRoute(page, ctx, renderOptions(route))
             : await renderFragment(page, ctx, { region: region || null, include });
 
         if (html instanceof Response) return withEnvelope(html, ctx);
@@ -458,15 +472,7 @@ export function createApp({
 
         const render = async () => {
           const ctx = contextFor(route, c);
-          const html = await renderRoute(pages[route.id], ctx, {
-            clientEntry: route.client,
-            stylesheet: manifest.stylesheet,
-            csp: config.csp,
-            lang: config.lang,
-            canonical: config.canonical,
-            speculate: manifest.speculate ?? null,
-            include,
-          });
+          const html = await renderRoute(pages[route.id], ctx, renderOptions(route));
 
           last = { ctx, html };
           return { html, cacheable: isShareable(html, ctx) };

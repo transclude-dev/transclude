@@ -425,6 +425,16 @@ test('the chunks the entry imports are in the same header, in the same form', as
   assert.match(link, /<\/assets\/card-jkl\.js>; rel=preload; as=script; crossorigin/);
 });
 
+test('the same chunks are hinted from <head>, which is the copy every browser reads', async () => {
+  // The server render path spelled its options apart from the build's and
+  // left `preload` out, so only a prerendered file carried these links.
+  const res = await pageApp().request('http://x/');
+  const body = await res.text();
+
+  assert.match(body, /<link rel="modulepreload" href="\/assets\/runtime-ghi\.js">/);
+  assert.match(body, /<link rel="modulepreload" href="\/assets\/card-jkl\.js">/);
+});
+
 test('a region carries none of it, because it has no head to fill', async () => {
   const res = await pageApp().request('http://x/?fragment=part');
 

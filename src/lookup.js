@@ -42,8 +42,10 @@ export function nodeLookup({ resolver = dns } = {}) {
     }
 
     for (const { address } of addresses) {
+      // The reason and not the address: the proxy repeats this to whoever asked,
+      // and what a private name resolves to is not theirs to learn.
       const why = blockedAddress(address);
-      if (why) return `${address}, which is ${why}`;
+      if (why) return why;
     }
     return null;
   };

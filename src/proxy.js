@@ -120,7 +120,9 @@ async function fetchChecked(url, config, deps) {
 
     if (lookup) {
       const blocked = await lookup(new URL(at).hostname);
-      if (blocked) throw new Refused(403, `${new URL(at).hostname} resolves to ${blocked}`);
+      if (blocked) {
+        throw new Refused(403, `${new URL(at).hostname} resolves to an address that is ${blocked}`);
+      }
     }
 
     const response = await get(at, {

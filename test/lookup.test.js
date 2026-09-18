@@ -50,7 +50,7 @@ test('every address is asked for, not the first one', async () => {
 test('a name answering with a private address is refused, and says which', async () => {
   const { resolver } = fakeResolver({ 'inside.example': ['10.0.0.1'] });
 
-  assert.equal(await nodeLookup({ resolver })('inside.example'), '10.0.0.1, which is private');
+  assert.equal(await nodeLookup({ resolver })('inside.example'), 'private');
 });
 
 test('a public address first does not excuse a private one after it', async () => {
@@ -59,7 +59,7 @@ test('a public address first does not excuse a private one after it', async () =
   // not ours to decide, so either one refuses the fetch.
   const { resolver } = fakeResolver({ 'mixed.example': ['93.184.216.34', '127.0.0.1'] });
 
-  assert.equal(await nodeLookup({ resolver })('mixed.example'), '127.0.0.1, which is loopback');
+  assert.equal(await nodeLookup({ resolver })('mixed.example'), 'loopback');
 });
 
 test('the metadata endpoint is refused by name', async () => {
@@ -67,7 +67,7 @@ test('the metadata endpoint is refused by name', async () => {
 
   assert.equal(
     await nodeLookup({ resolver })('metadata.example'),
-    '169.254.169.254, which is link-local, and the metadata endpoint',
+    'link-local, and the metadata endpoint',
   );
 });
 
@@ -76,7 +76,7 @@ test('an IPv4 address wearing an IPv6 hat is refused', async () => {
 
   assert.equal(
     await nodeLookup({ resolver })('mapped.example'),
-    '::ffff:10.0.0.1, which is private, through an IPv4-mapped address',
+    'private, through an IPv4-mapped address',
   );
 });
 

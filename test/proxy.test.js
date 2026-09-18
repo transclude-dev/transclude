@@ -204,7 +204,7 @@ test('a name that resolves somewhere private is refused, when a resolver is give
   const response = await handler(request('url=https://source.example/guide&id=install'));
 
   assert.equal(response.status, 403);
-  assert.match(await response.text(), /resolves to loopback/);
+  assert.match(await response.text(), /resolves to an address that is loopback/);
   assert.equal(calls.length, 0, 'it connected before the name was resolved');
 });
 

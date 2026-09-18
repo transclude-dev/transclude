@@ -226,7 +226,10 @@ const pageFor = async (id) =>
   );
 
 const sendWith = (c, { response }, html, status) => {
-  for (const [name, value] of response.headers) c.header(name, value);
+  // Appended for `set-cookie`, the one header that repeats. Same as `sendRendered`.
+  for (const [name, value] of response.headers) {
+    c.header(name, value, { append: name === 'set-cookie' });
+  }
   return c.html(html, status ?? response.status);
 };
 

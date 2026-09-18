@@ -587,7 +587,11 @@ export function createApp({
     // Whatever the loaders put on `ctx.response`, after the defaults above so a
     // page can override its own Cache-Control, and before the conditional check
     // so a 304 still carries them.
-    for (const [name, value] of ctx?.response?.headers ?? []) c.header(name, value);
+    for (const [name, value] of ctx?.response?.headers ?? []) {
+      // `set-cookie` is the one header that repeats. `c.header` sets, so a page
+      // that wrote two cookies sent one. The envelope appends, and so does this.
+      c.header(name, value, { append: name === 'set-cookie' });
+    }
 
     if (c.req.header('if-none-match') === etag) return c.body(null, 304);
 

@@ -435,6 +435,22 @@ test('the same chunks are hinted from <head>, which is the copy every browser re
   assert.match(body, /<link rel="modulepreload" href="\/assets\/card-jkl\.js">/);
 });
 
+test('two cookies written before a render both reach the browser', async () => {
+  // `c.header` sets, and `Set-Cookie` is the one header that repeats. A page that
+  // ended a session and set a flash message sent only the flash, and the
+  // session stayed valid.
+  const app = pageApp({
+    load: async (ctx) => {
+      ctx.response.headers.append('Set-Cookie', 'session=; Max-Age=0');
+      ctx.response.headers.append('Set-Cookie', 'flash=out');
+      return {};
+    },
+  });
+  const res = await app.request('http://x/');
+
+  assert.deepEqual(res.headers.getSetCookie(), ['session=; Max-Age=0', 'flash=out']);
+});
+
 test('a region carries none of it, because it has no head to fill', async () => {
   const res = await pageApp().request('http://x/?fragment=part');
 

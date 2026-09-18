@@ -25,7 +25,7 @@ const DIRECTIVES = new Set(['if', 'else-if', 'else', 'each', 'key', 'fragment'])
  * The inclusion element. Reserved: an app cannot define one in `elements/`,
  * because this is read before the component table is consulted.
  */
-export const INCLUDE_TAG = 'transclude';
+const INCLUDE_TAG = 'transclude';
 const BRANCH = ['if', 'else-if', 'else'];
 
 export class CompileError extends Error {
@@ -710,8 +710,17 @@ class Codegen {
     if (fenced) this.s(out, ANCHOR_CLOSE);
   }
 
-  /** `list`, `key` and `item`. One loop, taken apart so it can be reconciled. */
-  eachPieces(el, scope, topLevel, enclosing, ranged) {
+  /**
+   * What both passes over an `each` agree on before either writes a line: the
+   * parsed directive, the list expression, the names of the item and the index,
+   * and the scope that declares them.
+   *
+   * The index is always named, whether or not the author asked for it: a block
+   * nested in this loop takes it as an argument, and both passes have to agree
+   * on how many arguments that is. Both passes used to spell all of this out,
+   * fourteen identical lines each.
+   */
+  openLoop(el, scope) {
     const spec = parseEach(el.attrs.find((a) => a.name === 'each').value, el);
     const id = ++this.uid;
 
@@ -726,6 +735,13 @@ class Codegen {
     const inner = new Scope(scope);
     inner.declare(spec.item, itemJs);
     if (spec.index) inner.declare(spec.index, indexJs);
+
+    return { id, listJs, itemJs, indexJs, inner };
+  }
+
+  /** `list`, `key` and `item`. One loop, taken apart so it can be reconciled. */
+  eachPieces(el, scope, topLevel, enclosing, ranged) {
+    const { listJs, itemJs, indexJs, inner } = this.openLoop(el, scope);
 
     this.loops.push({ item: itemJs, index: indexJs });
     const item = [];
@@ -760,23 +776,7 @@ class Codegen {
   }
 
   emitEachBody(el, out, scope, topLevel) {
-    const spec = parseEach(el.attrs.find((a) => a.name === 'each').value, el);
-    const id = ++this.uid;
-
-    const listAst = this.parse(spec.list, el);
-    this.note(collectRefs(listAst, scope));
-    const listJs = emit(listAst, scope);
-    this.warnShadowing(spec, scope, el);
-
-    const itemJs = `_u${id}_${spec.item}`;
-    // Always named, whether or not the author asked for it: a block nested in
-    // this loop takes it as an argument, and both passes have to agree on how
-    // many arguments that is.
-    const indexJs = `_u${id}_${spec.index ?? 'index'}`;
-
-    const inner = new Scope(scope);
-    inner.declare(spec.item, itemJs);
-    if (spec.index) inner.declare(spec.index, indexJs);
+    const { id, listJs, itemJs, indexJs, inner } = this.openLoop(el, scope);
 
     this.loops.push({ item: itemJs, index: indexJs });
     this.c(out, `{ let _n${id} = 0; for (const ${itemJs} of (${listJs}) ?? []) {`);
@@ -883,10 +883,6 @@ class Codegen {
     this.s(out, `</${tag}>`);
   }
 
-  /**
-   * Light DOM: no shadow root, no template, markup straight into the page. Its
-   * children become its default slot, rendered into their own buffer first.
-   */
   /**
    * `<transclude src="#pricing">`, the same page's own region, in a second
    * place.
@@ -1006,6 +1002,10 @@ class Codegen {
     );
   }
 
+  /**
+   * Light DOM: no shadow root, no template, markup straight into the page. Its
+   * children become its default slot, rendered into their own buffer first.
+   */
   emitLight(el, out, scope) {
     const tag = el.tagName;
     const ref = this.componentRef(tag);
@@ -1183,8 +1183,10 @@ function isJsonCall(source) {
   }
 }
 
-export const ANCHOR_OPEN = '<!--[-->';
-export const ANCHOR_CLOSE = '<!--]-->';
+// The runtime reads these back as comment data, `[` and `]`, and never imports
+// them: it ships to a browser and must not import from the compiler.
+const ANCHOR_OPEN = '<!--[-->';
+const ANCHOR_CLOSE = '<!--]-->';
 
 /**
  * `else` / `else-if` bind to the `if` before them, so a chain is one unit. Both
@@ -1224,12 +1226,6 @@ export function gatherChain(nodes, i) {
 
 // ---- tree helpers ---------------------------------------------------------
 
-// parse5 puts template children on `.content`, not `.childNodes`. Forgetting
-// this silently skips everything inside every template.
-/**
- * @param {object} node
- * @returns {object[]} a template's live under `.content`, so walking `childNodes` finds nothing
- */
 /**
  * A repeated element may not carry a `view-transition-name` written out.
  *
@@ -1269,6 +1265,13 @@ function assertUniqueTransitionName(el) {
   );
 }
 
+/**
+ * parse5 puts template children on `.content`, not `.childNodes`. Forgetting
+ * this silently skips everything inside every template.
+ *
+ * @param {ParsedNode} node
+ * @returns {ParsedNode[]} a template's live under `.content`, so walking `childNodes` finds nothing
+ */
 export function childrenOf(node) {
   if (node.tagName === 'template' && node.content) return node.content.childNodes ?? [];
   return node.childNodes ?? [];

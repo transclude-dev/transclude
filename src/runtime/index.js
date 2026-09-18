@@ -228,7 +228,7 @@ export function attrName(prop) {
  * a page holding a hundred of them, more than rendering a hundred table rows.
  */
 const plans = new WeakMap();
-const NO_PLAN = { entries: [], claimed: new Set() };
+const NO_PLAN = { entries: [], claimed: new Set(), byAttr: new Map() };
 
 function planOf(defs) {
   if (!defs || typeof defs !== 'object') return NO_PLAN;
@@ -238,13 +238,15 @@ function planOf(defs) {
 
   const entries = [];
   const claimed = new Set();
+  const byAttr = new Map();
   for (const key of Object.keys(defs)) {
     const attr = attrName(key);
     claimed.add(attr).add(key);
+    byAttr.set(attr, key);
     entries.push({ key, attr, fallback: defs[key] });
   }
 
-  const plan = { entries, claimed };
+  const plan = { entries, claimed, byAttr };
   plans.set(defs, plan);
   return plan;
 }
@@ -944,10 +946,14 @@ function defineMembers(Class, members, tag) {
 
 /**
  * The prop an attribute name belongs to. Without a rename the mapping is just
- * dash-casing, so this reverses it, over a handful of declared names.
+ * dash-casing, so this reverses it, over the table `planOf` already holds.
+ *
+ * It used to search the declared names and dash-case each one on the way, on
+ * every attribute a parent passes to a child element. That was 130 ns on top of
+ * the 20 ns the attribute itself costs to write.
  */
 function propFor(def, attr) {
-  return Object.keys(def.propDefs ?? {}).find((key) => attrName(key) === attr);
+  return planOf(def.propDefs).byAttr.get(attr);
 }
 
 /**

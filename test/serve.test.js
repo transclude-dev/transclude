@@ -366,7 +366,7 @@ test('with no hook it still logs, and says nothing to the visitor', async () => 
 
 // ---- what a page will ask for ----------------------------------------------
 
-const pageApp = (over = {}) =>
+const pageApp = (over = {}, app = {}) =>
   createApp({
     config: { csrf: false, trailingSlash: 'never', cookieSecret: 's', fragmentParam: 'fragment' },
     manifest: {
@@ -405,6 +405,7 @@ const pageApp = (over = {}) =>
     errorPage: { body: bytes('broke'), etag: '"e"', encodings: new Map(), type: 'text/html' },
     hash: (b) => `"${b.length.toString(36)}"`,
     compress: null,
+    ...app,
   });
 
 test('a document says what it is going to fetch, so a proxy can send a 103', async () => {
@@ -724,4 +725,35 @@ test('a failing feed reaches onError, with a null route', async () => {
   assert.equal(res.status, 500);
   assert.equal(seen[0].ctx.phase, 'feed');
   assert.equal(seen[0].ctx.route, null);
+});
+
+test('a held page is encoded, hashed and compressed once, not on every hit', async () => {
+  // The hit path did all three per request: 110 of the 120 µs a cached page
+  // cost, and every brotli hit crossed the thread pool.
+  let hashed = 0;
+  let compressed = 0;
+  const app = pageApp(
+    { revalidate: 60, render: () => ({ default: `<p>${'x'.repeat(600)}</p>` }) },
+    {
+      hash: (b) => {
+        hashed += 1;
+        return `"${b.length.toString(36)}"`;
+      },
+      compress: (bytes) => {
+        compressed += 1;
+        return bytes;
+      },
+    },
+  );
+  const headers = { 'accept-encoding': 'br' };
+
+  const first = await app.request('http://x/', { headers });
+  const second = await app.request('http://x/', { headers });
+
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 200);
+  assert.equal(second.headers.get('etag'), first.headers.get('etag'));
+  assert.equal(second.headers.get('content-encoding'), 'br');
+  assert.equal(hashed, 1, 'hashed on the first request only');
+  assert.equal(compressed, 1, 'compressed on the first request only');
 });

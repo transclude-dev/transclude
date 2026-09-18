@@ -490,7 +490,8 @@ export function createApp({
         // leaves in the in-flight map answers every later request with a dead
         // promise.
         const after = afterFor(c, (error) => report(error, c, { route, phase: 'revalidate' }));
-        const html = await cache.read(cacheKey(c.req.url), window, render, after);
+        const held = await cache.read(cacheKey(c.req.url), window, render, after);
+        const html = held.html;
 
         // A miss rendered through the cache, and that render can answer with a
         // `Response`. It was not stored, but it is still the answer.
@@ -499,7 +500,7 @@ export function createApp({
         // A hit ran no loader, so there is no envelope to carry: a page with a
         // header was never stored. It still needs a context to send with.
         const ctx = last ? last.ctx : contextFor(route, c);
-        return sendRendered(c, html, ctx, preload);
+        return sendRendered(c, html, ctx, preload, held);
       } catch (err) {
         return internalError(c, err, { route, phase: 'page' });
       }
@@ -556,26 +557,26 @@ export function createApp({
   }
 
   /**
-   * A response rendered for this request. There is no prebuilt variant to reach
-   * for, so the ETag is computed here and the body is compressed on the way out.
+   * A response rendered for this request. A page rendered once for this request
+   * has no prebuilt variant to reach for, so the ETag is computed here and the
+   * body is compressed on the way out. A held page has `prepared` remember both.
    * The conditional check happens first, so a revalidating client pays for a hash
    * and nothing else.
    *
    * `TextEncoder` rather than `Buffer`: the latter is Node's, and this file is not.
    */
-  async function sendRendered(c, html, ctx = null, preload = null) {
+  async function sendRendered(c, html, ctx = null, preload = null, held = null) {
     // Before the body is even built: a proxy that understands this turns it into
     // a 103, and the browser starts the stylesheet while the loader is still
     // waiting. Set here rather than on `ctx.response`, because a header there is
     // one of the things that makes a page too personal to cache.
     if (preload) c.header('Link', preload);
 
-    const body = encoder.encode(html);
-    const base = await hash(body);
+    const ready = await prepared(html, held);
 
-    const available = compress && body.length >= COMPRESSIBLE_FLOOR ? ['br', 'gzip'] : [];
+    const available = compress && ready.body.length >= COMPRESSIBLE_FLOOR ? ['br', 'gzip'] : [];
     const encoding = pickEncoding(c.req.header('accept-encoding'), available);
-    const etag = encoding ? `${base.slice(0, -1)}-${encoding}"` : base;
+    const etag = encoding ? `${ready.etag.slice(0, -1)}-${encoding}"` : ready.etag;
 
     c.header('Vary', varyOn);
     // The same test that gates the held-page store. A shareable render is
@@ -595,11 +596,43 @@ export function createApp({
 
     if (c.req.header('if-none-match') === etag) return c.body(null, 304);
 
-    const out = encoding ? await compress(body, encoding) : body;
+    const out = encoding ? await encoded(ready, encoding) : ready.body;
     if (encoding) c.header('Content-Encoding', encoding);
     c.header('Content-Type', 'text/html; charset=utf-8');
     c.header('Content-Length', String(out.length));
     return c.body(out, ctx?.response?.status ?? 200);
+  }
+
+  /**
+   * The bytes and the ETag of a document, and the compressed copies made so far.
+   *
+   * Worked out once per held page and kept beside the cache's own entry, which
+   * is what `held` is. A hit used to encode, hash and compress the same markup
+   * on every request: 110 of the 120 µs a cached page cost, and every brotli hit
+   * crossed the thread pool. A page rendered for this request alone gets a fresh
+   * one that nothing keeps. A store that hands back a new object per read gets a
+   * fresh one every time too, which is the old cost and still correct.
+   */
+  const preparedFor = new WeakMap();
+
+  async function prepared(html, held) {
+    const kept = held ? preparedFor.get(held) : null;
+    if (kept) return kept;
+
+    const body = encoder.encode(html);
+    const ready = { body, etag: await hash(body), encodings: new Map() };
+    if (held) preparedFor.set(held, ready);
+    return ready;
+  }
+
+  /** One compressed copy per encoding, made by the first request that accepts it. */
+  async function encoded(ready, encoding) {
+    const kept = ready.encodings.get(encoding);
+    if (kept) return kept;
+
+    const out = await compress(ready.body, encoding);
+    ready.encodings.set(encoding, out);
+    return out;
   }
 
   return app;

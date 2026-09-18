@@ -130,7 +130,7 @@ function hold(work, after) {
  * @param {{ now?: () => number }} [deps] injected so a test can move time
  * @returns {{ read: (key: string, window: Window|null,
  *   render: () => Promise<{ html: string|Response, cacheable: boolean }>,
- *   after?: ((work: Promise<unknown>) => void)|null) => Promise<string|Response|null>,
+ *   after?: ((work: Promise<unknown>) => void)|null) => Promise<{ html: string|Response }|null>,
  *   revalidateTag: (tag: string) => void, revalidatePath: (key: string) => void }}
  */
 export function createCache(store = memoryStore(), { now = () => Date.now() } = {}) {
@@ -146,18 +146,17 @@ export function createCache(store = memoryStore(), { now = () => Date.now() } = 
 
     const work = (async () => {
       const result = await render();
-      if (result.cacheable) {
-        store.set(key, {
-          html: result.html,
-          tags: window.tags,
-          expires: now() + window.seconds * 1000,
-        });
-      } else {
+      if (!result.cacheable) {
         // It stopped being cacheable. Holding the last good copy would serve a
-        // page the app has decided not to give out.
+        // page the app has decided not to give out. The answer still goes out,
+        // in an entry nothing keeps.
         store.delete(key);
+        return { html: result.html };
       }
-      return result;
+
+      const entry = { html: result.html, tags: window.tags, expires: now() + window.seconds * 1000 };
+      store.set(key, entry);
+      return entry;
     })().finally(() => {
       // Only if this is still the entry made above. A render that ran past
       // ABANDONED_MS was replaced, and it must not delete its replacement.
@@ -172,6 +171,13 @@ export function createCache(store = memoryStore(), { now = () => Date.now() } = 
     /**
      * `null` when the caller should just render, which is every uncached route.
      *
+     * Otherwise the entry the answer came from and not its markup alone: the
+     * stored one on a hit or a cacheable render, a bare `{ html }` for a render
+     * the store refused. The sender keeps what it works out from the markup
+     * beside that object, so a hit is not encoded, hashed and compressed again
+     * on every request. Nothing is written into the entry itself, so a store
+     * that serializes still works.
+     *
      * `after` is the request's `ctx.after`. Only the stale path uses it, and a
      * caller that leaves it out gets a rebuild nothing holds, which is what this
      * used to do everywhere.
@@ -180,9 +186,9 @@ export function createCache(store = memoryStore(), { now = () => Date.now() } = 
       if (!window) return null;
 
       const hit = store.get(key);
-      if (!hit) return refresh(key, window, render).then((result) => result.html);
+      if (!hit) return refresh(key, window, render);
 
-      if (hit.expires > now()) return hit.html;
+      if (hit.expires > now()) return hit;
 
       // Stale. Answer with it now and rebuild behind the response. A failed
       // rebuild leaves the stale entry in place rather than emptying the cache
@@ -191,7 +197,7 @@ export function createCache(store = memoryStore(), { now = () => Date.now() } = 
       // `after` is what keeps the rebuild alive. On workerd the isolate may stop
       // the moment the response is sent, and work nothing holds stops with it.
       hold(refresh(key, window, render), after);
-      return hit.html;
+      return hit;
     },
 
     revalidateTag: (tag) => store.deleteByTag(tag),

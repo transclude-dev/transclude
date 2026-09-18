@@ -69,7 +69,7 @@ export declare function memoryStore({ max }?: {
  * @param {{ now?: () => number }} [deps] injected so a test can move time
  * @returns {{ read: (key: string, window: Window|null,
  *   render: () => Promise<{ html: string|Response, cacheable: boolean }>,
- *   after?: ((work: Promise<unknown>) => void)|null) => Promise<string|Response|null>,
+ *   after?: ((work: Promise<unknown>) => void)|null) => Promise<{ html: string|Response }|null>,
  *   revalidateTag: (tag: string) => void, revalidatePath: (key: string) => void }}
  */
 export declare function createCache(store?: CacheStore, { now }?: {
@@ -78,7 +78,9 @@ export declare function createCache(store?: CacheStore, { now }?: {
     read: (key: string, window: Window | null, render: () => Promise<{
         html: string | Response;
         cacheable: boolean;
-    }>, after?: ((work: Promise<unknown>) => void) | null) => Promise<string | Response | null>;
+    }>, after?: ((work: Promise<unknown>) => void) | null) => Promise<{
+        html: string | Response;
+    } | null>;
     revalidateTag: (tag: string) => void;
     revalidatePath: (key: string) => void;
 };

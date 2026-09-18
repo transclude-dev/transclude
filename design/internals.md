@@ -1355,6 +1355,17 @@ against.
   writing the header inside the render closure rather than at send time: doing it
   later in `sendRendered` is already too late to break anything, so that
   mutation proves nothing.
+- **A cache hit is sent the way a file is, and the work is kept beside the entry.**
+  `sendRendered` encoded, hashed and compressed the markup on every request,
+  hit or miss: 110 of the 120 µs a held page cost, and every brotli hit crossed
+  the thread pool. `cache.read` returns the store's entry object rather than
+  its markup, so the bytes, the ETag and each compressed copy can be kept in a
+  `WeakMap` keyed by it and go when the entry does. The store's contract did
+  not change: nothing is written into the entry, so a store that serializes
+  still works, and one that returns a fresh object per read pays the old cost
+  and is still correct. An entry now stands for the markup twice, as a string
+  and as bytes, plus one copy per encoding served: about two and a half times
+  the page, bounded by the store's `max`.
 - **A page does not stream, and the synchronous render is why.** An endpoint
   does: it returns a `Response` the app never touches the body of, so a
   `ReadableStream` reaches the client through `runEndpoint` and `withEnvelope`,

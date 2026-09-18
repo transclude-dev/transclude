@@ -13,6 +13,12 @@ function clock(start = 0) {
 
 const ok = (html) => async () => ({ html, cacheable: true });
 
+/** The markup an answer carried. `read` hands back the entry it came from. */
+const readHtml = async (cache, ...args) => {
+  const held = await cache.read(...args);
+  return held === null ? null : held.html;
+};
+
 // ---- what a page asked for ------------------------------------------------
 
 test('a number is seconds, and an object carries tags', () => {
@@ -43,9 +49,9 @@ test('within the window the render does not run again', async () => {
   let renders = 0;
   const render = async () => (renders++, { html: `v${renders}`, cacheable: true });
 
-  assert.equal(await cache.read('/x', { seconds: 60, tags: [] }, render), 'v1');
+  assert.equal(await readHtml(cache, '/x', { seconds: 60, tags: [] }, render), 'v1');
   time.tick(59_000);
-  assert.equal(await cache.read('/x', { seconds: 60, tags: [] }, render), 'v1');
+  assert.equal(await readHtml(cache, '/x', { seconds: 60, tags: [] }, render), 'v1');
   assert.equal(renders, 1);
 });
 
@@ -58,13 +64,13 @@ test('past the window the stale page goes out and a fresh one is built behind it
   const render = async () => (renders++, { html: `v${renders}`, cacheable: true });
   const window = { seconds: 60, tags: [] };
 
-  await cache.read('/x', window, render);
+  await readHtml(cache, '/x', window, render);
   time.tick(61_000);
 
-  assert.equal(await cache.read('/x', window, render), 'v1', 'the visitor waited for a render');
+  assert.equal(await readHtml(cache, '/x', window, render), 'v1', 'the visitor waited for a render');
   await Promise.resolve();
   await Promise.resolve();
-  assert.equal(await cache.read('/x', window, render), 'v2', 'it never refreshed');
+  assert.equal(await readHtml(cache, '/x', window, render), 'v2', 'it never refreshed');
 });
 
 test('one render at a time per key, however many requests arrive', async () => {
@@ -81,9 +87,9 @@ test('one render at a time per key, however many requests arrive', async () => {
   const window = { seconds: 60, tags: [] };
 
   await Promise.all([
-    cache.read('/x', window, render),
-    cache.read('/x', window, render),
-    cache.read('/x', window, render),
+    readHtml(cache, '/x', window, render),
+    readHtml(cache, '/x', window, render),
+    readHtml(cache, '/x', window, render),
   ]);
 
   assert.equal(renders, 1);
@@ -104,11 +110,11 @@ test('the stale rebuild is handed to after, which is what keeps it alive', async
   const after = (work) => held.push(work);
   const window = { seconds: 60, tags: [] };
 
-  await cache.read('/x', window, ok('v1'), after);
+  await readHtml(cache, '/x', window, ok('v1'), after);
   assert.deepEqual(held, [], 'a first render is awaited by the request itself');
 
   time.tick(61_000);
-  await cache.read('/x', window, ok('v2'), after);
+  await readHtml(cache, '/x', window, ok('v2'), after);
 
   assert.equal(held.length, 1, 'the rebuild behind the response was not held');
   assert.equal(typeof held[0].then, 'function', 'after takes a promise, not a function');
@@ -123,10 +129,10 @@ test('a rebuild nobody holds still cannot reject into the runtime', async () => 
     throw new Error('the loader threw');
   };
 
-  await cache.read('/x', window, ok('v1'));
+  await readHtml(cache, '/x', window, ok('v1'));
   time.tick(61_000);
 
-  assert.equal(await cache.read('/x', window, failing), 'v1', 'the stale copy still went out');
+  assert.equal(await readHtml(cache, '/x', window, failing), 'v1', 'the stale copy still went out');
   await new Promise((resolve) => setTimeout(resolve, 5));
 });
 
@@ -144,11 +150,11 @@ test('a rebuild that never settles does not hang the next request', async () => 
     return { html: `v${renders}`, cacheable: true };
   };
 
-  await cache.read('/x', window, render);
+  await readHtml(cache, '/x', window, render);
   time.tick(61_000);
 
   // Serves the stale copy and abandons a rebuild that will never come back.
-  assert.equal(await cache.read('/x', window, render), 'v1');
+  assert.equal(await readHtml(cache, '/x', window, render), 'v1');
 
   // A save drops the entry, so the next request has nothing to serve and has to
   // wait for a render. Without the bound it waits on the dead one, forever.
@@ -156,7 +162,7 @@ test('a rebuild that never settles does not hang the next request', async () => 
   time.tick(30_000);
 
   const answer = await Promise.race([
-    cache.read('/x', window, render),
+    readHtml(cache, '/x', window, render),
     new Promise((resolve) => setTimeout(() => resolve('HUNG'), 50)),
   ]);
 
@@ -177,9 +183,9 @@ test('inside the bound the key is still shared, so one render serves all', async
     return { html: 'v', cacheable: true };
   };
 
-  cache.read('/x', window, render);
+  readHtml(cache, '/x', window, render);
   time.tick(29_000);
-  await cache.read('/x', window, render);
+  await readHtml(cache, '/x', window, render);
 
   assert.equal(renders, 1);
 });
@@ -199,21 +205,21 @@ test('a render that finishes after it was replaced leaves the replacement alone'
     return { html: `v${renders}`, cacheable: true };
   };
 
-  cache.read('/x', window, render);
+  readHtml(cache, '/x', window, render);
   time.tick(31_000);
-  cache.read('/x', window, render);
+  readHtml(cache, '/x', window, render);
 
   // The first one comes back late, after the second took the key.
   release();
   await new Promise((resolve) => setTimeout(resolve, 5));
 
-  await cache.read('/x', window, render);
+  await readHtml(cache, '/x', window, render);
   assert.equal(renders, 2, 'the late finally freed a key the replacement was using');
 });
 
 test('a route with no window always renders', async () => {
   const cache = createCache();
-  assert.equal(await cache.read('/x', null, ok('fresh')), null);
+  assert.equal(await readHtml(cache, '/x', null, ok('fresh')), null);
 });
 
 // ---- what is not cached ---------------------------------------------------
@@ -225,8 +231,8 @@ test('a page that is not cacheable is served and not stored', async () => {
   const render = async () => (renders++, { html: `v${renders}`, cacheable: false });
   const window = { seconds: 60, tags: [] };
 
-  assert.equal(await cache.read('/x', window, render), 'v1');
-  assert.equal(await cache.read('/x', window, render), 'v2', 'it was stored anyway');
+  assert.equal(await readHtml(cache, '/x', window, render), 'v1');
+  assert.equal(await readHtml(cache, '/x', window, render), 'v2', 'it was stored anyway');
 });
 
 test('a page that stops being cacheable drops the copy it had', async () => {
@@ -237,11 +243,11 @@ test('a page that stops being cacheable drops the copy it had', async () => {
   const cache = createCache(store, time);
   const window = { seconds: 60, tags: [] };
 
-  await cache.read('/x', window, ok('public'));
+  await readHtml(cache, '/x', window, ok('public'));
   assert.ok(store.get('/x'));
 
   time.tick(61_000);
-  await cache.read('/x', window, async () => ({ html: 'private', cacheable: false }));
+  await readHtml(cache, '/x', window, async () => ({ html: 'private', cacheable: false }));
   await Promise.resolve();
   await Promise.resolve();
 
@@ -255,9 +261,9 @@ test('a tag drops every entry carrying it, and leaves the rest', async () => {
   const store = memoryStore();
   const cache = createCache(store, time);
 
-  await cache.read('/a', { seconds: 60, tags: ['plans'] }, ok('a'));
-  await cache.read('/b', { seconds: 60, tags: ['plans'] }, ok('b'));
-  await cache.read('/c', { seconds: 60, tags: ['other'] }, ok('c'));
+  await readHtml(cache, '/a', { seconds: 60, tags: ['plans'] }, ok('a'));
+  await readHtml(cache, '/b', { seconds: 60, tags: ['plans'] }, ok('b'));
+  await readHtml(cache, '/c', { seconds: 60, tags: ['other'] }, ok('c'));
 
   cache.revalidateTag('plans');
 
@@ -270,7 +276,7 @@ test('a path can be dropped on its own', async () => {
   const store = memoryStore();
   const cache = createCache(store, clock());
 
-  await cache.read('/a', { seconds: 60, tags: [] }, ok('a'));
+  await readHtml(cache, '/a', { seconds: 60, tags: [] }, ok('a'));
   cache.revalidatePath('/a');
   assert.equal(store.get('/a'), undefined);
 });
@@ -344,7 +350,7 @@ test('a store can be swapped for one that is shared', async () => {
   };
 
   const cache = createCache(store, clock());
-  await cache.read('/x', { seconds: 60, tags: [] }, ok('x'));
+  await readHtml(cache, '/x', { seconds: 60, tags: [] }, ok('x'));
   cache.revalidateTag('t');
 
   assert.deepEqual(calls, [['get', '/x'], ['set', '/x'], ['deleteByTag', 't']]);
@@ -475,4 +481,19 @@ test('a different query is a different page', async () => {
   await app.request('http://x/?q=b');
 
   assert.equal(renders(), 2);
+});
+
+test('the answer is the entry it came from, so a sender can keep work beside it', async () => {
+  // A string was not enough: nothing can be kept beside one, and the sender
+  // encoded, hashed and compressed the same markup on every hit.
+  const cache = createCache(memoryStore(), clock());
+  const window = { seconds: 60, tags: [] };
+
+  const first = await cache.read('/x', window, ok('v1'));
+  const second = await cache.read('/x', window, ok('v2'));
+  assert.equal(first, second, 'a hit hands back the stored object itself');
+  assert.equal(second.html, 'v1');
+
+  const refused = await cache.read('/y', window, async () => ({ html: 'no', cacheable: false }));
+  assert.deepEqual(refused, { html: 'no' });
 });

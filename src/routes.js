@@ -287,3 +287,61 @@ export function resolveRoutesDir(app, routesDir) {
   }
   return dir;
 }
+
+/** The file a directory's layout lives in. */
+export const LAYOUT_FILE = '_layout.html';
+
+/**
+ * A layout's id, from its directory relative to the routes root: the root is
+ * "root", `people/team` is "people-team".
+ *
+ * @param {string} relativeDir
+ * @returns {string}
+ */
+export function layoutId(relativeDir) {
+  return relativeDir ? relativeDir.split(path.sep).join('-') : 'root';
+}
+
+/**
+ * Every layout under the routes root, by id. A dot-directory is skipped, the
+ * same as `scanRoutes` skips one.
+ *
+ * @param {string} dir the routes root
+ * @param {string} [base] the same, carried through the recursion
+ * @param {Map<string, string>} [out]
+ * @returns {Map<string, string>} id to file
+ */
+export function scanLayouts(dir, base = dir, out = new Map()) {
+  if (!fs.existsSync(dir)) return out;
+
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (!entry.name.startsWith('.')) scanLayouts(full, base, out);
+    } else if (entry.name === LAYOUT_FILE) {
+      out.set(layoutId(path.relative(base, dir)), full);
+    }
+  }
+  return out;
+}
+
+/**
+ * The layouts wrapping a route file, outermost first: the `_layout.html` of
+ * every directory from the routes root down to the file's own, where one exists.
+ *
+ * This rule was spelled six ways across the plugin and the type checker, and two
+ * of the spellings had already parted on dot-directories.
+ *
+ * @param {string} rel the file's path relative to the routes root
+ * @param {Map<string, unknown>} layouts what `scanLayouts` found
+ * @returns {string[]} ids
+ */
+export function layoutChain(rel, layouts) {
+  const dirs = path.dirname(rel).split(path.sep).filter((d) => d && d !== '.');
+  const chain = [];
+  for (let i = 0; i <= dirs.length; i++) {
+    const id = i === 0 ? 'root' : dirs.slice(0, i).join('-');
+    if (layouts.has(id)) chain.push(id);
+  }
+  return chain;
+}

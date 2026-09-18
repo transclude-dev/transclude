@@ -18,7 +18,7 @@ import {
   readBehavior,
   readFlags,
 } from './compiler/index.js';
-import { resolveRoutesDir, scanRoutes } from './routes.js';
+import { layoutChain, resolveRoutesDir, scanLayouts, scanRoutes } from './routes.js';
 import { MARKDOWN_EXT, sourceOf } from './markdown.js';
 import { SERVER_FILE } from './server.js';
 
@@ -27,7 +27,6 @@ const P_PAGE = 'virtual:transclude-page/';
 const P_CLIENT = 'virtual:transclude-client/';
 const P_LAYOUT = 'virtual:transclude-layout/';
 const SERVER_ENTRY = 'virtual:transclude-server';
-const LAYOUT_FILE = '_layout.html';
 
 const RUNTIME_FILE = fileURLToPath(new URL('./runtime/index.js', import.meta.url));
 
@@ -103,15 +102,8 @@ export default function transclude({
    * Layouts that wrap a page, outermost first: every _layout.html from the routes
    * root down to the page's own directory.
    */
-  const chainFor = (route) => {
-    const dirs = path.dirname(route.rel).split(path.sep).filter((d) => d && d !== '.');
-    const chain = [];
-    for (let i = 0; i <= dirs.length; i++) {
-      const id = i === 0 ? 'root' : dirs.slice(0, i).join('-');
-      if (layouts.has(id)) chain.push({ id, file: layouts.get(id) });
-    }
-    return chain;
-  };
+  const chainFor = (route) =>
+    layoutChain(route.rel, layouts).map((id) => ({ id, file: layouts.get(id) }));
 
   /**
    * Every component the page can end up rendering, including ones only reached
@@ -485,22 +477,6 @@ export function clientEntryUrl(page) {
  */
 export function pageModuleId(page) {
   return `${P_PAGE}${page}`;
-}
-
-/** `routes/_layout.html` -> "root", `routes/people/_layout.html` -> "people". */
-function scanLayouts(dir, base = dir, out = new Map()) {
-  if (!fs.existsSync(dir)) return out;
-
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (!entry.name.startsWith('.')) scanLayouts(full, base, out);
-    } else if (entry.name === LAYOUT_FILE) {
-      const rel = path.relative(base, dir);
-      out.set(rel ? rel.split(path.sep).join('-') : 'root', full);
-    }
-  }
-  return out;
 }
 
 function readDir(dir) {

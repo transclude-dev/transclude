@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { resolveRoutesDir, scanRoutes, toRoute } from '../src/routes.js';
+import { layoutChain, layoutId, resolveRoutesDir, scanRoutes, toRoute } from '../src/routes.js';
 
 const route = (rel) => toRoute(rel.split('/').join(path.sep), rel);
 
@@ -213,4 +213,27 @@ test('500.js is an endpoint, not the error page', () => {
   const { endpoints, error } = scanRoutes(fixture(['500.js']));
   assert.equal(error, null);
   assert.deepEqual(endpoints.map((r) => r.pattern), ['/500']);
+});
+
+// ---- which layouts wrap a file ---------------------------------------------
+
+test('the layouts wrapping a file are the ones on its path, outermost first', () => {
+  // One rule, in one place. It was spelled six ways across the plugin and the
+  // type checker, and two had parted on dot-directories.
+  const layouts = new Map([
+    ['root', 'a'],
+    ['people', 'b'],
+    ['people-team', 'c'],
+  ]);
+
+  assert.deepEqual(layoutChain('people/team/index.html', layouts), ['root', 'people', 'people-team']);
+  assert.deepEqual(layoutChain('people/index.html', layouts), ['root', 'people']);
+  assert.deepEqual(layoutChain('about.html', layouts), ['root']);
+  assert.deepEqual(layoutChain('docs/x.html', new Map([['people', 'b']])), []);
+});
+
+test("a layout's id is its directory, dashed, and the root is root", () => {
+  assert.equal(layoutId(''), 'root');
+  assert.equal(layoutId('people'), 'people');
+  assert.equal(layoutId(['people', 'team'].join('/')), 'people-team');
 });

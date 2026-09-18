@@ -45,7 +45,7 @@ export type Checker = {
  *   the language service     host, install, sourceOf
  *   reading a type back      exportTypeOf, expand, resolveNames, and the four
  *                            `…TypeOf` shorthands
- *   finding the project      elementFiles, layoutFiles, ancestorsOf, chainFor
+ *   finding the project      elementFiles, ancestorsOf; layouts come from routes.js
  *   what a shim is given     contextLiteral, endpointLiteral, mergeTypes
  *   building them            build, refresh
  *   what callers use         the returned object

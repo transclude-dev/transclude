@@ -135,7 +135,7 @@ export declare function compileComponent(source: any, { tag, shadow, components,
  * @param {string} source
  * @param {{ components?: Map<string, string>, shadowTags?: Set<string>,
  *   runtime: string, filename?: string, sourcePath?: string|null,
- *   layouts?: string[],
+ *   layouts?: Array<{ id: string, file: string }>,
  *   client?: { tags: string[], hasScript: boolean, needed: boolean } }} options
  * @returns {{ code: string, map: string|null, warnings: string[],
  *   components: string[] }} the module, a line-level map or null when there is
@@ -147,7 +147,10 @@ export declare function compilePage(source: string, { components, shadowTags, ru
     runtime: string;
     filename?: string;
     sourcePath?: string | null;
-    layouts?: string[];
+    layouts?: Array<{
+        id: string;
+        file: string;
+    }>;
     client?: {
         tags: string[];
         hasScript: boolean;

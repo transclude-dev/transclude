@@ -214,3 +214,35 @@ export declare function toRoute(rel: string, file: string): Route;
  * @throws when the old `pages/` name is still there
  */
 export declare function resolveRoutesDir(app: string, routesDir: string): string;
+/** The file a directory's layout lives in. */
+export declare const LAYOUT_FILE = "_layout.html";
+/**
+ * A layout's id, from its directory relative to the routes root: the root is
+ * "root", `people/team` is "people-team".
+ *
+ * @param {string} relativeDir
+ * @returns {string}
+ */
+export declare function layoutId(relativeDir: string): string;
+/**
+ * Every layout under the routes root, by id. A dot-directory is skipped, the
+ * same as `scanRoutes` skips one.
+ *
+ * @param {string} dir the routes root
+ * @param {string} [base] the same, carried through the recursion
+ * @param {Map<string, string>} [out]
+ * @returns {Map<string, string>} id to file
+ */
+export declare function scanLayouts(dir: string, base?: string, out?: Map<string, string>): Map<string, string>;
+/**
+ * The layouts wrapping a route file, outermost first: the `_layout.html` of
+ * every directory from the routes root down to the file's own, where one exists.
+ *
+ * This rule was spelled six ways across the plugin and the type checker, and two
+ * of the spellings had already parted on dot-directories.
+ *
+ * @param {string} rel the file's path relative to the routes root
+ * @param {Map<string, unknown>} layouts what `scanLayouts` found
+ * @returns {string[]} ids
+ */
+export declare function layoutChain(rel: string, layouts: Map<string, unknown>): string[];

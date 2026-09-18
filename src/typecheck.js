@@ -19,7 +19,14 @@ import { version as tsVersion } from 'typescript';
 import { AMBIENT_NAMES } from './compiler/ambient.js';
 import { buildEndpointShim, buildShim, originalOffset } from './compiler/shim.js';
 import { readBehavior, readFlags } from './compiler/index.js';
-import { resolveRoutesDir, scanRoutes } from './routes.js';
+import {
+  LAYOUT_FILE,
+  layoutChain,
+  layoutId,
+  resolveRoutesDir,
+  scanLayouts,
+  scanRoutes,
+} from './routes.js';
 // Aliased: this file has its own `sourceOf`, which is the one that reads disk.
 import { MARKDOWN_EXT, sourceOf as htmlFrom } from './markdown.js';
 
@@ -136,7 +143,6 @@ const TYPE_FORMAT =
   NodeBuilderFlags.UseFullyQualifiedType |
   NodeBuilderFlags.UseSingleQuotesForStringLiteralType;
 
-const LAYOUT_FILE = '_layout.html';
 
 /**
  * The checker, and everything it needs held in one closure.
@@ -149,7 +155,7 @@ const LAYOUT_FILE = '_layout.html';
  *   the language service     host, install, sourceOf
  *   reading a type back      exportTypeOf, expand, resolveNames, and the four
  *                            `…TypeOf` shorthands
- *   finding the project      elementFiles, layoutFiles, ancestorsOf, chainFor
+ *   finding the project      elementFiles, ancestorsOf; layouts come from routes.js
  *   what a shim is given     contextLiteral, endpointLiteral, mergeTypes
  *   building them            build, refresh
  *   what callers use         the returned object
@@ -357,37 +363,10 @@ export function createChecker({
     }
   };
 
-  const layoutFiles = (dir = resolveRoutesDir(app, routesDir), out = new Map()) => {
-    if (!fs.existsSync(dir)) return out;
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) layoutFiles(full, out);
-      else if (entry.name === LAYOUT_FILE) {
-        const relative = path.relative(resolveRoutesDir(app, routesDir), dir);
-        out.set(relative ? relative.split(path.sep).join('-') : 'root', full);
-      }
-    }
-    return out;
-  };
-
-  const ancestorsOf = (layoutId, layouts) => {
-    const parts = layoutId === 'root' ? [] : layoutId.split('-');
-    const chain = [];
-    for (let i = 0; i <= parts.length; i++) {
-      const id = i === 0 ? 'root' : parts.slice(0, i).join('-');
-      if (layouts.has(id) && id !== layoutId) chain.push(id);
-    }
-    return chain;
-  };
-
-  const chainFor = (rel, layouts) => {
-    const dirs = path.dirname(rel).split(path.sep).filter((d) => d && d !== '.');
-    const chain = [];
-    for (let i = 0; i <= dirs.length; i++) {
-      const id = i === 0 ? 'root' : dirs.slice(0, i).join('-');
-      if (layouts.has(id)) chain.push(id);
-    }
-    return chain;
+  /** The layouts above one layout, outermost first. Its own id is left out. */
+  const ancestorsOf = (id, layouts) => {
+    const dir = id === 'root' ? '' : id.split('-').join(path.sep);
+    return layoutChain(path.join(dir, LAYOUT_FILE), layouts).filter((above) => above !== id);
   };
 
   /** Later wins, which is what a nearer layout should do. */
@@ -467,7 +446,7 @@ export function createChecker({
       });
     }
 
-    const layouts = layoutFiles();
+    const layouts = scanLayouts(resolveRoutesDir(app, routesDir));
     const layoutData = new Map();
 
     for (const [id, file] of [...layouts].sort((a, b) => depthOf(a[0]) - depthOf(b[0]))) {
@@ -493,7 +472,7 @@ export function createChecker({
 
     const pages = new Map();
     for (const route of [...routes, notFound].filter(Boolean)) {
-      const above = mergeTypes(chainFor(route.rel, layouts).map((id) => layoutData.get(id)));
+      const above = mergeTypes(layoutChain(route.rel, layouts).map((id) => layoutData.get(id)));
       const context = contextLiteral(route.params, above);
       install(
         route.file,
@@ -514,8 +493,7 @@ export function createChecker({
 
   const contextFor = (file) => {
     if (path.basename(file) === LAYOUT_FILE) {
-      const relative = path.relative(resolveRoutesDir(app, routesDir), path.dirname(file));
-      const id = relative ? relative.split(path.sep).join('-') : 'root';
+      const id = layoutId(path.relative(resolveRoutesDir(app, routesDir), path.dirname(file)));
       return contextLiteral(
         [],
         mergeTypes(ancestorsOf(id, project.layouts).map((a) => project.layoutData.get(a))),

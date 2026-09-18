@@ -407,6 +407,34 @@ export const INCLUDE_DEPTH = 10;
  * @returns {Record<string, string>|null} null when the route does not match
  */
 export function paramsFor(route, pathname) {
+  let matcher = matchers.get(route.pattern);
+  if (!matcher) {
+    matcher = matcherFor(route.pattern);
+    matchers.set(route.pattern, matcher);
+  }
+
+  const found = matcher.regex.exec(pathname);
+  if (!found) return null;
+
+  return Object.fromEntries(
+    matcher.names.map((name, at) => [name, decodeURIComponent(found[at + 1])]),
+  );
+}
+
+/**
+ * One compiled matcher per pattern, kept for the life of the process.
+ *
+ * Every include walked the whole route table and built each route's RegExp on
+ * the way, which was 9 µs per include on a thirty-route app and grows with both.
+ * Patterns come from the route table, so this holds as many as there are routes.
+ */
+const matchers = new Map();
+
+/**
+ * @param {string} pattern
+ * @returns {{ names: string[], regex: RegExp }}
+ */
+function matcherFor(pattern) {
   const names = [];
 
   const catchAll = (_, name) => {
@@ -418,14 +446,11 @@ export function paramsFor(route, pathname) {
     return '([^/]+)';
   };
 
-  const source = route.pattern
+  const source = pattern
     .replace(/\/:([A-Za-z0-9_]+)\{\.\+\}/g, catchAll)
     .replace(/:([A-Za-z0-9_]+)/g, segment);
 
-  const found = new RegExp(`^${source}$`).exec(pathname);
-  if (!found) return null;
-
-  return Object.fromEntries(names.map((name, at) => [name, decodeURIComponent(found[at + 1])]));
+  return { names, regex: new RegExp(`^${source}$`) };
 }
 
 /**

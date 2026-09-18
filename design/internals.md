@@ -1355,6 +1355,13 @@ against.
   writing the header inside the render closure rather than at send time: doing it
   later in `sendRendered` is already too late to break anything, so that
   mutation proves nothing.
+- **The page cache sees a cookie read and a header write, and nothing else.**
+  `isShareable` asks `ctx.cookies.personal` and whether `ctx.response` has a
+  header. A loader that reads `ctx.request.headers` directly is invisible to
+  it, and so is a host taken from the request URL when `metadataBase` is unset.
+  `ctx.request` is the platform's own object on purpose, so neither read can be
+  recorded without wrapping it. The rule is written on the production page
+  instead: such a page does not set `revalidate`.
 - **A cache hit is sent the way a file is, and the work is kept beside the entry.**
   `sendRendered` encoded, hashed and compressed the markup on every request,
   hit or miss: 110 of the 120 µs a held page cost, and every brotli hit crossed

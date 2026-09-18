@@ -283,7 +283,13 @@ export const POST = async ({ request, revalidateTag }) => {
     <code>Response</code>, or has a status outside 2xx. A shared cache holding
     any of those hands one visitor's page, or one visitor's
     <code>Set-Cookie</code>, to the next. It is the same rule the build uses to
-    decide a route can be a file.
+    decide a route can be a file. The cache sees a cookie read and a header
+    written, and nothing else: a loader that reads <code>Authorization</code> or
+    <code>Accept-Language</code> straight off <code>ctx.request</code> is
+    invisible to it, so that page must not set <code>revalidate</code>, or must
+    carry what it read in the URL. Set <code>metadataBase</code> too. Without it
+    an absolute URL is built from the request's own host, and a held page would
+    carry whatever host its first visitor sent.
   </doc-note>
 
   <p>

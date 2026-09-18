@@ -77,7 +77,7 @@ export default {
 
 <doc-page
   heading="Security"
-  lede="A Content-Security-Policy tells the browser which scripts and styles may run, so an injected one never does. Turn it on with a config key."
+  lede="A Content-Security-Policy tells the browser which scripts and styles may run, so a script from a host you did not name never does. Turn it on with a config key."
 >
   ${html(s.on)}
 
@@ -168,6 +168,8 @@ export default {
   <doc-note label="Nothing to write">
     You do not stamp anything. The policy is built from the document after it
     renders, so it names what actually shipped rather than what was meant to.
+    That includes a script that reached the output through <code>html()</code>:
+    the policy refuses what is loaded from elsewhere, and is not a second escape.
   </doc-note>
 
   <h2>Why styles are not hashed</h2>

@@ -558,7 +558,10 @@ against.
   differ, and those two *are* the difference between the halves: a light element
   writes into nodes that are already there, a shadow one may rebuild. Changing
   one half's `schedule` and not the other fails that test even when the change
-  behaves identically.
+  behaves identically. Measured before deciding again: one class with two
+  `if (shadow)` branches is 1.2 KB smaller minified and 46 bytes smaller over
+  brotli, out of 4.2 KB. The compression already folds the copy, so the wire
+  gains nothing worth the indirection.
 - **A test that loops over the thing it checks proves nothing.** The list of void
   elements moved into `html.js`, and a test walked `VOID` asserting each one
   emits without a closing tag. Deleting `br` from the set passed: the loop just
@@ -1144,6 +1147,11 @@ against.
   the state and the markup it styles change in the same frame. A check asserting
   it synchronously after a setter fails, and it should: `updateComplete` is the
   point at which either is true.
+- **`updateComplete` is the microtask's own promise.** It was a `new Promise`
+  settled by hand from a `queueMicrotask`, and a throw in `#apply` left it
+  pending for good: `await el.updateComplete` never returned, and nothing said
+  so. The `.then` that runs the render is the promise now, so the same throw
+  rejects it and an `await` reports it.
 - **`formDisabledCallback` reflects to a state, not the `disabled` attribute.**
   It wrote the attribute once, and that is a latch: a form-associated element
   with its own `disabled` attribute is disabled by the browser's own reckoning,

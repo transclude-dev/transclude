@@ -123,7 +123,12 @@ export function html(value) {
 export function escape(value) {
   if (value == null || value === false) return '';
   if (value instanceof RawHtml) return value.value;
-  return String(value).replace(/[&<>"']/g, (c) => ESCAPES[c]);
+  const text = String(value);
+  // Most text has nothing to escape, and `test` says so in well under half the
+  // time `replace` takes to find the same thing out. This is the one call every
+  // ${} on the server goes through, so the common case is the one to be quick in.
+  if (!/[&<>"']/.test(text)) return text;
+  return text.replace(/[&<>"']/g, (c) => ESCAPES[c]);
 }
 
 /**
@@ -188,7 +193,9 @@ export function attr(name, value) {
   if (value == null || value === false) return '';
   if (value === true) return ` ${name}`;
   const text = typeof value === 'object' ? JSON.stringify(value) : String(value);
-  return ` ${name}="${text.replace(/[&<>"]/g, (c) => ESCAPES[c])}"`;
+  // The same fast path as `escape`: most values need nothing done to them.
+  const safe = /[&<>"]/.test(text) ? text.replace(/[&<>"]/g, (c) => ESCAPES[c]) : text;
+  return ` ${name}="${safe}"`;
 }
 
 /**
@@ -243,6 +250,43 @@ function planOf(defs) {
 }
 
 /**
+ * One value, read the way its declared default says.
+ *
+ * A prop accessor reads one attribute at a time, and this is what it calls:
+ * going through `coerceProps` for a single name built a one-entry table and a
+ * one-key object on every read, which was five times the work of the read.
+ *
+ * @param {unknown} value what the DOM or a template handed over
+ * @param {unknown} fallback the declared default
+ * @param {Function} [from] the block's own reader, which takes over from the type
+ * @returns {unknown}
+ */
+function coerceValue(value, fallback, from) {
+  if (value === undefined || value === null) return fallback;
+  if (typeof value !== 'string') return value;
+
+  if (from) {
+    // A malformed attribute is the author's to see, not the page's to break
+    // on: the declared default is a defined answer.
+    try {
+      return from(value);
+    } catch {
+      return fallback;
+    }
+  }
+  if (typeof fallback === 'number') return Number(value);
+  if (typeof fallback === 'boolean') return value !== 'false';
+  if (fallback && typeof fallback === 'object') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  }
+  return value;
+}
+
+/**
  * @param {Record<string, unknown>|null|undefined} defs the prop table
  * @param {Record<string, unknown>|null|undefined} props either spelling
  * @param {Record<string, { from?: Function, to?: Function }>} [specs]
@@ -255,33 +299,8 @@ export function coerceProps(defs, props, specs) {
   for (const { key, attr, fallback } of entries) {
     // Either spelling: the DOM reports the attribute, a template passes what
     // the author wrote.
-    let value = props?.[attr] ?? props?.[key];
-
-    if (value === undefined || value === null) {
-      out[key] = fallback;
-      continue;
-    }
-    if (typeof value === 'string') {
-      const from = specs?.[key]?.from;
-      if (from) {
-        // A malformed attribute is the author's to see, not the page's to break
-        // on: the declared default is a defined answer.
-        try {
-          value = from(value);
-        } catch {
-          value = fallback;
-        }
-      } else if (typeof fallback === 'number') value = Number(value);
-      else if (typeof fallback === 'boolean') value = value !== 'false';
-      else if (fallback && typeof fallback === 'object') {
-        try {
-          value = JSON.parse(value);
-        } catch {
-          value = fallback;
-        }
-      }
-    }
-    out[key] = value;
+    const value = props?.[attr] ?? props?.[key];
+    out[key] = coerceValue(value, fallback, specs?.[key]?.from);
   }
   for (const key of Object.keys(props ?? {})) {
     if (!claimed.has(key) && !(key in out)) out[key] = props[key];
@@ -811,9 +830,10 @@ function volatileChanged(names, next, prev, state, prevState) {
     // has no attribute to compare.
     if (name in state) {
       if (!Object.is(state[name], prevState[name])) return true;
-    } else if (next[attrName(name)] !== prev[attrName(name)]) {
-      return true;
+      continue;
     }
+    const attr = attrName(name);
+    if (next[attr] !== prev[attr]) return true;
   }
   return false;
 }
@@ -861,11 +881,11 @@ export function writeProp(element, prop, value, fallback, specs) {
 function defineProps(Class, defs, specs) {
   for (const [prop, fallback] of Object.entries(defs ?? {})) {
     const attr = attrName(prop);
-    const single = { [prop]: fallback };
+    const from = specs?.[prop]?.from;
 
     Object.defineProperty(Class.prototype, prop, {
       get() {
-        return coerceProps(single, { [attr]: this.getAttribute(attr) }, specs)[prop];
+        return coerceValue(this.getAttribute(attr), fallback, from);
       },
       set(value) {
         writeProp(this, prop, value, fallback, specs);
@@ -1170,7 +1190,6 @@ export function defineLight(def) {
     #raw = null;
     #was = null;
     #pending = null;
-    #settle = null;
 
     constructor() {
       super();
@@ -1198,15 +1217,13 @@ export function defineLight(def) {
     /** One render per microtask, so `a = 1; b = 2` writes once. */
     schedule() {
       if (this.#pending) return;
-      this.#pending = new Promise((resolve) => {
-        this.#settle = resolve;
-      });
-      queueMicrotask(() => {
-        const settle = this.#settle;
+      // The promise is the microtask. It used to be a `new Promise` settled by
+      // hand from a `queueMicrotask`, and a throw in `#apply` left it pending
+      // for good: `await el.updateComplete` never came back and nothing said so.
+      // Now the same throw rejects it, which an `await` reports.
+      this.#pending = Promise.resolve().then(() => {
         this.#pending = null;
-        this.#settle = null;
         if (this.#ready) this.#apply();
-        settle();
       });
     }
 
@@ -1452,7 +1469,6 @@ export function defineComponent(def) {
     #raw = null;
     #was = null;
     #pending = null;
-    #settle = null;
 
     constructor() {
       super();
@@ -1491,15 +1507,13 @@ export function defineComponent(def) {
      */
     schedule() {
       if (this.#pending) return;
-      this.#pending = new Promise((resolve) => {
-        this.#settle = resolve;
-      });
-      queueMicrotask(() => {
-        const settle = this.#settle;
+      // The promise is the microtask. It used to be a `new Promise` settled by
+      // hand from a `queueMicrotask`, and a throw in `#apply` left it pending
+      // for good: `await el.updateComplete` never came back and nothing said so.
+      // Now the same throw rejects it, which an `await` reports.
+      this.#pending = Promise.resolve().then(() => {
         this.#pending = null;
-        this.#settle = null;
         if (this.#ready) this.#apply();
-        settle();
       });
     }
 

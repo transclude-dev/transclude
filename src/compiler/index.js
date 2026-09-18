@@ -109,9 +109,6 @@ function isDataBlock(node) {
  * Each block carries the line it starts on so parse errors can point back into
  * the .html file rather than into generated output.
  *
- * One `<script>` or `<style>` block, with where it starts. Both are recorded so
- * a parse error points into the .html file rather than into generated output.
- *
  * @typedef {object} Block
  * @property {string} code
  * @property {number} line
@@ -256,7 +253,7 @@ function exportsNothing(block, server, where) {
  */
 export function compileComponent(
   source,
-  { tag, shadow = false, components = new Map(), shadowTags = new Set(), runtime, filename = '', nested = [] },
+  { tag, shadow = false, components = new Map(), shadowTags = new Set(), runtime, filename = '' },
 ) {
   const blocks = splitBlocks(source);
   const where = (kind) => `${filename || tag}.html <script${kind ? ` ${kind}` : ''}>`;
@@ -375,6 +372,13 @@ export function compileComponent(
     ...element.warnings,
     ...unusedProps(element.nodes.properties ?? null, template.reads, blocks),
   ];
+
+  // The donut: a light element's styles stop at any light element rendered
+  // inside it. Every tag the template rendered, less the shadow ones. The
+  // plugin used to work this out by parsing the file a second time.
+  const nested = template.components
+    .map(({ tag: inner }) => inner)
+    .filter((inner) => !shadowTags.has(inner));
 
   const code = `
 ${runtimeImport(runtime)}
@@ -1027,11 +1031,6 @@ function componentImports(used, { defines = false } = {}) {
 }
 
 /**
- * A light element's styles are hoisted into <head> once, so every level exports
- * the elements it pulled in. Nested ones come along through their own export,
- * and the document dedupes by tag.
- */
-/**
  * `<script head>` blocks, verbatim, in the order they were written. Attributes
  * included.
  *
@@ -1075,14 +1074,15 @@ function serializeAttr({ name, value }) {
   return ` ${name}="${escapeAttr(value)}"`;
 }
 
+/**
+ * A light element's styles are hoisted into <head> once, so every level exports
+ * the elements it pulled in. Nested ones come along through their own export,
+ * and the document dedupes by tag.
+ */
 function elementsExport(used) {
   return `export const elements = [${used.map(({ ref }) => ref).join(', ')}];`;
 }
 
-/**
- * Each `[fragment]` region as a function of the page's own data. The same markup
- * the document got, so a swap cannot drift from the page it replaces part of.
- */
 /**
  * Every `<transclude src="#id">` names a region this page has, and no
  * region includes itself.
@@ -1130,6 +1130,10 @@ function assertIncludesResolve(includes, regions) {
   for (const name of edges.keys()) walk(name, []);
 }
 
+/**
+ * Each `[fragment]` region as a function of the page's own data. The same markup
+ * the document got, so a swap cannot drift from the page it replaces part of.
+ */
 function regionsExport(regions) {
   const entries = Object.entries(regions ?? {});
   if (!entries.length) return 'export const regions = {};';

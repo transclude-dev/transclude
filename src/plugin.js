@@ -376,10 +376,6 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
         const file = components.get(tag);
         if (!file) throw new Error(`[transclude] no element <${tag}> in ${elementsDir}`);
         origin.set(id, file);
-        // The donut: a light element's styles stop at any light element nested
-        // inside it.
-        const inner = [...(safely(() => usedComponents(read(file), components)) ?? [])];
-        const nested = inner.filter((child) => !shadowTags.has(child));
         const body = read(file);
         const out = compiling(body, file, () => compileComponent(body, {
           tag,
@@ -388,7 +384,6 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
           shadowTags,
           runtime,
           filename: tag,
-          nested,
         }));
         report(tag, out.warnings);
         return out.code;

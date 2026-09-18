@@ -244,6 +244,17 @@ test('an element is light unless its file says shadow, which the plugin passes i
   assert.match(element('<p><slot></slot></p>', { shadow: true }).code, /export const light = false;/);
 });
 
+test("a light element's styles stop at a light element it renders", () => {
+  // The donut. The compiler knows what the template rendered, so the `to`
+  // clause comes from that rather than from a second read of the file.
+  const components = new Map([['site-card', '/elements/site-card.html']]);
+  const { code } = element('<style>p { color: red }</style><p><site-card></site-card></p>', {
+    components,
+  });
+
+  assert.match(code, /@scope \(site-note\) to \(site-note site-card\)/);
+});
+
 test('a stray shadow root template is an error, not a silent second switch', () => {
   assert.throws(
     () => element('<template shadowrootmode="open"><p>x</p></template>'),

@@ -1,0 +1,318 @@
+<script server>
+  import { all } from '../../lib/code.js';
+  import { bySlug } from '../../data/posts.js';
+  import { dateline } from '../../lib/dateline.js';
+  import { refusals } from '../../lib/refusals.js';
+
+  const post = bySlug('four-attributes-and-a-script-tag');
+
+  export default async () => ({
+    post,
+    when: dateline(post.date),
+    refused: refusals.length,
+    // The two spellings this page names rather than uses. Written out here
+    // because the markup would render either one instead of printing it.
+    empty: '${}',
+    filterCall: '${posts.filter((p) => p.published)}',
+    s: await all({
+      grown: [
+        `<!-- views/index.html -->
+{% assign recent = posts | where: "published", true | sort: "date" | reverse %}
+
+<ul>
+  {% for post in recent limit: 5 %}
+    <li>
+      <time>{{ post.date | date: "%b %d, %Y" }}</time>
+      {{ post.title | truncate: 60 }}
+    </li>
+  {% endfor %}
+</ul>`,
+        'html',
+      ],
+
+      four: [
+        `<!-- app/routes/index.html -->
+<script server>
+  import { posts } from '../data/posts.js';
+
+  export default async () => ({ recent: posts.recent(5) });
+<\/script>
+
+<ul>
+  <li each="post of recent" key="post.slug">
+    <time datetime="\${post.date.toISOString()}">\${post.when}</time>
+    \${post.title}
+  </li>
+</ul>`,
+        'html',
+      ],
+
+      loader: [
+        `<!-- app/routes/blog/index.html -->
+<script server>
+  import { byDate } from '../../data/posts.js';
+  import { dateline } from '../../lib/dateline.js';
+
+  export default async () => ({
+    posts: byDate().map((post) => ({ ...post, when: dateline(post.date) })),
+  });
+<\/script>
+
+<ul class="posts">
+  <li each="post of posts">
+    <time datetime="\${post.date.toISOString()}">\${post.when}</time>
+    <h2><a href="/blog/\${post.slug}">\${post.title}</a></h2>
+    <p>\${post.summary}</p>
+  </li>
+</ul>`,
+        'html',
+      ],
+
+      typo: [
+        `<!-- app/routes/notes.html -->
+<script server>
+  export default async () => ({ heading: 'Notes' });
+<\/script>
+
+<h1>\${headng}</h1>`,
+        'html',
+      ],
+
+      caught: [
+        `app/routes/notes.html:6:7  error  TS2551
+  Property 'headng' does not exist on type '__Shape<{ heading: string; }>'. Did you mean 'heading'?
+
+    <h1>\${headng}</h1>
+          ~~~~~~`,
+        'shell',
+      ],
+    }),
+  });
+</script>
+
+<title>Four attributes and a script tag · transclude</title>
+<meta
+  name="description"
+  content="A template language grows filters and helpers to cover the distance between the markup and the code. Put the loader in the same file and the distance is gone."
+/>
+
+<!-- From `posts.js`, which the index and the feed also read, so a post says the
+     same thing in all three places or in none of them. -->
+<meta property="og:type" content="article" />
+<meta property="og:title" content="${post.title}" />
+<meta property="og:description" content="${post.summary}" />
+<meta property="article:published_time" content="${post.date.toISOString()}" />
+
+<article>
+  <h1>Four attributes and a script tag</h1>
+
+  <time class="dateline" datetime="${post.date.toISOString()}">
+    ${when}
+  </time>
+
+  <p>
+    Template languages start small. Then somebody needs a date formatted.
+  </p>
+
+  <p>
+    Liquid has filters. Jinja has filters and macros. Handlebars has helpers.
+    Blade has directives. Each one was added for a reason. The reason repeats:
+    a person was standing in a template, and the template could not do the
+    thing.
+  </p>
+
+  ${html(s.grown)}
+
+  <p>
+    Filtering, sorting, limiting and formatting, all in the markup. Every one of
+    those steps is a decision about the data.
+  </p>
+
+  <h2>Why a template language grows</h2>
+
+  <p>
+    The code that made that data is in another file. A view function, a
+    controller, a resolver. To format the date there you open that file, find
+    the function, add a field, and come back to the markup to print it.
+  </p>
+
+  <p>
+    The filter is one edit, where you already are. That is why it wins, in every
+    language that offers one.
+  </p>
+
+  <p>
+    Then the language has somewhere to put the next thing. Sorting arrives, then
+    pluralizing, then a helper that renders a partial, then a tag that runs a
+    query. The template becomes a second place to write code, in a language with
+    no debugger and no types.
+  </p>
+
+  <p>
+    PHP and ERB answer the same pressure from the other end. They put the whole
+    language in the template, and then the work is keeping the query out of the
+    view. That is a matter of discipline, and a template that can run a query
+    will hold one eventually.
+  </p>
+
+  <h2>The same list here</h2>
+
+  ${html(s.four)}
+
+  <p>
+    Four attributes decide what renders: <code>if</code>, <code>else-if</code>
+    with <code>else</code>, <code>each</code>, and <code>key</code>. Then
+    <code>${empty}</code>, which prints an expression and escapes it. That is the
+    whole language.
+  </p>
+
+  <p>
+    An expression reads data and calls functions. There is no assignment, no
+    arrow function, no object literal and no <code>await</code>. A line like
+    <code>${filterCall}</code> does not parse. There is no filter syntax, and no
+    registry to add a helper to.
+  </p>
+
+  <p>
+    Which leaves the question of where the sorting went.
+  </p>
+
+  <h2>Up, into the same file</h2>
+
+  ${html(s.loader)}
+
+  <p>
+    That is the file behind <a href="/blog">the index of this blog</a>. Sorting
+    is a function call. The date is formatted by another one, four lines above
+    the markup that prints the result. Neither needed a feature in the template
+    language, because neither one was a walk to another file.
+  </p>
+
+  <p>
+    A template language grows to fill the distance between the markup and the
+    code. Take the distance away and it stops growing.
+  </p>
+
+  <h2>One file, two languages, one concern</h2>
+
+  <p>
+    Server code inside an HTML file reads as mixed concerns. That depends on what
+    a concern is.
+  </p>
+
+  <p>
+    HTML, CSS and JavaScript are three languages. They were never three concerns.
+    The test that holds up is what changes together. Add a published date to a
+    post and three things move: the query, the shape it returns, and the markup
+    that prints it.
+  </p>
+
+  <p>
+    Split the page by language and every change is two files. Split the app by
+    page and most changes are one.
+  </p>
+
+  <p>
+    Carson Gross calls the other half of this
+    <a href="https://four.htmx.org/essays/locality-of-behavior/"
+      >locality of behavior</a
+    >: what an element does should be visible where the element is. A server
+    block is the same argument, one level up.
+  </p>
+
+  <p>
+    Two costs come with it. An editor reads the script blocks in a page as one
+    module and reports the overlap, so a project turns
+    <a href="/docs/types">one setting</a> off. And a page with a long loader is a
+    long file. The answer to the second is the answer anywhere else: the loader
+    imports a module, which is what <code>posts.js</code> is above.
+  </p>
+
+  <h2>What a small grammar bought</h2>
+
+  <p>
+    The compiler parses every expression, so it can collect every name a template
+    reads. That walk is short because an expression cannot declare anything.
+  </p>
+
+  <p>
+    Collecting those names is where the type checking comes from. The page below
+    has a misspelling in it.
+  </p>
+
+  ${html(s.typo)}
+
+  ${html(s.caught)}
+
+  <p>
+    Nothing here is annotated. The type of the page's data is whatever the
+    loader's return value infers to, and the markup is checked against it. The
+    two halves are one module to the checker because they are one file. A loader
+    somewhere else would need a declared type to connect them, and somebody would
+    have to keep that type current.
+  </p>
+
+  <p>
+    Maintenance looks different too. The compiler refuses ${refused} kinds of
+    mistake and adds no features. <code>if</code> and <code>each</code> on one
+    element is one of the refusals, because Vue 2 and Vue 3 disagreed about which
+    one runs first. Saying no costs an error message. Saying yes costs a feature,
+    its documentation, and its interaction with every feature after it.
+  </p>
+
+  <p>
+    The template half of this compiler was the cheap half. The expensive half is
+    the shadow boundary, where markup re-renders in a browser and a
+    <code>key</code> starts to matter. A small grammar did not make that part
+    cheap.
+  </p>
+
+  <h2>Alone, and then not alone</h2>
+
+  <p>
+    Alone, what you gain is the walk you do not take. The page is one file, and a
+    question you have while editing markup is answered by scrolling up.
+  </p>
+
+  <p>
+    On a team, three things change, and all three are about the diff.
+  </p>
+
+  <p>
+    A change to a page is a change to one file. The reviewer reads the data and
+    the markup in the same hunk, and can tell whether <code>post.when</code>
+    exists without opening anything.
+  </p>
+
+  <p>
+    A rename is caught, because the loader and the markup are one module to the
+    checker. Renaming a field in one and not the other is a type error rather
+    than an empty string in production.
+  </p>
+
+  <p>
+    Two people editing the same page get a merge conflict. That is the cost, and
+    it is the better failure. Two clean merges into a page that disagrees with
+    itself is the other one.
+  </p>
+
+  <p>
+    Whether this holds at the size of a large team is the part nobody has
+    evidence for. The three claims above are mechanical, about files and diffs.
+    How forty people feel about them is a separate question, and I have not run
+    that experiment.
+  </p>
+
+  <h2>The count</h2>
+
+  <p>
+    Open the template you changed most recently. Count the things in it that are
+    there because the code was somewhere else. A filter, a helper, a partial
+    taking six arguments, a tag that runs a query.
+  </p>
+
+  <p>
+    That count is the distance between your markup and your code. It is worth
+    knowing whatever you build with.
+  </p>
+</article>

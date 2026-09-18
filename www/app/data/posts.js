@@ -20,6 +20,13 @@
 /** @type {Post[]} */
 export const posts = [
   {
+    slug: 'four-attributes-and-a-script-tag',
+    title: 'Four attributes and a script tag',
+    summary:
+      'A template language grows filters and helpers to cover the distance between the markup and the code. Put the loader in the same file and the distance is gone.',
+    date: new Date('2026-09-18'),
+  },
+  {
     slug: 'innerhtml-leaves-a-dead-template',
     title: 'innerHTML leaves a dead template',
     summary:

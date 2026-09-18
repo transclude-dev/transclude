@@ -364,8 +364,8 @@ export function compileComponent(
       isShadow
         ? `<${tag}> is a component, so it already has a shadow root. Drop the ` +
           `<template shadowrootmode> wrapper and write the markup directly`
-        : `<${tag}> is a partial and has no shadow root. Move it to the components ` +
-          `directory if it needs one.`,
+        : `<${tag}> is a light element and has no shadow root. Add ` +
+          `\`export const shadow = true\` to its <script element> if it needs one.`,
       stray,
     );
   }

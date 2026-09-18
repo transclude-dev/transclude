@@ -237,8 +237,9 @@ test('script and style blocks are not scanned for tags', () => {
 const element = (source, opts = {}) =>
   compileComponent(source, { tag: 'site-note', runtime: '/rt.js', ...opts });
 
-test('a partial is light, a component is shadow, and the caller says which', () => {
-  // The directory decides. One decision, in one place, visible in the tree.
+test('an element is light unless its file says shadow, which the plugin passes in', () => {
+  // `export const shadow = true` decides, read once per tag by the plugin so
+  // every file that names the tag compiles the same way.
   assert.match(element('<p><slot></slot></p>').code, /export const light = true;/);
   assert.match(element('<p><slot></slot></p>', { shadow: true }).code, /export const light = false;/);
 });
@@ -246,7 +247,7 @@ test('a partial is light, a component is shadow, and the caller says which', () 
 test('a stray shadow root template is an error, not a silent second switch', () => {
   assert.throws(
     () => element('<template shadowrootmode="open"><p>x</p></template>'),
-    /has no shadow root. Move it to the components directory/,
+    /has no shadow root. Add `export const shadow = true`/,
   );
   assert.throws(
     () => element('<template shadowrootmode="open"><p>x</p></template>', { shadow: true }),

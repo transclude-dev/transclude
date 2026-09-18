@@ -109,3 +109,51 @@ export function refusePrerender(ctx, html) {
     );
   }
 }
+
+/**
+ * What each client entry is going to import, so the page can ask for it early.
+ *
+ * An entry is a few imports and a call: the runtime chunk, one chunk per element
+ * the page renders, and the loader map. A browser finds those only after it has
+ * fetched the entry and read it, which is one round trip the page did not need
+ * to spend. The build is the only thing that knows their hashed names, so it
+ * writes them into `routes.json` beside the entry, and the document and the
+ * `Link` header both name them up front.
+ *
+ * Static imports only, followed as far as they go. A dynamic import is left out
+ * on purpose: the `watch` loaders are on demand by design, and preloading every
+ * element in the app would undo that.
+ *
+ * @param {Array<{ type: string, fileName: string, name?: string, isEntry?: boolean,
+ *   imports?: string[] }>} chunks what the client build produced
+ * @returns {Map<string, string[]>} entry name to the URLs it will import
+ */
+export function preloadsOf(chunks) {
+  const byFile = new Map();
+  for (const chunk of chunks) {
+    if (chunk.type === 'chunk') byFile.set(chunk.fileName, chunk);
+  }
+
+  const preloads = new Map();
+  for (const chunk of chunks) {
+    if (chunk.type !== 'chunk' || !chunk.isEntry || !chunk.name) continue;
+    preloads.set(chunk.name, reachableFrom(chunk, byFile));
+  }
+  return preloads;
+}
+
+/** Every chunk a chain of static imports from `entry` reaches, nearest first. */
+function reachableFrom(entry, byFile) {
+  const seen = new Set([entry.fileName]);
+  const urls = [];
+  const queue = [...(entry.imports ?? [])];
+
+  while (queue.length) {
+    const fileName = queue.shift();
+    if (seen.has(fileName)) continue;
+    seen.add(fileName);
+    urls.push(`/${fileName}`);
+    queue.push(...(byFile.get(fileName)?.imports ?? []));
+  }
+  return urls;
+}

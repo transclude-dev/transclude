@@ -100,7 +100,8 @@ so a swap cannot drift from the page it replaces part of.
 - **No client-side router, and no swapper.** Every link is a document request
   unless you bring something that swaps. That is a decision, not a gap.
 - **A page does not stream.** Its body is buffered so it can be hashed, which is
-  what buys the ETag. A `Link: rel=preload` goes out first, so a proxy can turn
+  what buys the ETag. A `Link: rel=preload` goes out first, naming the
+  stylesheet, the client entry and the chunks it imports, so a proxy can turn
   it into a 103 while the page is still being made. An endpoint returns a
   `Response` you build, so it can answer with a `ReadableStream` and stay open.
 - **No session store and no database opinion.** Signed cookies are the building

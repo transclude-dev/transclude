@@ -39,3 +39,28 @@ export declare function prerenderContext({ route, url, params, cookieSecret, met
  * @throws when this URL cannot be one file
  */
 export declare function refusePrerender(ctx: import('./document.js').Ctx, html: string | Response): void;
+/**
+ * What each client entry is going to import, so the page can ask for it early.
+ *
+ * An entry is a few imports and a call: the runtime chunk, one chunk per element
+ * the page renders, and the loader map. A browser finds those only after it has
+ * fetched the entry and read it, which is one round trip the page did not need
+ * to spend. The build is the only thing that knows their hashed names, so it
+ * writes them into `routes.json` beside the entry, and the document and the
+ * `Link` header both name them up front.
+ *
+ * Static imports only, followed as far as they go. A dynamic import is left out
+ * on purpose: the `watch` loaders are on demand by design, and preloading every
+ * element in the app would undo that.
+ *
+ * @param {Array<{ type: string, fileName: string, name?: string, isEntry?: boolean,
+ *   imports?: string[] }>} chunks what the client build produced
+ * @returns {Map<string, string[]>} entry name to the URLs it will import
+ */
+export declare function preloadsOf(chunks: Array<{
+    type: string;
+    fileName: string;
+    name?: string;
+    isEntry?: boolean;
+    imports?: string[];
+}>): Map<string, string[]>;

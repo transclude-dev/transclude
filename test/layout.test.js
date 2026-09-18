@@ -184,6 +184,28 @@ test('no client entry means no module script at all', () => {
   assert.match(renderDocument(chain, [{}], { clientEntry: '/x.js' }), /<script type="module" src="\/x\.js">/);
 });
 
+test('the chunks the entry imports are preloaded from <head>, after the stylesheet', () => {
+  // The entry sits at the end of the body and imports the runtime and one chunk
+  // per element. Named here, they are fetched beside the entry rather than one
+  // round trip after it has been read.
+  const chain = [level('page')];
+  const html = renderDocument(chain, [{}], {
+    clientEntry: '/x.js',
+    preload: ['/runtime-a.js', '/card-b.js'],
+    stylesheet: '/site.css',
+  });
+
+  assert.match(html, /<link rel="modulepreload" href="\/runtime-a\.js">\n<link rel="modulepreload" href="\/card-b\.js">/);
+  assert.ok(html.indexOf('rel="stylesheet"') < html.indexOf('modulepreload'), 'the stylesheet blocks rendering, so it goes first');
+  assert.ok(html.indexOf('modulepreload') < html.indexOf('<body'), 'a hint after the body is too late to be one');
+});
+
+test('no list, no links: dev serves modules unbundled and has nothing to name', () => {
+  const chain = [level('page')];
+  assert.doesNotMatch(renderDocument(chain, [{}], { clientEntry: '/x.js' }), /modulepreload/);
+  assert.doesNotMatch(renderDocument(chain, [{}], { clientEntry: '/x.js', preload: [] }), /modulepreload/);
+});
+
 // ---- which components a template uses --------------------------------------
 
 const registry = new Map([['user-card', 'a'], ['data-table', 'b'], ['card-list', 'c']]);

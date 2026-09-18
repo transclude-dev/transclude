@@ -371,7 +371,15 @@ const pageApp = (over = {}) =>
     config: { csrf: false, trailingSlash: 'never', cookieSecret: 's', fragmentParam: 'fragment' },
     manifest: {
       stylesheet: '/assets/site-abc.css',
-      routes: [{ id: 'index', pattern: '/', params: [], client: '/assets/index-def.js' }],
+      routes: [
+        {
+          id: 'index',
+          pattern: '/',
+          params: [],
+          client: '/assets/index-def.js',
+          preload: ['/assets/runtime-ghi.js', '/assets/card-jkl.js'],
+        },
+      ],
       endpoints: [],
     },
     pages: {
@@ -405,6 +413,16 @@ test('a document says what it is going to fetch, so a proxy can send a 103', asy
 
   assert.match(link, /<\/assets\/site-abc\.css>; rel=preload; as=style/);
   assert.match(link, /<\/assets\/index-def\.js>; rel=preload; as=script/);
+});
+
+test('the chunks the entry imports are in the same header, in the same form', async () => {
+  // A module import is a script fetch made with CORS, so the hint has to say
+  // `crossorigin` or the browser fetches the chunk twice.
+  const res = await pageApp().request('http://x/');
+  const link = res.headers.get('link');
+
+  assert.match(link, /<\/assets\/runtime-ghi\.js>; rel=preload; as=script; crossorigin/);
+  assert.match(link, /<\/assets\/card-jkl\.js>; rel=preload; as=script; crossorigin/);
 });
 
 test('a region carries none of it, because it has no head to fill', async () => {

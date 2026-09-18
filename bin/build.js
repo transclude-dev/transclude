@@ -16,7 +16,7 @@ import { pathToFileURL } from 'node:url';
 import transclude from '../src/plugin.js';
 import { loadProject } from '../src/project.js';
 import { renderRoute, urlFor } from '../src/document.js';
-import { prerenderContext, refusePrerender } from '../src/prerender.js';
+import { preloadsOf, prerenderContext, refusePrerender } from '../src/prerender.js';
 import { isGated, readGated, unmatched } from '../src/gate.js';
 import { feed, feedPath } from '../src/feed.js';
 import { includeContext } from '../src/include.js';
@@ -52,6 +52,8 @@ const clientRoutes = [...manifest.routes, manifest.notFound, manifest.error]
   .filter((route) => route.client.needed);
 
 const assets = new Map();
+// Entry id -> the chunks its entry imports, for the page to name before the body.
+let preloads = new Map();
 
 // A prerendered page reads its sources once, here, and carries the result. That
 // is the whole reason includes are resolved before the render rather than during
@@ -100,6 +102,7 @@ if (Object.keys(clientInput).length) {
       assets.set(chunk.name, `/${chunk.fileName}`);
     }
   }
+  preloads = preloadsOf(chunks);
 }
 
 // ---- server ---------------------------------------------------------------
@@ -231,6 +234,7 @@ async function render(route, { url, params }) {
 
   const html = await renderRoute(pages[route.id], ctx, {
     clientEntry: assets.get(route.id) ?? null,
+    preload: preloads.get(route.id) ?? [],
     stylesheet,
     csp: config.csp,
     lang: config.lang,
@@ -417,6 +421,7 @@ fs.writeFileSync(
         pattern: route.pattern,
         params: route.params,
         client: assets.get(route.id) ?? null,
+        preload: preloads.get(route.id) ?? [],
       })),
       // Every route, prerendered or not. A fragment is rendered on demand even
       // where the document it belongs to was written to a file at build time. Its
@@ -426,6 +431,7 @@ fs.writeFileSync(
         pattern: route.pattern,
         params: route.params,
         client: assets.get(route.id) ?? null,
+        preload: preloads.get(route.id) ?? [],
       })),
       // Never prerendered: an endpoint answers with a Response, and a file
       // cannot carry one.

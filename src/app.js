@@ -82,16 +82,20 @@ function send(c, entry, cacheControl, status = 200) {
  * and making it async would tax every component call for something most pages
  * here do not need. So the body still leaves in one piece.
  *
- * What it does buy: the stylesheet and the client entry come from the route
- * table, not from a loader, so they are known before any loader runs. A proxy
+ * What it does buy: the stylesheet, the client entry and the chunks it imports
+ * come from the route table, not from a loader, so they are known before any
+ * loader runs. A proxy
  * that reads this sends a 103 and the browser fetches them while the page is
  * still being made. Cloudflare and Fastly do. A browser reading it directly
  * gets less, since these headers arrive with the body anyway.
  */
-function preloadHeader(stylesheet, clientEntry) {
+function preloadHeader(stylesheet, clientEntry, preload = []) {
   const parts = [];
   if (stylesheet) parts.push(`<${stylesheet}>; rel=preload; as=style`);
   if (clientEntry) parts.push(`<${clientEntry}>; rel=preload; as=script; crossorigin`);
+  // The same form as the entry: a module import is a script fetch made with
+  // CORS, and `crossorigin` is what lets the browser hand it this preload.
+  for (const url of preload) parts.push(`<${url}>; rel=preload; as=script; crossorigin`);
   return parts.length ? parts.join(', ') : null;
 }
 
@@ -443,7 +447,7 @@ export function createApp({
    */
   for (const route of manifest.routes ?? []) {
     const window = windowOf(pages[route.id]);
-    const preload = preloadHeader(manifest.stylesheet, route.client);
+    const preload = preloadHeader(manifest.stylesheet, route.client, route.preload ?? []);
 
     app.get(route.pattern, async (c) => {
       try {

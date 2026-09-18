@@ -130,6 +130,8 @@ export function scanRoutes(dir) {
  * @property {string} pattern
  * @property {string[]} params
  * @property {string|null} [client] the client entry's URL
+ * @property {string[]} [preload] the chunks that entry imports, for the page to
+ *   name before a browser has read the entry
  */
 
 /**

@@ -1370,6 +1370,18 @@ against.
   from a loader and so are known before any loader runs. A proxy that reads it
   sends a 103. 103 cannot be sent from here directly: a `Response` carries one
   status, and the Fetch API does not model an informational one.
+- **The chunks behind the entry are named up front, and only the build can name
+  them.** A client entry is a few imports and a call: the runtime chunk, one
+  chunk per element the page renders, and the loader map. A browser found them
+  only after it had fetched the entry and read it, so every cold page with
+  elements paid a round trip nobody asked for. `preloadsOf` in `prerender.js`
+  follows each entry's static imports as far as they go, the build writes them
+  into `routes.json` as `preload`, the document lists them as
+  `<link rel="modulepreload">` after the stylesheet, and the `Link` header
+  carries them in the same form as the entry. Dynamic imports are left out on
+  purpose: the `watch` loaders are on demand by design, and preloading every
+  element in the app would undo that. Dev has no list, because Vite serves the
+  modules unbundled and there is nothing to name.
 - **The precache list is a build artifact, and cannot be anything else.** Only
   the build knows an asset's hashed name, and a runtime with no disk cannot be
   asked: `bytesFrom` in `worker.js` returns `{ get }` and nothing that

@@ -115,6 +115,7 @@ export function absoluteFrom(base, requestUrl) {
  *
  * @typedef {object} RenderOptions
  * @property {string|null} [clientEntry]
+ * @property {string[]} [preload] the chunks the client entry imports
  * @property {string|null} [stylesheet]
  * @property {string} [lang]
  * @property {string|null} [speculate]
@@ -711,8 +712,8 @@ export function methodsOf(page) {
  *
  * @param {PageModule[]} chain the compiled modules, outermost first
  * @param {object[]} datas one per level, in the same order
- * @param {{ clientEntry?: string|null, stylesheet?: string|null, lang?: string,
- *   speculate?: string|null, canonical?: string|null }} [options] `canonical` is
+ * @param {{ clientEntry?: string|null, preload?: string[], stylesheet?: string|null,
+ *   lang?: string, speculate?: string|null, canonical?: string|null }} [options] `canonical` is
  *   the URL itself, already absolute. `renderRoute` is what turns the config's
  *   yes-or-no into one, because this function sees no request.
  * @returns {string} the document, starting at `<!doctype html>`
@@ -720,7 +721,7 @@ export function methodsOf(page) {
 export function renderDocument(
   chain,
   datas,
-  { clientEntry, stylesheet, lang = 'en', speculate = null, canonical = null } = {},
+  { clientEntry, preload = [], stylesheet, lang = 'en', speculate = null, canonical = null } = {},
 ) {
   // Each level renders to a slot map and hands it to the level above, so a page
   // can fill more than one hole in its layout.
@@ -780,6 +781,11 @@ export function renderDocument(
     ...(own.length ? [`<style data-transclude-page>\n${own.join('\n')}\n</style>`] : []),
   ];
 
+  // What the entry at the end of the body is going to import, said here so the
+  // browser fetches it beside the entry and not one round trip after. After the
+  // stylesheet: that one blocks rendering and these do not, so it goes first.
+  const modules = preload.map((url) => `<link rel="modulepreload" href="${url}">`);
+
   return `<!doctype html>
 ${openTag('html', { lang, ...attrsOf(chain, datas, 'renderHtmlAttrs') })}
 <head>
@@ -789,6 +795,7 @@ ${title}
 ${speculate ? `<script type="speculationrules">${speculate}</script>` : ''}
 ${headScripts.join('\n')}
 ${stylesheet ? `<link rel="stylesheet" href="${stylesheet}">` : ''}
+${modules.join('\n')}
 ${head.join('\n')}
 ${css.join('\n')}
 </head>

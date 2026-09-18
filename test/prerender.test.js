@@ -8,7 +8,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { prerenderContext, refusePrerender } from '../src/prerender.js';
+import { preloadsOf, prerenderContext, refusePrerender } from '../src/prerender.js';
 
 const contextFor = (over = {}) =>
   prerenderContext({ route: { id: 'notes', pattern: '/notes' }, url: '/notes', params: {}, ...over });
@@ -102,4 +102,58 @@ test('a Response is reported before anything the context says', () => {
   ctx.cookies.get('theme');
 
   assert.throws(() => refusePrerender(ctx, new Response(null, { status: 302 })), /instead of markup/);
+});
+
+// ---- what the entry is going to import ------------------------------------
+
+const chunk = (fileName, over = {}) => ({ type: 'chunk', fileName, imports: [], ...over });
+
+test('an entry names the chunks it imports, as URLs', () => {
+  const preloads = preloadsOf([
+    chunk('assets/index-a.js', { name: 'index', isEntry: true, imports: ['assets/runtime-r.js', 'assets/card-c.js'] }),
+    chunk('assets/runtime-r.js'),
+    chunk('assets/card-c.js', { imports: ['assets/runtime-r.js'] }),
+  ]);
+
+  assert.deepEqual(preloads.get('index'), ['/assets/runtime-r.js', '/assets/card-c.js']);
+});
+
+test('a chunk reached through another is named once, and the walk goes all the way down', () => {
+  // The entry imports the card, and only the card imports the runtime. A browser
+  // would find the runtime two round trips in.
+  const preloads = preloadsOf([
+    chunk('assets/index-a.js', { name: 'index', isEntry: true, imports: ['assets/card-c.js', 'assets/list-l.js'] }),
+    chunk('assets/card-c.js', { imports: ['assets/runtime-r.js'] }),
+    chunk('assets/list-l.js', { imports: ['assets/runtime-r.js'] }),
+    chunk('assets/runtime-r.js'),
+  ]);
+
+  assert.deepEqual(preloads.get('index'), ['/assets/card-c.js', '/assets/list-l.js', '/assets/runtime-r.js']);
+});
+
+test('a dynamic import is not preloaded, because it is on demand by design', () => {
+  const preloads = preloadsOf([
+    chunk('assets/index-a.js', {
+      name: 'index',
+      isEntry: true,
+      imports: ['assets/runtime-r.js'],
+      dynamicImports: ['assets/tag-picker-t.js'],
+    }),
+    chunk('assets/runtime-r.js'),
+    chunk('assets/tag-picker-t.js', { isDynamicEntry: true, imports: ['assets/runtime-r.js'] }),
+  ]);
+
+  assert.deepEqual(preloads.get('index'), ['/assets/runtime-r.js']);
+  assert.equal(preloads.has('tag-picker'), false);
+});
+
+test('only an entry has a list, and an entry with no imports has an empty one', () => {
+  const preloads = preloadsOf([
+    { type: 'asset', fileName: 'assets/__global-g.css' },
+    chunk('assets/docs-d.js', { name: 'docs', isEntry: true }),
+    chunk('assets/runtime-r.js'),
+  ]);
+
+  assert.deepEqual([...preloads.keys()], ['docs']);
+  assert.deepEqual(preloads.get('docs'), []);
 });

@@ -51,6 +51,9 @@ const serverRender = (id, url) => {
     },
     {
       clientEntry: route.client,
+      // The same list the server hands the render, so what this sees is what a
+      // visitor gets.
+      preload: route.preload,
       stylesheet,
       // The home page transcludes a section of MDN and a fragment of /notes.
       // These tests are about this app's own markup, so both are stubbed: the
@@ -127,6 +130,25 @@ describe('client entries are hashed', () => {
     fs.statSync(path.join(dist, 'client', docs.client)).size < 400,
     'the loader is supposed to be the smallest thing in the build',
   );
+});
+
+describe('a page names the chunks its entry imports before the body', () => {
+  // The home page renders elements, so its entry imports the runtime chunk and
+  // one chunk per element. Each is hinted from <head> and listed in routes.json,
+  // and every hint points at a file the build wrote.
+  const index = manifest().routes.find((route) => route.id === 'index');
+  assert.ok(index.preload.length >= 2, 'the runtime and at least one element');
+  assert.ok(index.preload.some((url) => /\/assets\/runtime-/.test(url)), 'the runtime chunk is among them');
+  for (const url of index.preload) {
+    assert.ok(fs.existsSync(path.join(dist, 'client', url)), `${url} exists`);
+    assert.ok(home.includes(`<link rel="modulepreload" href="${url}">`), `${url} is hinted from <head>`);
+  }
+
+  // /docs renders no element of its own, so its entry imports the runtime and
+  // the loader map and nothing else: the list is short, not empty.
+  const docs = manifest().dynamic.find((route) => route.id.startsWith('docs'));
+  assert.equal(docs.preload.length, 2, docs.preload.join(', '));
+  assert.ok(docs.preload.every((url) => /runtime-|transclude-elements-/.test(url)));
 });
 
 describe('the site stylesheet is one hashed, cacheable file', () => {

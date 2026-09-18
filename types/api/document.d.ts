@@ -119,6 +119,10 @@ export type PageModule = {
 };
 export type RenderOptions = {
     clientEntry?: string | null;
+    /**
+     * the chunks the client entry imports
+     */
+    preload?: string[];
     stylesheet?: string | null;
     lang?: string;
     speculate?: string | null;
@@ -353,14 +357,15 @@ export declare function methodsOf(page: object | null | undefined): string[];
  *
  * @param {PageModule[]} chain the compiled modules, outermost first
  * @param {object[]} datas one per level, in the same order
- * @param {{ clientEntry?: string|null, stylesheet?: string|null, lang?: string,
- *   speculate?: string|null, canonical?: string|null }} [options] `canonical` is
+ * @param {{ clientEntry?: string|null, preload?: string[], stylesheet?: string|null,
+ *   lang?: string, speculate?: string|null, canonical?: string|null }} [options] `canonical` is
  *   the URL itself, already absolute. `renderRoute` is what turns the config's
  *   yes-or-no into one, because this function sees no request.
  * @returns {string} the document, starting at `<!doctype html>`
  */
-export declare function renderDocument(chain: PageModule[], datas: object[], { clientEntry, stylesheet, lang, speculate, canonical }?: {
+export declare function renderDocument(chain: PageModule[], datas: object[], { clientEntry, preload, stylesheet, lang, speculate, canonical }?: {
     clientEntry?: string | null;
+    preload?: string[];
     stylesheet?: string | null;
     lang?: string;
     speculate?: string | null;

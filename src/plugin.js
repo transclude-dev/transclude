@@ -521,12 +521,16 @@ function readRaw(file) {
   return fs.readFileSync(file, 'utf8');
 }
 
-// A broken file should not take the whole type pass down with it. The module load
-// for that file will report the real error.
+/**
+ * A broken file should not take the whole scan down with it: the module load
+ * for that file reports the real error. Null, so a caller's `?? []` fires. It
+ * returned `{ kind: 'unknown' }` once, which is truthy, and the two callers that
+ * iterate the answer failed with "is not iterable" instead of the compile error.
+ */
 function safely(fn) {
   try {
     return fn();
   } catch {
-    return { kind: 'unknown' };
+    return null;
   }
 }

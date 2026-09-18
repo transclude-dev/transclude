@@ -81,9 +81,6 @@ export type Blocks = {
  * Each block carries the line it starts on so parse errors can point back into
  * the .html file rather than into generated output.
  *
- * One `<script>` or `<style>` block, with where it starts. Both are recorded so
- * a parse error points into the .html file rather than into generated output.
- *
  * @typedef {object} Block
  * @property {string} code
  * @property {number} line
@@ -115,10 +112,9 @@ export declare function splitBlocks(source: string): Blocks;
  * reaching it, and form controls and `<label for>` working because there is no
  * boundary. A shadow root is the opt-in, with everything that follows from it.
  */
-export declare function compileComponent(source: any, { tag, shadow, components, shadowTags, runtime, filename, nested }: {
+export declare function compileComponent(source: any, { tag, shadow, components, shadowTags, runtime, filename }: {
     components?: Map<any, any>;
     filename?: string;
-    nested?: any[];
     runtime: any;
     shadow?: boolean;
     shadowTags?: Set<any>;

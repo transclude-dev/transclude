@@ -13,6 +13,10 @@ export type ProxyConfig = {
      * how many documents to hold
      */
     cache?: number;
+    /**
+     * how many source bytes those may total
+     */
+    cacheBytes?: number;
     maxAge?: number;
     lookup?: Function | null;
 };
@@ -24,6 +28,10 @@ export type Held = {
      */
     removed: string[];
     /**
+     * the source's length, which is what the store's budget counts
+     */
+    bytes: number;
+    /**
      * when it was read
      */
     at: number;
@@ -32,6 +40,10 @@ export type Held = {
 };
 export type DocumentStore = {
     get: (key: string) => Held | null;
+    /**
+     * the source bytes held, which the budget counts
+     */
+    bytes?: number;
     set: (key: string, entry: Held) => void;
     size: number;
 };
@@ -43,9 +55,10 @@ export type DocumentStore = {
  * the requested one, so two requests that redirect to the same place hit.
  *
  * @param {number} [max] how many documents to hold
+ * @param {number} [maxBytes] how many source bytes they may total
  * @returns {DocumentStore}
  */
-export declare function documentStore(max?: number): DocumentStore;
+export declare function documentStore(max?: number, maxBytes?: number): DocumentStore;
 /**
  * A foreign document, fetched, cleaned and indexed.
  *

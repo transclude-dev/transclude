@@ -25,6 +25,9 @@ const DEFAULTS = {
   // `<link>` are removed either way, because their rules reach the whole page.
   styles: 'keep',
   cache: 50,
+  // And how many source bytes those may total. Fifty documents of five megabytes
+  // was a quarter of a gigabyte of source, held as trees several times that.
+  cacheBytes: 16 * 1024 * 1024,
   // How long a held document is used without asking the source anything. Ten
   // fragments off one page during a render should be one request, not ten
   // conditional ones.
@@ -44,6 +47,7 @@ const STYLE_MODES = new Set(['keep', 'strip']);
  * @property {boolean} [sanitize]
  * @property {'keep'|'strip'} [styles]
  * @property {number} [cache] how many documents to hold
+ * @property {number} [cacheBytes] how many source bytes those may total
  * @property {number} [maxAge]
  * @property {Function|null} [lookup]
  */
@@ -55,12 +59,14 @@ const STYLE_MODES = new Set(['keep', 'strip']);
  * @property {import('./extract.js').Indexed} doc
  * @property {string} base
  * @property {string[]} removed what the sanitizer took out
+ * @property {number} bytes the source's length, which is what the store's budget counts
  * @property {number} at when it was read
  * @property {string|null} etag
  * @property {string|null} lastModified
  *
  * @typedef {object} DocumentStore
  * @property {(key: string) => Held|null} get
+ * @property {number} [bytes] the source bytes held, which the budget counts
  * @property {(key: string, entry: Held) => void} set
  * @property {number} size
  */
@@ -185,10 +191,22 @@ async function bodyWithin(response, maxBytes) {
  * the requested one, so two requests that redirect to the same place hit.
  *
  * @param {number} [max] how many documents to hold
+ * @param {number} [maxBytes] how many source bytes they may total
  * @returns {DocumentStore}
  */
-export function documentStore(max = DEFAULTS.cache) {
+export function documentStore(max = DEFAULTS.cache, maxBytes = DEFAULTS.cacheBytes) {
   const held = new Map();
+  let bytes = 0;
+
+  const drop = (key) => {
+    const entry = held.get(key);
+    if (!entry) return;
+    bytes -= entry.bytes ?? 0;
+    held.delete(key);
+  };
+  // The newest is always kept, even alone over the budget: evicting it would
+  // fetch the same document again on the next request.
+  const over = () => held.size > max || (bytes > maxBytes && held.size > 1);
 
   return {
     get(key) {
@@ -200,12 +218,16 @@ export function documentStore(max = DEFAULTS.cache) {
       return entry;
     },
     set(key, entry) {
-      held.delete(key);
+      drop(key);
       held.set(key, entry);
-      while (held.size > max) held.delete(held.keys().next().value);
+      bytes += entry.bytes ?? 0;
+      while (over()) drop(held.keys().next().value);
     },
     get size() {
       return held.size;
+    },
+    get bytes() {
+      return bytes;
     },
   };
 }
@@ -277,6 +299,7 @@ export async function readForeign(url, options = {}, deps = {}) {
     doc: indexDocument(root),
     base,
     removed,
+    bytes: html.length,
     at: now(),
     etag: response.headers.get('etag'),
     lastModified: response.headers.get('last-modified'),
@@ -310,7 +333,7 @@ export async function readForeign(url, options = {}, deps = {}) {
  */
 export function includeResolver(options = {}, deps = {}) {
   const config = settings(options);
-  const store = deps.store ?? documentStore(config.cache);
+  const store = deps.store ?? documentStore(config.cache, config.cacheBytes);
 
   return {
     resolve: async (url, id) => {
@@ -328,7 +351,7 @@ export function includeResolver(options = {}, deps = {}) {
  */
 export function proxyHandler(options = {}, deps = {}) {
   const config = settings(options);
-  const store = deps.store ?? documentStore(config.cache);
+  const store = deps.store ?? documentStore(config.cache, config.cacheBytes);
 
   return async (request) => {
     const asked = new URL(request.url);

@@ -1,9 +1,4 @@
 export type ParsedNode = import('./html.js').ParsedNode;
-/**
- * The inclusion element. Reserved: an app cannot define one in `elements/`,
- * because this is read before the component table is consulted.
- */
-export declare const INCLUDE_TAG = "transclude";
 export declare class CompileError extends Error {
     line: any;
     column: any;
@@ -141,8 +136,6 @@ export declare function compileFragment(nodes: ParsedNode[], opts?: {
     html?: ParsedNode | null;
     body?: ParsedNode | null;
 }): Fragment;
-export declare const ANCHOR_OPEN = "<!--[-->";
-export declare const ANCHOR_CLOSE = "<!--]-->";
 /**
  * `else` / `else-if` bind to the `if` before them, so a chain is one unit. Both
  * passes have to agree on where it ends, so they share the same walk.
@@ -160,4 +153,11 @@ export declare function gatherChain(nodes: ParsedNode[], i: number): {
     }>;
     next: number;
 } | null;
-export declare function childrenOf(node: any): any;
+/**
+ * parse5 puts template children on `.content`, not `.childNodes`. Forgetting
+ * this silently skips everything inside every template.
+ *
+ * @param {ParsedNode} node
+ * @returns {ParsedNode[]} a template's live under `.content`, so walking `childNodes` finds nothing
+ */
+export declare function childrenOf(node: ParsedNode): ParsedNode[];

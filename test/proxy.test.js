@@ -470,3 +470,19 @@ test('the app mounts it, and the injected resolver reaches it', async () => {
   assert.equal(response.status, 403);
   assert.deepEqual(asked, [], 'a refused host was still resolved');
 });
+
+test('the document store is bounded by bytes as well as by count', () => {
+  // Fifty documents of five megabytes was a quarter of a gigabyte of source,
+  // held as trees several times that size.
+  const store = documentStore(50, 100);
+  store.set('a', { bytes: 60 });
+  store.set('b', { bytes: 60 });
+
+  assert.equal(store.get('a'), null, 'the older one went');
+  assert.ok(store.get('b'));
+  assert.equal(store.bytes, 60);
+
+  store.set('c', { bytes: 500 });
+  assert.ok(store.get('c'), 'one document over the budget is still held');
+  assert.equal(store.size, 1);
+});

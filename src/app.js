@@ -349,7 +349,7 @@ export function createApp({
   if (config.proxy) {
     const handler = proxyHandler(config.proxy, {
       lookup: config.proxy.lookup ?? lookup ?? null,
-      store: documentStore(config.proxy.cache),
+      store: documentStore(config.proxy.cache, config.proxy.cacheBytes),
     });
     app.get(PROXY_PATH, (c) => handler(c.req.raw));
   }

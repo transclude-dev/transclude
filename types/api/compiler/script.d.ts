@@ -1,6 +1,8 @@
 export declare class ScriptError extends Error {
     constructor(message: any);
 }
+/** @type {import('acorn').Options} */
+export declare const PARSE_OPTIONS: import('acorn').Options;
 /**
  * Rewrites `export default <thing>` to `const <name> = <thing>` in place,
  * leaving imports and named exports exactly where the author put them.

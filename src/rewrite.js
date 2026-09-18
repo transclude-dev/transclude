@@ -230,12 +230,15 @@ const isXlink = (name) => name === 'xlink:href' || name === 'href';
  * be one the browser would have honored: `<base>` inside `<svg>` is an SVG
  * element of that name and retargets nothing, and template content is inert.
  *
- * @param {string} html
+ * The tree and not the markup: `readForeign` parses once and hands the same
+ * tree here, to `sanitize` and to `absolutize`. Parsing a second time to find
+ * one element was a third of what a foreign document cost.
+ *
+ * @param {object} root the parsed document, before `sanitize` removes `<base>`
  * @param {string} responseUrl the URL after every redirect
  * @returns {string} what relative URLs resolve against
  */
-export function baseOf(html, responseUrl) {
-  const found = parse(html);
+export function baseOf(root, responseUrl) {
   let href = null;
 
   const visit = (node) => {
@@ -247,7 +250,7 @@ export function baseOf(html, responseUrl) {
       visit(child);
     }
   };
-  visit(found);
+  visit(root);
 
   if (!href) return responseUrl;
   try {

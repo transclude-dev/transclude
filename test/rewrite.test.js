@@ -175,7 +175,7 @@ test('ordinary content is left alone', () => {
 // ---- the base --------------------------------------------------------------
 
 test('a base href in the document beats the URL it was fetched from', () => {
-  const found = baseOf('<html><head><base href="/root/"></head><body></body></html>', BASE);
+  const found = baseOf(parse('<html><head><base href="/root/"></head><body></body></html>'), BASE);
   assert.equal(found, 'https://source.example/root/');
 });
 
@@ -187,23 +187,23 @@ test('a base is read only where the browser would have honored one', () => {
   const inTemplate = '<template><base href="https://elsewhere.example/"></template>';
   const inSvg = '<svg><base href="https://elsewhere.example/"></svg>';
 
-  assert.equal(baseOf(inTemplate, BASE), BASE);
-  assert.equal(baseOf(inSvg, BASE), BASE);
+  assert.equal(baseOf(parse(inTemplate), BASE), BASE);
+  assert.equal(baseOf(parse(inSvg), BASE), BASE);
 });
 
 test('with no base element the response URL is the base', () => {
-  assert.equal(baseOf('<p>one</p>', BASE), BASE);
+  assert.equal(baseOf(parse('<p>one</p>'), BASE), BASE);
 });
 
 test('a relative or protocol-relative base resolves against the response URL', () => {
-  assert.equal(baseOf('<base href="sub/">', BASE), 'https://source.example/guide/sub/');
-  assert.equal(baseOf('<base href="//cdn.example/x/">', BASE), 'https://cdn.example/x/');
+  assert.equal(baseOf(parse('<base href="sub/">'), BASE), 'https://source.example/guide/sub/');
+  assert.equal(baseOf(parse('<base href="//cdn.example/x/">'), BASE), 'https://cdn.example/x/');
 });
 
 test('a base that cannot be parsed falls back to the response URL', () => {
   // Foreign input, so this is reachable: `http://[` is an unterminated IPv6
   // host and throws rather than resolving.
-  assert.equal(baseOf('<base href="http://[">', BASE), BASE);
+  assert.equal(baseOf(parse('<base href="http://[">'), BASE), BASE);
 });
 
 // ---- absolute URLs ---------------------------------------------------------

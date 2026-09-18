@@ -266,9 +266,10 @@ export async function readForeign(url, options = {}, deps = {}) {
   if (!HTML.test(type)) throw new Refused(415, `the source sent ${type || 'no content type'}`);
 
   const html = await bodyWithin(response, config.maxBytes);
-  const base = baseOf(html, final);
 
+  // One parse, shared. `baseOf` goes first because `sanitize` removes `<base>`.
   const root = parse(html);
+  const base = baseOf(root, final);
   const removed = config.sanitize ? sanitize(root, { styles: config.styles }) : [];
   absolutize(root, base);
 

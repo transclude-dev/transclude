@@ -6,11 +6,6 @@ import { withPolicy } from './csp.js';
 // the page renders, then each layout renders around what it got.
 
 /**
- * Loads a page's chain and renders the document. Layout loaders run outermost
- * first, each one given what the ones above returned, so they have to run one
- * after another.
- */
-/**
  * The part of the answer that is not markup: a status and some headers.
  *
  * One object, handed to every loader in the chain and mutated in place. Loaders
@@ -277,13 +272,6 @@ function frameworkHead(canonical) {
 }
 
 /**
- * `<html …>`, with `lang` first and whatever a loader added after it.
- *
- * Values are escaped, because the reason this exists is putting a preference on
- * the element, and a preference usually comes from a cookie. `true` writes the
- * name bare and `false` drops it, the same rule the template compiler uses.
- */
-/**
  * Every `<html>` in the chain, merged by name.
  *
  * Outermost first so the innermost wins, per attribute rather than outright: a
@@ -301,6 +289,10 @@ function attrsOf(chain, datas, render) {
 
 /**
  * `<html …>` or `<body …>`, from a merged attribute object.
+ *
+ * Values are escaped, because the reason this exists is putting a preference on
+ * the element, and a preference usually comes from a cookie. `true` writes the
+ * name bare and `false` drops it, the same rule the template compiler uses.
  *
  * @param {string} tag
  * @param {object} attrs
@@ -324,6 +316,10 @@ function openTag(tag, attrs) {
 }
 
 /**
+ * Loads a page's chain and renders the document. Layout loaders run outermost
+ * first, each one given what the ones above returned, so they have to run one
+ * after another.
+ *
  * Loads a page's chain and renders the document, or returns the `Response` a
  * loader answered with instead.
  *
@@ -679,14 +675,6 @@ export function withEnvelope(response, ctx) {
 }
 
 /**
- * Whether a page can answer for a region name. An empty name is the page's own
- * body, which always exists.
- *
- * Asked *before* an action runs. A misspelled region is a 404 either way, but a
- * request that cannot be answered should not have mutated anything on its way to
- * saying so.
- */
-/**
  * The render function for a named region, or null.
  *
  * Own properties only, and it has to be a function. The name comes from a query
@@ -707,8 +695,12 @@ export function regionOf(page, region) {
 }
 
 /**
- * Whether a page answers for this region. An empty name means the whole page,
- * which every page answers for.
+ * Whether a page can answer for a region name. An empty name is the page's own
+ * body, which always exists.
+ *
+ * Asked *before* an action runs. A misspelled region is a 404 either way, but a
+ * request that cannot be answered should not have mutated anything on its way to
+ * saying so.
  *
  * @param {PageModule|null|undefined} page
  * @param {string} region

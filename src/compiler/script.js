@@ -16,7 +16,7 @@ export class ScriptError extends Error {
 }
 
 /** @type {import('acorn').Options} */
-const PARSE_OPTIONS = {
+export const PARSE_OPTIONS = {
   ecmaVersion: 'latest',
   sourceType: 'module',
   allowAwaitOutsideFunction: true,

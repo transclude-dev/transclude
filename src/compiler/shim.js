@@ -20,6 +20,7 @@ import { childrenOf } from './codegen.js';
 import { splitInterpolations } from './interp.js';
 import { GLOBALS as EXPRESSION_GLOBALS } from './expr.js';
 import { splitBlocks } from './index.js';
+import { PARSE_OPTIONS } from './script.js';
 import { ACTION_METHODS } from '../document.js';
 import { ENDPOINT_METHODS } from '../server.js';
 
@@ -161,11 +162,7 @@ export function buildEndpointShim(source, { contextType }) {
 
   let ast;
   try {
-    ast = parse(source, {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      allowAwaitOutsideFunction: true,
-    });
+    ast = parse(source, PARSE_OPTIONS);
   } catch (error) {
     out.failed(error, { offset: 0 });
     return out.build();
@@ -236,12 +233,7 @@ function actionExports(ast) {
     if (node.type !== 'ExportNamedDeclaration') continue;
     const declaration = node.declaration;
 
-    const name =
-      declaration?.type === 'VariableDeclaration'
-        ? declaration.declarations[0]?.id?.name
-        : declaration?.type === 'FunctionDeclaration'
-          ? declaration.id?.name
-          : null;
+    const name = declaredName(declaration);
 
     if (name && ACTION_METHODS.includes(name)) {
       found.push({
@@ -321,11 +313,7 @@ export function buildShim(source, { kind, shadow = false, contextType = null, co
   // reports every other one.
   for (const block of blocks.client) {
     try {
-      parse(block.code, {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        allowAwaitOutsideFunction: true,
-      });
+      parse(block.code, PARSE_OPTIONS);
     } catch (error) {
       out.failed(error, block);
     }
@@ -363,7 +351,7 @@ function emitModule(block, out, contextType, name = '__Data', binding = '__defau
   }
   let ast;
   try {
-    ast = parse(block.code, { ecmaVersion: 'latest', sourceType: 'module', allowAwaitOutsideFunction: true });
+    ast = parse(block.code, PARSE_OPTIONS);
   } catch (error) {
     // Half a file gives tsc nothing useful to say, so the parse failure itself
     // is the diagnostic.
@@ -496,7 +484,7 @@ function emitElement(block, out, shadow) {
 
   let ast;
   try {
-    ast = parse(block.code, { ecmaVersion: 'latest', sourceType: 'module', allowAwaitOutsideFunction: true });
+    ast = parse(block.code, PARSE_OPTIONS);
   } catch (error) {
     out.failed(error, block);
     out.add('/** @typedef {{}} __Props */\n/** @typedef {{}} __State */\n');
@@ -769,4 +757,23 @@ function attrValueOffset(node, name) {
 
 function indent(out, depth) {
   out.add('  '.repeat(Math.max(1, depth)));
+}
+
+/**
+ * The one name an exported declaration binds, or null for a shape that binds
+ * none. `export const POST = …` and `export function POST() {}` are the two
+ * spellings an action takes.
+ *
+ * @param {import('acorn').Node|null|undefined} declaration
+ * @returns {string|null}
+ */
+function declaredName(declaration) {
+  if (!declaration) return null;
+  if (declaration.type === 'VariableDeclaration') {
+    return /** @type {any} */ (declaration).declarations[0]?.id?.name ?? null;
+  }
+  if (declaration.type === 'FunctionDeclaration') {
+    return /** @type {any} */ (declaration).id?.name ?? null;
+  }
+  return null;
 }

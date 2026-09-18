@@ -145,9 +145,24 @@ test('the policy rides in a meta tag, so a static host needs to know nothing', a
   assert.match(html, /<\/head>/);
 });
 
-test('the meta goes last, so every block above it is covered', async () => {
+test('the meta goes first, because a policy governs only what follows it', async () => {
+  // It went last, on the belief that a hash covers what is above it. The hashes
+  // are taken from the whole document either way. What position decides is
+  // whether a head script runs under the policy, and last meant none did.
   const html = await withPolicy(doc('<script>a()</script>'), true);
-  assert.ok(html.indexOf('<script>a()') < html.indexOf('<meta http-equiv'));
+  assert.ok(html.indexOf('<meta http-equiv') < html.indexOf('<script>a()'));
+});
+
+test('the meta follows the charset, which has to stay in the first kilobyte', async () => {
+  const html = await withPolicy(doc('<meta charset="utf-8">\n<script>a()</script>'), true);
+  assert.match(html, /<meta charset="utf-8">\n<meta http-equiv="content-security-policy"/);
+});
+
+test('styles are digested only when a directive asks for them', async () => {
+  const html = doc('<style>.a{}</style><script>a()</script>');
+  assert.doesNotMatch(await policyFor(html), /style-src[^;]*sha256/);
+  const asked = { 'style-src': ["'self'", "'hashes'"] };
+  assert.match(await policyFor(html, { directives: asked }), /style-src 'self' 'sha256-/);
 });
 
 test('reportOnly sets the other header name', async () => {

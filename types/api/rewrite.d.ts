@@ -77,6 +77,11 @@ export declare function parseSrcset(value: string): Array<{
 /**
  * `url()` references inside a style attribute or a `<style>` block.
  *
+ * Read by hand, the way `parseSrcset` is. The regex that did this had `\s*` on
+ * both sides of a URL class that also matched spaces, so `url(` followed by
+ * two thousand spaces and no close held the event loop for a second and a
+ * half, and a style attribute on a foreign page is where that arrives from.
+ *
  * @param {string} css
  * @param {string} base
  * @returns {string}

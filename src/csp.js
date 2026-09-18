@@ -97,12 +97,16 @@ async function sha256(source) {
 export async function policyFor(html, { directives = CSP_DEFAULTS } = {}) {
   const inline = inlineSources(html);
 
-  const scripts = await Promise.all(
-    inline.filter((one) => one.kind === 'script').map((one) => sha256(one.body)),
-  );
-  const styles = await Promise.all(
-    inline.filter((one) => one.kind === 'style').map((one) => sha256(one.body)),
-  );
+  // Only the kinds a directive asks for. The defaults hash scripts and leave
+  // styles to 'unsafe-inline', and digesting ten <style> blocks nobody read was
+  // half the cost of the policy.
+  const digests = async (kind, directive) => {
+    if (!directives[directive]?.includes("'hashes'")) return [];
+    const bodies = inline.filter((one) => one.kind === kind).map((one) => one.body);
+    return Promise.all(bodies.map(sha256));
+  };
+  const scripts = await digests('script', 'script-src');
+  const styles = await digests('style', 'style-src');
 
   // Which set `'hashes'` stands for, by directive. Anything else gets none:
   // there is nothing to hash for `default-src`, and a directive carrying a hash
@@ -125,7 +129,7 @@ export async function policyFor(html, { directives = CSP_DEFAULTS } = {}) {
 }
 
 /**
- * The policy as a `<meta>`, inserted just before `</head>`.
+ * The policy as a `<meta>`, inserted at the top of `<head>`.
  *
  * A meta tag rather than a header, because a prerendered page is a file and
  * `dist/static` is meant to be servable by a host that knows nothing about this
@@ -192,7 +196,18 @@ export async function withPolicy(html, config) {
     : 'content-security-policy';
   const meta = `<meta http-equiv="${name}" content="${policy.replace(/"/g, '&quot;')}">`;
 
-  // One `</head>` in a document this built. Inserted last so a hash covers every
-  // inline block above it, and the meta itself carries none to cover.
-  return html.replace('</head>', `${meta}\n</head>`);
+  // As early as it can go: a policy in a meta governs only what follows it, so
+  // a head script ahead of it ran under no policy at all. It went last on the
+  // belief that a hash covers what is above it, and the hashes are taken from
+  // the whole document either way. After the charset, which has to stay in the
+  // first 1024 bytes and a long policy could push out.
+  const charset = html.indexOf(CHARSET);
+  if (charset !== -1) {
+    const after = charset + CHARSET.length;
+    return `${html.slice(0, after)}\n${meta}${html.slice(after)}`;
+  }
+  return html.replace(/<head[^>]*>/, (open) => `${open}\n${meta}`);
 }
+
+/** What `renderDocument` writes first in every head. */
+const CHARSET = '<meta charset="utf-8">';

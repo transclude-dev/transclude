@@ -1176,6 +1176,14 @@ against.
   `routes.json` because the server renders the dynamic routes and has to send
   what the files send. Computing it twice is two answers about what a browser may
   run, and only one of them was ever checked.
+- **A crawler reads the speculation block and asks for the pattern.** Googlebot
+  took `{"href_matches":"/source/*"}` out of the JSON as a link and requested
+  `/source/*`, which matches the catch-all route, names no file and answers 404.
+  That was one of four not-found URLs Search Console reported for
+  `transclude.dev`. Nothing in the emitted rules is wrong: the pattern is what
+  makes the prefetch work, the 404 is the right answer, and `speculate.exclude`
+  is the only lever. `/docs/production` says so, because the report arrives for
+  anyone who turns `speculate` on with a dynamic route.
 - **The speculation block is hashed by the CSP that already exists.**
   `inlineSources` matches every `<script>`, so nothing was added for this and
   nothing should be: a policy built from what the page inlines covers a block the

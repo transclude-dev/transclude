@@ -224,6 +224,16 @@ export const POST = async ({ request, revalidateTag }) => {
     that list.
   </doc-note>
 
+  <doc-note label="A crawler reads the block too">
+    A pattern in it looks like a URL, and Googlebot asks for one. A route
+    <code>/people/:name</code> is emitted as <code>/people/*</code>, so
+    <code>/people/*</code> arrives as a request, matches the route, names nobody
+    and answers 404. Search Console lists it as a page not found with nothing
+    linking to it. The 404 is the right answer, and
+    <code>exclude</code> is the lever if you would rather the pattern were not
+    in the block.
+  </doc-note>
+
   <h2>Holding a render</h2>
 
   <p>

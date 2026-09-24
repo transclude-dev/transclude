@@ -4,9 +4,12 @@
   rather than a PNG nobody can. `npm run og` renders this at 1200x630 in
   headless Chrome and writes app/public/og.png.
 
-  Its own colors and its own copy of the two font faces, because it is rendered
-  from a file rather than served by the site. The values match global.css and a
-  test checks that they still do.
+  Its own colors, because it is rendered from a file rather than served by the
+  site, and a test checks that the two copies still agree.
+
+  The two faces are the card's alone. The site sets its text in fonts a reader
+  already has, and this is a picture: it is drawn once, on one machine, and the
+  file in `scripts/fonts/` is what keeps it the same picture every time.
 -->
 <html lang="en">
   <head>
@@ -15,12 +18,12 @@
       @font-face {
         font-family: 'IBM Plex Mono';
         font-weight: 700;
-        src: url('../app/public/fonts/ibm-plex-mono-latin-700-normal.woff2') format('woff2');
+        src: url('./fonts/ibm-plex-mono-latin-700-normal.woff2') format('woff2');
       }
       @font-face {
         font-family: 'Noto Serif';
         font-weight: 400;
-        src: url('../app/public/fonts/noto-serif-latin-wght-normal.woff2') format('woff2');
+        src: url('./fonts/noto-serif-latin-wght-normal.woff2') format('woff2');
       }
 
       * {

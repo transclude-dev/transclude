@@ -3,42 +3,6 @@
    Custom properties inherit and cross a shadow boundary. Selectors do not. So
    this file can theme a component and cannot style one. */
 
-/* Inter and Noto Serif ship one variable file each, which covers every weight
-   the site uses. IBM Plex Mono has no variable release, so it ships the two
-   static weights it needs. */
-@font-face {
-  font-family: "Inter Variable";
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/inter-latin-wght-normal.woff2") format("woff2-variations");
-}
-
-@font-face {
-  font-family: "Noto Serif Variable";
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/noto-serif-latin-wght-normal.woff2")
-    format("woff2-variations");
-}
-
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "IBM Plex Mono";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("/fonts/ibm-plex-mono-latin-700-normal.woff2") format("woff2");
-}
-
 :root {
   /* Light first, dark second, in every `light-dark()` below. The declaration
      that decides which one applies is this one: `light dark` means the system
@@ -47,9 +11,20 @@
      controls the browser draws itself. */
   color-scheme: light dark;
 
-  --sans: "Inter Variable", system-ui, sans-serif;
-  --serif: "Noto Serif Variable", Georgia, serif;
-  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  /* Three stacks from modernfontstacks.com, and no font file anywhere. Every
+     name in them is a font somebody already has: the page asks for the first
+     one the reader's system can answer with and downloads nothing. The sans
+     begins with Inter, so a reader who has it installed sees what this site
+     used to send them.
+
+     What this costs is that the site does not look identical on every system.
+     A Mac sets the prose in Charter and Windows sets it in Sitka or Cambria,
+     and both are reading faces. What it buys is the 112 KB of woff2 that used
+     to arrive before the words did. */
+  --sans: Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;
+  --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, serif;
+  --mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas,
+    "DejaVu Sans Mono", monospace;
 
   --link: light-dark(#0000ee, #b8cfff);
 

@@ -15,9 +15,7 @@
     ],
     site: [
       { name: 'Shiki', href: 'https://shiki.style/', what: 'Highlights every code sample, in the loader, at build time.' },
-      { name: 'Inter', href: 'https://rsms.me/inter/', what: 'The interface. One variable file.' },
-      { name: 'Noto Serif', href: 'https://fonts.google.com/noto/specimen/Noto+Serif', what: 'Headings and prose. One variable file.' },
-      { name: 'IBM Plex Mono', href: 'https://www.ibm.com/plex/', what: 'The logo and the code. Two static weights, because Plex Mono has no variable release.' },
+      { name: 'Modern Font Stacks', href: 'https://modernfontstacks.com/', what: 'The type. Three stacks of fonts a reader already has, and no file to download.' },
     ],
     s: await all({
       build: ['npm run build', 'shell'],
@@ -93,8 +91,20 @@
   </div>
 
   <p>
-    The three families are served from <code>app/public/fonts/</code> rather than
-    a font CDN. Latin subsets, 112&nbsp;KB in total.
+    The type is three stacks rather than three files: Neo-grotesque for the
+    interface, Transitional for prose, Monospace Code for code. The reader's
+    system answers with the first name it has. The page carries no
+    <code>@font-face</code> and asks for no font. It reads a little differently
+    on a Mac and on Windows. That is what a face which came with the machine
+    looks like.
+  </p>
+
+  <p>
+    The wordmark is the exception, and it is not type. It was
+    <code>#transclude</code> in IBM Plex Mono Bold.
+    <code>app/elements/site-mark.html</code> draws those same letters as two
+    outlines. That costs about 800 bytes on a compressed page, and it is one
+    shape everywhere.
   </p>
 
   <h2>What it ships</h2>
@@ -125,7 +135,7 @@
         </tr>
         <tr>
           <td>Fonts</td>
-          <td>112&nbsp;KB, four files, cached on their own</td>
+          <td>None. The wordmark is drawn, and the rest is whatever the reader already has</td>
         </tr>
       </tbody>
     </table>

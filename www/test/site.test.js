@@ -57,12 +57,28 @@ test('every page has a title and a description', () => {
   assert.deepEqual(without, []);
 });
 
-test('the fonts the stylesheet names are the fonts that exist', () => {
+test('the site asks for no font file', () => {
+  // The type is stacks of fonts a reader already has. A `@font-face` here is a
+  // download, and a download is the thing this site spends its pages arguing
+  // against: 112 KB of woff2 used to arrive ahead of 6 KB of words.
   const css = fs.readFileSync(path.join(root, '..', 'app', 'styles', 'global.css'), 'utf8');
-  const named = [...css.matchAll(/url\("?\/fonts\/([^")]+)"?\)/g)].map(([, file]) => file);
-  assert.notEqual(named.length, 0, 'the stylesheet should name some fonts');
 
-  const dir = path.join(root, '..', 'app', 'public', 'fonts');
+  assert.doesNotMatch(css, /@font-face/);
+  assert.doesNotMatch(css, /url\(["']?\/fonts\//);
+  assert.ok(
+    !fs.existsSync(path.join(root, '..', 'app', 'public', 'fonts')),
+    'app/public is served to readers, so a font in it is a font that ships',
+  );
+});
+
+test('the sharing card can still find the two faces it draws with', () => {
+  // The card is a picture rendered once on one machine, so it keeps its fonts.
+  // They live beside it, out of what the site serves.
+  const card = fs.readFileSync(path.join(root, '..', 'scripts', 'og-card.html'), 'utf8');
+  const named = [...card.matchAll(/url\('\.\/fonts\/([^']+)'\)/g)].map(([, file]) => file);
+  assert.notEqual(named.length, 0, 'the card should name the faces it uses');
+
+  const dir = path.join(root, '..', 'scripts', 'fonts');
   const missing = named.filter((file) => !fs.existsSync(path.join(dir, file)));
 
   assert.deepEqual(missing, [], `named but not present: ${missing.join(', ')}`);

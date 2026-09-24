@@ -18,13 +18,18 @@ you are reading a fragment answers on `/?fragment=demo`, which is why this site
 runs a server rather than sitting on a static host. Nothing swaps one into a
 page, though. Reading the URL is the demonstration.
 
-## Fonts
+## Type
 
-Three families, in `app/public/fonts/`, served from this app rather than a CDN.
+Three stacks from [Modern Font Stacks](https://modernfontstacks.com/), named in
+`app/styles/global.css`. No `@font-face`, no font file, nothing to download.
 
-- **Inter** for the interface. One variable file.
-- **Noto Serif** for headings and prose. One variable file.
-- **IBM Plex Mono** for the logo and code. Two static weights, because Plex Mono
-  has no variable release.
+- **Neo-grotesque** for the interface. It begins with Inter, so a reader who has
+  Inter installed sees what this site used to send.
+- **Transitional** for prose. Charter on a Mac, Sitka or Cambria on Windows.
+- **Monospace Code** for code.
 
-Latin subsets, 112 KB in total.
+The wordmark is the exception. `app/elements/site-mark.html` draws
+`#transclude` as two outlines, because the mark has to be the same shape
+everywhere and the letters it is made of are IBM Plex Mono Bold.
+`scripts/fonts/` keeps that file, and the one the sharing card draws with, out
+of what the site serves.

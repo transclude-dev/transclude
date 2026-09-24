@@ -21,8 +21,12 @@ export default {
 
   // Mounts /sitemap.xml and writes it into the build. Every page route with no
   // parameters is listed, and a parameter route is listed as whatever its
-  // `paths()` export names.
-  sitemap: { hostname: SITE },
+  // `paths()` export names. Those URLs arrive with no date on them, so
+  // `entries` names each post again and carries the one a crawler sorts by.
+  sitemap: {
+    hostname: SITE,
+    entries: () => posts.map((post) => ({ path: `/posts/${post.slug}`, lastmod: post.date })),
+  },
 
   // A feed needs something to read: a route table holds URLs and nothing else.
   // The items are the app's to supply.

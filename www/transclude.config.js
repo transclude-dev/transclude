@@ -41,8 +41,12 @@ export default {
   speculate: true,
 
   // GET /sitemap.xml, from the route table. Every page here is a concrete route,
-  // so nothing has to be listed by hand.
-  sitemap: { hostname: 'https://transclude.dev' },
+  // so nothing has to be listed by hand. The posts are named a second time,
+  // because their URLs come from `paths()` and a route table holds no dates.
+  sitemap: {
+    hostname: 'https://transclude.dev',
+    entries: () => byDate().map((post) => ({ path: `/blog/${post.slug}`, lastmod: post.date })),
+  },
 
   // A list of what the build produced, at /precache.json. The framework ships
   // no service worker: only the build knows an asset's hashed name, so this is

@@ -4,6 +4,10 @@
  * `paths()` is the page's own, the one the build calls, so the two cannot
  * disagree about which URLs exist.
  *
+ * A path named twice is one entry, carrying the fields of every mention. That
+ * is how a page built from `paths()` gets a `lastmod`: the route table knows
+ * the URL and nothing else, and `entries` names the same URL with the date.
+ *
  * @param {Pick<import('./routes.js').Manifest, 'routes'|'gated'>} manifest the
  *   two fields read here. The dev server has no endpoint list to give, and
  *   nothing here would read one.

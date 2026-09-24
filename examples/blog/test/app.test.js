@@ -49,6 +49,14 @@ describe('the sitemap lists every page, posts included', async () => {
   assert.ok(locs.includes('https://blog.example/'));
   assert.ok(locs.includes('https://blog.example/about'));
   assert.ok(locs.includes('https://blog.example/posts/written-once'));
+
+  // The route's `paths()` names the URL and the config's `entries` names it
+  // again with the date. One `<url>`, carrying both.
+  assert.equal(locs.filter((loc) => loc.endsWith('/posts/written-once')).length, 1);
+  assert.match(
+    xml,
+    /<loc>https:\/\/blog\.example\/posts\/written-once<\/loc><lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/,
+  );
 });
 
 describe('the feed carries the posts, newest first', async () => {

@@ -90,6 +90,12 @@ export default {
   ${html(s.sitemapEntries)}
 
   <p>
+    An entry may name a URL a route already produced. The sitemap lists that URL
+    once and takes the fields of both, which is how a page built from
+    <code>paths()</code> carries a <code>lastmod</code>.
+  </p>
+
+  <p>
     Past 50,000 URLs the bare path becomes an index and each
     <code>?p=</code> is a slice of the list. Lower <code>limit</code> to see it
     on a small site.

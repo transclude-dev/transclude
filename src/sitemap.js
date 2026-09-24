@@ -41,6 +41,10 @@ const excluded = (path, rules) =>
  * `paths()` is the page's own, the one the build calls, so the two cannot
  * disagree about which URLs exist.
  *
+ * A path named twice is one entry, carrying the fields of every mention. That
+ * is how a page built from `paths()` gets a `lastmod`: the route table knows
+ * the URL and nothing else, and `entries` names the same URL with the date.
+ *
  * @param {Pick<import('./routes.js').Manifest, 'routes'|'gated'>} manifest the
  *   two fields read here. The dev server has no endpoint list to give, and
  *   nothing here would read one.
@@ -77,13 +81,21 @@ export async function sitemapEntries(manifest, pages, { entries = [], exclude = 
   // about which URLs a crawler is invited to.
   const gated = manifest.gated ?? [];
 
-  const seen = new Set();
-  return all.filter((entry) => {
-    if (seen.has(entry.path) || excluded(entry.path, exclude)) return false;
-    if (isGated(entry.path, gated)) return false;
-    seen.add(entry.path);
-    return true;
-  });
+  // One entry per path, where the path was first named. A later mention of the
+  // same path is merged onto it rather than dropped, because the two mentions
+  // carry different things: a route contributes the URL, and the `entries` copy
+  // of that URL contributes the date. Later fields win.
+  const byPath = new Map();
+
+  for (const entry of all) {
+    if (excluded(entry.path, exclude)) continue;
+    if (isGated(entry.path, gated)) continue;
+
+    const first = byPath.get(entry.path);
+    byPath.set(entry.path, first ? { ...first, ...entry } : entry);
+  }
+
+  return [...byPath.values()];
 }
 
 function urlset(entries, hostname) {

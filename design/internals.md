@@ -1822,6 +1822,14 @@ against.
   config key.** `sitemapEntries` reads `manifest.gated`, which is how the written
   sitemap and the `/sitemap.xml` route leave out the same URLs. Two lists would
   be two answers about what a crawler is invited to.
+- **The sitemap merges a path it already has, rather than keeping the first copy
+  of it.** A page that exports `paths()` puts its URLs in the list with nothing
+  but the path on them, because the route table holds no dates. The documented
+  way to date those pages is `entries: posts.map((post) => ({ path, lastmod }))`,
+  which names the same URLs a second time. Keeping the first mention and dropping
+  the second added a `lastmod` to nothing: 133 posts, a sitemap without one date
+  in it, and no error anywhere. `sitemapEntries` keys a `Map` by path, and a
+  later mention fills its fields in on the first.
 - **`src/gate.js` has no imports on purpose.** The sitemap reads it at runtime on
   every runtime, so it must not drag `prerender.js` and its context builder into
   a worker bundle. `test/portable.test.js` names every module the core reaches,

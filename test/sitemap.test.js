@@ -77,6 +77,35 @@ test('a duplicate path is listed once', async () => {
   assert.equal(locs(xml).filter((loc) => loc.endsWith('/about')).length, 1);
 });
 
+test('an entry naming a path a route already found fills its fields in', async () => {
+  // `/people/ada` comes from the page's own `paths()`, which knows the URL and
+  // no date. The config names it again to carry the date, and the sitemap still
+  // lists the URL once, where the route table put it.
+  const entries = await sitemapEntries(manifest, pages, {
+    entries: [{ path: '/people/ada', lastmod: '2026-07-31' }],
+  });
+
+  assert.deepEqual(entries.map((e) => e.path), ['/', '/about', '/people/ada', '/people/grace']);
+  assert.equal(entries.find((e) => e.path === '/people/ada').lastmod, '2026-07-31');
+
+  const xml = await sitemap(manifest, pages, {
+    hostname: 'https://x.com',
+    entries: [{ path: '/people/ada', lastmod: '2026-07-31' }],
+  });
+
+  assert.equal(locs(xml).filter((loc) => loc.endsWith('/people/ada')).length, 1);
+  assert.match(xml, /<loc>https:\/\/x\.com\/people\/ada<\/loc><lastmod>2026-07-31<\/lastmod>/);
+});
+
+test('exclude and the gate hold a path back however often it is named', async () => {
+  const entries = await sitemapEntries({ ...manifest, gated: ['/people/ada'] }, pages, {
+    entries: [{ path: '/about', lastmod: '2026-07-31' }],
+    exclude: ['/about'],
+  });
+
+  assert.deepEqual(entries.map((e) => e.path), ['/', '/people/grace']);
+});
+
 test('optional fields are emitted only when given', async () => {
   const xml = await sitemap({ routes: [] }, {}, {
     hostname: 'https://x.com',

@@ -88,6 +88,10 @@
     <input type="text" name="plain" value="ordinary" />
     <tag-picker id="picker" name="tags" options='["a","b","c"]'></tag-picker>
   </form>
+
+  <!-- A label in the page, and the input it names behind a shadow root. -->
+  <label id="named-label" for="named">Name</label>
+  <name-field id="named" placeholder="Ada"></name-field>
 </div>
 
 <div hidden>
@@ -1244,6 +1248,53 @@
       ok(box.isConnected && probe.shadowRoot.activeElement === box, 'focus was lost');
       return 'focus is restored even when there is no caret to restore with';
     }));
+
+  // ---- reference target -----------------------------------------------------
+  //
+  // A shadow root cuts `<label for>` off at the host. `referenceTarget` sends
+  // it through to one id inside. Node has no labels and no focus to follow, so
+  // this is the only place the result can be seen.
+
+  const hasReferenceTarget = 'referenceTarget' in ShadowRoot.prototype;
+  /** Clicks the label and says which element in the root took focus. */
+  const focusedBy = (label, host) => {
+    label.click();
+    const id = host.shadowRoot.activeElement?.id ?? null;
+    /** @type {HTMLElement|null} */ (document.activeElement)?.blur();
+    return id;
+  };
+
+  await check('a label in the page reaches the input behind a shadow root', () => {
+    const named = document.getElementById('named');
+    if (!hasReferenceTarget) {
+      is(named.shadowRoot.referenceTarget, undefined, 'the root has a target the browser does not know');
+      return 'no reference target in this browser: the label is not connected, as with no target';
+    }
+    is(named.shadowRoot.referenceTarget, 'field', 'the declarative root lost its target');
+    is(focusedBy(document.getElementById('named-label'), named), 'field', 'the label did not reach the input');
+    return 'shadowrootreferencetarget on the server-rendered root';
+  });
+
+  await check('an element with no server-rendered root forwards the label too', () => {
+    // What a fragment delivers: the tag and nothing inside, so the root comes
+    // from attachShadow rather than from the parser.
+    const host = document.createElement('name-field');
+    host.id = 'made';
+    const label = document.createElement('label');
+    label.htmlFor = 'made';
+    label.textContent = 'Made';
+    document.querySelector('.fixtures').append(label, host);
+
+    try {
+      if (!hasReferenceTarget) return 'no reference target in this browser';
+      is(host.shadowRoot.referenceTarget, 'field', 'attachShadow was not given the target');
+      is(focusedBy(label, host), 'field', 'the label did not reach the input');
+      return 'attachShadow({ referenceTarget }) on connect';
+    } finally {
+      label.remove();
+      host.remove();
+    }
+  });
 
   const passed = results.filter((r) => r.ok).length;
   const summary = document.getElementById('summary');

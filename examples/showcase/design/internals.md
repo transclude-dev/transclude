@@ -63,6 +63,13 @@ running an app.
   models a form, so setting it to `false` broke no test until one read the flag
   directly. Whether a `<form>` counts it as a field is checked in
   `app/routes/check.html`.
+- **The reference target checks prove something only in Chrome and Edge.**
+  `<name-field>` forwards its label to the input behind its shadow root. Safari
+  and Firefox have `referenceTarget` behind a flag, so there both checks pass
+  with a note that says so, and all they show is that the label acts as it
+  would with no target. The two checks cover the two ways a root is made: the
+  parser builds one from the server's markup, and `attachShadow` builds one for
+  an element created in a script, which is what a fragment delivers.
 - **`/check?report` is how any browser reports back.** The page posts its results
   to `/api/checks` and the dev server prints them. Neither Safari nor Firefox can
   be driven from a shell without setup: Safari needs "Allow remote automation"

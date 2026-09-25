@@ -1,0 +1,30 @@
+<script element>
+  /**
+   * A text input behind a shadow root, and a `<label for>` in the page that
+   * still reaches it.
+   *
+   * `referenceTarget` names the input. A label, an `aria-labelledby` or an
+   * `aria-describedby` that names the host lands on the input instead: a click
+   * on the label focuses it, and a screen reader reads the label as its name.
+   * A browser without the feature ignores the target, and the label acts as it
+   * would with no target at all.
+   */
+  export const properties = {
+    placeholder: '',
+  };
+
+  export const shadow = true;
+  export const referenceTarget = 'field';
+</script>
+
+<style>
+  :host {
+    display: inline-block;
+  }
+
+  input {
+    font: inherit;
+  }
+</style>
+
+<input id="field" type="text" placeholder="${placeholder}" />

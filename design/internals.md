@@ -185,6 +185,19 @@ against.
   paints itself on connect. `__fragment` threads through both `emitShadow` and
   `emitLight`. Drop it from the second one and a shadow element inside a light one emits
   a shadow root nobody will process.
+- **A reference target has two places to be written, and missing one says
+  nothing.** `export const referenceTarget` sends a `<label for>` or an
+  `aria-labelledby` that names the host to one id inside the shadow root.
+  `shadow()` writes it as `shadowrootreferencetarget`, and `connectedCallback`
+  passes it to `attachShadow` for the element a fragment delivered bare. Drop
+  either one and only half the elements forward, with the label connected on a
+  full page and dead after a swap. A target that names no element fails the
+  same way: the browser connects nothing and reports nothing, which looks
+  exactly like a browser without the feature. So the compiler refuses a
+  missing id, a bound one, and one inside an `each`. TypeScript's lib has no
+  `referenceTarget` on `ShadowRootInit`, which is why the runtime declares its
+  own `ShadowInit`. In Chrome, a form-associated host with a target reports no
+  `internals.labels`, because the label now belongs to the inner element.
 - **A module variable does not bridge the two bundles.** An app holding `env`
   from `worker.js` for its loaders has to keep it on `globalThis`, because the
   build inlines a copy of that module into `dist/server/entry.js` and wrangler

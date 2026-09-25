@@ -34,6 +34,14 @@ export type Definition = {
      */
     volatile?: string[];
     formAssociated?: boolean;
+    /**
+     * the id in the shadow root that a
+     * `<label for>` or an `aria-labelledby` naming the host reaches
+     */
+    referenceTarget?: string | null;
+};
+export type ShadowInit = ShadowRootInit & {
+    referenceTarget?: string | null;
 };
 export type Part = {
     bind: (from: Node | null, props: object, ...rest: unknown[]) => object;

@@ -74,6 +74,11 @@ export type ElementModule = {
         shadow?: boolean | null;
         formAssociated?: boolean | null;
     };
+    /**
+     * the id `export const referenceTarget`
+     * named, or null
+     */
+    referenceTarget?: string | null;
     imports: Array<object>;
     /**
      * everything else the block declared
@@ -122,6 +127,8 @@ export type ElementModule = {
  * @property {{ properties?: object|null, state?: object|null,
  *   prototype?: object|null, attributes?: object|null }} nodes
  * @property {{ shadow?: boolean|null, formAssociated?: boolean|null }} flags
+ * @property {string|null} [referenceTarget] the id `export const referenceTarget`
+ *   named, or null
  * @property {Array<object>} imports
  * @property {string[]} declared everything else the block declared
  * @property {string[]} warnings

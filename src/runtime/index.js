@@ -31,6 +31,16 @@
  * @property {(bindings: object, props: object) => boolean} [update]
  * @property {string[]} [volatile] props whose change needs a full repaint
  * @property {boolean} [formAssociated]
+ * @property {string|null} [referenceTarget] the id in the shadow root that a
+ *   `<label for>` or an `aria-labelledby` naming the host reaches
+ */
+
+/**
+ * `ShadowRootInit` as the DOM spec has it. TypeScript's lib has no
+ * `referenceTarget` yet, and an object literal with a key its type lacks is an
+ * error.
+ *
+ * @typedef {ShadowRootInit & { referenceTarget?: string|null }} ShadowInit
  */
 
 /**
@@ -1010,7 +1020,10 @@ export function setAttrProp(def, element, name, value) {
 export function shadow(def, props, fragment = false) {
   if (fragment) return '';
   const styles = def.css ? `<style>${def.css}</style>` : '';
-  return `<template shadowrootmode="open">${styles}${def.render(data(def, props))}</template>`;
+  const target = def.referenceTarget
+    ? ` shadowrootreferencetarget="${escape(def.referenceTarget)}"`
+    : '';
+  return `<template shadowrootmode="open"${target}>${styles}${def.render(data(def, props))}</template>`;
 }
 
 /**
@@ -1525,7 +1538,14 @@ export function defineComponent(def) {
 
     connectedCallback() {
       if (!this.shadowRoot) {
-        this.attachShadow({ mode: 'open' });
+        // The same target the server writes as `shadowrootreferencetarget`,
+        // for the element that arrived in a fragment with no shadow root. A
+        // browser without the feature ignores the key.
+        const init = /** @type {ShadowInit} */ ({
+          mode: 'open',
+          referenceTarget: def.referenceTarget ?? null,
+        });
+        this.attachShadow(init);
         this.#paint();
       } else if (!this.#bound) {
         // Server-rendered: the markup is already right, so this only has to

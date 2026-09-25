@@ -31,6 +31,7 @@ const PAGE_EXPORTS = new Set([
 const COMPONENT_EXPORTS = new Set([
   'tag', 'light', 'css', 'elements', 'propDefs', 'propAttrs', 'stateDefs', 'members', 'render',
   'coerce', 'def', 'define', 'default', 'bind', 'update', 'volatile', 'formAssociated',
+  'referenceTarget',
 ]);
 
 /**
@@ -275,6 +276,7 @@ export function compileComponent(
         code: '',
         nodes: {},
         flags: {},
+        referenceTarget: null,
         imports: [],
         declared: [],
         warnings: [],
@@ -367,6 +369,9 @@ export function compileComponent(
     );
   }
 
+  const referenceTarget = element.referenceTarget ?? null;
+  assertReferenceTarget(referenceTarget, blocks.nodes, isShadow, tag);
+
   const warnings = [
     ...template.warnings,
     ...element.warnings,
@@ -389,6 +394,7 @@ ${fallbacks}
 export const tag = ${JSON.stringify(tag)};
 export const light = ${!isShadow};
 export const formAssociated = ${formAssociated === true};
+export const referenceTarget = ${JSON.stringify(referenceTarget)};
 export const css = ${JSON.stringify(isShadow ? styles : scopeCss(styles, tag, nested))};
 export const propDefs = __propDefs;
 export const propAttrs = __propAttrs;
@@ -410,7 +416,7 @@ ${template.blockDefs}
 ${bindingsCode(bindings)}
 export const def = {
   tag, light, css, elements, propDefs, propAttrs, stateDefs, members, render, coerce, bind,
-  update, volatile, formAssociated,
+  update, volatile, formAssociated, referenceTarget,
 };
 export default def;
 
@@ -886,6 +892,63 @@ function objectKeys(defaultNode) {
   return defaultNode.properties
     .filter((prop) => prop.type === 'Property' && !prop.computed)
     .map((prop) => (prop.key.type === 'Identifier' ? prop.key.name : String(prop.key.value)));
+}
+
+/**
+ * The id `export const referenceTarget` names has to be one element in the
+ * shadow root, written out in the template.
+ *
+ * Nothing in a browser reports a target that matches nothing: the label stays
+ * unconnected, the same as with no target at all. So each way to name no
+ * element, or one that repeats, is refused here. A light element has no boundary, and
+ * `<label for>` already reaches an id inside it.
+ *
+ * @param {string|null} target
+ * @param {ParsedNode[]} nodes the template
+ * @param {boolean} isShadow
+ * @param {string} tag
+ * @returns {void}
+ */
+function assertReferenceTarget(target, nodes, isShadow, tag) {
+  if (target === null) return;
+
+  if (!isShadow) {
+    throw new CompileError(
+      `<${tag}> is a light element, so \`referenceTarget\` has no shadow root to reach ` +
+        `into. A <label for> already finds an id inside it: put \`id="${target}"\` on ` +
+        `the element and point the label at that, or add \`export const shadow = true\`.`,
+      nodes[0] ?? null,
+    );
+  }
+
+  const found = [];
+  const walk = (node, repeated) => {
+    const attrs = node.attrs ?? [];
+    const inEach = repeated || attrs.some((attr) => attr.name === 'each');
+    if (attrs.some((attr) => attr.name === 'id' && attr.value === target)) {
+      found.push({ node, inEach });
+    }
+    for (const child of childrenOf(node)) walk(child, inEach);
+  };
+  for (const node of nodes) walk(node, false);
+
+  if (found.length === 0) {
+    throw new CompileError(
+      `<${tag}> forwards references to \`${target}\`, and no element in its template ` +
+        `has \`id="${target}"\`. Write the id out rather than binding it: the target is ` +
+        `the same for every element of the tag.`,
+      nodes[0] ?? null,
+    );
+  }
+
+  const repeated = found.find((match) => match.inEach);
+  if (repeated) {
+    throw new CompileError(
+      `<${tag}> forwards references to \`${target}\`, and that id is inside an \`each\`, ` +
+        `so every item repeats it. A reference target has to be one element.`,
+      repeated.node,
+    );
+  }
 }
 
 /**

@@ -83,6 +83,12 @@ export const ELEMENT_BINDINGS = {
 export const ELEMENT_FLAGS = ['shadow', 'formAssociated'];
 
 /**
+ * The id a shadow root forwards references to. A fact about the tag like the
+ * flags, and a literal for the same reason, but a string rather than a switch.
+ */
+const REFERENCE_TARGET = 'referenceTarget';
+
+/**
  * An acorn node, as this file treats one.
  *
  * acorn's types are a discriminated union and every walk here reads across it,
@@ -124,6 +130,8 @@ export const ELEMENT_FLAGS = ['shadow', 'formAssociated'];
  * @property {{ properties?: object|null, state?: object|null,
  *   prototype?: object|null, attributes?: object|null }} nodes
  * @property {{ shadow?: boolean|null, formAssociated?: boolean|null }} flags
+ * @property {string|null} [referenceTarget] the id `export const referenceTarget`
+ *   named, or null
  * @property {Array<object>} imports
  * @property {string[]} declared everything else the block declared
  * @property {string[]} warnings
@@ -139,6 +147,7 @@ export function bindElementModule(block, label) {
   const nodes = Object.fromEntries(Object.keys(ELEMENT_BINDINGS).map((name) => [name, null]));
   // `null` until the block says so, so "not said" and "said false" differ.
   const flags = Object.fromEntries(ELEMENT_FLAGS.map((flag) => [flag, null]));
+  let referenceTarget = null;
   const cuts = [];
   const warnings = [];
 
@@ -194,6 +203,20 @@ export function bindElementModule(block, label) {
       continue;
     }
 
+    if (namesExport(statement, REFERENCE_TARGET)) {
+      const value = stringExport(statement, REFERENCE_TARGET);
+      if (!value) {
+        throw new ScriptError(
+          `${label}: \`${REFERENCE_TARGET}\` must be a string: the id of one element in ` +
+            `the shadow root. Every element of the tag forwards to the same one, so it ` +
+            `cannot be decided at run time (line ${lineOf(statement, code, line)})`,
+        );
+      }
+      referenceTarget = value;
+      cuts.push({ start: statement.start, end: statement.end, text: '' });
+      continue;
+    }
+
     const declarator = reservedDeclarator(statement);
     if (declarator) {
       const name = declarator.id.name;
@@ -215,7 +238,11 @@ export function bindElementModule(block, label) {
 
     throw new ScriptError(
       `${label}: \`${exportedName(statement) ?? 'this'}\` is not something an element ` +
-        `declares. The block exports ${[...Object.keys(ELEMENT_BINDINGS), ...ELEMENT_FLAGS]
+        `declares. The block exports ${[
+          ...Object.keys(ELEMENT_BINDINGS),
+          ...ELEMENT_FLAGS,
+          REFERENCE_TARGET,
+        ]
           .map((name) => `\`${name}\``)
           .join(', ')}, and nothing else ` +
         `(line ${lineOf(statement, code, line)})`,
@@ -228,12 +255,13 @@ export function bindElementModule(block, label) {
   // scope. Reporting them as declarations made `export const formAssociated`
   // collide with the module's own `formAssociated` export, which is the very
   // name the block is supposed to use.
-  const reserved = new Set([...Object.keys(ELEMENT_BINDINGS), ...ELEMENT_FLAGS]);
+  const reserved = new Set([...Object.keys(ELEMENT_BINDINGS), ...ELEMENT_FLAGS, REFERENCE_TARGET]);
 
   return {
     code: splice(code, cuts),
     nodes,
     flags,
+    referenceTarget,
     imports: importsOf(ast),
     declared: topLevelNames(ast).filter((name) => !reserved.has(name)),
     warnings,
@@ -334,6 +362,14 @@ function booleanExport(statement, name) {
   const declared = namesExport(statement, name);
   const init = declared?.init;
   if (init?.type === 'Literal' && typeof init.value === 'boolean') return init.value;
+  return null;
+}
+
+/** `export const NAME = 'text'`, or null when it is not that. */
+function stringExport(statement, name) {
+  const declared = namesExport(statement, name);
+  const init = declared?.init;
+  if (init?.type === 'Literal' && typeof init.value === 'string') return init.value;
   return null;
 }
 

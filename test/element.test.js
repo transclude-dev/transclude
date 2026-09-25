@@ -19,7 +19,8 @@ class FakeHTMLElement {
   get attributes() {
     return [...this.#attrs].map(([name, value]) => ({ name, value }));
   }
-  attachShadow() {
+  attachShadow(init) {
+    this.shadowInit = init;
     this.shadowRoot = createRoot();
     return this.shadowRoot;
   }
@@ -763,6 +764,32 @@ test('a property setter writes the attribute through the converter', async () =>
   });
 });
 
+
+// ---- reference target ------------------------------------------------------
+//
+// The server writes it as `shadowrootreferencetarget`. An element with no
+// server-rendered root, which is every one that arrived in a fragment, has only
+// `attachShadow` to say it.
+
+test('a shadow root attached on connect carries the reference target', async () => {
+  await withDom(async ({ defineComponent }, registry) => {
+    defineComponent(defOf({ referenceTarget: 'field' }));
+    const el = new (registry.get('x-card'))();
+    el.connect();
+
+    assert.deepEqual(el.shadowInit, { mode: 'open', referenceTarget: 'field' });
+  });
+});
+
+test('an element with no reference target attaches with null, the default', async () => {
+  await withDom(async ({ defineComponent }, registry) => {
+    defineComponent(defOf());
+    const el = new (registry.get('x-card'))();
+    el.connect();
+
+    assert.deepEqual(el.shadowInit, { mode: 'open', referenceTarget: null });
+  });
+});
 
 // ---- form association ------------------------------------------------------
 //

@@ -17,6 +17,7 @@ left exactly where they wrote it.
 | `attributes` | a `from`/`to` converter per prop |
 | `shadow` | `true` for a shadow root. A literal |
 | `formAssociated` | `true` to be a real form field. A literal |
+| `referenceTarget` | the id a `<label for>` on the host reaches, in a shadow root. A literal |
 
 A file has one of these blocks. A second is refused, and so is a bare `<script>`,
 because an element's per-element code is a member rather than a loose body.
@@ -91,6 +92,25 @@ not write.
 Reach for a shadow root when the element has to seal its styles and DOM off from
 the page, or re-render on its own. Otherwise stay light: it is cheaper, and it
 renders the same way whether the browser asked for a whole page or one fragment.
+
+A shadow root stops `<label for>`, `aria-labelledby` and `aria-describedby` at
+the host. `export const referenceTarget = 'field'` sends them on to the element
+with `id="field"` in the template:
+
+```html
+<!-- app/elements/name-field.html -->
+<script element>
+  export const shadow = true;
+  export const referenceTarget = 'field';
+</script>
+
+<input id="field" type="text" />
+```
+
+`<label for="name">Name</label><name-field id="name"></name-field>` then labels
+the input. The build refuses a target on a light element, a target no element
+has, a bound `id`, and an `id` inside an `each`. Chrome and Edge follow it.
+Safari and Firefox ignore it, and the label stays unconnected.
 
 ## Props
 

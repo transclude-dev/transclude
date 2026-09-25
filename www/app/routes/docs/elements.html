@@ -139,6 +139,15 @@
     },
   };
 <\/script>`,
+      target: `<!-- app/elements/name-field.html -->
+<script element>
+  export const shadow = true;
+  export const referenceTarget = 'field';
+<\/script>
+
+<input id="field" type="text" />`,
+      targetUse: `<label for="name">Name</label>
+<name-field id="name"></name-field>`,
       formUse: `<form method="post">
   <input name="text" />
   <tag-picker name="tags"></tag-picker>
@@ -206,7 +215,7 @@
         <tr>
           <td><code>&lt;label for&gt;</code> works</td>
           <td>Yes</td>
-          <td>No</td>
+          <td>With <code>referenceTarget</code></td>
         </tr>
         <tr>
           <td>Ships JavaScript</td>
@@ -294,6 +303,39 @@
     A declarative shadow root is built when a browser parses a document. Nothing
     that swaps HTML parses one, so a shadow element arrives bare in a fragment and
     paints itself on connect. A light element arrives whole.
+  </doc-note>
+
+  <h3 id="pointing-a-label-inside">Pointing a label inside</h3>
+
+  <p>
+    A shadow root stops a <code>&lt;label for&gt;</code> at the host. Export
+    <code>referenceTarget</code> with the id of one element in the template, and
+    a reference to the host goes to that element instead.
+  </p>
+
+  ${html(s.target)}
+
+  ${html(s.targetUse)}
+
+  <p>
+    A click on the label focuses the input, and a screen reader reads "Name" as
+    its name. The same goes for <code>aria-labelledby</code>,
+    <code>aria-describedby</code> and the other attributes that name an element
+    by id. The server writes the target on the declarative shadow root, and an
+    element that arrives in a fragment passes it to <code>attachShadow</code>.
+  </p>
+
+  <doc-note label="The id is checked when it compiles" tone="warn">
+    The target is a literal, the same for every element of the tag. The build
+    stops when no element in the template has that id. It also stops when the
+    id is bound with <code>\${}</code> or sits inside an <code>each</code>. A light
+    element cannot have a target: it has no boundary, so a label already reaches
+    an id inside it.
+  </doc-note>
+
+  <doc-note label="Chromium only, for now">
+    Chrome and Edge follow the target. Safari and Firefox have it behind a
+    flag, and they ignore it: the label is not connected, as with no target.
   </doc-note>
 
   <h2>Giving it behavior</h2>

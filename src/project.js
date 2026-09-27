@@ -52,10 +52,14 @@ export function portOf(config = {}, env = undefined) {
  * search almost always ends at the first try. It walks up so that running a bin
  * by hand from a subdirectory works too.
  *
+ * `TRANSCLUDE_ROOT` starts the walk somewhere else, for a process started outside
+ * its project. It is read here, the one default every bin reaches, so a build and
+ * the server it feeds cannot look in two different places.
+ *
  * @param {string} [from]
  * @returns {string} the directory holding transclude.config.js
  */
-export function findRoot(from = process.cwd()) {
+export function findRoot(from = process.env.TRANSCLUDE_ROOT || process.cwd()) {
   let dir = path.resolve(from);
 
   for (;;) {
@@ -97,7 +101,7 @@ export function findRoot(from = process.cwd()) {
  * @returns {Promise<{ root: string, config: import('./defaults.js').Config,
  *   configFile: string }>} the root, the config and the file it came from
  */
-export async function loadProject(from = process.cwd()) {
+export async function loadProject(from) {
   const root = findRoot(from);
   const file = path.join(root, CONFIG_FILE);
   const { default: config } = await import(pathToFileURL(file).href);

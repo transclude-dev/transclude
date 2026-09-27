@@ -1,7 +1,8 @@
 // Where the app is, and what it configured.
 //
-// The root comes from the working directory and the config is loaded from there
-// at run time, so nothing in the package names a path in the app.
+// The root comes from `TRANSCLUDE_ROOT` or the working directory, and the config
+// is loaded from there at run time, so nothing in the package names a path in the
+// app.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -24,6 +25,35 @@ test('the root is the nearest directory holding the config', () => {
   fs.mkdirSync(deep, { recursive: true });
 
   assert.equal(fs.realpathSync(findRoot(deep)), fs.realpathSync(dir));
+});
+
+/** `TRANSCLUDE_ROOT` for one test, with whatever the shell had put back after. */
+function rootFor(t, value) {
+  const was = process.env.TRANSCLUDE_ROOT;
+  process.env.TRANSCLUDE_ROOT = value;
+  t.after(() => {
+    if (was === undefined) delete process.env.TRANSCLUDE_ROOT;
+    else process.env.TRANSCLUDE_ROOT = was;
+  });
+}
+
+test('TRANSCLUDE_ROOT starts the walk, so every bin looks in the same place', async (t) => {
+  const dir = project("{ appDir: 'site' }");
+  const deep = path.join(dir, 'node_modules', '@transclude', 'core', 'bin');
+  fs.mkdirSync(deep, { recursive: true });
+  rootFor(t, deep);
+
+  const { root, config } = await loadProject();
+
+  assert.equal(fs.realpathSync(root), fs.realpathSync(dir));
+  assert.equal(config.appDir, 'site');
+});
+
+test('a relative TRANSCLUDE_ROOT is read against the working directory', (t) => {
+  const dir = project("{ appDir: 'app' }");
+  rootFor(t, path.relative(process.cwd(), dir));
+
+  assert.equal(fs.realpathSync(findRoot()), fs.realpathSync(dir));
 });
 
 test('no config anywhere above is an error naming the file', () => {

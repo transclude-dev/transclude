@@ -300,6 +300,23 @@ of them. `cache` in the config takes anything with the same `get`, `set`,
 The same app runs on Node, Bun, Deno and workerd. `bin/serve.js`,
 `bin/serve.bun.js` and `bin/serve.deno.js` only listen.
 
+Those three walk up from the working directory to the nearest
+`transclude.config.js`. `TRANSCLUDE_ROOT` starts the walk in a different
+directory, for a server started outside its project. The build, the dev server
+and the check read it too.
+
+`deno compile` makes one binary that carries the app. Include the config and
+the build, or `outDir` when the config changes it:
+
+```sh
+deno compile -A --include transclude.config.js --include dist \
+  --output todomvc node_modules/@transclude/core/bin/serve.deno.js
+./todomvc
+```
+
+The binary serves from what it carries, in any directory, and needs no
+`TRANSCLUDE_ROOT`.
+
 **workerd refuses to compile WebAssembly at runtime.** A loader that reaches
 something built on Wasm fails there and nowhere else. A prerendered page never
 runs its loader in production, so this stays hidden until something asks for a

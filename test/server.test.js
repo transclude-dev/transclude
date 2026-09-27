@@ -462,8 +462,11 @@ test('production.js exports an app and nothing runtime-specific runs on import',
     "export default { appDir: 'app', routesDir: 'routes', outDir: 'dist' };\n",
   );
 
-  const was = process.cwd();
+  // `TRANSCLUDE_ROOT` beats the working directory, so one left set in the shell
+  // would load that project in place of this one.
+  const was = { cwd: process.cwd(), root: process.env.TRANSCLUDE_ROOT };
   process.chdir(dir);
+  delete process.env.TRANSCLUDE_ROOT;
   try {
     // Importing it must not bind a port; that is the adapter's job.
     const mod = await import('../src/production.js');
@@ -489,7 +492,8 @@ test('production.js exports an app and nothing runtime-specific runs on import',
     assert.match(lines.join('\n'), /assets\s+0 files, 0 KB/);
     assert.match(lines.join('\n'), /on demand\s+none/);
   } finally {
-    process.chdir(was);
+    process.chdir(was.cwd);
+    if (was.root !== undefined) process.env.TRANSCLUDE_ROOT = was.root;
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
@@ -499,7 +503,13 @@ test('each adapter is a listener and nothing else', () => {
   for (const file of ['bin/serve.js', 'bin/serve.bun.js', 'bin/serve.deno.js']) {
     const source = fs.readFileSync(path.join(root, file), 'utf8');
 
-    assert.match(source, /from '\.\.\/src\/production\.js'/, `${file} does not use the shared app`);
+    // Deno's is a dynamic import, so it can say where a compiled binary's project
+    // is before `production.js` goes looking.
+    assert.match(
+      source,
+      /(from |import\()'\.\.\/src\/production\.js'/,
+      `${file} does not use the shared app`,
+    );
     // Logic here is logic three runtimes have to keep in sync by hand.
     for (const leaked of ['loadStatic', 'renderRoute', 'runAction', 'baseApp', 'manifest']) {
       assert.doesNotMatch(source, new RegExp(leaked), `${file} has ${leaked} in it`);

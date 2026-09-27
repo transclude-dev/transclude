@@ -103,10 +103,10 @@ export const app = createApp({
   middleware: bundle.middleware ?? null,
   statics,
   assets,
-  // `serveStatic` joins `root` onto the request path, so it resolves against the
-  // working directory. This file works from its own location so it does not depend
-  // on where the process was started.
-  publicFiles: fs.existsSync(publicRoot) ? publicFiles(relativeToCwd(publicRoot)) : null,
+  // Absolute, not relative to the working directory. A binary from `deno compile`
+  // is started outside the project it carries, and its file system answers a path
+  // under that project and not one that climbs up to it from somewhere else.
+  publicFiles: fs.existsSync(publicRoot) ? publicFiles(publicRoot) : null,
   notFound: readPage('404.html'),
   errorPage: readPage('500.html'),
   hash: etagOf,
@@ -143,11 +143,6 @@ export function summary(port) {
     console.log('     This server reads dist/, so that edit is not being served.');
     console.log('     Run `npm run build` (or `npm run preview` to do both).');
   }
-}
-
-function relativeToCwd(absolute) {
-  const relative = path.relative(process.cwd(), absolute);
-  return relative === '' ? '.' : relative;
 }
 
 function readEntry(file) {

@@ -207,6 +207,22 @@ jobs:
       - name: Deno
         run: scripts/smoke.sh deno examples/todomvc 1983 deno run -A node_modules/@transclude/core/bin/serve.deno.js
 
+      # Started from an empty directory, because from the app a binary reads the
+      # files on disk and passes for the wrong reason. The framework goes in
+      # packed, as a real install has it: TodoMVC's `file:../..` link points back
+      # at this repository, which holds TodoMVC, and `deno compile` follows the
+      # loop until its stack overflows.
+      - name: Deno, compiled
+        run: |
+          npm pack --pack-destination "$RUNNER_TEMP"
+          cp -R examples/todomvc "$RUNNER_TEMP/todomvc"
+          cd "$RUNNER_TEMP/todomvc"
+          npm install --no-save "$RUNNER_TEMP"/transclude-core-*.tgz
+          deno compile -A --include transclude.config.js --include dist \
+            --output "$RUNNER_TEMP/todomvc-bin" node_modules/@transclude/core/bin/serve.deno.js
+          mkdir "$RUNNER_TEMP/empty"
+          "$GITHUB_WORKSPACE/scripts/smoke.sh" deno-compiled "$RUNNER_TEMP/empty" 1985 "$RUNNER_TEMP/todomvc-bin"
+
       # wrangler runs the real workerd, not a simulation of it.
       - name: workerd
         run: scripts/smoke.sh workerd examples/todomvc 1984 npx wrangler dev --port 1984 --ip 127.0.0.1

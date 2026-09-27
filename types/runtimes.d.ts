@@ -6,8 +6,9 @@
 // and one drowns the other.
 
 declare const Deno: {
+  build: { standalone: boolean };
   exit(code?: number): never;
-  env: { get(name: string): string | undefined };
+  env: { get(name: string): string | undefined; set(name: string, value: string): void };
   serve(
     options: { port: number; onListen?: () => void },
     handler: (request: Request) => Response | Promise<Response>,

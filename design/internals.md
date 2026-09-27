@@ -1063,6 +1063,23 @@ against.
   broke it would have kept its line in the README and nothing would have failed.
   TodoMVC is the app it serves, because it renders a compiled page and has
   nothing but forms, so one GET and one POST cover both paths through the app.
+- **A compiled binary is started outside the project it carries.** `deno
+  compile` puts the app under `deno-compile-<name>` in the system temp
+  directory, a path that exists only while the binary runs. No working
+  directory is inside it, and nobody can type its name. So `serve.deno.js` sets
+  `TRANSCLUDE_ROOT` to its own directory when `Deno.build.standalone` is true,
+  and `findRoot` climbs out of `node_modules` to the app. The adapter imports
+  `production.js` after that line: a static import runs first, and
+  `production.js` finds the project the moment it loads. The variable is read
+  in `findRoot` and not in one bin. Read by the server alone, it let a build
+  and the server it feeds look in two places. The public directory goes to
+  `serveStatic` as an absolute path. The binary's file system answers a path
+  under the project and not a relative one that climbs to it from the working
+  directory, so every page worked and every public file was a 404. CI starts
+  the binary from an empty directory, because from the app it reads the files
+  on disk and passes for the wrong reason. It installs the framework packed:
+  TodoMVC's `file:../..` link points back at this repository, which holds
+  TodoMVC, and `deno compile` follows the loop until its stack overflows.
 - **A dotfile made the build look stale.** `newestSource` in
   `src/production.js` walked every file under the app and the framework and took
   the newest. Finder writes `.DS_Store` whenever somebody opens a directory, so

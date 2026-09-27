@@ -26,6 +26,10 @@ export declare function portOf(config?: {
  * search almost always ends at the first try. It walks up so that running a bin
  * by hand from a subdirectory works too.
  *
+ * `TRANSCLUDE_ROOT` starts the walk somewhere else, for a process started outside
+ * its project. It is read here, the one default every bin reaches, so a build and
+ * the server it feeds cannot look in two different places.
+ *
  * @param {string} [from]
  * @returns {string} the directory holding transclude.config.js
  */

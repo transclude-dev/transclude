@@ -11,6 +11,13 @@ wrangler dev                                                 # Cloudflare`,
         'shell',
       ],
 
+      compile: [
+        `deno compile -A --include transclude.config.js --include dist \\
+  --output todomvc node_modules/@transclude/core/bin/serve.deno.js
+./todomvc`,
+        'shell',
+      ],
+
       entry: [
         `// worker.js
 import { workerFrom } from '@transclude/core/worker';
@@ -138,6 +145,27 @@ export default async () => {
   <p>
     An app wanting something else calls <code>createApp</code> from
     <code>@transclude/core/app</code> and does the wiring itself.
+  </p>
+
+  <p>
+    The Node, Bun and Deno servers walk up from the working directory to the
+    nearest <code>transclude.config.js</code>. <code>TRANSCLUDE_ROOT</code>
+    starts the walk in a different directory, for a server started outside its
+    project. The build, the dev server and the check read it too.
+  </p>
+
+  <p>
+    <code>deno compile</code> makes one binary that carries the app. Include
+    the config and the build:
+  </p>
+
+  ${html(s.compile)}
+
+  <p>
+    <code>./todomvc</code> serves the pages and public files it carries, from
+    any directory, on the config's port or <code>PORT</code>. It needs no
+    <code>TRANSCLUDE_ROOT</code>. When the config sets <code>outDir</code>,
+    include that directory in place of <code>dist</code>.
   </p>
 
   <h2>The floor</h2>

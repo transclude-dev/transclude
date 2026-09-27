@@ -6,7 +6,7 @@
  * which is the point when `precompressed` served a `.br`: different bytes are
  * a different entity and must not share an ETag.
  *
- * @param {string} root relative to the working directory
+ * @param {string} root absolute, or relative to the working directory
  * @returns {import('hono').MiddlewareHandler} Hono middleware
  */
 export declare function publicFiles(root: string): import('hono').MiddlewareHandler;

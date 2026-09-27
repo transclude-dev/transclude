@@ -5,8 +5,9 @@
 // what it needs is a real `dist` on disk rather than a store in memory.
 // `portable.test.js` covers the other side of that split.
 //
-// Every export here is worked out at import time from `process.cwd()`, so each
-// fixture is imported under a query string of its own. A second plain import
+// Every export here is worked out at import time from `TRANSCLUDE_ROOT`, or from
+// `process.cwd()` when that is unset, so each fixture is imported under a query
+// string of its own. A second plain import
 // hands back the first project's app, and the second test then passes by
 // checking the first one again.
 
@@ -74,17 +75,23 @@ function project({ build = true, publicFiles = true } = {}) {
 let fixtures = 0;
 
 /**
- * Imports the module fresh, with the project as the working directory.
+ * Imports the module fresh, with `dir` as the working directory.
  *
- * The directory stays current for the whole test, because `serveStatic`
- * resolves its root against the working directory when a request arrives
- * rather than when the app is built. A real server never moves; this one would
- * if the test put it back before asking for a file.
+ * `TRANSCLUDE_ROOT` beats the working directory, so one left set in the shell
+ * would load that project in place of the fixture. It is `root` for the import,
+ * or unset, and both are put back after the test.
  */
-async function serverIn(dir, t) {
-  const was = process.cwd();
+async function serverIn(dir, t, root) {
+  const was = { cwd: process.cwd(), root: process.env.TRANSCLUDE_ROOT };
   process.chdir(dir);
-  t.after(() => process.chdir(was));
+  if (root === undefined) delete process.env.TRANSCLUDE_ROOT;
+  else process.env.TRANSCLUDE_ROOT = root;
+
+  t.after(() => {
+    process.chdir(was.cwd);
+    if (was.root === undefined) delete process.env.TRANSCLUDE_ROOT;
+    else process.env.TRANSCLUDE_ROOT = was.root;
+  });
   return import(`../src/production.js?fixture=${++fixtures}`);
 }
 
@@ -159,6 +166,22 @@ test('a public file is served from the project it was started in', async (t) => 
 
   assert.equal(out.status, 200);
   assert.match(await out.text(), /User-agent/);
+});
+
+test('TRANSCLUDE_ROOT names the project when the server starts somewhere else', async (t) => {
+  // A binary from `deno compile` is started outside the project it carries.
+  // Nothing about the working directory may reach a page or a public file then.
+  const dir = project();
+  const elsewhere = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'tc-prod-cwd-')));
+  const server = await serverIn(elsewhere, t, dir);
+
+  const page = await server.app.request('http://x/about');
+  const file = await server.app.request('http://x/robots.txt');
+
+  assert.equal(server.noBuild, false);
+  assert.equal(page.status, 200);
+  assert.equal(file.status, 200);
+  assert.match(await file.text(), /User-agent/);
 });
 
 test('an app with no public directory still starts', async (t) => {

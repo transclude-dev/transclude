@@ -220,8 +220,16 @@ jobs:
           npm install --no-save "$RUNNER_TEMP"/transclude-core-*.tgz
           deno compile -A --include transclude.config.js --include dist \
             --output "$RUNNER_TEMP/todomvc-bin" node_modules/@transclude/core/bin/serve.deno.js
-          mkdir "$RUNNER_TEMP/empty"
+          mkdir -p "$RUNNER_TEMP/empty"
           "$GITHUB_WORKSPACE/scripts/smoke.sh" deno-compiled "$RUNNER_TEMP/empty" 1985 "$RUNNER_TEMP/todomvc-bin"
+
+      # Bun carries only what a literal import reaches, so it compiles
+      # `worker.js` and not the adapter, which finds its project at run time.
+      - name: Bun, compiled
+        run: |
+          (cd examples/todomvc && bun build --compile worker.js --outfile "$RUNNER_TEMP/todomvc-bun")
+          mkdir -p "$RUNNER_TEMP/empty"
+          scripts/smoke.sh bun-compiled "$RUNNER_TEMP/empty" 1986 "$RUNNER_TEMP/todomvc-bun"
 
       # wrangler runs the real workerd, not a simulation of it.
       - name: workerd

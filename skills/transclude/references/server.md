@@ -317,6 +317,18 @@ deno compile -A --include transclude.config.js --include dist \
 The binary serves from what it carries, in any directory, and needs no
 `TRANSCLUDE_ROOT`.
 
+`bun build --compile` carries only what an import names, and
+`bin/serve.bun.js` finds its project when it starts. Compile the app's
+`worker.js` instead:
+
+```sh
+bun build --compile worker.js --outfile todomvc
+./todomvc
+```
+
+That binary serves the way workerd does: from memory, with no byte ranges on
+public files. It listens on `PORT`, or on 3000, and not on the config's port.
+
 **workerd refuses to compile WebAssembly at runtime.** A loader that reaches
 something built on Wasm fails there and nowhere else. A prerendered page never
 runs its loader in production, so this stays hidden until something asks for a

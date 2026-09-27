@@ -1080,6 +1080,12 @@ against.
   on disk and passes for the wrong reason. It installs the framework packed:
   TodoMVC's `file:../..` link points back at this repository, which holds
   TodoMVC, and `deno compile` follows the loop until its stack overflows.
+  Bun is different. `bun build --compile` bundles what a literal import reaches
+  and carries no other file, so the Bun adapter cannot work compiled, from
+  anywhere. From the app directory, the binary reads the disk and looks
+  correct, and from anywhere else it throws "no transclude.config.js". Bun
+  compiles `worker.js` in its place, which imports everything by name. The
+  binary then has the workerd limits and Bun's port rule: `PORT`, or 3000.
 - **A dotfile made the build look stale.** `newestSource` in
   `src/production.js` walked every file under the app and the framework and took
   the newest. Finder writes `.DS_Store` whenever somebody opens a directory, so

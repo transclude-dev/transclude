@@ -18,6 +18,12 @@ wrangler dev                                                 # Cloudflare`,
         'shell',
       ],
 
+      bun: [
+        `bun build --compile worker.js --outfile todomvc
+./todomvc`,
+        'shell',
+      ],
+
       entry: [
         `// worker.js
 import { workerFrom } from '@transclude/core/worker';
@@ -166,6 +172,21 @@ export default async () => {
     any directory, on the config's port or <code>PORT</code>. It needs no
     <code>TRANSCLUDE_ROOT</code>. When the config sets <code>outDir</code>,
     include that directory in place of <code>dist</code>.
+  </p>
+
+  <p>
+    <code>bun build --compile</code> carries only what an import names, and the
+    Bun server finds its project when it starts. So compile the app's
+    <code>worker.js</code>, the entry <code>wrangler</code> deploys:
+  </p>
+
+  ${html(s.bun)}
+
+  <p>
+    That binary serves the way workerd does, from memory and from any
+    directory. Public files get no byte ranges. It listens on
+    <code>PORT</code>, or on 3000 when that is unset, and not on the config's
+    port.
   </p>
 
   <h2>The floor</h2>

@@ -213,6 +213,12 @@ jobs:
       # at this repository, which holds TodoMVC, and `deno compile` follows the
       # loop until its stack overflows.
       - name: Deno, compiled
+        # zizmor: ignore[adhoc-packages]
+        #
+        # The package installed is the tarball this step packs from this
+        # checkout. Its dependencies resolve outside a lockfile, which is how a
+        # real install gets them too. Nothing is published from this job and it
+        # holds no identity.
         run: |
           npm pack --pack-destination "$RUNNER_TEMP"
           cp -R examples/todomvc "$RUNNER_TEMP/todomvc"

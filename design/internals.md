@@ -215,6 +215,16 @@ against.
   would stop every client block in a project from compiling, which is what one
   falsification does on purpose. Interpolation into one is still refused by
   `assertRawTextSafe`, since being markup does not make raw text safe.
+- **A client entry is one module, so a layout's relative import is rewritten.**
+  Every `<script>` in the chain goes into the page's entry, and `origin` can
+  name one file for a virtual module, which is the page. A layout's
+  `../lib/cursor.js` was read beside the page, so it worked for `index.html` and
+  failed the build for `guide/[task].html`, looking for `routes/lib/cursor.js`.
+  Found in whispers.news, where the workaround was a root-relative import.
+  `rebaseImports` now writes each relative specifier as an absolute path from
+  the file it was written in, and `compileClientEntry` takes a `rebase` per
+  source. An `import()` built at runtime cannot be read, so it still resolves
+  against the page.
 - **The dev server builds its own `ctx` too, and `test/context-shape.test.js` is
   what notices.** `ctx.after` shipped in 0.7.0 and was undefined in dev, so a form
   calling it worked in the build and threw `after is not a function` while you

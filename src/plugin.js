@@ -427,9 +427,16 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
       const route = pages.get(name);
       if (!route) throw new Error(`[transclude] no page "${name}" in ${routesDir}`);
       origin.set(id, route.file);
+      // Each file says where its own relative imports point. The entry is one
+      // module, so `origin` can name only one file for it, and that is the page.
+      const beside = (file) => (specifier) => path.resolve(path.dirname(file), specifier);
       const sources = [
-        ...chainFor(route).map((l) => ({ source: read(l.file), filename: `${l.id}/_layout.html` })),
-        { source: read(route.file), filename: route.rel },
+        ...chainFor(route).map((l) => ({
+          source: read(l.file),
+          filename: `${l.id}/_layout.html`,
+          rebase: beside(l.file),
+        })),
+        { source: read(route.file), filename: route.rel, rebase: beside(route.file) },
       ];
       return compileClientEntry(sources, clientManifest(route), {
         runtime,

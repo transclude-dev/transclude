@@ -154,6 +154,31 @@ export declare function assertModule(blocks: Array<{
     line?: number;
 }>, label: string): string;
 /**
+ * Writes each relative import in a client block as the path it means.
+ *
+ * A client entry is one module made of every `<script>` in the layout chain,
+ * and a module resolves `../lib/x.js` against itself. Left as written, a
+ * layout's import was read beside the page it wraps, so the same layout worked
+ * for `index.html` and failed the build for `guide/[task].html`.
+ *
+ * Only a string the parser vouches for moves: `import`, `export … from`, and an
+ * `import()` of a literal. An `import()` built at runtime keeps its specifier,
+ * because nothing here can read it.
+ *
+ * @param {{ code: string, line?: number }} block
+ * @param {(specifier: string) => string} rebase the path a relative specifier
+ *   means, from the file the block was written in
+ * @param {string} label for an error
+ * @returns {{ code: string, line?: number }}
+ */
+export declare function rebaseImports(block: {
+    code: string;
+    line?: number;
+}, rebase: (specifier: string) => string, label: string): {
+    code: string;
+    line?: number;
+};
+/**
  * Guards against a block using a name the generated module already defines.
  *
  * @param {string[]} names

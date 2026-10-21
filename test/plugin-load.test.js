@@ -247,6 +247,46 @@ test('the client entry defines exactly what the manifest named', async () => {
   assert.doesNotMatch(code, /virtual:transclude-component\/quiet-note/);
 });
 
+/**
+ * Every specifier a module imports, resolved the way Vite resolves it: this
+ * plugin first, and the specifier as written when the plugin has no answer.
+ */
+function importsOf(plugin, id, code) {
+  const specifiers = [...code.matchAll(/(?:from|import)\s*\(?\s*("[^"]*"|'[^']*')/g)];
+  return specifiers.map(([, quoted]) => {
+    const specifier = quoted.slice(1, -1);
+    return plugin.resolveId(specifier, id) ?? specifier;
+  });
+}
+
+test("a relative import in a layout's script resolves against the layout", async () => {
+  // The client entry is one module made of every `<script>` in the chain, and
+  // the page is the file it was compiled for. A layout's `../lib/cursor.js`
+  // was resolved beside the page, so a page one directory down looked for
+  // `app/routes/lib/cursor.js` and the build failed.
+  const plugin = await project({
+    'app/lib/cursor.js': 'export const cursor = 0;\n',
+    'app/lib/steps.js': 'export const steps = [];\n',
+    'app/lib/later.js': 'export const later = 1;\n',
+    'app/routes/_layout.html':
+      '<script type="module">\n' +
+      "import { cursor } from '../lib/cursor.js';\n" +
+      "export { later } from '../lib/later.js';\n" +
+      "await import('../lib/later.js');\n" +
+      '</script>\n<slot></slot>\n',
+    'app/routes/guide/[task].html':
+      "<script type=\"module\">import { steps } from '../../lib/steps.js';</script>\n<p>x</p>\n",
+  });
+
+  const id = 'virtual:transclude-client/guide-_task';
+  const resolved = importsOf(plugin, id, codeOf(plugin.load(id)));
+
+  const lib = (name) => path.join(plugin.root, 'app', 'lib', name);
+  assert.ok(resolved.includes(lib('cursor.js')), `cursor.js resolved to ${resolved.join(', ')}`);
+  assert.ok(resolved.includes(lib('steps.js')), `steps.js resolved to ${resolved.join(', ')}`);
+  assert.equal(resolved.filter((file) => file === lib('later.js')).length, 2);
+});
+
 // ---- what it refuses -------------------------------------------------------
 
 test('an id that is not this plugin s is left alone', async () => {

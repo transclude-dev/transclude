@@ -216,8 +216,11 @@ export declare function usedComponents(source: string, registry: Map<string, str
  * imported statically and defined before first paint, and any other tag in the
  * app is one dynamic import away, taken only if it ever shows up in the DOM.
  *
- * @param {Array<{ source: string, filename: string }>} sources the files whose
- *   `<script>` blocks run in the browser, layouts first and the page last
+ * @param {Array<{ source: string, filename: string,
+ *   rebase?: (specifier: string) => string }>} sources the files whose
+ *   `<script>` blocks run in the browser, layouts first and the page last.
+ *   `rebase` is where a relative import in that file points, because they all
+ *   end up in one module and it can resolve against only one of them.
  * @param {{ tags?: string[] }} what the elements to define. Not bracketed even
  *   though it has a default: JSDoc reads the tags positionally, and an optional
  *   one cannot come before the required `options` below.
@@ -229,6 +232,7 @@ export declare function usedComponents(source: string, registry: Map<string, str
 export declare function compileClientEntry(sources: Array<{
     source: string;
     filename: string;
+    rebase?: (specifier: string) => string;
 }>, { tags }: {
     tags?: string[];
 }, { runtime, elements }: {

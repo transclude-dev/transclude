@@ -397,6 +397,51 @@ export function assertModule(blocks, label) {
 }
 
 /**
+ * Writes each relative import in a client block as the path it means.
+ *
+ * A client entry is one module made of every `<script>` in the layout chain,
+ * and a module resolves `../lib/x.js` against itself. Left as written, a
+ * layout's import was read beside the page it wraps, so the same layout worked
+ * for `index.html` and failed the build for `guide/[task].html`.
+ *
+ * Only a string the parser vouches for moves: `import`, `export … from`, and an
+ * `import()` of a literal. An `import()` built at runtime keeps its specifier,
+ * because nothing here can read it.
+ *
+ * @param {{ code: string, line?: number }} block
+ * @param {(specifier: string) => string} rebase the path a relative specifier
+ *   means, from the file the block was written in
+ * @param {string} label for an error
+ * @returns {{ code: string, line?: number }}
+ */
+export function rebaseImports(block, rebase, label) {
+  const ast = parseOrThrow(block.code, label, block.line ?? 1);
+  const cuts = [];
+
+  const visit = (node) => {
+    if (!node || typeof node.type !== 'string') return;
+
+    const source = node.type === 'ImportExpression' || STATIC_IMPORTS.has(node.type) ? node.source : null;
+    const literal = source?.type === 'Literal' && typeof source.value === 'string';
+    if (literal && /^\.\.?\//.test(source.value)) {
+      cuts.push({ start: source.start, end: source.end, text: JSON.stringify(rebase(source.value)) });
+    }
+
+    for (const key of Object.keys(node)) {
+      const value = node[key];
+      if (Array.isArray(value)) value.forEach(visit);
+      else if (value && typeof value.type === 'string') visit(value);
+    }
+  };
+
+  visit(ast);
+  return { ...block, code: splice(block.code, cuts) };
+}
+
+/** The statements that name a module in a `source` string. */
+const STATIC_IMPORTS = new Set(['ImportDeclaration', 'ExportNamedDeclaration', 'ExportAllDeclaration']);
+
+/**
  * Bindings a `<script server>` block pulls in, so the shapes of imported values
  * can be resolved by whoever owns the filesystem.
  */

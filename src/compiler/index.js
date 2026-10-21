@@ -16,6 +16,7 @@ import {
   assertNoCollisions,
   bindDefaultExport,
   bindElementModule,
+  rebaseImports,
 } from './script.js';
 
 export { CompileError, ScriptError, ELEMENT_FLAGS, frameOf };
@@ -777,8 +778,11 @@ export function usedComponents(source, registry) {
  * imported statically and defined before first paint, and any other tag in the
  * app is one dynamic import away, taken only if it ever shows up in the DOM.
  *
- * @param {Array<{ source: string, filename: string }>} sources the files whose
- *   `<script>` blocks run in the browser, layouts first and the page last
+ * @param {Array<{ source: string, filename: string,
+ *   rebase?: (specifier: string) => string }>} sources the files whose
+ *   `<script>` blocks run in the browser, layouts first and the page last.
+ *   `rebase` is where a relative import in that file points, because they all
+ *   end up in one module and it can resolve against only one of them.
  * @param {{ tags?: string[] }} what the elements to define. Not bracketed even
  *   though it has a default: JSDoc reads the tags positionally, and an optional
  *   one cannot come before the required `options` below.
@@ -789,9 +793,12 @@ export function usedComponents(source, registry) {
  */
 export function compileClientEntry(sources, { tags = [] } = {}, { runtime, elements = false }) {
   // Layouts first, page last: the same order they wrap in.
-  const blocks = sources.map(({ source, filename }) =>
-    assertModule(splitBlocks(source).client, `${filename} <script>`),
-  );
+  const blocks = sources.map(({ source, filename, rebase }) => {
+    const label = `${filename} <script>`;
+    const client = splitBlocks(source).client;
+    const rebased = rebase ? client.map((block) => rebaseImports(block, rebase, label)) : client;
+    return assertModule(rebased, label);
+  });
 
   // Markup can arrive after the page did, from something this framework does not
   // provide, and whatever it names has to be able to define itself.

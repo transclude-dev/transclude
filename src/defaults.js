@@ -45,7 +45,7 @@
  * @typedef {{
  *   appDir?: string,
  *   routesDir?: string,
- *   elementsDir?: string,
+ *   elementsDir?: string|string[],
  *   publicDir?: string,
  *   iconsDir?: string,
  *   outDir?: string,
@@ -181,7 +181,8 @@ export function withDefaults(config = {}) {
 
   const merged = { ...DEFAULTS, ...config };
 
-  // Four keys name a directory inside `appDir`: `routesDir`, `elementsDir`,
+  // Four keys name a directory inside `appDir`: `routesDir`, `elementsDir` (one,
+  // or a list of them, each from `appDir`),
   // `publicDir` and `iconsDir`. Three name a path from the project root:
   // `outDir`, `stylesheet` and this one. That rule is fine until the default
   // for a root-relative key writes `app/` into itself, because then an app that
@@ -210,6 +211,20 @@ export function withDefaults(config = {}) {
         `over nothing: on a worker that is usually a \`wrangler secret put\` that took ` +
         `a blank line. Set a real secret, or \`null\` for none.`,
     );
+  }
+
+  // A list is several element directories, and an empty one is none: every tag
+  // would render as an unknown element, with no styles and nothing said. A name
+  // that is not a string would be resolved as one and point nowhere.
+  if (Array.isArray(merged.elementsDir)) {
+    const named = merged.elementsDir;
+    if (!named.length || named.some((dir) => typeof dir !== 'string' || dir === '')) {
+      throw new Error(
+        `[transclude] \`elementsDir\` is a list with nothing usable in it. Name a ` +
+          `directory, or several, each a path from \`appDir\`: ` +
+          `\`elementsDir: ['elements', '../../packages/kit/elements']\`.`,
+      );
+    }
   }
 
   // Refused here because there are four places that render a page and only two of

@@ -29,6 +29,7 @@ import {
 } from './routes.js';
 // Aliased: this file has its own `sourceOf`, which is the one that reads disk.
 import { MARKDOWN_EXT, sourceOf as htmlFrom } from './markdown.js';
+import { elementDirs, inElementDirs } from './elements.js';
 
 // The version is checked before the API is imported, because the import is what
 // fails on the wrong version: `typescript/unstable/sync` is a 7.x export, and a
@@ -192,6 +193,9 @@ const TYPE_FORMAT =
  */
 
 /**
+ * @param {{ root: string, appDir?: string, elementsDir?: string|string[],
+ *   routesDir?: string, typecheckStrict?: boolean,
+ *   markdown?: ((source: string, file: string) => string)|null }} options
  * @returns {Checker}
  */
 export function createChecker({
@@ -341,11 +345,14 @@ export function createChecker({
   // ---- the project, in the only order that resolves ------------------------
 
   const elementFiles = (dir) =>
-    readDirSafe(path.resolve(app, dir))
+    readDirSafe(dir)
       .filter((entry) => entry.endsWith('.html') && entry.slice(0, -5).includes('-'))
-      .map((entry) => path.resolve(app, dir, entry));
+      .map((entry) => path.join(dir, entry));
 
-  const componentFiles = () => elementFiles(elementsDir);
+  // Every element directory, as the plugin reads them. A directory only the
+  // plugin knew would compile an element this would check as a page.
+  const elementRoots = elementDirs(app, elementsDir);
+  const componentFiles = () => elementRoots.flatMap(elementFiles);
 
   // The file decides whether the element has a shadow root, so it also decides
   // what `this.shadowRoot` means inside its <script element>. Read with the compiler's
@@ -506,7 +513,7 @@ export function createChecker({
   };
 
   const kindOf = (file) => {
-    if (file.startsWith(path.resolve(app, elementsDir))) return 'component';
+    if (inElementDirs(file, elementRoots)) return 'component';
     return path.basename(file) === LAYOUT_FILE ? 'layout' : 'page';
   };
 

@@ -234,3 +234,13 @@ test('csrf and fragmentParam promise what the runtime takes', () => {
   assert.doesNotThrow(() => baseApp({ csrf: { origin: 'https://acme.com' } }));
   assert.equal(withDefaults({ fragmentParam: null }).fragmentParam, null);
 });
+
+test('elementsDir may be several directories, and a list of none is refused', () => {
+  assert.deepEqual(withDefaults({ elementsDir: ['elements', '../shared'] }).elementsDir, ['elements', '../shared']);
+  assert.equal(withDefaults({}).elementsDir, 'elements', 'one directory is still the default');
+  // An empty list is no element directory at all: every tag would render as an
+  // unknown element with nothing said.
+  assert.throws(() => withDefaults({ elementsDir: [] }), /elementsDir.*nothing usable/);
+  assert.throws(() => withDefaults({ elementsDir: ['elements', ''] }), /nothing usable/);
+  assert.throws(() => withDefaults({ elementsDir: /** @type {any} */ (['elements', 3]) }), /nothing usable/);
+});

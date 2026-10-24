@@ -196,3 +196,50 @@ test('a layout nobody has is an error naming it', async () => {
 
   assert.throws(() => plugin.load('virtual:transclude-layout/nope'), /no layout "nope"/);
 });
+
+// ---- more than one element directory ----------------------------------------
+//
+// `elementsDir` may name several, for elements more than one app shares: the
+// app's own and a package's, read together. A tag is one file across all of
+// them, and a directory outside the project is still read.
+
+/** An app whose elements are in its own directory and in one outside the app. */
+function sharing() {
+  const root = project();
+  fs.mkdirSync(path.join(root, 'app', 'elements'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'shared'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'app', 'elements', 'site-note.html'), '<p><slot></slot></p>\n');
+  fs.writeFileSync(path.join(root, 'shared', 'pin-pad.html'), '<style>:scope { display: grid }</style>\n<p>pad</p>\n');
+  return root;
+}
+
+test('an element in a second directory loads, beside the app’s own', async () => {
+  const root = sharing();
+  const plugin = transclude({ appDir: 'app', elementsDir: ['elements', '../shared'] });
+  await resolve(root, [plugin]);
+
+  assert.match(plugin.load('virtual:transclude-component/site-note'), /export/);
+  assert.match(plugin.load('virtual:transclude-component/pin-pad'), /@scope \(pin-pad\)/, 'the shared element did not compile');
+});
+
+test('a tag in two element directories is refused, naming both files', async () => {
+  const root = sharing();
+  fs.writeFileSync(path.join(root, 'shared', 'site-note.html'), '<p>the other one</p>\n');
+  const plugin = transclude({ appDir: 'app', elementsDir: ['elements', '../shared'] });
+
+  await assert.rejects(
+    () => resolve(root, [plugin]),
+    (err) =>
+      /<site-note> is in two element directories/.test(err.message) &&
+      err.message.includes(path.join('app', 'elements', 'site-note.html')) &&
+      err.message.includes(path.join('shared', 'site-note.html')),
+  );
+});
+
+test('an element nobody has is an error naming every directory', async () => {
+  const root = sharing();
+  const plugin = transclude({ appDir: 'app', elementsDir: ['elements', '../shared'] });
+  await resolve(root, [plugin]);
+
+  assert.throws(() => plugin.load('virtual:transclude-component/x-missing'), /no element <x-missing> in elements, \.\.\/shared/);
+});

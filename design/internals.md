@@ -428,6 +428,14 @@ against.
   the update wrote the element's own text into the caller's second node and left
   its own alone. Nothing failed, because no test slotted markup into an element
   that also bound something after the slot.
+- **The caller sorts a light element's children into its slots.** The
+  element's `<slot name>` was a hole from the start, and `emitLight` passed it
+  only `default`, so every child landed in the default slot and a named one
+  showed its fallback, while the docs said named slots worked. `slottedBy`
+  sorts them now: `slot="x"` on a child, or a `<template slot="x">`. An
+  `else` stays in its `if`'s slot, because a chain split across two would be
+  two halves that each render alone, and naming another slot on it is an
+  error.
 - **The tag tells a fenced hole from a bare block.** `anchoredOf` holds both, and
   a branch reaches its own part *bare*, with its directive already consumed, so a
   block's node arrives at the walk as an ordinary element and is in that set.

@@ -320,6 +320,60 @@ test('a partial with no children passes an empty slot, not undefined', () => {
   assert.match(body, /\{ default: '' \}/);
 });
 
+/**
+ * A page that uses a light `<site-note>`, rendered with a stand-in for the
+ * element that shows which slot got what. What the page passed is what the
+ * test reads, so a slot is never guessed from the element's markup.
+ */
+function slottedInto(source, data = {}) {
+  const { body } = compileFragment(splitBlocks(source).nodes, { components: new Map([['site-note', 'x']]) });
+  const note = {
+    propDefs: {},
+    coerce: (p) => p,
+    render: (_d, slots) => Object.entries(slots).map(([name, markup]) => `[${name}:${markup}]`).join(''),
+  };
+  return new Function('__e', '__a', '__str', '__sh', '__data', 'html', '__C0', '__d', '__fragment', `let __o = '';\n${body}\nreturn __o;`)(
+    rt.escape, rt.attr, rt.str, rt.shadow, rt.data, rt.html, note, data, false,
+  );
+}
+
+test('a light element\'s child that names a slot fills that slot, as a shadow root\'s does', () => {
+  // The element stays as it was written, its slot attribute too: the browser
+  // leaves a slotted element in a shadow host the same way.
+  assert.equal(
+    slottedInto('<site-note><b slot="home">h</b><i>body</i></site-note>'),
+    '<site-note>[default:<i>body</i>][home:<b slot="home">h</b>]</site-note>',
+  );
+});
+
+test('two children for one slot fill it in the order they were written', () => {
+  assert.equal(
+    slottedInto('<site-note><b slot="home">1</b><i>body</i><b slot="home">2</b></site-note>'),
+    '<site-note>[default:<i>body</i>][home:<b slot="home">1</b><b slot="home">2</b>]</site-note>',
+  );
+});
+
+test('a <template slot> fills a light element\'s slot with its content, as it does a layout\'s', () => {
+  assert.equal(
+    slottedInto('<site-note><template slot="home"><b>${n}</b>!</template></site-note>', { n: 2 }),
+    '<site-note>[default:][home:<b>2</b>!]</site-note>',
+  );
+});
+
+test('an else stays with its if, in the if\'s slot', () => {
+  const source = '<site-note><b slot="home" if="on">on</b><b else>off</b></site-note>';
+  assert.equal(slottedInto(source, { on: false }), '<site-note>[default:][home:<b>off</b>]</site-note>');
+  assert.throws(
+    () => slottedInto('<site-note><b slot="home" if="on">on</b><b slot="aside" else>off</b></site-note>'),
+    /continues an if in the slot "home"/,
+  );
+});
+
+test('a light element\'s named slot reads what the page sent it, or its own fallback', () => {
+  const { code } = element('<p><slot name="home">none</slot><slot></slot></p>');
+  assert.match(code, /__slots\["home"\]/);
+});
+
 // ---- the site stylesheet ---------------------------------------------------
 
 test('the document links a stylesheet when there is one, and not when there is not', () => {

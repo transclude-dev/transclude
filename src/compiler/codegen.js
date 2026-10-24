@@ -1004,7 +1004,10 @@ class Codegen {
 
   /**
    * Light DOM: no shadow root, no template, markup straight into the page. Its
-   * children become its default slot, rendered into their own buffer first.
+   * children fill its slots, each rendered into its own buffer first: a child
+   * that names a slot, `slot="home"`, fills that one, as the browser assigns a
+   * shadow root's, and the rest fill the default slot. A `<template slot>`
+   * fills it with its content, as it does a layout's.
    */
   emitLight(el, out, scope) {
     const tag = el.tagName;
@@ -1015,12 +1018,21 @@ class Codegen {
     this.emitAttrs(el, out, scope, ref);
     this.s(out, `>`);
 
-    const children = childrenOf(el);
-    if (children.length) {
-      this.c(out, `const __sl${id} = (() => { let __o = '';`);
-      this.emitChildren(children, out, scope);
+    /** @type {Map<string, string>} each slot's name, and the buffer it is rendered into */
+    const buffers = new Map();
+    for (const [name, nodes] of slottedBy(el)) {
+      const buffer = `__sl${id}_${buffers.size}`;
+      buffers.set(name, buffer);
+      this.c(out, `const ${buffer} = (() => { let __o = '';`);
+      this.emitChildren(nodes, out, scope);
       this.c(out, `return __o; })();`);
     }
+    // The default slot is always there, empty when nothing went to it, as the
+    // element's fallback asks for its own.
+    const named = [...buffers]
+      .filter(([name]) => name !== 'default')
+      .map(([name, buffer]) => `, ${JSON.stringify(name)}: ${buffer}`)
+      .join('');
 
     const props = el.attrs
       .filter((attr) => !DIRECTIVES.has(attr.name))
@@ -1030,7 +1042,7 @@ class Codegen {
     this.c(
       out,
       `__o += ${ref}.render(__data(${ref}, {${props}}), ` +
-        `{ default: ${children.length ? `__sl${id}` : `''`} }` +
+        `{ default: ${buffers.get('default') ?? "''"}${named} }` +
         `${this.fragments ? ', __fragment' : ''});`,
     );
 
@@ -1263,6 +1275,37 @@ function assertUniqueTransitionName(el) {
       `Derive it from the loop, as in "view-transition-name: card-\${item.id}".`,
     el,
   );
+}
+
+/**
+ * A light element's children, by the slot each fills, in the order they come.
+ * An element with `slot="x"` goes to `x`, itself and its attribute, as the
+ * browser leaves a slotted element in a shadow root's host. A `<template
+ * slot="x">` goes to `x` as its content. Everything else, the whitespace
+ * between them included, is the default slot's.
+ *
+ * An `else` or `else-if` stays with the `if` before it: a chain split across
+ * two slots would be two halves that each render on their own.
+ *
+ * @param {ParsedNode} el
+ * @returns {Map<string, ParsedNode[]>}
+ */
+function slottedBy(el) {
+  /** @type {Map<string, ParsedNode[]>} */
+  const slots = new Map();
+  let chain = 'default';
+  for (const child of childrenOf(el)) {
+    const named = child.tagName ? child.attrs?.find((attr) => attr.name === 'slot')?.value : undefined;
+    const continues = child.tagName && child.attrs?.some((attr) => attr.name === 'else' || attr.name === 'else-if');
+    if (continues && named && named !== chain) {
+      throw new CompileError(`<${child.tagName} slot="${named}"> continues an if in the slot "${chain}": a chain is one slot's`);
+    }
+    const name = continues ? chain : (named ?? 'default');
+    if (child.tagName) chain = name;
+    const nodes = child.tagName === 'template' && named ? [...childrenOf(child)] : [child];
+    slots.set(name, [...(slots.get(name) ?? []), ...nodes]);
+  }
+  return slots;
 }
 
 /**

@@ -310,7 +310,11 @@ export default {
   <p>
     In a light element the server fills the slot and sends the result. No
     <code>&lt;slot&gt;</code> reaches the browser: the markup was placed once.
-    Fallback content works, and so do named slots.
+    Fallback content works, and so do named slots. A child with
+    <code>slot="aside"</code> fills <code>&lt;slot name="aside"&gt;</code>, as
+    the browser assigns one in a shadow root. A
+    <code>&lt;template slot="aside"&gt;</code> fills it with its content. The
+    rest fill the default slot.
   </p>
 
   <p>

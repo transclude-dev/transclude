@@ -1,11 +1,21 @@
+/**
+ * The Vite plugin. Every key is the config's own, with the config's default.
+ *
+ * Written out because the defaults alone typed `elementsDir` as a string, and
+ * a list of directories is one too.
+ *
+ * @param {{ appDir?: string, elementsDir?: string|string[], routesDir?: string,
+ *   publicDir?: string, fragmentParam?: string|null, watchElements?: boolean,
+ *   markdown?: ((source: string, file: string) => string)|null }} [options]
+ */
 export default function transclude({ appDir, elementsDir, routesDir, publicDir, fragmentParam, watchElements, markdown, }?: {
     appDir?: string;
-    elementsDir?: string;
-    fragmentParam?: string;
-    markdown?: any;
-    publicDir?: string;
+    elementsDir?: string | string[];
     routesDir?: string;
+    publicDir?: string;
+    fragmentParam?: string | null;
     watchElements?: boolean;
+    markdown?: ((source: string, file: string) => string) | null;
 }): {
     name: string;
     enforce: string;

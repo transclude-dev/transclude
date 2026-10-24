@@ -823,3 +823,22 @@ test('what the compiler declares for itself is left to the emitted file', () => 
     [],
   );
 });
+
+test('an element in a second element directory is checked as an element', () => {
+  // The plugin and the checker read the same list. A directory only the plugin
+  // knew would compile this as an element and check it as a page.
+  const { checker } = project(
+    {
+      'app/elements/site-note.html': '<p>note</p>\n',
+      'shared/pin-pad.html': `<script element>
+  export const properties = { digits: 4 };
+</script>
+<p>\${digits}</p>
+`,
+    },
+    { elementsDir: ['elements', '../shared'] },
+  );
+  const pad = checker.describe().partials.find((one) => one.tag === 'pin-pad');
+  assert.ok(pad, 'the shared element was not described');
+  assert.equal(pad.type, '{ digits: number; }');
+});

@@ -81,15 +81,18 @@ export type Checker = {
  * }} Checker
  */
 /**
+ * @param {{ root: string, appDir?: string, elementsDir?: string|string[],
+ *   routesDir?: string, typecheckStrict?: boolean,
+ *   markdown?: ((source: string, file: string) => string)|null }} options
  * @returns {Checker}
  */
 export declare function createChecker({ root, appDir, elementsDir, routesDir, typecheckStrict, markdown, }: {
+    root: string;
     appDir?: string;
-    elementsDir?: string;
-    markdown?: any;
-    root: any;
+    elementsDir?: string | string[];
     routesDir?: string;
     typecheckStrict?: boolean;
+    markdown?: ((source: string, file: string) => string) | null;
 }): Checker;
 /**
  * Diagnostics for one TypeScript file, compiled alone.

@@ -40,6 +40,11 @@
   box.bump();         // 11
   await box.updateComplete;
 <\/script>`,
+      shared: [`// transclude.config.js
+export default {
+  // The app's own elements, then a package's, read as one set.
+  elementsDir: ['elements', '../../packages/kit/elements'],
+};`, 'js'],
       light: `<!-- app/elements/site-note.html -->
 <script element>
   export const properties = { tone: 'neutral' };
@@ -182,6 +187,22 @@
   <p>
     The style block is hoisted into <code>&lt;head&gt;</code> once, however many
     times the element appears. <code>:scope</code> is the element itself.
+  </p>
+
+  <h2>Elements more than one app uses</h2>
+
+  <p>
+    <code>elementsDir</code> may name several directories, so a package of
+    shared elements is read with the app's own. Each is a path from
+    <code>appDir</code>, and a path may leave it.
+  </p>
+
+  ${html(s.shared)}
+
+  <p>
+    A tag is one file. The same tag in two of the directories stops the build
+    and names both files, rather than letting one quietly win. The dev server
+    watches every directory, including one outside the project.
   </p>
 
   <h2>Setting a shadow root</h2>

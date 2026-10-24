@@ -20,6 +20,7 @@ import {
 } from './compiler/index.js';
 import { layoutChain, resolveRoutesDir, scanLayouts, scanRoutes } from './routes.js';
 import { MARKDOWN_EXT, sourceOf } from './markdown.js';
+import { elementDirs, inElementDirs, namedElementDirs } from './elements.js';
 import { SERVER_FILE } from './server.js';
 
 const P_COMPONENT = 'virtual:transclude-component/';
@@ -30,6 +31,16 @@ const SERVER_ENTRY = 'virtual:transclude-server';
 
 const RUNTIME_FILE = fileURLToPath(new URL('./runtime/index.js', import.meta.url));
 
+/**
+ * The Vite plugin. Every key is the config's own, with the config's default.
+ *
+ * Written out because the defaults alone typed `elementsDir` as a string, and
+ * a list of directories is one too.
+ *
+ * @param {{ appDir?: string, elementsDir?: string|string[], routesDir?: string,
+ *   publicDir?: string, fragmentParam?: string|null, watchElements?: boolean,
+ *   markdown?: ((source: string, file: string) => string)|null }} [options]
+ */
 export default function transclude({
   appDir = 'app',
   elementsDir = 'elements',
@@ -63,9 +74,25 @@ export default function transclude({
   const origin = new Map();
 
   const scan = () => {
-    // One directory. An element is light unless its own file says otherwise,
-    // which is read below rather than taken from where the file sits.
-    components = readDir(path.resolve(app, elementsDir));
+    // Every element directory, in the order the config names them. An element is
+    // light unless its own file says otherwise, which is read below rather than
+    // taken from where the file sits.
+    components = new Map();
+    for (const dir of elementDirs(app, elementsDir)) {
+      for (const [tag, file] of readDir(dir)) {
+        // One tag, one file. Let either win and an edit to the other changes
+        // nothing, with nothing said; an app's own element shadowing a shared
+        // one is the same surprise from the other side.
+        const first = components.get(tag);
+        if (first) {
+          throw new Error(
+            `[transclude] <${tag}> is in two element directories: ${first} and ${file}. ` +
+              `A tag is one file. Rename or remove one of them.`,
+          );
+        }
+        components.set(tag, file);
+      }
+    }
 
     const scanned = scanRoutes(resolveRoutesDir(app, routesDir));
     pages = new Map(
@@ -366,7 +393,7 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
       if (virt.startsWith(P_COMPONENT)) {
         const tag = virt.slice(P_COMPONENT.length);
         const file = components.get(tag);
-        if (!file) throw new Error(`[transclude] no element <${tag}> in ${elementsDir}`);
+        if (!file) throw new Error(`[transclude] no element <${tag}> in ${namedElementDirs(elementsDir)}`);
         origin.set(id, file);
         const body = read(file);
         const out = compiling(body, file, () => compileComponent(body, {
@@ -447,11 +474,25 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
     configureServer(server) {
       if (duplicate) return;
 
+      // Vite watches the project's root. An element directory outside it, such as
+      // a package of shared elements, is watched too, or an edit there would need
+      // a restart to be seen.
+      const dirs = elementDirs(app, elementsDir);
+      const outside = dirs.filter((dir) => !dir.startsWith(root + path.sep));
+      if (outside.length) server.watcher.add(outside);
+
       server.watcher.on('all', (_event, file) => {
         if (!file.endsWith('.html') && !file.endsWith(MARKDOWN_EXT)) return;
-        if (!file.startsWith(app)) return;
+        if (!file.startsWith(app) && !inElementDirs(file, dirs)) return;
 
-        scan();
+        // A tag that is now in two directories is the author's to fix, and the
+        // server stays up while they do: said here, and again by the load.
+        try {
+          scan();
+        } catch (err) {
+          console.error(err.message);
+          return;
+        }
         for (const mod of server.moduleGraph.idToModuleMap.values()) {
           if (mod.id?.startsWith('virtual:transclude-')) server.moduleGraph.invalidateModule(mod);
         }

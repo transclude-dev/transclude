@@ -1,7 +1,7 @@
 export type Config = {
     appDir?: string;
     routesDir?: string;
-    elementsDir?: string;
+    elementsDir?: string | string[];
     publicDir?: string;
     iconsDir?: string;
     outDir?: string;
@@ -73,7 +73,7 @@ export type Config = {
  * @typedef {{
  *   appDir?: string,
  *   routesDir?: string,
- *   elementsDir?: string,
+ *   elementsDir?: string|string[],
  *   publicDir?: string,
  *   iconsDir?: string,
  *   outDir?: string,

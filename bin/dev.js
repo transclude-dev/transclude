@@ -28,6 +28,7 @@ import { baseApp, endpointMethods, runEndpoint, SERVER_FILE } from '../src/serve
 import { randomBytes } from 'node:crypto';
 import { cookiesOf } from '../src/cookies.js';
 import { loadProject, portOf } from '../src/project.js';
+import { elementDirs, inElementDirs } from '../src/elements.js';
 import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
 import { feed, feedPath, feedType } from '../src/feed.js';
@@ -41,6 +42,7 @@ const { root, config } = await loadProject();
 // After the config, so an app with neither hears about the config first.
 const { createServer: createViteServer } = await loadVite();
 const appRoot = path.join(root, config.appDir);
+const elementRoots = elementDirs(appRoot, config.elementsDir ?? 'elements');
 const routesDir = resolveRoutesDir(appRoot, config.routesDir);
 const PORT = portOf(config, process.env.PORT);
 
@@ -522,7 +524,9 @@ vite.watcher.on('all', async (event, file) => {
   // a file being added or removed. `rebuild` for those, because the type of
   // every other page can depend on which files exist.
   const typed = extension === '.html' || extension === MARKDOWN_EXT || extension === '.js';
-  if (typed && file.startsWith(appRoot)) types?.schedule({ rebuild: event !== 'change' });
+  // An element directory may sit outside the app, a package of shared ones.
+  const ours = file.startsWith(appRoot) || inElementDirs(file, elementRoots);
+  if (typed && ours) types?.schedule({ rebuild: event !== 'change' });
 
   const routing =
     file.startsWith(routesDir) &&

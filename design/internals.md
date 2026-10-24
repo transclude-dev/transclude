@@ -78,7 +78,10 @@ than into the next reader's evening.
   Its own rules are in `examples/showcase/design/internals.md`.
 
 `elements/` holds every custom element, and the file says which kind it is:
-`export const shadow = true` for a shadow root, nothing for light. In `routes/`,
+`export const shadow = true` for a shadow root, nothing for light. An app may
+name several element directories, its own and a package's, and they read as
+one set; `src/elements.js` is the one place that turns `elementsDir` into
+directories. In `routes/`,
 extension decides: `.html` is a page, `.js` is an endpoint. `icons/` holds one
 SVG file per icon, and `src/icons.js` compiles the directory into the single
 `/icons.svg` a `<use href>` points at.
@@ -1337,6 +1340,15 @@ against.
   compiled before its element would emit the wrong thing for that tag, with
   nothing said. `readFlags` and `compileComponent` share `ELEMENT_FLAGS` and the
   same extractors, so there is one answer to what a file declares.
+- **Every reader of `elementsDir` goes through `src/elements.js`.** The plugin
+  finds an element by tag, the checker decides by path which files are
+  elements, and the dev server decides which edits change types. Each resolved
+  the one string itself, and once it may be a list, a reader that kept its own
+  `path.resolve(app, elementsDir)` would compile an element that another reads
+  as a page. A tag in two directories is refused in the scan, naming both files:
+  letting the first win meant an edit to the second changed nothing, with
+  nothing said. The dev watcher adds a directory outside the root itself, since
+  Vite watches only the root.
 - **`loadProject` refuses `partialsDir` and `componentsDir`.** Both are one
   `elementsDir` now. Left alone the old keys would be ignored, the app would look
   in `app/elements/`, find nothing, and every tag would render as an unmatched

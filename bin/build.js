@@ -23,7 +23,7 @@ import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
 import { sitemap } from '../src/sitemap.js';
 import { etagOf, loadAssets, loadStatic } from '../src/static-cache.js';
-import { buildSprite, readLibraries, refuseSpriteClash, spritePath } from '../src/icons.js';
+import { buildSprite, iconDirs, readAllLibraries, refuseSpriteClash, spritePath } from '../src/icons.js';
 import { PRECACHE_PATH, precacheDocument, precacheList } from '../src/precache.js';
 import { speculateSettings, speculationRules } from '../src/speculate.js';
 import { pool } from '../src/pool.js';
@@ -500,12 +500,12 @@ function countFiles(dir) {
 // this reports is two numbers: an icon total says nothing about how much any one
 // page fetches, and the sheets are what a page fetches.
 
-const iconsSrc = config.iconsDir ? path.join(root, config.appDir, config.iconsDir) : null;
+const iconsSrc = config.iconsDir ? iconDirs(path.join(root, config.appDir), config.iconsDir) : null;
 let iconCount = 0;
 let libraryCount = 0;
 
 if (iconsSrc) {
-  const libraries = readLibraries(iconsSrc, root);
+  const libraries = readAllLibraries(iconsSrc, root);
   refuseSpriteClash(publicSrc, libraries);
 
   if (libraries.length) fs.mkdirSync(publicOut, { recursive: true });

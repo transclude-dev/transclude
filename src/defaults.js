@@ -47,7 +47,7 @@
  *   routesDir?: string,
  *   elementsDir?: string|string[],
  *   publicDir?: string,
- *   iconsDir?: string,
+ *   iconsDir?: string|string[],
  *   outDir?: string,
  *   typesFile?: string,
  *   stylesheet?: string|null,
@@ -181,9 +181,9 @@ export function withDefaults(config = {}) {
 
   const merged = { ...DEFAULTS, ...config };
 
-  // Four keys name a directory inside `appDir`: `routesDir`, `elementsDir` (one,
-  // or a list of them, each from `appDir`),
-  // `publicDir` and `iconsDir`. Three name a path from the project root:
+  // Four keys name a directory inside `appDir`: `routesDir`, `elementsDir` and
+  // `iconsDir` (each one, or a list of them, each from `appDir`), and
+  // `publicDir`. Three name a path from the project root:
   // `outDir`, `stylesheet` and this one. That rule is fine until the default
   // for a root-relative key writes `app/` into itself, because then an app that
   // moved `appDir` keeps its declarations in a directory it no longer has, and
@@ -223,6 +223,20 @@ export function withDefaults(config = {}) {
         `[transclude] \`elementsDir\` is a list with nothing usable in it. Name a ` +
           `directory, or several, each a path from \`appDir\`: ` +
           `\`elementsDir: ['elements', '../../packages/kit/elements']\`.`,
+      );
+    }
+  }
+
+  // The same for icons: an empty list is no icons at all, and every
+  // `<use href>` would point at a sheet that is not there, with nothing said.
+  // `iconsDir: null` is still how an app says it has none.
+  if (Array.isArray(merged.iconsDir)) {
+    const named = merged.iconsDir;
+    if (!named.length || named.some((dir) => typeof dir !== 'string' || dir === '')) {
+      throw new Error(
+        `[transclude] \`iconsDir\` is a list with nothing usable in it. Name a ` +
+          `directory, or several, each a path from \`appDir\`: ` +
+          `\`iconsDir: ['icons', '../../packages/kit/icons']\`.`,
       );
     }
   }

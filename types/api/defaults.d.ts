@@ -3,7 +3,7 @@ export type Config = {
     routesDir?: string;
     elementsDir?: string | string[];
     publicDir?: string;
-    iconsDir?: string;
+    iconsDir?: string | string[];
     outDir?: string;
     typesFile?: string;
     stylesheet?: string | null;
@@ -75,7 +75,7 @@ export type Config = {
  *   routesDir?: string,
  *   elementsDir?: string|string[],
  *   publicDir?: string,
- *   iconsDir?: string,
+ *   iconsDir?: string|string[],
  *   outDir?: string,
  *   typesFile?: string,
  *   stylesheet?: string|null,

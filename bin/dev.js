@@ -8,7 +8,7 @@ import path from 'node:path';
 import { getRequestListener } from '@hono/node-server';
 import { TYPES } from '../src/mime.js';
 import { publicFiles as publicHandler } from '../src/public-files.js';
-import { buildSprite, readLibraries, refuseSpriteClash } from '../src/icons.js';
+import { buildSprite, iconDirs, readAllLibraries, refuseSpriteClash } from '../src/icons.js';
 import {
   ACTION_METHODS,
   hasRegion,
@@ -101,7 +101,7 @@ const publicFiles =
     ? publicHandler(path.relative(process.cwd(), publicRoot) || '.')
     : null;
 
-const iconsRoot = config.iconsDir ? path.join(root, config.appDir, config.iconsDir) : null;
+const iconsRoot = config.iconsDir ? iconDirs(path.join(root, config.appDir), config.iconsDir) : null;
 
 /**
  * One library's sprite, built per request rather than read off disk.
@@ -116,7 +116,7 @@ const iconsRoot = config.iconsDir ? path.join(root, config.appDir, config.iconsD
  */
 function sprite(name) {
   try {
-    const libraries = readLibraries(iconsRoot, root);
+    const libraries = readAllLibraries(iconsRoot, root);
     refuseSpriteClash(publicRoot, libraries);
 
     const library = libraries.find((entry) => entry.name === name);

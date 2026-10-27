@@ -14,6 +14,8 @@ import path from 'node:path';
 import {
   buildSprite,
   DEFAULT_LIBRARY,
+  iconDirs,
+  readAllLibraries,
   readLibraries,
   refuseSpriteClash,
   spritePath,
@@ -235,6 +237,51 @@ test('the reported file is relative to the root it was given', () => {
   const [library] = readLibraries(dir);
 
   assert.equal(library.icons[0].file, path.join('lucide', 'check.svg'));
+});
+
+// ---- several directories ---------------------------------------------------
+//
+// `iconsDir` may be a list, for a package of icons more than one app shares,
+// read with the app's own.
+
+test('each icon directory is a path from the app, and may leave it', () => {
+  const app = path.join(os.tmpdir(), 'tc-app', 'app');
+  assert.deepEqual(iconDirs(app, 'icons'), [path.join(app, 'icons')]);
+  assert.deepEqual(iconDirs(app, ['icons', '../../kit/icons']), [path.join(app, 'icons'), path.join(os.tmpdir(), 'kit', 'icons')]);
+  // Named twice, read once: otherwise each icon would be refused as its own twin.
+  assert.deepEqual(iconDirs(app, ['icons', './icons']), [path.join(app, 'icons')]);
+});
+
+test('a library in two directories is one library, with the icons of both', () => {
+  const own = tree({ 'lucide/check.svg': CHECK, 'crayon.svg': CHECK });
+  const shared = tree({ 'lucide/play.svg': CHECK, 'lucide/square.svg': CHECK, 'flags/fr.svg': CHECK });
+  const libraries = readAllLibraries([own, shared], os.tmpdir());
+
+  assert.deepEqual(libraries.map((l) => l.name), ['flags', DEFAULT_LIBRARY, 'lucide']);
+  const lucide = libraries.find((l) => l.name === 'lucide');
+  assert.deepEqual(lucide?.icons.map((i) => i.id).sort(), ['check', 'play', 'square']);
+  // Each icon is reported from the directory it came from.
+  assert.ok(lucide?.icons.some((i) => i.file === path.relative(os.tmpdir(), path.join(shared, 'lucide', 'play.svg'))));
+});
+
+test('one icon in two directories is refused, and the message names both files', () => {
+  // Letting one win would make an edit to the other change nothing.
+  const own = tree({ 'lucide/check.svg': CHECK });
+  const shared = tree({ 'lucide/check.svg': CHECK });
+  const [lucide] = readAllLibraries([own, shared], os.tmpdir());
+
+  assert.throws(() => buildSprite(lucide.icons), (error) => {
+    assert.match(error.message, new RegExp(path.basename(own)));
+    assert.match(error.message, new RegExp(path.basename(shared)));
+    return true;
+  });
+});
+
+test('a missing directory among several is no icons from it, as one is', () => {
+  const own = tree({ 'lucide/check.svg': CHECK });
+  const libraries = readAllLibraries([own, path.join(os.tmpdir(), 'tc-icons-does-not-exist')], os.tmpdir());
+
+  assert.deepEqual(libraries.map((l) => l.name), ['lucide']);
 });
 
 // ---- one thing answers for one URL -----------------------------------------

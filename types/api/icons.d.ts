@@ -49,6 +49,38 @@ export declare function refuseSpriteClash(publicDir: string | null, libraries: A
     name: string;
 }>): void;
 /**
+ * Every icon directory, absolute, in the order the config names them.
+ *
+ * Each is a path from `appDir`, as `iconsDir` always was, and a path may leave
+ * it: `../../packages/kit/icons`. The same directory named twice is read once,
+ * or each of its icons would be refused as its own twin.
+ *
+ * @param {string} app the app directory, absolute
+ * @param {string|string[]} iconsDir as the config has it
+ * @returns {string[]}
+ */
+export declare function iconDirs(app: string, iconsDir: string | string[]): string[];
+/**
+ * Every library in every icon directory, a name in several read as one.
+ *
+ * Merged, not refused: an app that adds one icon to a set a package shares
+ * puts it in its own `lucide/`, and the page asks `/lucide.svg` for both. One
+ * icon in two of them is still refused, by `buildSprite`, which names both
+ * files: letting one win would make an edit to the other change nothing.
+ *
+ * @param {string[]} dirs from `iconDirs`
+ * @param {string} root what the reported file paths are relative to
+ * @returns {Array<{ name: string, icons: Array<{ id: string, file: string, svg: string }> }>}
+ */
+export declare function readAllLibraries(dirs: string[], root: string): Array<{
+    name: string;
+    icons: Array<{
+        id: string;
+        file: string;
+        svg: string;
+    }>;
+}>;
+/**
  * Every library under `dir`, each ready for `buildSprite`.
  *
  * Loose files at the top are the default library. Each subdirectory is a library

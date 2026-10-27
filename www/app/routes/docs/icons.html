@@ -65,6 +65,14 @@
 };`,
         'js',
       ],
+      shared: [
+        `// transclude.config.js
+export default {
+  // The app's own icons, then a package's, read as one set.
+  iconsDir: ['icons', '../../packages/kit/icons'],
+};`,
+        'js',
+      ],
     }),
   });
 </script>
@@ -194,6 +202,25 @@
   </p>
 
   ${html(s.config)}
+
+  <h2>Icons more than one app uses</h2>
+
+  <p>
+    <code>iconsDir</code> may name several directories, so a package of shared
+    icons is read with the app's own. Each is a path from <code>appDir</code>,
+    and a path may leave it.
+  </p>
+
+  ${html(s.shared)}
+
+  <p>
+    A library of one name is one sheet across them. The app's
+    <code>lucide/</code> and the package's <code>lucide/</code> are both
+    <code>/lucide.svg</code>, so an app adds an icon to a shared set by putting
+    it in its own. An icon is one file. The same icon in two of the
+    directories stops the build and names both files, rather than letting one
+    quietly win.
+  </p>
 
   <doc-note label="An icon needs a viewBox" tone="warn">
     A symbol scales by its <code>viewBox</code>. A file without one is refused

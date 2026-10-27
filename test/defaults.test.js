@@ -235,6 +235,16 @@ test('csrf and fragmentParam promise what the runtime takes', () => {
   assert.equal(withDefaults({ fragmentParam: null }).fragmentParam, null);
 });
 
+test('iconsDir may be several directories, and a list of none is refused', () => {
+  assert.deepEqual(withDefaults({ iconsDir: ['icons', '../shared/icons'] }).iconsDir, ['icons', '../shared/icons']);
+  assert.equal(withDefaults({}).iconsDir, 'icons', 'one directory is still the default');
+  // An empty list is no icons at all: every `<use href>` would point at a
+  // sheet that is not there.
+  assert.throws(() => withDefaults({ iconsDir: [] }), /iconsDir.*nothing usable/);
+  assert.throws(() => withDefaults({ iconsDir: ['icons', ''] }), /nothing usable/);
+  assert.equal(withDefaults({ iconsDir: null }).iconsDir, null, 'null is still no icons');
+});
+
 test('elementsDir may be several directories, and a list of none is refused', () => {
   assert.deepEqual(withDefaults({ elementsDir: ['elements', '../shared'] }).elementsDir, ['elements', '../shared']);
   assert.equal(withDefaults({}).elementsDir, 'elements', 'one directory is still the default');

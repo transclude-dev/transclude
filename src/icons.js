@@ -16,9 +16,14 @@
 // takes contents rather than a directory anyway, so the half that decides what
 // the markup is can be tested without fixtures.
 //
-// The dev server and the build both call `readLibraries` then `buildSprite`.
-// They used to be the same two lines written twice, which is how `/icons.svg`
-// served in production and 404'd in dev.
+// `iconsDir` may name several directories, as `elementsDir` may: a package of
+// icons more than one app uses is read with the app's own. A library of one
+// name is one library across them, so the app's `lucide/` and the package's
+// `lucide/` are one `/lucide.svg`.
+//
+// The dev server and the build both call `iconDirs`, `readAllLibraries` then
+// `buildSprite`. They used to be the same two lines written twice, which is
+// how `/icons.svg` served in production and 404'd in dev.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -171,6 +176,49 @@ export function refuseSpriteClash(publicDir, libraries) {
         `The sprite is built from the icons, so rename the public file or delete it.`,
     );
   }
+}
+
+/**
+ * Every icon directory, absolute, in the order the config names them.
+ *
+ * Each is a path from `appDir`, as `iconsDir` always was, and a path may leave
+ * it: `../../packages/kit/icons`. The same directory named twice is read once,
+ * or each of its icons would be refused as its own twin.
+ *
+ * @param {string} app the app directory, absolute
+ * @param {string|string[]} iconsDir as the config has it
+ * @returns {string[]}
+ */
+export function iconDirs(app, iconsDir) {
+  const named = Array.isArray(iconsDir) ? iconsDir : [iconsDir];
+  return [...new Set(named.map((dir) => path.resolve(app, dir)))];
+}
+
+/**
+ * Every library in every icon directory, a name in several read as one.
+ *
+ * Merged, not refused: an app that adds one icon to a set a package shares
+ * puts it in its own `lucide/`, and the page asks `/lucide.svg` for both. One
+ * icon in two of them is still refused, by `buildSprite`, which names both
+ * files: letting one win would make an edit to the other change nothing.
+ *
+ * @param {string[]} dirs from `iconDirs`
+ * @param {string} root what the reported file paths are relative to
+ * @returns {Array<{ name: string, icons: Array<{ id: string, file: string, svg: string }> }>}
+ */
+export function readAllLibraries(dirs, root) {
+  /** @type {Map<string, { name: string, icons: Array<{ id: string, file: string, svg: string }> }>} */
+  const byName = new Map();
+
+  for (const dir of dirs) {
+    for (const library of readLibraries(dir, root)) {
+      const same = byName.get(library.name);
+      if (same) same.icons.push(...library.icons);
+      else byName.set(library.name, { name: library.name, icons: [...library.icons] });
+    }
+  }
+
+  return [...byName.values()].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 }
 
 /** The icon files directly inside `dir`, ignoring anything that is not an SVG. */

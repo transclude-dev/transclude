@@ -84,7 +84,8 @@ one set; `src/elements.js` is the one place that turns `elementsDir` into
 directories. In `routes/`,
 extension decides: `.html` is a page, `.js` is an endpoint. `icons/` holds one
 SVG file per icon, and `src/icons.js` compiles the directory into the single
-`/icons.svg` a `<use href>` points at.
+`/icons.svg` a `<use href>` points at. `iconsDir` may be a list too, read
+through `iconDirs` and `readAllLibraries` in the same file.
 
 An app owns `transclude.config.js`, its `worker.js`, its own tests, and `app/`
 with the routes, elements and public files. The browser checks live
@@ -1271,8 +1272,16 @@ against.
   viewBox. Without one the icon renders at some other size, which reads as a CSS
   problem and is not one. Same for two files claiming one id: the second would
   quietly never be reachable, so the build stops and names both.
+- **A library of one name in two icon directories is merged, not refused.**
+  `iconsDir` may be a list, as `elementsDir` may, and the case it is for is a
+  package that shares an icon set: the app's `lucide/` and the package's are
+  one `/lucide.svg`, so an app adds an icon to the set by putting it in its
+  own. Refusing the name would make every app that adds one rename a set it
+  downloaded. One icon in both is still refused, by `buildSprite`, which names
+  both files. A directory named twice is read once, in `iconDirs`, or each of
+  its icons would be refused as its own twin.
 - **Dev builds the sprite per request; the build writes it once.** Both call
-  `readIcons` then `buildSprite`, and that is the point. Two copies of those two
+  `iconDirs`, `readAllLibraries` then `buildSprite`, and that is the point. Two copies of those two
   lines is how `/icons.svg` comes to work in production and 404 in dev, which is
   the same failure `include.js` was written to end.
 - **A `Response` that answers early still needs the envelope.** An action that sets

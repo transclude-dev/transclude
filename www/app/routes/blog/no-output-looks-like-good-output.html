@@ -1,10 +1,13 @@
 <script server>
-  import { all } from "../../lib/code.js";
+  import { all } from '../../lib/code.js';
+  import { bySlug } from '../../data/posts.js';
+  import { dateline } from '../../lib/dateline.js';
 
-  // Not finished. `npm run dev` serves this; the build leaves it out.
-  export const draft = true;
+  const post = bySlug('no-output-looks-like-good-output');
 
   export default async () => ({
+    post,
+    when: dateline(post.date),
     s: await all({
       tail: [
         `# Start the log stream, do the thing, read what came back.
@@ -15,34 +18,34 @@ sleep 8
 
 # Then: no errors, so it worked.
 grep -c '"name": "Error"' /tmp/log.json   # 0`,
-        "shell",
+        'shell',
       ],
 
       logged: [
         `// What the send says when it happens, rather than what it does not say.
 const { id } = await res.json();
 console.log(\`resend accepted \${email} as \${id}\`);`,
-        "js",
+        'js',
       ],
 
       check: [
         `# Was anything captured at all, and did the send happen?
 grep -c '"outcome"' /tmp/log.json         # events seen
 grep -c 'resend accepted' /tmp/log.json   # sends that happened`,
-        "shell",
+        'shell',
       ],
 
       exists: [
         `test('a draft is not written to a file', () => {
   assert.equal(fs.existsSync(\`\${dist}/draft-example/index.html\`), false);
 });`,
-        "js",
+        'js',
       ],
 
       css: [
         `.notes p      { font-size: 1.0625rem; margin: 0 0 1.75rem; }
 .notes-more   { font-size: 0.875rem; margin-top: 2.25rem; }`,
-        "css",
+        'css',
       ],
     }),
   });
@@ -54,8 +57,19 @@ grep -c 'resend accepted' /tmp/log.json   # sends that happened`,
   content="A check has three outcomes and most people write two. Passed, failed, and never ran, which gets counted as passed."
 />
 
+<!-- From `posts.js`, which the index and the feed also read, so a post says the
+     same thing in all three places or in none of them. -->
+<meta property="og:type" content="article" />
+<meta property="og:title" content="${post.title}" />
+<meta property="og:description" content="${post.summary}" />
+<meta property="article:published_time" content="${post.date.toISOString()}" />
+
 <article>
   <h1>No output looks exactly like good output</h1>
+
+  <time class="dateline" datetime="${post.date.toISOString()}">
+    ${when}
+  </time>
 
   <p>
     A check has three outcomes. It passed, it failed, or it never really ran.

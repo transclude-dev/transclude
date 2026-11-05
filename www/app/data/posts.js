@@ -20,6 +20,13 @@
 /** @type {Post[]} */
 export const posts = [
   {
+    slug: 'no-output-looks-like-good-output',
+    title: 'No output looks exactly like good output',
+    summary:
+      'A check has three outcomes and most people write two. Passed, failed, and never ran, which gets counted as passed.',
+    date: new Date('2026-11-05'),
+  },
+  {
     slug: 'four-attributes-and-a-script-tag',
     title: 'Four attributes and a script tag',
     summary:

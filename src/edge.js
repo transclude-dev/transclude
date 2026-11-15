@@ -46,7 +46,9 @@ export function edgeHeaders(config, own = '') {
 
 /**
  * Refuses a header the platform would drop. A long CSP is the one that gets
- * there, and a site without its CSP looks exactly like a site with it.
+ * there, and a site without its CSP looks exactly like a site with it. The
+ * build turns this into a warning, because most apps never deploy
+ * `dist/edge`.
  *
  * @param {string[]} lines
  */

@@ -676,7 +676,21 @@ linkTree(path.join(dist, 'client', 'assets'), path.join(edgeOut, 'assets'));
 const headersFile = path.join(edgeOut, '_headers');
 const ownHeaders = fs.existsSync(headersFile) ? fs.readFileSync(headersFile, 'utf8') : '';
 fs.rmSync(headersFile, { force: true });
-fs.writeFileSync(headersFile, edgeHeaders(config, ownHeaders));
+fs.writeFileSync(headersFile, headersForEdge());
+
+/**
+ * `_headers`, or, when a header is too long for the platform, a warning and
+ * the file without the config's headers. A warning rather than a stop: most
+ * apps never deploy `dist/edge`, and their build should not fail over it.
+ */
+function headersForEdge() {
+  try {
+    return edgeHeaders(config, ownHeaders);
+  } catch (error) {
+    console.warn(`\n${/** @type {Error} */ (error).message} dist/edge/_headers is written without it.`);
+    return edgeHeaders({}, ownHeaders);
+  }
+}
 
 /** Every file under `from`, linked at the same place under `to`. */
 function linkTree(from, to) {

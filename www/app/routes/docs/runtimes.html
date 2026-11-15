@@ -36,6 +36,30 @@ export default workerFrom({ config, manifest, entry, bundle });`,
         'js',
       ],
 
+      edgeEntry: [
+        `// worker.js
+import { workerFrom } from '@transclude/core/worker';
+import * as bundle from './dist/server/pages.js';
+import * as entry from './dist/server/entry.js';
+import manifest from './dist/routes.json';
+import config from './transclude.config.js';
+
+export default workerFrom({ config, manifest, entry, bundle });`,
+        'js',
+      ],
+
+      edgeConfig: [
+        `// wrangler.jsonc
+{
+  "name": "notes",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-14",
+  "rules": [{ "type": "Text", "globs": ["**/routes.json"], "fallthrough": true }],
+  "assets": { "directory": "dist/edge", "html_handling": "none" }
+}`,
+        'js',
+      ],
+
       bindings: [
         `// app/lib/bindings.js
 //
@@ -153,6 +177,39 @@ export default async () => {
     <code>@transclude/core/app</code> and does the wiring itself.
   </p>
 
+  <h2>Files on the edge</h2>
+
+  <p>
+    <code>dist/server/assets.js</code> carries every public file and hashed
+    asset inside the worker, and a worker has a size limit. On Cloudflare, the
+    edge serves files itself instead. Import <code>dist/server/pages.js</code>,
+    which carries the prerendered pages only:
+  </p>
+
+  ${html(s.edgeEntry)}
+
+  <p>And point the worker's assets at <code>dist/edge</code>:</p>
+
+  ${html(s.edgeConfig)}
+
+  <p>
+    The build writes <code>dist/edge</code>: the public files, the hashed
+    assets, and a <code>_headers</code> file. Cloudflare answers a request for
+    one of those files before the worker runs, so the request costs nothing,
+    and the worker answers everything else. <code>_headers</code> gives each
+    file the headers the server gives every response: <code>nosniff</code>,
+    and the CSP and the permissions policy when the config sets them. A hashed
+    asset also gets the year-long cache. A <code>_headers</code> file in the
+    public directory comes after it.
+  </p>
+
+  <doc-note label="Why html_handling is none">
+    Cloudflare's default answers <code>/about</code> with
+    <code>about.html</code> and redirects <code>/about.html</code> to
+    <code>/about</code>. The Node server does neither for a public file, and
+    <code>none</code> keeps the two the same.
+  </doc-note>
+
   <p>
     The Node, Bun and Deno servers walk up from the working directory to the
     nearest <code>transclude.config.js</code>. <code>TRANSCLUDE_ROOT</code>
@@ -221,7 +278,7 @@ export default async () => {
         <tr>
           <td>Bytes</td>
           <td>The filesystem</td>
-          <td><code>dist/server/assets.js</code></td>
+          <td><code>dist/server/assets.js</code>, or the edge from <code>dist/edge</code></td>
         </tr>
         <tr>
           <td>Hashing</td>

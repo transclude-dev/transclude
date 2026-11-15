@@ -141,3 +141,19 @@ test('the ExecutionContext is passed through, so ctx.after can reach it', async 
 
   assert.equal(held.length, 1, 'the ExecutionContext never reached the app');
 });
+
+// ---- a bundle without files -------------------------------------------------
+
+test('a bundle with pages only serves its pages', async () => {
+  // What `dist/server/pages.js` exports. The edge serves the public files and
+  // the hashed assets before the worker runs, so the bundle carries neither.
+  const pagesOnly = { statics: {}, notFound: null, errorPage: null, precache: null };
+  const worker = workerOf({ bundle: pagesOnly });
+
+  const page = await worker.fetch(new Request('http://x/'), {}, undefined);
+  assert.equal(page.status, 200);
+
+  // A file request that reaches the worker is one the edge did not have.
+  const file = await worker.fetch(new Request('http://x/robots.txt'), {}, undefined);
+  assert.equal(file.status, 404);
+});

@@ -66,10 +66,11 @@ export declare function hash(body: Uint8Array<ArrayBuffer>): Promise<string>;
  *   endpoints?: Record<string, object>,
  *   middleware?: ((app: import('hono').Hono) => void)|null }} options.entry
  *   everything `dist/server/entry.js` exports
- * @param {{ statics: Record<string, Encoded>, assets: Record<string, Encoded>,
- *   publicFiles: Record<string, Encoded>, notFound?: Encoded|null,
+ * @param {{ statics: Record<string, Encoded>, assets?: Record<string, Encoded>,
+ *   publicFiles?: Record<string, Encoded>, notFound?: Encoded|null,
  *   errorPage?: Encoded|null, precache?: string|null }} options.bundle everything
- *   `dist/server/assets.js` exports
+ *   `dist/server/assets.js` exports, or `dist/server/pages.js`, which has no
+ *   `assets` and no `publicFiles` because the edge serves those
  * @returns {{ fetch: (request: Request, env: { COOKIE_SECRET?: string },
  *   ctx: object) => Response|Promise<Response> }}
  */
@@ -83,8 +84,8 @@ export declare function workerFrom({ config, manifest, entry, bundle }: {
     };
     bundle: {
         statics: Record<string, Encoded>;
-        assets: Record<string, Encoded>;
-        publicFiles: Record<string, Encoded>;
+        assets?: Record<string, Encoded>;
+        publicFiles?: Record<string, Encoded>;
         notFound?: Encoded | null;
         errorPage?: Encoded | null;
         precache?: string | null;

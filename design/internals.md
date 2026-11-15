@@ -1195,6 +1195,26 @@ against.
   precompression each build themselves by walking that directory. Written earlier
   and the public copy overwrites it; written later and all three miss it, so Node
   serves `/icons.svg` off disk and a worker 404s it with nothing to say why.
+  `dist/edge` walks it too, so it is written after the sprite as well.
+- **A file the edge serves never passes through `baseApp`.** `dist/server/assets.js`
+  put every public file inside the worker, and an app with a large public
+  directory went far over Cloudflare's 64 MiB limit: the Bible table's came to
+  316 MB in a dry run. So the build also writes `dist/edge` and
+  `dist/server/pages.js`, which has no `assets` and no `publicFiles`, and a
+  worker that imports it points its assets at `dist/edge`. Cloudflare then
+  answers those files before the worker runs, which means none of the headers
+  `baseApp` adds reach them. `src/edge.js` writes them into `_headers` instead,
+  from the same config, and `test/edge.test.js` asks the app for an asset to
+  keep the copy of `IMMUTABLE` equal to the one `app.js` keeps unexported.
+  Four things hold it up. The prerendered pages stay in the worker, because
+  the edge matches a path alone and would answer `/about?fragment=list` with
+  the whole page. `html_handling: "none"` in the wrangler config, because the
+  default answers `/about` with `about.html` and Node does not. The files are
+  hard links, and the `_headers` link is removed before the file is written,
+  or writing it would change `dist/public/_headers` too. And `dist/edge` is
+  written before compression, so no `.br` twin counts against the platform's
+  file limit. A Range request still gets the whole file with a 200: the edge
+  does not answer ranges either.
 - **Internals are attached for a boolean state field, not for any state.** A
   custom state is a name, so a number or a string has nothing to reflect.
   Attaching for every stateful element gave `user-card` internals it never uses

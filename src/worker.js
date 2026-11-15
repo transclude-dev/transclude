@@ -4,6 +4,11 @@
 // emitted rather than read from a disk, and it has no `node:crypto`, so hashing
 // is WebCrypto and therefore async. Those are runtime facts, so they live here.
 // Which modules to import is an app fact, so that stays in the app's own entry.
+//
+// The build writes two such modules. `dist/server/assets.js` carries every
+// file. `dist/server/pages.js` carries the prerendered pages only, for a
+// worker whose public files and hashed assets the edge serves from
+// `dist/edge`. Both go through `workerFrom`.
 
 import { createApp } from './app.js';
 
@@ -125,10 +130,11 @@ export async function hash(body) {
  *   endpoints?: Record<string, object>,
  *   middleware?: ((app: import('hono').Hono) => void)|null }} options.entry
  *   everything `dist/server/entry.js` exports
- * @param {{ statics: Record<string, Encoded>, assets: Record<string, Encoded>,
- *   publicFiles: Record<string, Encoded>, notFound?: Encoded|null,
+ * @param {{ statics: Record<string, Encoded>, assets?: Record<string, Encoded>,
+ *   publicFiles?: Record<string, Encoded>, notFound?: Encoded|null,
  *   errorPage?: Encoded|null, precache?: string|null }} options.bundle everything
- *   `dist/server/assets.js` exports
+ *   `dist/server/assets.js` exports, or `dist/server/pages.js`, which has no
+ *   `assets` and no `publicFiles` because the edge serves those
  * @returns {{ fetch: (request: Request, env: { COOKIE_SECRET?: string },
  *   ctx: object) => Response|Promise<Response> }}
  */
@@ -150,8 +156,10 @@ export function workerFrom({ config, manifest, entry, bundle }) {
         endpoints: entry.endpoints,
         middleware: entry.middleware,
         statics: bytesFrom(bundle.statics),
-        assets: bytesFrom(bundle.assets),
-        publicFiles: fileHandler(bundle.publicFiles),
+        // Absent from `pages.js`. The edge answers those requests before the
+        // worker runs, so a miss here is a file that does not exist.
+        assets: bytesFrom(bundle.assets ?? {}),
+        publicFiles: bundle.publicFiles ? fileHandler(bundle.publicFiles) : null,
         notFound: pageEntry(bundle.notFound),
         errorPage: pageEntry(bundle.errorPage),
         hash,

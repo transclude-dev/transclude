@@ -404,6 +404,54 @@ describe('every icon sheet is in the bundle, not only on disk', async () => {
   }
 });
 
+// ---- the edge directory, for a worker whose files the edge serves ----------
+
+describe('dist/edge holds every public file and hashed asset, and nothing compressed', () => {
+  // Cloudflare serves this directory before the worker runs. A file missing
+  // here is a file the worker then 404s, because `pages.js` carries none.
+  const relative = (dir) => {
+    const out = [];
+    const walk = (at) => {
+      for (const entry of fs.readdirSync(at, { withFileTypes: true })) {
+        const full = path.join(at, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else out.push(path.relative(dir, full));
+      }
+    };
+    walk(dir);
+    return out;
+  };
+  const plain = (file) => !file.endsWith('.br') && !file.endsWith('.gz');
+
+  const edge = new Set(relative(path.join(dist, 'edge')));
+  for (const file of relative(path.join(dist, 'public')).filter(plain)) {
+    assert.ok(edge.has(file), `${file} is public and missing from dist/edge`);
+  }
+  for (const file of relative(path.join(dist, 'client/assets')).filter(plain)) {
+    assert.ok(edge.has(path.join('assets', file)), `assets/${file} is missing from dist/edge`);
+  }
+
+  // The edge compresses for itself, and every extra file counts against the
+  // platform's limit on files.
+  assert.deepEqual([...edge].filter((file) => !plain(file)), []);
+
+  const headers = read('edge/_headers');
+  assert.match(headers, /^\/\*\n {2}X-Content-Type-Options: nosniff\n/);
+  assert.match(headers, /\/assets\/\*\n {2}Cache-Control: public, max-age=31536000, immutable/);
+});
+
+describe('pages.js carries the prerendered pages and no files', async () => {
+  // The whole point of the second module: a worker that imports it carries no
+  // public file and no hashed asset, whatever the size of the public directory.
+  const pagesModule = await import(pathToFileURL(path.join(dist, 'server/pages.js')).href);
+  const everything = await import(pathToFileURL(path.join(dist, 'server/assets.js')).href);
+
+  assert.equal(pagesModule.assets, undefined);
+  assert.equal(pagesModule.publicFiles, undefined);
+  assert.deepEqual(Object.keys(pagesModule.statics), Object.keys(everything.statics));
+  assert.deepEqual(pagesModule.notFound, everything.notFound);
+});
+
 describe('one name in two libraries is two different icons', async () => {
   // What the flat reading refused. `check` is in both, and each sheet holds its
   // own drawing of it.

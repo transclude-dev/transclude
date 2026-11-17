@@ -1,0 +1,26 @@
+<script server>
+  import { notes } from '../data/notes.js';
+
+  export default async ({ action }) => ({
+    notes: notes.all(),
+    error: action?.error ?? null,
+  });
+
+  export const POST = async ({ request, url }) => {
+    const form = await request.formData();
+    const text = String(form.get('text') ?? '').trim();
+    if (!text) return { error: 'a note needs some text' };
+
+    notes.add(text);
+    return Response.redirect(new URL(url), 303);
+  };
+</script>
+
+<form method="post">
+  <input name="text" />
+  <button>Add</button>
+</form>
+
+<ul id="list" fragment>
+  <li each="note of notes">${note}</li>
+</ul>

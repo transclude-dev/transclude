@@ -1,0 +1,6 @@
+[
+  { "request": "POST /?fragment=nope", "send": { "form": { "text": "Milk" } }, "status": 404 },
+  { "request": "GET /?fragment=list", "status": 200, "body": "expected/empty.html" },
+  { "request": "POST /", "send": { "form": { "text": "Milk" } }, "status": 303 },
+  { "request": "GET /?fragment=list", "status": 200, "body": "expected/milk.html" }
+]

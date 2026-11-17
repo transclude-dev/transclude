@@ -1,0 +1,15 @@
+[
+  {
+    "request": "GET /?q=ada",
+    "send": { "headers": { "hx-target": "matches" } },
+    "status": 200,
+    "headers": { "vary": "Accept-Encoding, HX-Target" },
+    "body": "expected/matches.html"
+  },
+  {
+    "request": "GET /?q=ada",
+    "status": 200,
+    "headers": { "vary": "Accept-Encoding, HX-Target" },
+    "body": "expected/index.html"
+  }
+]

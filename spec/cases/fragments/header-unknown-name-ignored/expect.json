@@ -1,0 +1,8 @@
+[
+  {
+    "request": "GET /?q=ada",
+    "send": { "headers": { "hx-target": "nope" } },
+    "status": 200,
+    "body": "expected/index.html"
+  }
+]

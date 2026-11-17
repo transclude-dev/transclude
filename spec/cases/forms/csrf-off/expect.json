@@ -1,0 +1,3 @@
+[
+  { "request": "POST /?fragment=got", "send": { "form": { "a": "1" }, "headers": { "origin": "https://evil.example" } }, "status": 200, "body": "expected/form.html" }
+]

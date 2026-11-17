@@ -1,0 +1,12 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ action }) => ({ got: action?.got ?? 'nothing' });
+
+  export const POST = async ({ request }) => {
+    const type = request.headers.get('content-type') ?? '';
+    return { got: type.includes('json') ? 'json' : 'form' };
+  };
+</script>
+
+<p id="got" fragment>${got}</p>

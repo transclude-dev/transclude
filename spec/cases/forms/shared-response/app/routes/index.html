@@ -1,0 +1,9 @@
+<script server>
+  export const prerender = false;
+
+  const badRequest = new Response('a note needs some text', { status: 400 });
+
+  export const POST = async () => badRequest;
+</script>
+
+<form method="post"><button>Add</button></form>

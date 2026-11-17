@@ -176,6 +176,26 @@ Complete. Three entries are `todo`. The cases that read another site carry an
 | `/_transclude/proxy` answers a fragment, or the outline and what was removed | `includes/endpoint` | reviewed |
 | The endpoint is same-origin, which the default policy requires | The security area | - |
 
+## /docs/forms
+
+Complete.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| A form posts to itself; the handler runs, then the loader renders what it left | `forms/post-redirect-get` | unreviewed |
+| One export per method: `POST`, `PUT`, `PATCH`, `DELETE` | `forms/verbs` | unreviewed |
+| A `<form>` can only send GET or POST | HTML, not the framework | - |
+| A hidden `intent` field turns a post into a delete | `forms/intent-field` | unreviewed |
+| From script, `DELETE` is sent directly and runs | `forms/verbs` | unreviewed |
+| Answer a mutation with a 303; a rejected submission re-renders instead | `forms/post-redirect-get` | unreviewed |
+| A fragment request gets markup, not the redirect | `fragments/action-fragment` | reviewed |
+| `ctx.action` holds what the handler returned | `forms/post-redirect-get` | unreviewed |
+| `ctx.action` is typed as every handler's return type at once | Type checking, the types area | - |
+| A shared module-level `Response` fails after the first request | `forms/shared-response` | unreviewed |
+| CSRF is on by default for non-GET requests with a form content type | `forms/csrf-default` | unreviewed |
+| `csrf: false` turns it off | `forms/csrf-off` | unreviewed |
+| An object allows another origin | `forms/csrf-allow-origin` | unreviewed |
+
 ## /docs/refusals
 
 Started.

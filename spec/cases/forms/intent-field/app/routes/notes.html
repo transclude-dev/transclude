@@ -1,0 +1,24 @@
+<script server>
+  import { notes } from '../data/notes.js';
+
+  export const prerender = false;
+
+  export default async () => ({ notes: notes.all() });
+
+  export const POST = async ({ request, url }) => {
+    const form = await request.formData();
+    if (form.get('intent') === 'remove') notes.remove(Number(form.get('id')));
+    else notes.add(String(form.get('text')));
+    return Response.redirect(new URL(url), 303);
+  };
+</script>
+
+<ul id="list" fragment>
+  <li each="note of notes">
+    ${note.text}
+    <form method="post">
+      <input type="hidden" name="id" value="${note.id}" />
+      <button name="intent" value="remove">Delete</button>
+    </form>
+  </li>
+</ul>

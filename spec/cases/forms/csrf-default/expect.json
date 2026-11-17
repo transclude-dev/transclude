@@ -1,0 +1,7 @@
+[
+  { "request": "POST /?fragment=got", "send": { "form": { "a": "1" }, "headers": { "origin": null } }, "status": 403 },
+  { "request": "POST /?fragment=got", "send": { "form": { "a": "1" }, "headers": { "origin": "https://evil.example" } }, "status": 403 },
+  { "request": "POST /?fragment=got", "send": { "form": { "a": "1" } }, "status": 200, "body": "expected/form.html" },
+  { "request": "POST /?fragment=got", "send": { "headers": { "content-type": "application/json" } }, "status": 200, "body": "expected/json.html" },
+  { "request": "GET /?fragment=got", "send": { "headers": { "origin": "https://evil.example" } }, "status": 200, "body": "expected/get.html" }
+]

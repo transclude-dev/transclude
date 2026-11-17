@@ -11,7 +11,8 @@ npm run spec -- fragments/marked-element # one case
 ```
 
 The run prints one block per failing case and a count, and writes the whole
-run to `spec/report/last.json`. It exits 1 when a case fails.
+run to `spec/report/last.json`: each request, the status and headers it
+answered, and every difference. It exits 1 when a case fails.
 
 `test/` is the fast loop for the code as it is, and most of it imports from
 `src/`. Nothing here does. A case talks to a built app over `app.request()`,
@@ -51,6 +52,9 @@ case with no config checks the defaults.
 ]
 ```
 
+- `send` is optional: `{ "headers": {…}, "form": {…} }`. A `form` goes the
+  way a browser posts one, form-encoded with an `origin` of
+  `http://localhost`, so CSRF lets it through. `headers` apply last.
 - `status` is equal or the entry fails.
 - `headers` is a subset. A case names the headers its rule is about.
 - `body` is a file of expected markup. Both sides go through parse5, and each
@@ -58,6 +62,12 @@ case with no config checks the defaults.
   between elements does not count, and whether a space is there does: a
   browser shows `<b>a</b> <i>b</i>` and `<b>a</b><i>b</i>` differently.
   Whitespace inside `pre`, `textarea`, `script` and `style` counts exactly.
+- A built asset's content hash counts as `[hash]`: `/assets/index-Cyt6b9Zw.js`
+  matches `/assets/index-AAAAAAAA.js`. The hash changes with any edit to the
+  file behind it. Which asset a page names still counts.
+
+The entries in one case run in order, in one process. A POST and the GET after
+it see the same app, which is how a case shows that an action ran or did not.
 
 A case about a refusal expects the build to fail:
 
@@ -77,8 +87,10 @@ left out, because they name the framework's own files.
 3. `npm run spec -- <area>/<name> --snapshot` writes each expected file the
    case lacks, from what the code answers today. It never overwrites one.
 4. Read what it wrote. A snapshot records what the code does, not what it
-   should do. Mark it unreviewed in `CASE.md` until Joe has read it.
-5. Break the behavior in `src/` on purpose, watch the case fail, and put it
+   should do. When it disagrees with the docs, stop and ask which is wrong.
+5. Add the claim and the case to `COVERAGE.md`, marked `unreviewed` until Joe
+   has read the snapshot.
+6. Break the behavior in `src/` on purpose, watch the case fail, and put it
    back. Say in the commit how you broke it.
 
 An expected file that exists is the contract. A change to one is its own

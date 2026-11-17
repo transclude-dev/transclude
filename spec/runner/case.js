@@ -95,18 +95,45 @@ function excerpt(stderr) {
   return lines.slice(from, to).join('\n').trim() + '\n';
 }
 
-/** @param {{ request: string, status?: number, headers?: Record<string, string>, body?: string }} entry */
+/**
+ * What a request sends besides its method and URL. A `form` goes the way a
+ * browser posts one: form-encoded, with an `origin` that CSRF accepts.
+ * `headers` are applied last, so a case can take either away.
+ *
+ * @param {string} method
+ * @param {{ headers?: Record<string, string>, form?: Record<string, string> }} [send]
+ * @returns {RequestInit}
+ */
+function initFor(method, send = {}) {
+  const init = { method, redirect: 'manual', headers: new Headers() };
+  if (send.form) {
+    init.headers.set('origin', 'http://localhost');
+    init.headers.set('content-type', 'application/x-www-form-urlencoded');
+    init.body = new URLSearchParams(send.form).toString();
+  }
+  for (const [name, value] of Object.entries(send.headers ?? {})) init.headers.set(name, value);
+  return init;
+}
+
+/**
+ * @param {{ request: string, send?: object, status?: number,
+ *   headers?: Record<string, string>, body?: string }} entry
+ */
 async function checkRequest(app, entry) {
   const [method, url] = entry.request.split(' ');
-  const res = await app.request(`http://localhost${url}`, { method, redirect: 'manual' });
+  const res = await app.request(`http://localhost${url}`, initFor(method, entry.send));
   const actual = { status: res.status, headers: res.headers, body: await res.text() };
+
+  // In the report on every entry, so a failure and a new case can both be
+  // read without running anything again.
+  const answered = { status: res.status, headers: Object.fromEntries(res.headers) };
 
   const bodyFile = entry.body ? path.join(caseDir, entry.body) : null;
   if (bodyFile && !fs.existsSync(bodyFile)) {
-    return { request: entry.request, missing: entry.body, actual: actual.body };
+    return { request: entry.request, answered, missing: entry.body, actual: actual.body };
   }
 
   const expected = { status: entry.status, headers: entry.headers, body: undefined };
   if (bodyFile) expected.body = fs.readFileSync(bodyFile, 'utf8');
-  return { request: entry.request, problems: differences(expected, actual) };
+  return { request: entry.request, answered, problems: differences(expected, actual) };
 }

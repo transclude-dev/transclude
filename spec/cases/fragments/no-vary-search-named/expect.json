@@ -1,0 +1,14 @@
+[
+  {
+    "request": "GET /",
+    "status": 200,
+    "headers": { "no-vary-search": "params=(\"utm_source\" \"utm_medium\" \"gclid\")" },
+    "body": "expected/index.html"
+  },
+  {
+    "request": "GET /?fragment=list",
+    "status": 200,
+    "headers": { "no-vary-search": "params=(\"utm_source\" \"utm_medium\" \"gclid\")" },
+    "body": "expected/list.html"
+  }
+]

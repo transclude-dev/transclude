@@ -1,0 +1,4 @@
+[
+  { "request": "POST /", "send": { "form": { "text": "Milk" } }, "status": 303, "headers": { "location": "http://localhost/" } },
+  { "request": "POST /?fragment=list", "send": { "form": { "text": "Eggs" } }, "status": 200, "body": "expected/list.html" }
+]

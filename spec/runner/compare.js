@@ -25,7 +25,18 @@ export function normalize(markup) {
   const isDocument = /^\s*<!doctype/i.test(markup);
   const tree = isDocument ? parse(markup) : parseFragment(markup);
   collapseWhitespace(tree);
-  return serialize(tree);
+  return withoutHashes(serialize(tree));
+}
+
+/**
+ * A built asset's content hash, replaced with `[hash]`. The hash changes with
+ * any edit to the file behind it, which is not a change in behavior. Which
+ * asset a page names, and that it names one at all, still counts.
+ *
+ * @param {string} markup
+ */
+function withoutHashes(markup) {
+  return markup.replace(/(\/assets\/[\w.-]+?)-[\w-]{8}\.(js|css)\b/g, '$1-[hash].$2');
 }
 
 /**

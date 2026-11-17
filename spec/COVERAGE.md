@@ -134,6 +134,48 @@ Complete.
 | A disabling `<fieldset>` sets the `disabled` custom state | Needs a browser, phase 5 | - |
 | `shadow` and `formAssociated` must be literals | `diagnostics/shadow-flag-not-literal` | reviewed |
 
+## /docs/includes
+
+Complete. Three entries are `todo`. The cases that read another site carry an
+`upstream.json`, so they run on Node only.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| `#pricing` copies a fragment of this page; the copy leaves the id behind | `includes/same-page` | unreviewed |
+| `/notes#notes` runs that route's loaders and not its layouts' markup | `includes/another-route` | unreviewed |
+| A copy from another route keeps its id | `includes/another-route` | unreviewed |
+| One route included twice runs its loaders once | `includes/route-twice-loads-once`, `todo`: the memo is per fragment | unreviewed |
+| Reading spreads: a page including a route that reads a cookie is personal | `diagnostics/include-reads-cookie` | unreviewed |
+| A remote include needs `proxy.allow` and renders the section | `includes/remote-section` | unreviewed |
+| On success the children are dropped | `includes/remote-section` | unreviewed |
+| A source that cannot be read renders the children | `includes/fallback-on-failure` | unreviewed |
+| With no children, a failing source stops the render | `diagnostics/include-source-down-no-fallback` | unreviewed |
+| A host nobody allowed throws, children or not | `diagnostics/include-host-not-allowed`, `todo`: it falls back | - |
+| A prerendered page reads its sources once, at build time | `includes/prerendered-reads-once` | unreviewed |
+| `#nope`, `#a` inside `#a`, and an interpolated `src` are compile errors | `diagnostics/include-names-no-fragment`, `include-includes-itself`, `include-src-interpolated` | unreviewed |
+| A loop round other routes is caught at render, naming the way round | `diagnostics/include-cycle` | unreviewed |
+| A chain more than ten deep is caught | `diagnostics/include-chain-too-deep` | unreviewed |
+| Licensing, credit and attribution | Advice to the author, not behavior | - |
+| No proxy route until a host is named | `includes/proxy-off-by-default` | unreviewed |
+| Extent: heading runs, `<dt>` runs, an element as itself, a bookmark one hop | `includes/extent` | unreviewed |
+| Ids from heading text; explicit ids win | `includes/generated-ids` | unreviewed |
+| A fragment is a node list, as in the source | `includes/extent` | unreviewed |
+| What the cleaning removes, and what it keeps | `includes/sanitize` | unreviewed |
+| `styles: 'strip'` drops `style` attributes | `includes/strip-styles` | unreviewed |
+| Relative URLs, hash-only `href`, `srcset`, `url()` and a form's `action` made absolute | `includes/urls-absolute` | unreviewed |
+| A custom element from the source arrives inert | `includes/sanitize` | unreviewed |
+| An unknown `proxy` key throws, naming every key | `diagnostics/proxy-unknown-key` | unreviewed |
+| Redirects followed one at a time, every hop checked; too many refused | `includes/redirects` | unreviewed |
+| Private ranges, the metadata endpoint and IPv4-in-IPv6 refused | `includes/private-addresses` | unreviewed |
+| `maxBytes` | `includes/max-bytes` | unreviewed |
+| `timeout`, `cache`, `cacheBytes` | Time and memory limits: phase 6, budgets | - |
+| Several fragments of one page cost one read | `includes/remote-section`, `todo`: two reads | unreviewed |
+| Past `maxAge`, revalidated with `ETag` | `includes/revalidate` | unreviewed |
+| On workerd there is no resolver, so only the allowlist holds | Phase 4, runtimes | - |
+| The resolver is asked twice, and a record can change between | Not observable at any boundary | - |
+| `/_transclude/proxy` answers a fragment, or the outline and what was removed | `includes/endpoint` | unreviewed |
+| The endpoint is same-origin, which the default policy requires | The security area | - |
+
 ## /docs/refusals
 
 Started.

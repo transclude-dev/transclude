@@ -63,8 +63,10 @@ function collapseWhitespace(node) {
  * Every difference between what a case expects and what came back. An empty
  * list is a pass.
  *
- * @param {{ status?: number, headers?: Record<string, string>, body?: string }} expected
- *   `body` is the expected markup, already read from its file
+ * @param {{ status?: number, headers?: Record<string, string>, body?: string,
+ *   exact?: boolean }} expected
+ *   `body` is the expected markup, already read from its file. `exact` compares
+ *   it byte for byte, for a body that is not HTML
  * @param {{ status: number, headers: Headers, body: string }} actual
  * @returns {string[]}
  */
@@ -80,7 +82,11 @@ export function differences(expected, actual) {
     if (got !== value) found.push(`header ${name.toLowerCase()}: expected ${JSON.stringify(value)}, got ${JSON.stringify(got)}`);
   }
 
-  if (expected.body !== undefined) {
+  if (expected.body !== undefined && expected.exact) {
+    if (expected.body !== actual.body) found.push(`body:\n${lineDiff(expected.body, actual.body)}`);
+  }
+
+  if (expected.body !== undefined && !expected.exact) {
     const want = normalize(expected.body);
     const got = normalize(actual.body);
     if (want !== got) found.push(`body:\n${lineDiff(byElement(want), byElement(got))}`);

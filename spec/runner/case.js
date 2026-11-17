@@ -133,7 +133,10 @@ async function checkRequest(app, entry) {
     return { request: entry.request, answered, missing: entry.body, actual: actual.body };
   }
 
-  const expected = { status: entry.status, headers: entry.headers, body: undefined };
+  const expected = { status: entry.status, headers: entry.headers, body: undefined, exact: false };
   if (bodyFile) expected.body = fs.readFileSync(bodyFile, 'utf8');
+  // Only HTML goes through parse5. A sitemap or a plain-text answer has no
+  // insignificant whitespace, and the HTML parser would read it loosely.
+  expected.exact = Boolean(bodyFile) && !bodyFile.endsWith('.html');
   return { request: entry.request, answered, problems: differences(expected, actual) };
 }

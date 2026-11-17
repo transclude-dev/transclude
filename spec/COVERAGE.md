@@ -101,38 +101,38 @@ Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| The file name is the tag, rendered into the page's own DOM | `elements/light-element` | unreviewed |
-| A tag needs a dash; a file without one stops the build | `diagnostics/element-name-needs-dash` | unreviewed |
-| The style block goes into `<head>` once; `:scope` is the element | `elements/light-element` | unreviewed |
-| `elementsDir` may name several directories, read as one set | `elements/several-dirs` | unreviewed |
-| The same tag in two directories stops the build, naming both | `diagnostics/element-in-two-dirs` | unreviewed |
+| The file name is the tag, rendered into the page's own DOM | `elements/light-element` | reviewed |
+| A tag needs a dash; a file without one stops the build | `diagnostics/element-name-needs-dash` | reviewed |
+| The style block goes into `<head>` once; `:scope` is the element | `elements/light-element` | reviewed |
+| `elementsDir` may name several directories, read as one set | `elements/several-dirs` | reviewed |
+| The same tag in two directories stops the build, naming both | `diagnostics/element-in-two-dirs` | reviewed |
 | The dev server watches every directory | The runner checks the build only | - |
-| `shadow = true` gives a declarative shadow root and a real `<slot>` | `elements/shadow-element` | unreviewed |
+| `shadow = true` gives a declarative shadow root and a real `<slot>` | `elements/shadow-element` | reviewed |
 | Page CSS reaches a light element; a shadow one only through inherited properties and `::part()` | Needs a browser, phase 5 | - |
-| A light element ships JavaScript only with behavior; a shadow one always | `elements/javascript-shipped` | unreviewed |
+| A light element ships JavaScript only with behavior; a shadow one always | `elements/javascript-shipped` | reviewed |
 | Re-render on an attribute change: light in place, shadow including structure | Needs a browser, phase 5 | - |
-| A light element's slots are filled on the server, named and fallback included, and no `<slot>` is sent | `elements/light-slots` | unreviewed |
+| A light element's slots are filled on the server, named and fallback included, and no `<slot>` is sent | `elements/light-slots` | reviewed |
 | `slotchange` and `assignedNodes()` work only in a shadow element | Needs a browser, phase 5 | - |
-| An `if` or `each` over a changing value in a light element is refused, naming `shadow` | `diagnostics/light-element-structural-directive` | unreviewed |
-| A light element of plain markup ships nothing | `elements/javascript-shipped` | unreviewed |
-| In a fragment, a light element arrives whole and a shadow one bare | `elements/in-a-fragment` | unreviewed |
+| An `if` or `each` over a changing value in a light element is refused, naming `shadow` | `diagnostics/light-element-structural-directive` | reviewed |
+| A light element of plain markup ships nothing | `elements/javascript-shipped` | reviewed |
+| In a fragment, a light element arrives whole and a shadow one bare | `elements/in-a-fragment` | reviewed |
 | A shadow element in a fragment paints on connect | Needs a browser, phase 5 | - |
-| The server writes `referenceTarget` on the declarative shadow root | `elements/reference-target` | unreviewed |
+| The server writes `referenceTarget` on the declarative shadow root | `elements/reference-target` | reviewed |
 | A label, `aria-labelledby` and the like reach the target | Needs a browser, phase 5 | - |
-| The target id must exist, be written out, sit outside an `each`, and the element must be shadow | `diagnostics/reference-target-missing-id`, `-bound-id`, `-in-each`, `-on-light` | unreviewed |
+| The target id must exist, be written out, sit outside an `each`, and the element must be shadow | `diagnostics/reference-target-missing-id`, `-bound-id`, `-in-each`, `-on-light` | reviewed |
 | Chrome and Edge follow the target, Safari and Firefox do not | Browser support, not the framework's | - |
 | `connected` gets a `signal` that aborts on disconnect | Needs a browser, phase 5 | - |
 | A `document` listener with no `signal` is a build warning | Build output, which the runner does not read. The second claim to need it | - |
 | `prototype` members; `connected`, `disconnected`, `updated`; cleanup order | Needs a browser, phase 5 | - |
 | State: each element its own copy, a property per name, a re-render on set, `updateComplete` | Needs a browser, phase 5 | - |
-| A name in both `properties` and `state` is a compile error | `diagnostics/prop-and-state-same-name` | unreviewed |
-| State renders on the server with its default, and nothing is reflected | `elements/state-default` | unreviewed |
+| A name in both `properties` and `state` is a compile error | `diagnostics/prop-and-state-same-name` | reviewed |
+| State renders on the server with its default, and nothing is reflected | `elements/state-default` | reviewed |
 | A boolean state is a custom state CSS can select | Needs a browser, phase 5 | - |
-| Objects and arrays are written as JSON in the attribute | `elements/shadow-element`, and `routing/attribute-values` | unreviewed |
-| `formAssociated` needs no shadow root | `elements/form-associated` | unreviewed |
+| Objects and arrays are written as JSON in the attribute | `elements/shadow-element`, and `routing/attribute-values` | reviewed |
+| `formAssociated` needs no shadow root | `elements/form-associated` | reviewed |
 | Its value is submitted under its `name`; `setValidity`, `:invalid`, a blocked submit | Needs a browser, phase 5 | - |
 | A disabling `<fieldset>` sets the `disabled` custom state | Needs a browser, phase 5 | - |
-| `shadow` and `formAssociated` must be literals | `diagnostics/shadow-flag-not-literal` | unreviewed |
+| `shadow` and `formAssociated` must be literals | `diagnostics/shadow-flag-not-literal` | reviewed |
 
 ## /docs/refusals
 

@@ -4,6 +4,9 @@ Every behavior claim on a docs page, and the case that checks it. A claim with
 no case says why. Sections follow `www/app/routes/docs/`, and an area is
 complete when every claim on its page has a row.
 
+A `todo` case records a gap the docs and the code disagree on. The run lets
+it fail, and fails it once it passes, so the mark comes off with the fix.
+
 The last column is the snapshot. `unreviewed` means the expected files record
 what the code answered when the case was written, and Joe has not yet read
 them. `reviewed` means he has. A case with no expected file of its own has
@@ -91,6 +94,45 @@ Complete.
 | Neither tag is written twice; a `class` on two levels is the innermost | `layouts/one-html-one-body` | reviewed |
 | A `<title>` anywhere in the chain becomes the document's | `layouts/title-in-chain` | reviewed |
 | A layout setting `ctx.response.status` sets the status sent | `layouts/layout-status` | reviewed |
+
+## /docs/elements
+
+Complete. One case is `todo`.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| The file name is the tag, rendered into the page's own DOM | `elements/light-element` | unreviewed |
+| A tag needs a dash | `diagnostics/element-name-needs-dash`, `todo`: the build ignores a file with no dash | - |
+| The style block goes into `<head>` once; `:scope` is the element | `elements/light-element` | unreviewed |
+| `elementsDir` may name several directories, read as one set | `elements/several-dirs` | unreviewed |
+| The same tag in two directories stops the build, naming both | `diagnostics/element-in-two-dirs` | unreviewed |
+| The dev server watches every directory | The runner checks the build only | - |
+| `shadow = true` gives a declarative shadow root and a real `<slot>` | `elements/shadow-element` | unreviewed |
+| Page CSS reaches a light element; a shadow one only through inherited properties and `::part()` | Needs a browser, phase 5 | - |
+| A light element ships JavaScript only with behavior; a shadow one always | `elements/javascript-shipped` | unreviewed |
+| Re-render on an attribute change: light in place, shadow including structure | Needs a browser, phase 5 | - |
+| A light element's slots are filled on the server, named and fallback included, and no `<slot>` is sent | `elements/light-slots` | unreviewed |
+| `slotchange` and `assignedNodes()` work only in a shadow element | Needs a browser, phase 5 | - |
+| An `if` or `each` over a changing value in a light element is refused, naming `shadow` | `diagnostics/light-element-structural-directive` | unreviewed |
+| A light element of plain markup ships nothing | `elements/javascript-shipped` | unreviewed |
+| In a fragment, a light element arrives whole and a shadow one bare | `elements/in-a-fragment` | unreviewed |
+| A shadow element in a fragment paints on connect | Needs a browser, phase 5 | - |
+| The server writes `referenceTarget` on the declarative shadow root | `elements/reference-target` | unreviewed |
+| A label, `aria-labelledby` and the like reach the target | Needs a browser, phase 5 | - |
+| The target id must exist, be written out, sit outside an `each`, and the element must be shadow | `diagnostics/reference-target-missing-id`, `-bound-id`, `-in-each`, `-on-light` | unreviewed |
+| Chrome and Edge follow the target, Safari and Firefox do not | Browser support, not the framework's | - |
+| `connected` gets a `signal` that aborts on disconnect | Needs a browser, phase 5 | - |
+| A `document` listener with no `signal` is a build warning | Build output, which the runner does not read. The second claim to need it | - |
+| `prototype` members; `connected`, `disconnected`, `updated`; cleanup order | Needs a browser, phase 5 | - |
+| State: each element its own copy, a property per name, a re-render on set, `updateComplete` | Needs a browser, phase 5 | - |
+| A name in both `properties` and `state` is a compile error | `diagnostics/prop-and-state-same-name` | unreviewed |
+| State renders on the server with its default, and nothing is reflected | `elements/state-default` | unreviewed |
+| A boolean state is a custom state CSS can select | Needs a browser, phase 5 | - |
+| Objects and arrays are written as JSON in the attribute | `elements/shadow-element`, and `routing/attribute-values` | unreviewed |
+| `formAssociated` needs no shadow root | `elements/form-associated` | unreviewed |
+| Its value is submitted under its `name`; `setValidity`, `:invalid`, a blocked submit | Needs a browser, phase 5 | - |
+| A disabling `<fieldset>` sets the `disabled` custom state | Needs a browser, phase 5 | - |
+| `shadow` and `formAssociated` must be literals | `diagnostics/shadow-flag-not-literal` | unreviewed |
 
 ## /docs/refusals
 

@@ -1,7 +1,1 @@
-[
-  {
-    "build": "fails",
-    "diagnostic": "expected/diagnostic.txt",
-    "todo": "the build ignores app/elements/note.html, and <note> is sent as written"
-  }
-]
+[{ "build": "fails", "diagnostic": "expected/diagnostic.txt" }]

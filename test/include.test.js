@@ -226,7 +226,7 @@ test('a src that is none of the three says all three', () => {
 
 test('the tag is read before the component table, so nothing can shadow it', () => {
   // Doubly covered now the name has no dash: `elements/transclude.html` is
-  // dropped by the rule that element names need one. This guards the order
+  // refused by the rule that element names need one. This guards the order
   // anyway, because that is what would break first.
   const source = '<p id="a" fragment>x</p><transclude src="#a"></transclude>';
   const { code } = compilePage(source, 'index.html', {

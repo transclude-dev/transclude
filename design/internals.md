@@ -1728,13 +1728,17 @@ against.
 - **`<transclude>` has no dash, and that is only safe because it never reaches
   the browser.** The compiler consumes it: every form is resolved server-side and
   the tag leaves no trace, so it does not need to be a valid custom element name.
-  Two things follow. An app cannot define one, because `elements/` drops any file
-  whose tag has no dash. And an undashed tag reads like it might be void, so
+  Two things follow. An app cannot define one, because the build refuses any file
+  in `elements/` whose tag has no dash. And an undashed tag reads like it might be void, so
   `<transclude src="#a" />` is the mistake people will make: HTML has no
   self-closing tag here, `/>` is read as `>`, and since the children are the
   fallback the rest of the page becomes them. Silent, and the include still
   works. `sourceCodeLocation.endTag` is absent exactly in that case, which is
   what the guard reads.
+- **A file in `elements/` with no dash in its name stops the build.** It used to
+  be dropped with a warning, which scrolled past with the rest of the build
+  output, and its tag reached the page as written: `<note>` in the page, with
+  nothing behind it, and the build green. `spec: diagnostics/element-name-needs-dash`.
 - **`transclude` is read before the component table.** An app defining
   `elements/transclude.html` would otherwise shadow the include, and a
   page using it would compile to something else entirely with nothing said.

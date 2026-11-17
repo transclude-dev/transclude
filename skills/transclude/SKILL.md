@@ -272,7 +272,7 @@ already carry.
 declarative shadow roots, so a child element becomes a dead `<template>`.
 
 **An element file name needs a dash.** `note-card.html` is a valid custom
-element name. `card.html` is not, and the file is dropped.
+element name. `card.html` is not, and the build stops and names the file.
 
 **`<transclude>` has no self-closing form.** `<transclude src="#a" />` is read
 as an open tag and the rest of the page becomes its fallback content.

@@ -105,11 +105,15 @@ export default function transclude({
     endpoints = new Map(scanned.endpoints.map((route) => [route.id, route]));
     // A dash keeps these valid custom element names. That is what makes a light element
     // an undefined custom element rather than an unknown one, and what lets its
-    // styles be scoped to its own tag with no class or hash.
-    for (const tag of [...components.keys()]) {
+    // styles be scoped to its own tag with no class or hash. Refused rather than
+    // skipped: a skipped file leaves its tag in the page as written.
+    for (const [tag, file] of components) {
       if (!tag.includes('-')) {
-        components.delete(tag);
-        console.warn(`[transclude] ignoring ${tag}.html. Element names need a dash`);
+        throw new Error(
+          `[transclude] ${file} is not an element: a file in an element directory is ` +
+            `named for its tag, and a tag needs a dash. Rename it, as ${tag}-card.html ` +
+            `or site-${tag}.html, or move it out of the directory.`,
+        );
       }
     }
 

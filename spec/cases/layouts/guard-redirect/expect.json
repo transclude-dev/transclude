@@ -1,0 +1,6 @@
+[
+  { "request": "GET /account", "status": 303, "headers": { "location": "http://localhost/login" } },
+  { "request": "GET /account", "send": { "headers": { "cookie": "session=ada" } }, "status": 303, "headers": { "location": "http://localhost/login" } },
+  { "request": "POST /login", "send": { "form": {} }, "status": 303, "headers": { "location": "http://localhost/account" } },
+  { "request": "GET /account", "status": 200, "body": "expected/account.html" }
+]

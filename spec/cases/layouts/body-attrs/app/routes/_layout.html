@@ -1,0 +1,6 @@
+<script server>
+  export default async ({ route }) => ({ section: route.path.split('/')[1] || 'home' });
+</script>
+
+<body data-section="${section}" class="site">
+<slot></slot>

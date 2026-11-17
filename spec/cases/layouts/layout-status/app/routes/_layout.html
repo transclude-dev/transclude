@@ -1,0 +1,10 @@
+<script server>
+  export default async ({ url, response }) => {
+    const closed = new URL(url).searchParams.has('closed');
+    if (closed) response.status = 503;
+    return { closed };
+  };
+</script>
+
+<p if="closed">Closed for maintenance.</p>
+<slot></slot>

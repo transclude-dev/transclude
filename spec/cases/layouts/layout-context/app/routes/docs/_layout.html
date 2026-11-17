@@ -1,0 +1,6 @@
+<script server>
+  export default async ({ layout }) => ({ section: 'Docs', theme: 'dark', seen: layout.site });
+</script>
+
+<p>${section} in ${seen}</p>
+<slot></slot>

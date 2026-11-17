@@ -1,0 +1,5 @@
+[
+  { "request": "POST /account", "send": { "form": { "text": "Signed out" } }, "status": 303, "headers": { "location": "http://localhost/login" } },
+  { "request": "POST /login", "send": { "form": {} }, "status": 303 },
+  { "request": "POST /account", "send": { "form": { "text": "Milk" } }, "status": 200, "body": "expected/after-post.html" }
+]

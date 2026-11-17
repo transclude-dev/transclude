@@ -1,0 +1,9 @@
+<script server>
+  export default async ({ cookies }) => ({
+    theme: cookies.get('theme') ?? 'auto',
+    label: 'Notes & "ideas"',
+  });
+</script>
+
+<html data-theme="${theme}" dir="rtl" data-label="${label}" data-hidden="${false}" data-none="${null}" itemscope lang="ar">
+<slot></slot>

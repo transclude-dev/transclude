@@ -1,0 +1,10 @@
+<script server>
+  export default async ({ cookies, url }) => {
+    const session = await cookies.signed.get('session');
+    if (!session) return Response.redirect(new URL('/login', url), 303);
+    return { user: session };
+  };
+</script>
+
+<p>Signed in as ${user}</p>
+<slot></slot>

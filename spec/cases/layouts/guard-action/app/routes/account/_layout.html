@@ -1,0 +1,13 @@
+<script server>
+  import { store } from '../../data/store.js';
+
+  export default async ({ cookies, url }) => {
+    store.guardRuns++;
+    const session = await cookies.signed.get('session');
+    if (!session) return Response.redirect(new URL('/login', url), 303);
+    return { user: session, guardRuns: store.guardRuns };
+  };
+</script>
+
+<p>Signed in as ${user}. The guard has run ${guardRuns} times.</p>
+<slot></slot>

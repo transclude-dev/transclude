@@ -1,0 +1,7 @@
+<script server>
+  export default async () => ({ notes: [{ text: 'Milk', done: true }] });
+</script>
+
+<ul>
+  <li if="note.done" each="note of notes">${note.text}</li>
+</ul>

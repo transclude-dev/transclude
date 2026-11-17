@@ -1,0 +1,10 @@
+<script server>
+  export default async () => ({
+    name: '<script>alert("hi")<\/script> & more',
+    body: '<em>trusted</em>',
+  });
+</script>
+
+<p>${name}</p>
+
+<p>${html(body)}</p>

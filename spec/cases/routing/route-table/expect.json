@@ -1,0 +1,7 @@
+[
+  { "request": "GET /about", "status": 200, "body": "expected/about.html" },
+  { "request": "GET /people", "status": 200, "body": "expected/people.html" },
+  { "request": "GET /people/ada", "status": 200, "body": "expected/ada.html" },
+  { "request": "GET /docs/guides/forms", "status": 200, "body": "expected/docs.html" },
+  { "request": "GET /api/ping", "status": 200, "body": "expected/ping.txt" }
+]

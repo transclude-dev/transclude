@@ -1,0 +1,7 @@
+[plugin transclude] app/routes/index.html:6:1
+CompileError: <meta> is hoisted into <head> and <p> is not, so this chain would be split in two. Give each of them its own condition. (line 6)
+  4 | 
+  5 | <meta if="person" name="author" content="${person.name}" />
+> 6 | <p else>Nobody here.</p>
+    | ^
+  7 |

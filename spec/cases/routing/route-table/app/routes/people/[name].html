@@ -1,0 +1,12 @@
+<script server>
+  import { people } from '../../data/people.js';
+
+  export const prerender = false;
+
+  export default async ({ params, url, route }) => {
+    const person = people.find((p) => p.slug === params.name);
+    return { person };
+  };
+</script>
+
+<h1>${person.name}</h1>

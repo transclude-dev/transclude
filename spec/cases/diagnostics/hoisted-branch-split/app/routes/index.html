@@ -1,0 +1,6 @@
+<script server>
+  export default async () => ({ person: { name: 'Ada' } });
+</script>
+
+<meta if="person" name="author" content="${person.name}" />
+<p else>Nobody here.</p>

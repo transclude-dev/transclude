@@ -1,0 +1,4 @@
+[
+  { "request": "GET /?empty", "status": 200, "body": "expected/empty.html" },
+  { "request": "GET /", "status": 200, "body": "expected/one.html" }
+]

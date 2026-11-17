@@ -1,0 +1,7 @@
+[plugin transclude] app/routes/index.html:5:1
+CompileError: bad expression "notes.some((n) => n === 'Milk')": Expected comma at character 15. A template expression reads data and calls functions. There is no assignment, no arrow function, no object literal and no `await`. Work like that belongs in `<script server>`, which passes its result in (line 5)
+  3 | </script>
+  4 | 
+> 5 | <p if="notes.some((n) => n === 'Milk')">There is milk.</p>
+    | ^
+  6 |

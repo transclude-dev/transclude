@@ -1,0 +1,5 @@
+<script server>
+  export default async () => ({ notes: ['Milk'] });
+</script>
+
+<p if="notes.some((n) => n === 'Milk')">There is milk.</p>

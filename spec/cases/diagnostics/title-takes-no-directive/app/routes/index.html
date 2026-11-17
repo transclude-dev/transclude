@@ -1,0 +1,5 @@
+<script server>
+  export default async () => ({ person: { name: 'Ada' } });
+</script>
+
+<title if="person">${person.name}</title>

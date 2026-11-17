@@ -1,0 +1,16 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ url }) => ({
+    tags: new URL(url).searchParams.has('empty') ? [] : ['notes'],
+  });
+</script>
+
+<ol>
+  <li each="tag of tags">${tag}</li>
+</ol>
+
+<p if="!tags.length">No tags yet.</p>
+<ul else>
+  <li each="tag of tags">${tag}</li>
+</ul>

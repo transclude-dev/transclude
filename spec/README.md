@@ -62,6 +62,8 @@ case with no config checks the defaults.
   between elements does not count, and whether a space is there does: a
   browser shows `<b>a</b> <i>b</i>` and `<b>a</b><i>b</i>` differently.
   Whitespace inside `pre`, `textarea`, `script` and `style` counts exactly.
+- A body file that is not `.html` compares exactly, byte for byte: a sitemap,
+  a plain-text answer, JSON.
 - A built asset's content hash counts as `[hash]`: `/assets/index-Cyt6b9Zw.js`
   matches `/assets/index-AAAAAAAA.js`. The hash changes with any edit to the
   file behind it. Which asset a page names still counts.

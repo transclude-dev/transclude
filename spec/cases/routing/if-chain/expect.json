@@ -1,0 +1,5 @@
+[
+  { "request": "GET /?q=ada", "status": 200, "body": "expected/query.html" },
+  { "request": "GET /", "status": 200, "body": "expected/everyone.html" },
+  { "request": "GET /?empty", "status": 200, "body": "expected/nobody.html" }
+]

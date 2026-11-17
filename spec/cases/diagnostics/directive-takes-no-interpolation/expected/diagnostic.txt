@@ -1,0 +1,8 @@
+[plugin transclude] app/routes/index.html:6:3
+CompileError: each="${notes}" is malformed. Expected each="item of list" or each="item, index of list" (line 6)
+  4 | 
+  5 | <ul>
+> 6 |   <li each="${notes}">Milk</li>
+    |   ^
+  7 | </ul>
+  8 |

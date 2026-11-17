@@ -1,0 +1,7 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ params }) => ({ path: params.path });
+</script>
+
+<p>${path}</p>

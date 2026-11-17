@@ -1,0 +1,5 @@
+<script server>
+  export default async ({ request }) => ({ hasRequest: request !== null });
+</script>
+
+<p>${hasRequest ? 'a request' : 'no request'}</p>

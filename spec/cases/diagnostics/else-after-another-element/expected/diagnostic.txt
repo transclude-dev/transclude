@@ -1,0 +1,7 @@
+[plugin transclude] app/routes/index.html:7:1
+CompileError: "else" on <p> has no "if" before it (line 7)
+  5 | <p if="query">Searching for ${query}</p>
+  6 | <hr />
+> 7 | <p else>Nobody here yet.</p>
+    | ^
+  8 |

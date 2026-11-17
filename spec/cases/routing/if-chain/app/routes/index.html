@@ -1,0 +1,15 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ url }) => {
+    const params = new URL(url).searchParams;
+    const people = params.has('empty') ? [] : ['Ada', 'Grace'];
+    return { query: params.get('q') ?? '', people };
+  };
+</script>
+
+<p if="query">Searching for ${query}</p>
+<p else-if="people.length">Everyone.</p>
+
+<!-- a comment between neighbors keeps the chain -->
+<p else>Nobody here yet.</p>

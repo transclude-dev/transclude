@@ -488,7 +488,7 @@ export async function resolveIncludes(includes, ctx, options = {}) {
       }
       if (chain.length >= INCLUDE_DEPTH) {
         throw new Error(
-          `[transclude] <transclude src="${key}"> is ${chain.length} includes deep, ` +
+          `[transclude] <transclude src="${key}"> is ${chain.length + 1} includes deep, ` +
             `past the limit of ${INCLUDE_DEPTH}.`,
         );
       }

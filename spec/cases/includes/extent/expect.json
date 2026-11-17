@@ -1,0 +1,47 @@
+[
+  {
+    "request": "GET /_transclude/proxy?url=https://docs.example/doc&id=setup",
+    "status": 200,
+    "body": "expected/setup.html"
+  },
+  {
+    "request": "GET /_transclude/proxy?url=https://docs.example/doc&id=node",
+    "status": 200,
+    "body": "expected/node.html"
+  },
+  {
+    "request": "GET /_transclude/proxy?url=https://docs.example/doc&id=deno",
+    "status": 200,
+    "body": "expected/deno.html"
+  },
+  {
+    "request": "GET /_transclude/proxy?url=https://docs.example/doc&id=inner",
+    "status": 200,
+    "body": "expected/inner.html"
+  },
+  {
+    "request": "GET /_transclude/proxy?url=https://docs.example/doc&id=term",
+    "status": 200,
+    "body": "expected/term.html"
+  },
+  {
+    "request": "GET /_transclude/proxy?url=https://docs.example/doc&id=figure",
+    "status": 200,
+    "body": "expected/figure.html"
+  },
+  {
+    "request": "GET /_transclude/proxy?url=https://docs.example/doc&id=install",
+    "status": 200,
+    "body": "expected/install.html"
+  },
+  {
+    "request": "GET /_transclude/proxy?url=https://docs.example/doc&id=filled",
+    "status": 200,
+    "body": "expected/filled.html"
+  },
+  {
+    "request": "GET /_transclude/proxy?url=https://docs.example/doc&id=picture",
+    "status": 200,
+    "body": "expected/picture.html"
+  }
+]

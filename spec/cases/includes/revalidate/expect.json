@@ -1,0 +1,4 @@
+[
+  { "request": "GET /", "status": 200, "body": "expected/index.html", "upstream": { "https://docs.example/guide": 1, "304 https://docs.example/guide": 0 } },
+  { "request": "GET /", "status": 200, "body": "expected/index.html", "upstream": { "https://docs.example/guide": 2, "304 https://docs.example/guide": 1 } }
+]

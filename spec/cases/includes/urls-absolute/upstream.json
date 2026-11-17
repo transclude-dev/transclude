@@ -1,0 +1,1 @@
+{ "documents": { "https://docs.example/guide/page": { "status": 200, "body": "upstream/page.html" } } }

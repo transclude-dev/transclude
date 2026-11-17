@@ -1,0 +1,7 @@
+[
+  { "request": "GET /", "status": 200, "body": "expected/index.html" },
+  {
+    "upstream": { "https://docs.example/guide": 1 },
+    "todo": "two includes of one document start together and read it twice; nothing holds the read in flight"
+  }
+]

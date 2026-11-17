@@ -1,0 +1,5 @@
+[
+  { "request": "GET /_transclude/proxy?url=https://docs.example/moved&id=intro", "status": 200, "body": "expected/moved.html" },
+  { "request": "GET /_transclude/proxy?url=https://docs.example/away&id=intro", "body": "expected/away.txt", "upstream": { "https://elsewhere.example/guide": 0 } },
+  { "request": "GET /_transclude/proxy?url=https://docs.example/r1&id=intro", "body": "expected/too-many.txt" }
+]

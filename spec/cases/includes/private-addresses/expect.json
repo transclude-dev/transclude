@@ -1,0 +1,6 @@
+[
+  { "request": "GET /_transclude/proxy?url=https://inside.example/guide&id=intro", "body": "expected/inside.txt" },
+  { "request": "GET /_transclude/proxy?url=https://metadata.example/guide&id=intro", "body": "expected/metadata.txt" },
+  { "request": "GET /_transclude/proxy?url=https://mapped.example/guide&id=intro", "body": "expected/mapped.txt",
+    "upstream": { "https://inside.example/guide": 0, "https://metadata.example/guide": 0, "https://mapped.example/guide": 0 } }
+]

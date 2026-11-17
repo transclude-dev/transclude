@@ -1,0 +1,5 @@
+{
+  "documents": {
+    "https://docs.example/guide": { "status": 200, "headers": { "etag": "\"v1\"" }, "body": "upstream/guide.html" }
+  }
+}

@@ -1,0 +1,1 @@
+[{ "request": "GET /_transclude/proxy?url=https://docs.example/guide/page&id=links", "status": 200, "body": "expected/links.html" }]

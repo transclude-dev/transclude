@@ -1,0 +1,1 @@
+mapped.example resolves to an address that is private, through an IPv4-mapped address

@@ -1,0 +1,1 @@
+metadata.example resolves to an address that is link-local, and the metadata endpoint

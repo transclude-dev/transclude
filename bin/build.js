@@ -673,6 +673,9 @@ linkTree(path.join(dist, 'client', 'assets'), path.join(edgeOut, 'assets'));
 // The author's own `_headers`, if the public directory has one, goes after
 // the framework's. The link is removed first: writing through it would change
 // `dist/public/_headers` as well.
+// Made here because `linkTree` makes it only when it has a file to link, and an
+// app with no public files and no client JavaScript gives it none.
+fs.mkdirSync(edgeOut, { recursive: true });
 const headersFile = path.join(edgeOut, '_headers');
 const ownHeaders = fs.existsSync(headersFile) ? fs.readFileSync(headersFile, 'utf8') : '';
 fs.rmSync(headersFile, { force: true });

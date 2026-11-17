@@ -7,9 +7,12 @@
 <script server>
   import { people } from '../data/people.js';
 
+  export const prerender = false;
+
   export default async ({ url }) => {
     const q = new URL(url).searchParams.get('q') ?? '';
-    return { q, matches: people.filter((p) => p.name.includes(q)) };
+    const matches = people.filter((p) => p.name.toLowerCase().includes(q.toLowerCase()));
+    return { q, matches };
   };
 <\/script>
 
@@ -107,6 +110,13 @@ export default (app) => {
     The <code>id</code> is the name. The URL asks for <code>matches</code>, and
     a swap targets <code>#matches</code>. The page and the fragment come from
     one template, so the two always agree.
+  </p>
+
+  <p>
+    The loader reads the URL, so the page has
+    <code>prerender = false</code>. Without it, the build writes the page to
+    one file, and every <code>?q=</code> gets that file. See
+    <a href="/docs/production">production</a>.
   </p>
 
   <h2>Ask for one</h2>

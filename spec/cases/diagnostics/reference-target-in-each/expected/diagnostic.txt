@@ -1,0 +1,8 @@
+[plugin transclude] app/elements/name-field.html:8:3
+CompileError: <name-field> forwards references to `field`, and that id is inside an `each`, so every item repeats it. A reference target has to be one element. (line 8)
+   6 | 
+   7 | <div each="name of names">
+>  8 |   <input id="field" type="text" value="${name}" />
+     |   ^
+   9 | </div>
+  10 |

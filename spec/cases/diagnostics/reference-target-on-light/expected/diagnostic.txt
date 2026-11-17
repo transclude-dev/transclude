@@ -1,0 +1,7 @@
+[plugin transclude] app/elements/name-field.html:5:1
+CompileError: <name-field> is a light element, so `referenceTarget` has no shadow root to reach into. A <label for> already finds an id inside it: put `id="field"` on the element and point the label at that, or add `export const shadow = true`. (line 5)
+  3 | </script>
+  4 | 
+> 5 | <input id="field" type="text" />
+    | ^
+  6 |

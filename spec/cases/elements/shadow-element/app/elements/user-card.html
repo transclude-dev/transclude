@@ -1,0 +1,18 @@
+<script element>
+  export const properties = {
+    name: '',
+    tags: [],
+  };
+
+  export const shadow = true;
+</script>
+
+<style>
+  h3 { margin: 0; }
+</style>
+
+<h3>${name}</h3>
+<ul>
+  <li each="tag of tags">${tag}</li>
+</ul>
+<slot></slot>

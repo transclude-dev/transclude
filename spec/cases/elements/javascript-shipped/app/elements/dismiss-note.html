@@ -1,0 +1,10 @@
+<script element>
+  export const prototype = {
+    dismiss() {
+      this.hidden = true;
+      this.dispatchEvent(new CustomEvent('dismiss', { bubbles: true }));
+    },
+  };
+</script>
+
+<p><slot></slot></p>

@@ -1,0 +1,1 @@
+Error: [transclude] <site-badge> is in two element directories: app/elements/site-badge.html and shared/elements/site-badge.html. A tag is one file. Rename or remove one of them.

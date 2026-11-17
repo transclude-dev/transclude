@@ -1,0 +1,2 @@
+[plugin transclude]
+ScriptError: user-card.html <script element>: `shadow` must be `true` or `false`. It decides something about the tag, the same for every element of it, so it cannot be decided at run time (line 3)

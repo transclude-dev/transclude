@@ -7,6 +7,8 @@
 <script server>
   import { notes } from '../data/notes.js';
 
+  export const prerender = false;
+
   export default async ({ action }) => ({
     notes: notes.all(),
     error: action?.error ?? null,
@@ -119,8 +121,8 @@ export const DELETE = async (ctx) => { … };`,
 
   <doc-note label="Build a Response in a function, never share one" tone="warn">
     A body can be read once. A module-level
-    <code>const badRequest = new Response(…)</code> works for the first request
-    and comes back empty after that.
+    <code>const badRequest = new Response(…)</code> works for the first request.
+    Every request after it answers 500, because its body is already read.
   </doc-note>
 
   <h2>CSRF</h2>

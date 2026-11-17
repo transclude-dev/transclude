@@ -97,12 +97,12 @@ Complete.
 
 ## /docs/elements
 
-Complete. One case is `todo`.
+Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
 | The file name is the tag, rendered into the page's own DOM | `elements/light-element` | unreviewed |
-| A tag needs a dash | `diagnostics/element-name-needs-dash`, `todo`: the build ignores a file with no dash | - |
+| A tag needs a dash; a file without one stops the build | `diagnostics/element-name-needs-dash` | unreviewed |
 | The style block goes into `<head>` once; `:scope` is the element | `elements/light-element` | unreviewed |
 | `elementsDir` may name several directories, read as one set | `elements/several-dirs` | unreviewed |
 | The same tag in two directories stops the build, naming both | `diagnostics/element-in-two-dirs` | unreviewed |

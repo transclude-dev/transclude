@@ -1,0 +1,7 @@
+[plugin transclude] app/elements/name-field.html:6:1
+CompileError: <name-field> forwards references to `field`, and no element in its template has `id="field"`. Write the id out rather than binding it: the target is the same for every element of the tag. (line 6)
+  4 | </script>
+  5 | 
+> 6 | <input id="entry" type="text" />
+    | ^
+  7 |

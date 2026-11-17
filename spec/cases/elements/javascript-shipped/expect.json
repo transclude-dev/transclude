@@ -1,0 +1,5 @@
+[
+  { "request": "GET /plain", "status": 200, "body": "expected/plain.html" },
+  { "request": "GET /behavior", "status": 200, "body": "expected/behavior.html" },
+  { "request": "GET /shadow", "status": 200, "body": "expected/shadow.html" }
+]

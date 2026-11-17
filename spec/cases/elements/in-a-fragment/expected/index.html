@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+
+
+
+<style data-transclude="site-note">
+@scope (site-note) {
+  :scope {
+      display: block;
+      border-left: 3px solid var(--rule);
+      padding: 0.5rem 0.9rem;
+    }
+
+    :scope[tone='warn'] {
+      border-color: #b4232c;
+    }
+}
+</style>
+</head>
+<body>
+<section id="people">
+  <site-note tone="warn"><p>Light, whole in a fragment.</p></site-note>
+  <user-card name="Ada Lovelace" tags="[&quot;math&quot;]"><template shadowrootmode="open"><style>h3 { margin: 0; }</style><h3>Ada Lovelace</h3>
+<ul>
+  <!--[--><li>math</li><!--]-->
+</ul>
+<slot></slot></template></user-card>
+</section>
+<script type="module" src="/assets/index-Cc5o8Hqk.js"></script>
+</body>
+</html>

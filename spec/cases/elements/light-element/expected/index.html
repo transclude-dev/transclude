@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+
+
+
+<style data-transclude="site-note">
+@scope (site-note) {
+  :scope {
+      display: block;
+      border-left: 3px solid var(--rule);
+      padding: 0.5rem 0.9rem;
+    }
+
+    :scope[tone='warn'] {
+      border-color: #b4232c;
+    }
+}
+</style>
+</head>
+<body>
+<site-note tone="warn"><p>Rendered into the page's own DOM.</p></site-note>
+<site-note><p>A second one.</p></site-note>
+<site-note><p>Nothing to say.</p></site-note>
+
+<note-list><section>
+  <site-note tone="warn"><p>Inside another element.</p></site-note>
+  
+  <site-note><p>And one passed in.</p></site-note>
+
+</section></note-list>
+
+</body>
+</html>

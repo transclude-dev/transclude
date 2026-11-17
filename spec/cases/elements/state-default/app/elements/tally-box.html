@@ -1,0 +1,21 @@
+<script element>
+  export const properties = { label: 'tally' };
+  export const state = { n: 0, hot: false };
+  export const prototype = {
+    bump(by = 1) {
+      this.n += by;
+    },
+    connected({ signal }) {
+      this.addEventListener('click', () => this.bump(), { signal });
+    },
+  };
+</script>
+
+<style>
+  :scope:state(hot) output {
+    color: #b4232c;
+  }
+</style>
+
+<output>${n}</output>
+<span>${label}</span>

@@ -1,0 +1,8 @@
+[plugin transclude] app/elements/status-line.html:8:1
+CompileError: <status-line> re-renders `busy` by rebuilding structure, which a light element cannot do: it does not own its own children. Add `export const shadow = true`, or move the `if` or `each` to the page. (line 8)
+   6 | </script>
+   7 | 
+>  8 | <p if="busy">Saving…</p>
+     | ^
+   9 | <p else>Saved.</p>
+  10 |

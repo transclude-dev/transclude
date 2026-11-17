@@ -1,0 +1,9 @@
+<script element>
+  export const properties = { names: ['first'] };
+  export const shadow = true;
+  export const referenceTarget = 'field';
+</script>
+
+<div each="name of names">
+  <input id="field" type="text" value="${name}" />
+</div>

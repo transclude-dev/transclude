@@ -169,7 +169,7 @@ Complete. Two entries are `todo`. The cases that read another site carry an
 | Private ranges, the metadata endpoint and IPv4-in-IPv6 refused | `includes/private-addresses` | reviewed |
 | `maxBytes` | `includes/max-bytes` | reviewed |
 | `timeout`, `cache`, `cacheBytes` | Time and memory limits: phase 6, budgets | - |
-| Several fragments of one page cost one read | `includes/remote-section`, `todo`: two reads | reviewed |
+| Several fragments of one page cost one read | `includes/remote-section` | reviewed |
 | Past `maxAge`, revalidated with `ETag` | `includes/revalidate` | reviewed |
 | On workerd there is no resolver, so only the allowlist holds | Phase 4, runtimes | - |
 | The resolver is asked twice, and a record can change between | Not observable at any boundary | - |

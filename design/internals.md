@@ -1713,6 +1713,13 @@ against.
   what lets a prerendered page carry one: it reads the source once at build time
   and is still a file. Making render async instead would have taxed every
   component call for a feature few pages use.
+- **Includes of one document share the read in progress, not only the copy.**
+  A page's includes are resolved together, so two fragments of one document
+  start in the same tick, before either read has a copy for the store to hold.
+  Both read it: a page that named two sections of one guide asked the source
+  twice, which the store's own comment says it exists to prevent.
+  `includeResolver` holds each read in flight by URL until it settles.
+  `spec: includes/remote-section`.
 - **A source nobody allowed throws; a source that is down falls back.** Both
   reached the include as a refusal from the read, and one `catch` turned both
   into the fallback, so a host missing from `proxy.allow` rendered the

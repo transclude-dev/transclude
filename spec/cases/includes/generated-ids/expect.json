@@ -1,0 +1,4 @@
+[
+  { "request": "GET /_transclude/proxy?url=https://docs.example/doc", "status": 200, "body": "expected/outline.json" },
+  { "request": "GET /_transclude/proxy?url=https://docs.example/doc&id=clash", "status": 200, "body": "expected/clash.html" }
+]

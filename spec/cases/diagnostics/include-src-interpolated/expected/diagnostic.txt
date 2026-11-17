@@ -1,0 +1,7 @@
+[plugin transclude] app/routes/index.html:5:1
+CompileError: <transclude> has an interpolated src, so what it includes is not knowable at compile time. Write the id out, or render the markup yourself from the loader. (line 5)
+  3 | </script>
+  4 | 
+> 5 | <transclude src="/docs/${slug}#intro"></transclude>
+    | ^
+  6 |

@@ -1,0 +1,10 @@
+{
+  "documents": {
+    "https://docs.example/guide": { "status": 200, "body": "upstream/guide.html" },
+    "https://docs.example/moved": { "status": 301, "headers": { "location": "https://docs.example/guide" } },
+    "https://docs.example/away": { "status": 302, "headers": { "location": "https://elsewhere.example/guide" } },
+    "https://docs.example/r1": { "status": 301, "headers": { "location": "https://docs.example/r2" } },
+    "https://docs.example/r2": { "status": 301, "headers": { "location": "https://docs.example/r3" } },
+    "https://docs.example/r3": { "status": 301, "headers": { "location": "https://docs.example/guide" } }
+  }
+}

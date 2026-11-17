@@ -10,14 +10,20 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { differences } from './compare.js';
 
 const [caseDir, buildDir] = process.argv.slice(2);
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 // What a case holds about itself, as opposed to the app it describes.
-const NOT_THE_APP = new Set(['CASE.md', 'expect.json', 'expected']);
+const NOT_THE_APP = new Set(['CASE.md', 'expect.json', 'expected', 'upstream.json', 'upstream']);
+
+// A case that reads another site carries a fake one. Both the build and this
+// process are given it, through `SPEC_UPSTREAM`, before any app code runs.
+const upstreamFile = path.join(caseDir, 'upstream.json');
+const upstreamModule = pathToFileURL(path.join(path.dirname(fileURLToPath(import.meta.url)), 'upstream.js')).href;
+if (fs.existsSync(upstreamFile)) process.env.SPEC_UPSTREAM = upstreamFile;
 
 // The cookies earlier answers in this case set, by name, the way a browser
 // keeps them. Every request sends them back.
@@ -36,9 +42,10 @@ async function run() {
   if (build.status !== 0) return { build, results: [], error: 'the build failed' };
 
   process.chdir(buildDir);
+  await import(upstreamModule);
   const { app } = await import('@transclude/core/production');
   const results = [];
-  for (const entry of entries) results.push(marked(entry, await checkRequest(app, entry)));
+  for (const entry of entries) results.push(marked(entry, await checkEntry(app, entry)));
   return { build, results };
 }
 
@@ -77,7 +84,8 @@ function copyApp() {
 function runBuild() {
   const manifest = JSON.parse(fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8'));
   const bin = path.join(packageRoot, manifest.bin['transclude-build']);
-  const out = spawnSync(process.execPath, [bin], { cwd: buildDir, encoding: 'utf8' });
+  const args = process.env.SPEC_UPSTREAM ? ['--import', upstreamModule, bin] : [bin];
+  const out = spawnSync(process.execPath, args, { cwd: buildDir, encoding: 'utf8' });
   return { status: out.status, stderr: relative(out.stderr) };
 }
 
@@ -110,19 +118,23 @@ function excerpt(stderr) {
   const lines = stderr.split('\n');
   const first = lines.findIndex((line) => startsDiagnostic(line));
   const from = Math.max(first, 0);
-  const frame = lines.findIndex((line, index) => index > from && /^\s+at /.test(line));
+  // `at app/routes/index.html:1` is the build naming the author's line, not a
+  // stack frame, so it stays.
+  const frame = lines.findIndex((line, index) => index > from && /^\s+at (?!app\/)/.test(line));
   const to = frame === -1 ? lines.length : frame;
   return lines.slice(from, to).join('\n').trim() + '\n';
 }
 
 /**
- * A line a diagnostic can start on: one naming a file under `app/`, the
- * bundler's `[plugin …]` line, or the error itself. Lines before it are the
- * build's own, and one of them carries a time that changes every run.
+ * A line a diagnostic can start on: the prerender's `N pages failed to
+ * render:`, one naming a file under `app/`, the bundler's `[plugin …]` line, or
+ * the error itself. Lines before it are the build's own, and one of them
+ * carries a time that changes every run.
  *
  * @param {string} line
  */
 function startsDiagnostic(line) {
+  if (/^\d+ pages? failed to render:$/.test(line)) return true;
   if (/\bapp\/\S+:\d+/.test(line)) return true;
   if (line.startsWith('[plugin ')) return true;
   return /^\w*Error: /.test(line);
@@ -154,6 +166,28 @@ function initFor(method, send = {}) {
  * @param {{ request: string, send?: object, status?: number,
  *   headers?: Record<string, string>, body?: string }} entry
  */
+async function checkEntry(app, entry) {
+  const asked = entry.request ? await checkRequest(app, entry) : { request: 'upstream', problems: [] };
+  if (entry.upstream) asked.problems = [...(asked.problems ?? []), ...readsDiffer(entry.upstream)];
+  return asked;
+}
+
+/**
+ * How the fake upstream's read counts differ from what an entry expects. The
+ * counts are for this process only: what the build read is not in them.
+ *
+ * @param {Record<string, number>} expected
+ */
+function readsDiffer(expected) {
+  const { reads } = globalThis[Symbol.for('spec.upstream')];
+  const found = [];
+  for (const [url, count] of Object.entries(expected)) {
+    const got = reads.get(url) ?? 0;
+    if (got !== count) found.push(`upstream reads of ${url}: expected ${count}, got ${got}`);
+  }
+  return found;
+}
+
 async function checkRequest(app, entry) {
   const [method, url] = entry.request.split(' ');
   const res = await app.request(`http://localhost${url}`, initFor(method, entry.send));

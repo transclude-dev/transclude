@@ -1,0 +1,5 @@
+2 pages failed to render:
+  /p1
+    [transclude] <transclude src="/p12#part"> is 11 includes deep, past the limit of 10.
+  /p2
+    [transclude] <transclude src="/p13#part"> is 11 includes deep, past the limit of 10.

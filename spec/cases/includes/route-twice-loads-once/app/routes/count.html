@@ -1,0 +1,13 @@
+<script server>
+  import { runs } from '../data/runs.js';
+
+  export const prerender = false;
+
+  export default async () => {
+    runs.count++;
+    return { count: runs.count };
+  };
+</script>
+
+<p id="count" fragment>The loader has run ${count} times.</p>
+<p id="again" fragment>Still ${count}.</p>

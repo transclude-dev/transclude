@@ -1,0 +1,12 @@
+{
+  "documents": {
+    "https://inside.example/guide": { "status": 200, "body": "upstream/guide.html" },
+    "https://metadata.example/guide": { "status": 200, "body": "upstream/guide.html" },
+    "https://mapped.example/guide": { "status": 200, "body": "upstream/guide.html" }
+  },
+  "addresses": {
+    "inside.example": "10.0.0.7",
+    "metadata.example": "169.254.169.254",
+    "mapped.example": "::ffff:10.0.0.7"
+  }
+}

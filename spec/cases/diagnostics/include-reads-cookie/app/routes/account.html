@@ -1,0 +1,7 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ cookies }) => ({ user: cookies.get('user') ?? 'nobody' });
+</script>
+
+<p id="greeting" fragment>Hello, ${user}.</p>

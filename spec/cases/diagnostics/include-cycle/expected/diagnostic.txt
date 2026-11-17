@@ -1,0 +1,7 @@
+3 pages failed to render:
+  /a
+    [transclude] <transclude> includes itself: /b#part includes /c#part includes /a#part includes /b#part.
+  /b
+    [transclude] <transclude> includes itself: /c#part includes /a#part includes /b#part includes /c#part.
+  /c
+    [transclude] <transclude> includes itself: /a#part includes /b#part includes /c#part includes /a#part.

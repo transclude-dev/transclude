@@ -1,0 +1,7 @@
+[plugin transclude] app/routes/index.html:2:3
+CompileError: <transclude> includes itself: #a includes #a. Rendering it would not finish. (line 2)
+  1 | <div id="a" fragment>
+> 2 |   <transclude src="#a"></transclude>
+    |   ^
+  3 | </div>
+  4 |

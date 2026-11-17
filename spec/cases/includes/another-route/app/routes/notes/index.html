@@ -1,0 +1,9 @@
+<script server>
+  export default async () => ({ notes: ['Milk', 'Eggs'] });
+</script>
+
+<h1>Notes</h1>
+
+<ul id="notes" fragment>
+  <li each="note of notes">${note}</li>
+</ul>

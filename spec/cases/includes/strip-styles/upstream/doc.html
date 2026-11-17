@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head><base href="https://evil.example/"></head>
+<body>
+<div id="all">
+  <p onclick="steal()" style="color: red">Styled, with a handler.</p>
+  <script>steal()</script>
+  <iframe src="https://evil.example/"></iframe>
+  <object data="x.swf"></object>
+  <embed src="x.swf">
+  <a href="javascript:steal()">A script link</a>
+  <a href="java&#9;script:steal()">A script link with a tab</a>
+  <a href="data:text/html,hi">A data link</a>
+  <img src="data:image/png;base64,iVBORw0KGgo=" alt="A data image">
+  <link rel="stylesheet" href="https://evil.example/a.css">
+  <style>body { display: none }</style>
+  <base href="https://evil.example/">
+  <svg><a href="/safe"><animate attributeName="href" to="javascript:steal()"></animate><set attributeName="href" to="javascript:steal()"></set><text>SVG</text></a></svg>
+  <!-- a comment -->
+  <xmp><script>steal()</script></xmp>
+  <listing>raw</listing>
+  <noembed><script>steal()</script></noembed>
+  <noframes><script>steal()</script></noframes>
+  <template><p onclick="steal()">In a template.</p><script>steal()</script></template>
+  <div><template shadowrootmode="open"><script>steal()</script><p>Shadow.</p></template></div>
+  <user-card name="Ada">A custom element.</user-card>
+</div>
+</body>
+</html>

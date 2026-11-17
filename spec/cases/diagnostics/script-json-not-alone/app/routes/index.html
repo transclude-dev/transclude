@@ -1,0 +1,5 @@
+<script server>
+  export default async () => ({ schema: { name: 'Ada' } });
+</script>
+
+<script type="application/ld+json">{ "page": ${json(schema)} }</script>

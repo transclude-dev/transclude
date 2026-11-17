@@ -1,0 +1,1 @@
+[{ "request": "GET /", "status": 200, "headers": { "permissions-policy": "accelerometer=(), browsing-topics=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=()" }, "body": "expected/index.html" }]

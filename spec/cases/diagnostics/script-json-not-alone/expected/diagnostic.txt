@@ -1,0 +1,7 @@
+[plugin transclude] app/routes/index.html:5:1
+CompileError: ${} inside <script> is written to the page as code, so a value could end the element or the statement it sits in. Pass data with ${json(value)}, which is the whole text of the script, or put it in an attribute and read it from a file. (line 5)
+  3 | </script>
+  4 | 
+> 5 | <script type="application/ld+json">{ "page": ${json(schema)} }</script>
+    | ^
+  6 |

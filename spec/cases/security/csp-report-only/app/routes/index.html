@@ -1,0 +1,12 @@
+<script server>
+  export default async () => ({
+    schema: { '@context': 'https://schema.org', '@type': 'Person', name: 'Ada' },
+    trusted: '<script>console.log("from html()")<\/script>',
+  });
+</script>
+
+<script type="application/ld+json">${json(schema)}</script>
+
+<p style="color: green">Styled inline.</p>
+
+${html(trusted)}

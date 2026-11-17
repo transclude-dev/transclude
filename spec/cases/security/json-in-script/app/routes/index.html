@@ -1,0 +1,9 @@
+<script server>
+  export default async () => ({
+    schema: { name: '<\/script><script>alert(1)<\/script>', note: 'a & b <!-- c', line: 'x y' },
+    color: 'red; background: url(javascript:alert(1))" onmouseover="alert(1)',
+  });
+</script>
+
+<script type="application/ld+json">${json(schema)}</script>
+<div style="--brand: ${color}"></div>

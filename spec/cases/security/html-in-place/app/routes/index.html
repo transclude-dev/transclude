@@ -1,0 +1,13 @@
+<script server>
+  export default async () => ({
+    closing: '</p><strong>after the paragraph</strong>',
+    comment: 'text --> <em>after a comment end</em>',
+  });
+</script>
+
+<!-- The comment ends at the first --> in the file, and an
+interpolation cannot put one there later. -->
+<section>
+  <p>${html(closing)}</p>
+  <p>${comment}</p>
+</section>

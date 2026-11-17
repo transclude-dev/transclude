@@ -1,0 +1,8 @@
+[plugin transclude] app/routes/index.html:6:3
+CompileError: ${} inside <style> is written to the page as code, so a value could end the element or the statement it sits in. Set a custom property on the element instead: <div style="--brand: ${color}">, which is escaped. (line 6)
+  4 | 
+  5 | <div>
+> 6 |   <style>.a { color: ${color} }</style>
+    |   ^
+  7 | </div>
+  8 |

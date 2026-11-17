@@ -28,7 +28,7 @@ Complete.
 | Naming a header in `fragmentHeader` adds it to `Vary` | `fragments/header-names-fragment` | reviewed |
 | A cache keys on the query string | Cache behavior, not the framework's | - |
 | A `No-Vary-Search` naming other parameters passes through | `fragments/no-vary-search-named` | reviewed |
-| A `No-Vary-Search` hiding `?fragment=` is refused, naming the value | `fragments/no-vary-search-hides-fragment`, the 500 and the logged message | unreviewed |
+| A `No-Vary-Search` hiding `?fragment=` is refused, naming the value | `fragments/no-vary-search-hides-fragment`, the 500 and the logged message | reviewed |
 | `POST /?fragment=nope` changes nothing and answers 404 | `fragments/post-unknown-name` | reviewed |
 | `ctx.fragment` tells a form post from a fetch | `fragments/action-fragment` | reviewed |
 | `watchElements` puts a script on every page | `fragments/watch-elements` | reviewed |
@@ -202,22 +202,22 @@ Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| A `.js` file answers with the `Response` it builds: `GET` 200, `POST` 201, `PUT` 405 with `Allow` | `endpoints/json-api` | unreviewed |
-| One export per verb: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` | `endpoints/every-verb` | unreviewed |
-| A verb not exported answers 405 with `Allow` naming the ones that are | `endpoints/json-api` | unreviewed |
-| A handler returning anything but a `Response` throws and says so | `endpoints/must-return-response` | unreviewed |
-| A bracketed segment arrives in `ctx.params`; a resource with `GET`, `PATCH`, `DELETE` | `endpoints/resource` | unreviewed |
-| `[...rest].js` takes the rest; `_` files and directories are not routes | `endpoints/rest-and-helpers` | unreviewed |
-| The body reads as JSON, a form, text or bytes, as it was sent | `endpoints/request-body` | unreviewed |
-| Status and headers on the `Response`; a cookie set through `ctx.cookies` survives it | `endpoints/response-cookies` | unreviewed |
+| A `.js` file answers with the `Response` it builds: `GET` 200, `POST` 201, `PUT` 405 with `Allow` | `endpoints/json-api` | reviewed |
+| One export per verb: `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` | `endpoints/every-verb` | reviewed |
+| A verb not exported answers 405 with `Allow` naming the ones that are | `endpoints/json-api` | reviewed |
+| A handler returning anything but a `Response` throws and says so | `endpoints/must-return-response` | reviewed |
+| A bracketed segment arrives in `ctx.params`; a resource with `GET`, `PATCH`, `DELETE` | `endpoints/resource` | reviewed |
+| `[...rest].js` takes the rest; `_` files and directories are not routes | `endpoints/rest-and-helpers` | reviewed |
+| The body reads as JSON, a form, text or bytes, as it was sent | `endpoints/request-body` | reviewed |
+| Status and headers on the `Response`; a cookie set through `ctx.cookies` survives it | `endpoints/response-cookies` | reviewed |
 | A webhook verifies its signature against the raw text | Author code. The raw body it needs is `endpoints/request-body` | - |
-| CSRF guards every method but `GET` and `HEAD`; the content-type table | `endpoints/csrf-content-types` | unreviewed |
-| A `Response` takes a `ReadableStream` | `endpoints/stream` | unreviewed |
+| CSRF guards every method but `GET` and `HEAD`; the content-type table | `endpoints/csrf-content-types` | reviewed |
+| A `Response` takes a `ReadableStream` | `endpoints/stream` | reviewed |
 | A stream ends on `abort` or on `cancel()` | Needs a socket that closes: phase 4, runtimes | - |
-| CORS is Hono middleware in `app/server.js` | `endpoints/cors` | unreviewed |
+| CORS is Hono middleware in `app/server.js` | `endpoints/cors` | reviewed |
 | Anything larger belongs in `app/lib/` or `app/data/` | Advice, not behavior | - |
 | `transclude-check` types every handler | Type checking, the types area | - |
-| `nosniff` on every response; cookies and headers survive a redirect | `endpoints/envelope` | unreviewed |
+| `nosniff` on every response; cookies and headers survive a redirect | `endpoints/envelope` | reviewed |
 
 ## /docs/refusals
 

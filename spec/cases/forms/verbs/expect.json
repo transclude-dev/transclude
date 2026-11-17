@@ -1,0 +1,7 @@
+[
+  { "request": "GET /item?fragment=said", "status": 200, "body": "expected/get.html" },
+  { "request": "POST /item?fragment=said", "send": { "form": { "id": "1" } }, "status": 200, "body": "expected/post.html" },
+  { "request": "PUT /item?fragment=said", "send": { "form": { "id": "2" } }, "status": 200, "body": "expected/put.html" },
+  { "request": "PATCH /item?fragment=said", "send": { "form": { "id": "3" } }, "status": 200, "body": "expected/patch.html" },
+  { "request": "DELETE /item?fragment=said", "send": { "form": { "id": "4" } }, "status": 200, "body": "expected/delete.html" }
+]

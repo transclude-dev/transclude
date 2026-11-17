@@ -1,0 +1,7 @@
+[
+  { "request": "POST /notes", "send": { "form": { "text": "Milk" } }, "status": 303 },
+  { "request": "POST /notes", "send": { "form": { "text": "Eggs" } }, "status": 303 },
+  { "request": "GET /notes?fragment=list", "status": 200, "body": "expected/two.html" },
+  { "request": "POST /notes", "send": { "form": { "intent": "remove", "id": "1" } }, "status": 303 },
+  { "request": "GET /notes?fragment=list", "status": 200, "body": "expected/one.html" }
+]

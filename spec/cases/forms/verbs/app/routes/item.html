@@ -1,0 +1,17 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ action }) => ({ said: action?.said ?? 'nothing yet' });
+
+  const answer = async (method, request) => {
+    const form = await request.formData();
+    return { said: `${method} ${form.get('id') ?? ''}`.trim() };
+  };
+
+  export const POST = async ({ request }) => answer('POST', request);
+  export const PUT = async ({ request }) => answer('PUT', request);
+  export const PATCH = async ({ request }) => answer('PATCH', request);
+  export const DELETE = async ({ request }) => answer('DELETE', request);
+</script>
+
+<p id="said" fragment>${said}</p>

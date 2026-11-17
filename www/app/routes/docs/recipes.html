@@ -69,6 +69,8 @@
 </form>`,
 
       invalid: `<script server>
+  export const prerender = false;
+
   export default async ({ action }) => ({
     notes: notes.all(),
     // Whatever the handler said, or null on a plain GET.

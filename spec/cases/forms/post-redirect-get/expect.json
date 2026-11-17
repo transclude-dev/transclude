@@ -1,0 +1,5 @@
+[
+  { "request": "POST /notes", "send": { "form": { "text": "Milk" } }, "status": 303, "headers": { "location": "http://localhost/notes" } },
+  { "request": "GET /notes", "status": 200, "body": "expected/after-post.html" },
+  { "request": "POST /notes", "send": { "form": { "text": "  " } }, "status": 200, "body": "expected/rejected.html" }
+]

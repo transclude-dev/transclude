@@ -4,5 +4,5 @@ the file and line.
 Source: `/docs/routing`, "Directives".
 
 The message carries the expression parser's own words, "Expected comma at
-character 15". A rewrite with another parser would word that part
-differently.
+character 15". Joe chose to keep them in the contract, so a rewrite with
+another parser has to say the same.

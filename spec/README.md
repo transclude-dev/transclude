@@ -92,6 +92,30 @@ name the framework's own files.
 An entry with `"todo": "<why>"` records a known gap. The run lets it fail, and
 fails it once it passes, so the mark comes off in the change that fixes it.
 
+A case about a document on another site holds an `upstream.json`, and the
+runner gives the build and the app a fake network made from it:
+
+```json
+{
+  "documents": {
+    "https://docs.example/guide": { "status": 200, "headers": { "etag": "\"v1\"" }, "body": "upstream/guide.html" }
+  },
+  "addresses": { "inside.example": "10.0.0.7" }
+}
+```
+
+A listed URL answers from its entry, and a matching `If-None-Match` gets a
+304. Any other URL fails the way a network that is down does. A host in
+`addresses` resolves to that address, and any other host to a public one.
+Nothing reaches a real site. An entry may assert the reads so far, with or
+without a request: `"upstream": { "https://docs.example/guide": 1 }`, and
+`"304 https://docs.example/guide"` counts the 304s. The counts are the app's,
+not the build's.
+
+`spec/runner/upstream.js` does this by replacing `fetch` and
+`dns.promises.lookup` in both processes. Nothing in `src/` is touched. These
+cases run on Node only.
+
 ## Adding one
 
 1. Make the directory under the area that matches the docs page:

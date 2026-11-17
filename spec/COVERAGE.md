@@ -182,19 +182,19 @@ Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| A form posts to itself; the handler runs, then the loader renders what it left | `forms/post-redirect-get` | unreviewed |
-| One export per method: `POST`, `PUT`, `PATCH`, `DELETE` | `forms/verbs` | unreviewed |
+| A form posts to itself; the handler runs, then the loader renders what it left | `forms/post-redirect-get` | reviewed |
+| One export per method: `POST`, `PUT`, `PATCH`, `DELETE` | `forms/verbs` | reviewed |
 | A `<form>` can only send GET or POST | HTML, not the framework | - |
-| A hidden `intent` field turns a post into a delete | `forms/intent-field` | unreviewed |
-| From script, `DELETE` is sent directly and runs | `forms/verbs` | unreviewed |
-| Answer a mutation with a 303; a rejected submission re-renders instead | `forms/post-redirect-get` | unreviewed |
+| A hidden `intent` field turns a post into a delete | `forms/intent-field` | reviewed |
+| From script, `DELETE` is sent directly and runs | `forms/verbs` | reviewed |
+| Answer a mutation with a 303; a rejected submission re-renders instead | `forms/post-redirect-get` | reviewed |
 | A fragment request gets markup, not the redirect | `fragments/action-fragment` | reviewed |
-| `ctx.action` holds what the handler returned | `forms/post-redirect-get` | unreviewed |
+| `ctx.action` holds what the handler returned | `forms/post-redirect-get` | reviewed |
 | `ctx.action` is typed as every handler's return type at once | Type checking, the types area | - |
-| A shared module-level `Response` fails after the first request | `forms/shared-response` | unreviewed |
-| CSRF is on by default for non-GET requests with a form content type | `forms/csrf-default` | unreviewed |
-| `csrf: false` turns it off | `forms/csrf-off` | unreviewed |
-| An object allows another origin | `forms/csrf-allow-origin` | unreviewed |
+| A shared module-level `Response` fails after the first request | `forms/shared-response` | reviewed |
+| CSRF is on by default for non-GET requests with a form content type | `forms/csrf-default` | reviewed |
+| `csrf: false` turns it off | `forms/csrf-off` | reviewed |
+| An object allows another origin | `forms/csrf-allow-origin` | reviewed |
 
 ## /docs/refusals
 

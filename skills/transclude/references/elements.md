@@ -1,7 +1,7 @@
 # Elements
 
 An `.html` file in `app/elements/` becomes a custom element. The file name is
-the tag name and it needs a dash.
+the tag name and it needs a dash. A file without one stops the build.
 
 ## One block
 

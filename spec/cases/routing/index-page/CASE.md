@@ -4,5 +4,3 @@ markup in `<body>`.
 
 Source: `/docs/routing`, the route table under "Pages and routes"
 and "Tags that move into `<head>`".
-
-Snapshot: unreviewed.

@@ -4,5 +4,3 @@ answers 404.
 
 Source: `/docs/fragments`, "Mark a fragment", and the table under it.
 The page is the docs example as printed.
-
-Snapshot: unreviewed.

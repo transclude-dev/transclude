@@ -16,6 +16,10 @@ import { differences } from './compare.js';
 const [caseDir, buildDir] = process.argv.slice(2);
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
+// The cookies earlier answers in this case set, by name, the way a browser
+// keeps them. Every request sends them back.
+const jar = new Map();
+
 const result = await run();
 process.send?.(result);
 
@@ -97,8 +101,9 @@ function excerpt(stderr) {
 
 /**
  * What a request sends besides its method and URL. A `form` goes the way a
- * browser posts one: form-encoded, with an `origin` that CSRF accepts.
- * `headers` are applied last, so a case can take either away.
+ * browser posts one: form-encoded, with an `origin` that CSRF accepts. The jar
+ * goes as `cookie`. `headers` are applied last, so a case can replace any of
+ * these, a forged or an empty cookie included.
  *
  * @param {string} method
  * @param {{ headers?: Record<string, string>, form?: Record<string, string> }} [send]
@@ -111,6 +116,7 @@ function initFor(method, send = {}) {
     init.headers.set('content-type', 'application/x-www-form-urlencoded');
     init.body = new URLSearchParams(send.form).toString();
   }
+  if (jar.size) init.headers.set('cookie', [...jar].map(([name, value]) => `${name}=${value}`).join('; '));
   for (const [name, value] of Object.entries(send.headers ?? {})) init.headers.set(name, value);
   return init;
 }
@@ -123,6 +129,7 @@ async function checkRequest(app, entry) {
   const [method, url] = entry.request.split(' ');
   const res = await app.request(`http://localhost${url}`, initFor(method, entry.send));
   const actual = { status: res.status, headers: res.headers, body: await res.text() };
+  keepCookies(res.headers.getSetCookie());
 
   // In the report on every entry, so a failure and a new case can both be
   // read without running anything again.
@@ -139,4 +146,33 @@ async function checkRequest(app, entry) {
   // insignificant whitespace, and the HTML parser would read it loosely.
   expected.exact = Boolean(bodyFile) && !bodyFile.endsWith('.html');
   return { request: entry.request, answered, problems: differences(expected, actual) };
+}
+
+/**
+ * Each `Set-Cookie` into the jar. One that has expired, by `Max-Age=0` or a
+ * past `Expires`, takes the name out. Path and domain are not read: a case is
+ * one host, and the paths in it are short.
+ *
+ * @param {string[]} setCookies
+ */
+function keepCookies(setCookies) {
+  for (const line of setCookies) {
+    const [pair, ...attributes] = line.split(';').map((part) => part.trim());
+    const at = pair.indexOf('=');
+    const name = pair.slice(0, at);
+    const value = pair.slice(at + 1);
+    if (isExpired(attributes)) jar.delete(name);
+    else jar.set(name, value);
+  }
+}
+
+/** @param {string[]} attributes */
+function isExpired(attributes) {
+  for (const attribute of attributes) {
+    const [key, value = ''] = attribute.split('=');
+    const name = key.toLowerCase();
+    if (name === 'max-age' && Number(value) <= 0) return true;
+    if (name === 'expires' && Date.parse(value) <= Date.now()) return true;
+  }
+  return false;
 }

@@ -71,6 +71,11 @@ case with no config checks the defaults.
 The entries in one case run in order, in one process. A POST and the GET after
 it see the same app, which is how a case shows that an action ran or did not.
 
+A case also keeps cookies, the way a browser does. A `Set-Cookie` on one answer
+is sent back with every later request, and one that expires is dropped. A
+`cookie` in `send.headers` replaces the jar for that request, so a case can send
+a forged cookie or none.
+
 A case about a refusal expects the build to fail:
 
 ```json

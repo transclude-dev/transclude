@@ -174,7 +174,7 @@ Complete. Three entries are `todo`. The cases that read another site carry an
 | On workerd there is no resolver, so only the allowlist holds | Phase 4, runtimes | - |
 | The resolver is asked twice, and a record can change between | Not observable at any boundary | - |
 | `/_transclude/proxy` answers a fragment, or the outline and what was removed | `includes/endpoint` | reviewed |
-| The endpoint is same-origin, which the default policy requires | `security/csp-meta`: `default-src 'self'` covers `connect-src` | unreviewed |
+| The endpoint is same-origin, which the default policy requires | `security/csp-meta`: `default-src 'self'` covers `connect-src` | reviewed |
 
 ## /docs/forms
 
@@ -225,26 +225,26 @@ Complete. Two entries are `todo`.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| `csp: true` gives each page a policy built from what it inlines | `security/csp-meta`, `security/csp-per-page` | unreviewed |
-| Every `${}` is escaped; a visitor's markup arrives as text | `security/escaped-comment`, `routing/interpolation-escapes` | unreviewed |
-| `html()` writes markup you vouch for; it sanitizes nothing | `security/html-in-place`, `routing/interpolation-escapes` | unreviewed |
-| An escaped value cannot open or close anything; a comment ends where the file ends it | `security/html-in-place` | unreviewed |
-| `${}` in a `<script>` or a `<style>` in the markup is a compile error | `diagnostics/script-takes-no-expression`, `style-takes-no-expression` | unreviewed |
+| `csp: true` gives each page a policy built from what it inlines | `security/csp-meta`, `security/csp-per-page` | reviewed |
+| Every `${}` is escaped; a visitor's markup arrives as text | `security/escaped-comment`, `routing/interpolation-escapes` | reviewed |
+| `html()` writes markup you vouch for; it sanitizes nothing | `security/html-in-place`, `routing/interpolation-escapes` | reviewed |
+| An escaped value cannot open or close anything; a comment ends where the file ends it | `security/html-in-place` | reviewed |
+| `${}` in a `<script>` or a `<style>` in the markup is a compile error | `diagnostics/script-takes-no-expression`, `style-takes-no-expression` | reviewed |
 | The same in a page's top-level `<style>` | `diagnostics/page-style-takes-no-expression`, `todo`: sent as written | - |
-| A top-level `<script>` is client code, and its `${}` is JavaScript's | `security/client-script-template-literal` | unreviewed |
-| `json()`, alone, is what a script may carry; a style reads a custom property | `security/json-in-script`, `diagnostics/script-json-not-alone` | unreviewed |
-| Hashes, not a nonce; the policy names what shipped, `html()` included | `security/csp-meta` | unreviewed |
-| `style-src` carries no hash by default | `security/csp-meta` | unreviewed |
-| `frame-ancestors`, `report-uri`, `report-to`, `sandbox` ride in a header, the same on every page | `security/csp-header-directives` | unreviewed |
+| A top-level `<script>` is client code, and its `${}` is JavaScript's | `security/client-script-template-literal` | reviewed |
+| `json()`, alone, is what a script may carry; a style reads a custom property | `security/json-in-script`, `diagnostics/script-json-not-alone` | reviewed |
+| Hashes, not a nonce; the policy names what shipped, `html()` included | `security/csp-meta` | reviewed |
+| `style-src` carries no hash by default | `security/csp-meta` | reviewed |
+| `frame-ancestors`, `report-uri`, `report-to`, `sandbox` ride in a header, the same on every page | `security/csp-header-directives` | reviewed |
 | A static host serves the meta half and not the header | A property of `dist/static` as files, not of an HTTP answer | - |
-| `directives` replaces the defaults; `'hashes'` places the digests; an empty directive is dropped | `security/csp-custom` | unreviewed |
-| `reportOnly` reports and blocks nothing | `security/csp-report-only`, `todo`: sent in a `<meta>`, which browsers ignore | unreviewed |
-| `permissionsPolicy: true` turns off eleven features | `security/permissions-true` | unreviewed |
-| `features` replaces the list; `[]` is nobody, `['self']` is this page | `security/permissions-features` | unreviewed |
-| `permissionsPolicy` is off by default | `security/permissions-default-off` | unreviewed |
+| `directives` replaces the defaults; `'hashes'` places the digests; an empty directive is dropped | `security/csp-custom` | reviewed |
+| `reportOnly` reports and blocks nothing | `security/csp-report-only`, `todo`: sent in a `<meta>`, which browsers ignore | reviewed |
+| `permissionsPolicy: true` turns off eleven features | `security/permissions-true` | reviewed |
+| `features` replaces the list; `[]` is nobody, `['self']` is this page | `security/permissions-features` | reviewed |
+| `permissionsPolicy` is off by default | `security/permissions-default-off` | reviewed |
 | A generated project sets it to `true` | The create area | - |
-| `nosniff` on every response | `security/csp-meta`, `endpoints/envelope` | unreviewed |
-| HSTS and `Referrer-Policy` are the app's, in `app/server.js` | `security/own-headers` | unreviewed |
+| `nosniff` on every response | `security/csp-meta`, `endpoints/envelope` | reviewed |
+| HSTS and `Referrer-Policy` are the app's, in `app/server.js` | `security/own-headers` | reviewed |
 
 ## /docs/refusals
 

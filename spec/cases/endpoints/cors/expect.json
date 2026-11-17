@@ -1,0 +1,5 @@
+[
+  { "request": "OPTIONS /api/people", "send": { "headers": { "origin": "https://app.example", "access-control-request-method": "GET" } }, "headers": { "access-control-allow-origin": "https://app.example" } },
+  { "request": "GET /api/people", "send": { "headers": { "origin": "https://app.example" } }, "status": 200, "headers": { "access-control-allow-origin": "https://app.example" } },
+  { "request": "GET /api/people", "send": { "headers": { "origin": "https://evil.example" } }, "status": 200, "headers": { "access-control-allow-origin": null } }
+]

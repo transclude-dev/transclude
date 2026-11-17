@@ -1,0 +1,75 @@
+[
+  {
+    "request": "GET /api/verbs",
+    "status": 200,
+    "headers": {
+      "x-ran": "GET"
+    }
+  },
+  {
+    "request": "HEAD /api/verbs",
+    "status": 200,
+    "headers": {
+      "x-ran": "HEAD"
+    }
+  },
+  {
+    "request": "POST /api/verbs",
+    "status": 200,
+    "headers": {
+      "x-ran": "POST"
+    },
+    "send": {
+      "body": "{}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    }
+  },
+  {
+    "request": "PUT /api/verbs",
+    "status": 200,
+    "headers": {
+      "x-ran": "PUT"
+    },
+    "send": {
+      "body": "{}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    }
+  },
+  {
+    "request": "PATCH /api/verbs",
+    "status": 200,
+    "headers": {
+      "x-ran": "PATCH"
+    },
+    "send": {
+      "body": "{}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    }
+  },
+  {
+    "request": "DELETE /api/verbs",
+    "status": 200,
+    "headers": {
+      "x-ran": "DELETE"
+    },
+    "send": {
+      "body": "{}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    }
+  },
+  {
+    "request": "OPTIONS /api/verbs",
+    "status": 200,
+    "headers": {
+      "x-ran": "OPTIONS"
+    }
+  }
+]

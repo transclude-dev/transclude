@@ -1,0 +1,1 @@
+[{ "request": "GET /api/login", "status": 302, "headers": { "x-content-type-options": "nosniff", "location": "http://localhost/account", "set-cookie": "session=ada; Path=/; HttpOnly; SameSite=Lax" } }]

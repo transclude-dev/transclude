@@ -1,0 +1,20 @@
+[
+  {
+    "request": "GET /api/people/ada/notes",
+    "status": 200,
+    "body": "expected/rest.txt"
+  },
+  {
+    "request": "GET /_lib/tools",
+    "status": 404
+  },
+  {
+    "request": "GET /_helper",
+    "status": 404
+  },
+  {
+    "request": "GET /api/_shared",
+    "status": 200,
+    "body": "expected/shared.txt"
+  }
+]

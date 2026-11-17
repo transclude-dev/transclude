@@ -1,0 +1,6 @@
+[
+  { "request": "POST /api/body?as=json", "send": { "body": "{\"a\": [1, 2]}", "headers": { "content-type": "application/json" } }, "status": 200, "body": "expected/json.json" },
+  { "request": "POST /api/body?as=text", "send": { "body": "{\"a\":   [1,2] }\n", "headers": { "content-type": "application/json" } }, "status": 200, "body": "expected/text.txt" },
+  { "request": "POST /api/body?as=bytes", "send": { "body": "héllo", "headers": { "content-type": "application/json" } }, "status": 200, "body": "expected/bytes.json" },
+  { "request": "POST /api/body?as=form", "send": { "form": { "name": "Ada", "tag": "math" } }, "status": 200, "body": "expected/form.json" }
+]

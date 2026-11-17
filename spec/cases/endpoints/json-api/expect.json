@@ -1,0 +1,6 @@
+[
+  { "request": "GET /api/people", "status": 200, "headers": { "content-type": "application/json" }, "body": "expected/list.json" },
+  { "request": "POST /api/people", "send": { "body": "{\"name\":\"Grace\"}", "headers": { "content-type": "application/json" } }, "status": 201, "body": "expected/grace.json" },
+  { "request": "GET /api/people", "status": 200, "body": "expected/both.json" },
+  { "request": "PUT /api/people", "send": { "body": "{}", "headers": { "content-type": "application/json" } }, "status": 405, "headers": { "allow": "GET, POST" } }
+]

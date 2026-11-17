@@ -1,0 +1,9 @@
+[
+  { "request": "POST /api/hook", "send": { "body": "{}", "headers": { "origin": "https://sender.example", "content-type": "application/json" } }, "status": 200, "body": "expected/reached.txt" },
+  { "request": "POST /api/hook", "send": { "body": "a=1", "headers": { "origin": "https://sender.example", "content-type": "application/x-www-form-urlencoded" } }, "status": 403 },
+  { "request": "POST /api/hook", "send": { "body": "--x--\r\n", "headers": { "origin": "https://sender.example", "content-type": "multipart/form-data; boundary=x" } }, "status": 403 },
+  { "request": "POST /api/hook", "send": { "body": "hello", "headers": { "origin": "https://sender.example", "content-type": "text/plain" } }, "status": 403 },
+  { "request": "POST /api/hook", "send": { "body": "hello", "headers": { "origin": "https://sender.example" } }, "status": 403 },
+  { "request": "GET /api/hook", "send": { "headers": { "origin": "https://sender.example" } }, "status": 200, "body": "expected/read.txt" },
+  { "request": "HEAD /api/hook", "send": { "headers": { "origin": "https://sender.example" } }, "status": 200 }
+]

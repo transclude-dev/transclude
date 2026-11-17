@@ -90,6 +90,11 @@ the first line naming a file under `app/`, the bundler's `[plugin …]` line, or
 the error, whichever comes first, and it stops before the stack frames, which
 name the framework's own files.
 
+An entry with `"log": "expected/<name>.log"` checks what the server printed to
+`console.error` or `console.warn` while it answered that request. The log
+must contain the file, which stops before the first stack frame. A `null`
+in an entry's `headers` says the header must be absent.
+
 An entry with `"todo": "<why>"` records a known gap. The run lets it fail, and
 fails it once it passes, so the mark comes off in the change that fixes it.
 

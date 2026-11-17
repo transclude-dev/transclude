@@ -8,6 +8,7 @@
 // as arguments, and reads one message back.
 
 import { spawnSync } from 'node:child_process';
+import { format } from 'node:util';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -29,6 +30,11 @@ if (fs.existsSync(upstreamFile)) process.env.SPEC_UPSTREAM = upstreamFile;
 // keeps them. Every request sends them back.
 const jar = new Map();
 
+// What the app prints to `console.error` and `console.warn` while one request
+// is answered. Kept rather than printed, so an entry can hold what the server
+// was supposed to say.
+let heard = [];
+
 const result = await run();
 process.send?.(result);
 
@@ -43,6 +49,7 @@ async function run() {
 
   process.chdir(buildDir);
   await import(upstreamModule);
+  for (const level of ['error', 'warn']) console[level] = (...args) => heard.push(format(...args));
   const { app } = await import('@transclude/core/production');
   const results = [];
   for (const entry of entries) results.push(marked(entry, await checkEntry(app, entry)));
@@ -126,6 +133,19 @@ function excerpt(stderr) {
 }
 
 /**
+ * A log up to its first stack frame. The frames name the framework's own
+ * files, which a rewrite is free to move, and carry this machine's paths.
+ *
+ * @param {string} log
+ */
+function withoutFrames(log) {
+  const lines = log.split('\n');
+  const frame = lines.findIndex((line) => /^\s+at (?!app\/)/.test(line));
+  const kept = frame === -1 ? lines : lines.slice(0, frame);
+  return kept.join('\n').trim() + '\n';
+}
+
+/**
  * A line a diagnostic can start on: the prerender's `N pages failed to
  * render:`, one naming a file under `app/`, the bundler's `[plugin …]` line, or
  * the error itself. Lines before it are the build's own, and one of them
@@ -157,6 +177,9 @@ function initFor(method, send = {}) {
     init.headers.set('content-type', 'application/x-www-form-urlencoded');
     init.body = new URLSearchParams(send.form).toString();
   }
+  // Bytes, not a string: `Request` gives a string body `text/plain` on its
+  // own, and a case may be about a body with no content type at all.
+  if (send.body !== undefined) init.body = new TextEncoder().encode(send.body);
   if (jar.size) init.headers.set('cookie', [...jar].map(([name, value]) => `${name}=${value}`).join('; '));
   for (const [name, value] of Object.entries(send.headers ?? {})) {
     // `null` takes a header away, so a case can send a form with no origin.
@@ -194,9 +217,11 @@ function readsDiffer(expected) {
 
 async function checkRequest(app, entry) {
   const [method, url] = entry.request.split(' ');
+  heard = [];
   const res = await app.request(`http://localhost${url}`, initFor(method, entry.send));
   const actual = { status: res.status, headers: res.headers, body: await res.text() };
   keepCookies(res.headers.getSetCookie());
+  const log = relative(heard.join('\n'));
 
   // In the report on every entry, so a failure and a new case can both be
   // read without running anything again.
@@ -212,7 +237,14 @@ async function checkRequest(app, entry) {
   // Only HTML goes through parse5. A sitemap or a plain-text answer has no
   // insignificant whitespace, and the HTML parser would read it loosely.
   expected.exact = Boolean(bodyFile) && !bodyFile.endsWith('.html');
-  return { request: entry.request, answered, problems: differences(expected, actual) };
+  const problems = differences(expected, actual);
+
+  if (!entry.log) return { request: entry.request, answered, problems };
+  const logFile = path.join(caseDir, entry.log);
+  if (!fs.existsSync(logFile)) return { request: entry.request, answered, missing: entry.log, actual: withoutFrames(log) };
+  const want = fs.readFileSync(logFile, 'utf8').trim();
+  if (!log.includes(want)) problems.push(`log: expected the server to print\n${want}\ngot\n${log.trim() || '(nothing)'}`);
+  return { request: entry.request, answered, problems };
 }
 
 /**

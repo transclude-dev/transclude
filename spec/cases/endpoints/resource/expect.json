@@ -1,0 +1,7 @@
+[
+  { "request": "GET /api/people/ada", "status": 200, "body": "expected/ada.json" },
+  { "request": "GET /api/people/nobody", "status": 404, "body": "expected/not-found.json" },
+  { "request": "PATCH /api/people/ada", "send": { "body": "{\"name\":\"Ada King\"}", "headers": { "content-type": "application/json" } }, "status": 200, "body": "expected/patched.json" },
+  { "request": "DELETE /api/people/grace", "send": { "headers": { "origin": "http://localhost" } }, "status": 204 },
+  { "request": "GET /api/people/grace", "status": 404 }
+]

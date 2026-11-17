@@ -1,0 +1,1 @@
+[{ "request": "GET /api/broken", "status": 500, "log": "expected/broken.log" }]

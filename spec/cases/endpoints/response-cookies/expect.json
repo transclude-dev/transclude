@@ -1,0 +1,1 @@
+[{ "request": "POST /api/people", "send": { "form": { "id": "ada" } }, "status": 201, "headers": { "location": "/api/people/ada", "set-cookie": "seen=1; Max-Age=604800; Path=/; HttpOnly; SameSite=Lax" }, "body": "expected/made.txt" }]

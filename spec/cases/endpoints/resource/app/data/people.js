@@ -1,0 +1,4 @@
+export const people = [
+  { id: 'ada', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+];

@@ -1870,7 +1870,8 @@ against.
   through. Both are wrapped now, with phases `sitemap` and `feed` and a null
   `route`, which is why `report` reads `at?.route` rather than assuming a truthy
   `at` carries one. The seam that pages a human covers every failed request
-  again, not most of them.- **Report-only is a header, never a meta.** A browser ignores
+  again, not most of them.
+- **Report-only is a header, never a meta.** A browser ignores
   `content-security-policy-report-only` in a `<meta>`, and the policy went out
   that way: `reportOnly: true` reported nothing for scripts and styles, and
   only `frame-ancestors`, which rode in the shared header, could report. Now
@@ -1896,6 +1897,12 @@ against.
   is escaped. Write U+2028 and U+2029 as escapes in source, never as literals; a
   raw one inside a regex literal is a line terminator and the file will not
   parse, which happened twice writing this.
+  A top-level `<style>` is a block too, the page's or the element's stylesheet,
+  and it went out as written: `${color}` reached the browser as those
+  characters with the build green. `splitBlocks` now runs it through
+  `assertRawTextSafe` as well. A top-level `<script>` does not: it is client
+  code, bundled, and `${}` there is JavaScript's own template syntax.
+  `spec: diagnostics/page-style-takes-no-expression`.
 - **A region name is attacker input, so look it up with `Object.hasOwn`.**
   `page.regions?.[region]` answered for everything on `Object.prototype`:
   `?fragment=constructor` found `Object`, truthy and callable, so the region was

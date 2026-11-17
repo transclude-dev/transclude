@@ -1,7 +1,7 @@
 // Turns a single .html file into one JS module that serves both renders.
 
 import { parse, parseFragment } from 'parse5';
-import { compileFragment, childrenOf, CompileError, frameOf } from './codegen.js';
+import { assertRawTextSafe, compileFragment, childrenOf, CompileError, frameOf } from './codegen.js';
 import { escapeAttr } from './html.js';
 
 /** @typedef {import('./html.js').ParsedNode} ParsedNode */
@@ -199,6 +199,9 @@ export function splitBlocks(source) {
       continue;
     }
     if (node.nodeName === 'style') {
+      // Sent as written, like a <style> in the markup, so a ${} in it would
+      // reach the browser as those characters. Refused the same way.
+      assertRawTextSafe('style', blockOf(node).code, node);
       out.styles.push(blockOf(node).code);
       continue;
     }

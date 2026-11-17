@@ -137,6 +137,22 @@ export declare function compileFragment(nodes: ParsedNode[], opts?: {
     body?: ParsedNode | null;
 }): Fragment;
 /**
+ * What a `<script>` or a `<style>` may interpolate, which is almost nothing.
+ *
+ * Text in these two is raw: escaping it would change what the browser reads,
+ * since `&amp;` is an ampersand in prose and four characters in JavaScript. So a
+ * value lands in code, and one that closes the string it was written into runs
+ * whatever follows. No escape fixes that, which is why this refuses.
+ *
+ * `json()` answers the narrower question, and only as the whole text of a
+ * script. A style needs no carve-out, because a custom property is an attribute.
+ *
+ * @param {string} tag  'script' or 'style'
+ * @param {string} text the raw text node's contents
+ * @param {object} el   the element, for the line number
+ */
+export declare function assertRawTextSafe(tag: string, text: string, el: object): void;
+/**
  * `else` / `else-if` bind to the `if` before them, so a chain is one unit. Both
  * passes have to agree on where it ends, so they share the same walk.
  *

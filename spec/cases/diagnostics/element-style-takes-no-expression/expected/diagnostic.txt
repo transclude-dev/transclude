@@ -1,0 +1,8 @@
+[plugin transclude] app/elements/site-note.html:5:1
+CompileError: ${} inside <style> is written to the page as code, so a value could end the element or the statement it sits in. Set a custom property on the element instead: <div style="--brand: ${color}">, which is escaped. (line 5)
+  3 | </script>
+  4 | 
+> 5 | <style>
+    | ^
+  6 |   :scope { color: ${tone}; }
+  7 | </style>

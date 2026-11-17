@@ -1162,7 +1162,7 @@ class Codegen {
  * @param {string} text the raw text node's contents
  * @param {object} el   the element, for the line number
  */
-function assertRawTextSafe(tag, text, el) {
+export function assertRawTextSafe(tag, text, el) {
   const parts = splitInterpolations(text);
   const exprs = parts.filter((p) => p.type === 'expr');
   if (exprs.length === 0) return;

@@ -55,7 +55,8 @@ a second `elementsDir`, is copied with it.
 
 - `send` is optional: `{ "headers": {…}, "form": {…} }`. A `form` goes the
   way a browser posts one, form-encoded with an `origin` of
-  `http://localhost`, so CSRF lets it through. `headers` apply last.
+  `http://localhost`, so CSRF lets it through. `headers` apply last, and a
+  `null` value takes a header away.
 - `status` is equal or the entry fails.
 - `headers` is a subset. A case names the headers its rule is about.
 - `body` is a file of expected markup. Both sides go through parse5, and each

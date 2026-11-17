@@ -158,7 +158,11 @@ function initFor(method, send = {}) {
     init.body = new URLSearchParams(send.form).toString();
   }
   if (jar.size) init.headers.set('cookie', [...jar].map(([name, value]) => `${name}=${value}`).join('; '));
-  for (const [name, value] of Object.entries(send.headers ?? {})) init.headers.set(name, value);
+  for (const [name, value] of Object.entries(send.headers ?? {})) {
+    // `null` takes a header away, so a case can send a form with no origin.
+    if (value === null) init.headers.delete(name);
+    else init.headers.set(name, value);
+  }
   return init;
 }
 

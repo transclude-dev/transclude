@@ -49,8 +49,10 @@ export default {
 <p>\${comment}</p>`,
       escapedOut: [`<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>`, 'html'],
       refused: [
-        `<script>var user = "\${name}";<\/script>
-<style>.a { color: \${color} }</style>`,
+        `<div>
+  <script>var user = "\${name}";<\/script>
+  <style>.a { color: \${color} }</style>
+</div>`,
         'html',
       ],
       jsonOk: [
@@ -112,10 +114,10 @@ export default {
   </doc-note>
 
   <p>
-    HTML is parsed before any interpolation runs, so a value cannot open or close
-    anything structural. Markup arriving through <code>html()</code> lands inside
-    whatever element already surrounded it, and a comment ends where the file
-    ends it.
+    HTML is parsed before any interpolation runs. An escaped value cannot open
+    or close anything structural, and a comment ends where the file ends it. Markup through <code>html()</code> is written where the template put
+    it, and the browser reads it as markup. A <code>&lt;/p&gt;</code> in it
+    closes the paragraph around it.
   </p>
 
   ${html(s.parseOrder)}
@@ -136,6 +138,12 @@ export default {
     No escape fixes the first one. A value that closes the string it was written
     into runs whatever follows it. That is a fact about JavaScript, not about
     markup.
+  </p>
+
+  <p>
+    A <code>&lt;script&gt;</code> at the top level of a page is client code. It
+    is bundled into a file rather than written into the page, and
+    <code>\${…}</code> in it is JavaScript's own template syntax.
   </p>
 
   <p>

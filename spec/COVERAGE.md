@@ -221,7 +221,7 @@ Complete.
 
 ## /docs/security
 
-Complete. Two entries are `todo`.
+Complete. One entry is `todo`.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
@@ -238,7 +238,7 @@ Complete. Two entries are `todo`.
 | `frame-ancestors`, `report-uri`, `report-to`, `sandbox` ride in a header, the same on every page | `security/csp-header-directives` | reviewed |
 | A static host serves the meta half and not the header | A property of `dist/static` as files, not of an HTTP answer | - |
 | `directives` replaces the defaults; `'hashes'` places the digests; an empty directive is dropped | `security/csp-custom` | reviewed |
-| `reportOnly` reports and blocks nothing | `security/csp-report-only`, `todo`: sent in a `<meta>`, which browsers ignore | reviewed |
+| `reportOnly` sends the whole policy as a report-only header | `security/csp-report-only` | unreviewed |
 | `permissionsPolicy: true` turns off eleven features | `security/permissions-true` | reviewed |
 | `features` replaces the list; `[]` is nobody, `['self']` is this page | `security/permissions-features` | reviewed |
 | `permissionsPolicy` is off by default | `security/permissions-default-off` | reviewed |

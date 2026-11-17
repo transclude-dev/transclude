@@ -27,8 +27,9 @@ test('the CSP and the permissions policy go on every file, as baseApp sends them
   assert.ok(written.includes(`\n  ${permissions.name}: ${permissions.value}\n`), 'the permissions header is missing');
 });
 
-test('a report-only CSP keeps its own header name', () => {
-  assert.match(edgeHeaders({ csp: { reportOnly: true } }), /Content-Security-Policy-Report-Only: /);
+test('a report-only CSP is left out of _headers, because each page carries its own', () => {
+  // The prerendered pages stay in the worker, which sets the header per page.
+  assert.doesNotMatch(edgeHeaders({ csp: { reportOnly: true } }), /Content-Security-Policy/);
 });
 
 test("the app's own _headers comes after the framework's", () => {

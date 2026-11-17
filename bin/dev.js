@@ -27,6 +27,7 @@ import { MARKDOWN_EXT, isMarkdown } from '../src/markdown.js';
 import { baseApp, endpointMethods, runEndpoint, SERVER_FILE } from '../src/server.js';
 import { randomBytes } from 'node:crypto';
 import { cookiesOf } from '../src/cookies.js';
+import { reportOnlyHeader } from '../src/csp.js';
 import { loadProject, portOf } from '../src/project.js';
 import { elementDirs, inElementDirs } from '../src/elements.js';
 import { includeContext } from '../src/include.js';
@@ -251,6 +252,10 @@ const renderPage = async (route, c, status = null, extra = {}) => {
   });
   // A loader answered for itself: a redirect, or something that is not a page.
   if (html instanceof Response) return withEnvelope(html, ctx);
+
+  // The same document the production server hashes, before Vite adds to it.
+  const reporting = await reportOnlyHeader(html, config.csp);
+  if (reporting) c.header(reporting.name, reporting.value);
 
   return sendWith(c, ctx, await vite.transformIndexHtml(c.req.path, html), status);
 };

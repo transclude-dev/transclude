@@ -1,0 +1,7 @@
+<script server>
+  export const prerender = false;
+
+  export default async () => ({ schema: { name: 'Rendered per request' } });
+</script>
+
+<script type="application/ld+json">${json(schema)}</script>

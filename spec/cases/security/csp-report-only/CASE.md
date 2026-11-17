@@ -1,9 +1,7 @@
-`reportOnly: true` sends the policy to be reported, not enforced.
+`reportOnly: true` sends the whole policy, this page's hashes and the
+header-only directives together, as a `Content-Security-Policy-Report-Only`
+header, on a prerendered page and on a rendered one. No `<meta>` policy is
+written, because a browser ignores report-only in one, and no enforcing header
+is sent.
 
 Source: `/docs/security`, "Report before you enforce".
-
-Marked `todo`. The policy goes out as
-`<meta http-equiv="content-security-policy-report-only">`, and browsers
-ignore report-only in a `<meta>`, so its script and style rules report
-nothing. Joe decided it belongs in the header. The expected page has no
-`<meta>` policy.

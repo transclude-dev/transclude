@@ -1,0 +1,10 @@
+[
+  { "request": "GET /?q=ada", "status": 200, "body": "expected/index.html" },
+  {
+    "request": "GET /?q=ada&fragment=matches",
+    "status": 200,
+    "headers": { "content-type": "text/html; charset=utf-8" },
+    "body": "expected/matches.html"
+  },
+  { "request": "GET /?fragment=nope", "status": 404 }
+]

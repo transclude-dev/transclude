@@ -1,0 +1,13 @@
+<script server>
+  export default async ({ route }) => ({
+    path: route.path,
+  });
+</script>
+
+<header>
+  <nav>${path}</nav>
+</header>
+
+<main>
+  <slot></slot>
+</main>

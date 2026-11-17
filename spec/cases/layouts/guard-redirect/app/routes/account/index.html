@@ -1,0 +1,12 @@
+<script server>
+  import { visits } from '../../data/visits.js';
+
+  export const prerender = false;
+
+  export default async () => {
+    visits.count++;
+    return { count: visits.count };
+  };
+</script>
+
+<p>The page loader has run ${count} times.</p>

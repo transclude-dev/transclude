@@ -1,0 +1,17 @@
+<script server>
+  import { store } from '../../data/store.js';
+
+  export const prerender = false;
+
+  export default async () => ({ notes: store.notes });
+
+  export const POST = async ({ request }) => {
+    const form = await request.formData();
+    store.notes.push(String(form.get('text')));
+    return {};
+  };
+</script>
+
+<ul>
+  <li each="note of notes">${note}</li>
+</ul>

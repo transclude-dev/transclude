@@ -1,0 +1,6 @@
+<script server>
+  export default async ({ cookies }) => ({ user: cookies.get('user') ?? 'nobody' });
+</script>
+
+<p>Signed in as ${user}</p>
+<slot></slot>

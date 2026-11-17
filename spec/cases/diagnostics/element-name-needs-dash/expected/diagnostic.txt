@@ -1,0 +1,1 @@
+Error: [transclude] app/elements/note.html is not an element: a file in an element directory is named for its tag, and a tag needs a dash. Rename it, as note-card.html or site-note.html, or move it out of the directory.

@@ -9,9 +9,12 @@ and a `fragment` attribute.
 <script server>
   import { people } from '../data/people.js';
 
+  export const prerender = false;
+
   export default async ({ url }) => {
     const q = new URL(url).searchParams.get('q') ?? '';
-    return { q, matches: people.filter((p) => p.name.includes(q)) };
+    const matches = people.filter((p) => p.name.toLowerCase().includes(q.toLowerCase()));
+    return { q, matches };
   };
 </script>
 
@@ -34,6 +37,9 @@ That page answers three URLs.
 
 The `id` is the name. The page and the fragment come from one template, so the
 two always agree.
+
+The loader reads the URL, so the page has `prerender = false`. Without it, the
+build writes the page to one file, and every `?q=` gets that file.
 
 ### Asking for one
 

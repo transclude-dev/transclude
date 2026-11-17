@@ -78,19 +78,19 @@ Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| `_layout.html` wraps the routes beside and below it; the page renders into `<slot>` | `layouts/wraps-page` | unreviewed |
-| A named slot offers a second place, with fallback content | `layouts/named-slot` | unreviewed |
-| A subdirectory layout renders inside the one above | `layouts/nested` | unreviewed |
-| Each layout loads its own data; `ctx.layout` is the chain above, merged | `layouts/layout-context` | unreviewed |
-| A layout returning a `Response` stops there, and nothing below runs | `layouts/guard-redirect` | unreviewed |
-| A `POST` under a guard runs the guard first; each loader runs twice on that request | `layouts/guard-action` | unreviewed |
-| A page behind a guard cannot be prerendered; the build names it and exits non-zero | `diagnostics/prerender-reads-cookie` | unreviewed |
+| `_layout.html` wraps the routes beside and below it; the page renders into `<slot>` | `layouts/wraps-page` | reviewed |
+| A named slot offers a second place, with fallback content | `layouts/named-slot` | reviewed |
+| A subdirectory layout renders inside the one above | `layouts/nested` | reviewed |
+| Each layout loads its own data; `ctx.layout` is the chain above, merged | `layouts/layout-context` | reviewed |
+| A layout returning a `Response` stops there, and nothing below runs | `layouts/guard-redirect` | reviewed |
+| A `POST` under a guard runs the guard first; each loader runs twice on that request | `layouts/guard-action` | reviewed |
+| A page behind a guard cannot be prerendered; the build names it and exits non-zero | `diagnostics/prerender-reads-cookie` | reviewed |
 | Middleware does not run during the build | A build-time fact. What middleware does when serving is the middleware area | - |
-| `<html>` attributes merge by name, innermost winning; escaped, bare is `true`, `false` and `null` drop, `lang` overwritable | `layouts/html-attrs` | unreviewed |
-| `<body>` works the same | `layouts/body-attrs` | unreviewed |
-| Neither tag is written twice; a `class` on two levels is the innermost | `layouts/one-html-one-body` | unreviewed |
-| A `<title>` anywhere in the chain becomes the document's | `layouts/title-in-chain` | unreviewed |
-| A layout setting `ctx.response.status` sets the status sent | `layouts/layout-status` | unreviewed |
+| `<html>` attributes merge by name, innermost winning; escaped, bare is `true`, `false` and `null` drop, `lang` overwritable | `layouts/html-attrs` | reviewed |
+| `<body>` works the same | `layouts/body-attrs` | reviewed |
+| Neither tag is written twice; a `class` on two levels is the innermost | `layouts/one-html-one-body` | reviewed |
+| A `<title>` anywhere in the chain becomes the document's | `layouts/title-in-chain` | reviewed |
+| A layout setting `ctx.response.status` sets the status sent | `layouts/layout-status` | reviewed |
 
 ## /docs/refusals
 

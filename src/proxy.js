@@ -334,10 +334,22 @@ export async function readForeign(url, options = {}, deps = {}) {
 export function includeResolver(options = {}, deps = {}) {
   const config = settings(options);
   const store = deps.store ?? documentStore(config.cache, config.cacheBytes);
+  // Reads in progress, by URL. A page's includes are resolved together, so two
+  // fragments of one document start before either read has a copy to hold.
+  const reading = new Map();
+
+  const read = (url) => {
+    if (!reading.has(url)) {
+      const pending = readForeign(url, config, { ...deps, store });
+      reading.set(url, pending);
+      pending.finally(() => reading.delete(url)).catch(() => {});
+    }
+    return reading.get(url);
+  };
 
   return {
     resolve: async (url, id) => {
-      const entry = await readForeign(url, config, { ...deps, store });
+      const entry = await read(url);
       return resolveFragment(entry.doc, id)?.html ?? null;
     },
   };

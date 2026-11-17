@@ -1,0 +1,8 @@
+[
+  {
+    "request": "GET /",
+    "status": 200,
+    "body": "expected/index.html",
+    "todo": "the report-only policy goes out in a <meta>, which browsers ignore; it belongs in the header"
+  }
+]

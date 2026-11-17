@@ -1,0 +1,8 @@
+<script server>
+  export default async () => ({
+    // Whatever a visitor typed.
+    comment: '<script>alert(1)<\/script>',
+  });
+</script>
+
+<p>${comment}</p>

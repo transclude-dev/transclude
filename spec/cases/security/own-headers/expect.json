@@ -1,0 +1,4 @@
+[
+  { "request": "GET /", "status": 200, "headers": { "strict-transport-security": "max-age=31536000; includeSubDomains", "referrer-policy": "no-referrer" } },
+  { "request": "GET /live", "status": 200, "headers": { "strict-transport-security": "max-age=31536000; includeSubDomains", "referrer-policy": "no-referrer" } }
+]

@@ -1,0 +1,7 @@
+[
+  {
+    "build": "fails",
+    "diagnostic": "expected/diagnostic.txt",
+    "todo": "a top-level <style> is the page's stylesheet and is sent as written, so ${color} reaches the browser as those characters"
+  }
+]

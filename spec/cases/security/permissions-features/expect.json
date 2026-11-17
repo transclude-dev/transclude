@@ -1,0 +1,1 @@
+[{ "request": "GET /", "status": 200, "headers": { "permissions-policy": "camera=(self), geolocation=(), microphone=()" }, "body": "expected/index.html" }]

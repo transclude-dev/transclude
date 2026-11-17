@@ -15,5 +15,5 @@ export declare function includeContext({ config, routes, pageFor, lookup }: {
     routes?: any[];
 }): {
     resolve: (url: string, id: string) => Promise<string>;
-    route: (path: any, id: any, ctx: any, options: any) => Promise<any>;
+    route: (path: any, id: any, ctx: any, options: any) => Promise<string>;
 };

@@ -38,7 +38,9 @@ for (const outcome of failed) console.log(describe(outcome));
 
 const seconds = ((performance.now() - started) / 1000).toFixed(1);
 const atOnce = Math.min(jobs, ids.length);
-console.log(`${ids.length - failed.length} of ${ids.length} cases pass, ${atOnce} at a time, in ${seconds} s`);
+const todos = todosOf(outcomes);
+const marks = todos ? `, ${todos} todo` : '';
+console.log(`${ids.length - failed.length} of ${ids.length} cases pass${marks}, ${atOnce} at a time, in ${seconds} s`);
 
 fs.mkdirSync(path.dirname(reportFile), { recursive: true });
 fs.writeFileSync(reportFile, JSON.stringify({ seconds: Number(seconds), jobs, outcomes }, null, 2) + '\n');
@@ -134,7 +136,24 @@ function runCase(id) {
 /** A case passes when it has no error, no problem and no missing expected file. */
 function passed(outcome) {
   if (outcome.error) return false;
-  return outcome.results.every((result) => !result.missing && result.problems.length === 0);
+  return outcome.results.every((result) => resultPasses(result));
+}
+
+/**
+ * A clean result passes. One marked `todo` passes by failing, because the
+ * mark says the gap is known. Once it comes back clean the mark is stale, and
+ * that fails until someone takes it off.
+ */
+function resultPasses(result) {
+  const clean = !result.missing && result.problems.length === 0;
+  if (result.todo) return !clean;
+  return clean;
+}
+
+/** How many entries are marked `todo` and still fail, as they should. */
+function todosOf(outcomes) {
+  const all = outcomes.flatMap((outcome) => outcome.results);
+  return all.filter((result) => result.todo && !resultPasses({ ...result, todo: null })).length;
 }
 
 function describe(outcome) {
@@ -142,6 +161,8 @@ function describe(outcome) {
   if (outcome.error) lines.push(indent(outcome.error));
   if (outcome.error && outcome.build?.stderr) lines.push(indent(outcome.build.stderr.trim()));
   for (const result of outcome.results) {
+    if (result.todo && resultPasses(result)) continue;
+    if (result.todo) lines.push(`  ${result.request}: passes now, so its todo is stale: ${result.todo}`);
     if (result.missing) lines.push(`  ${result.request}: no ${result.missing} yet (--snapshot writes it)`);
     for (const problem of result.problems ?? []) lines.push(`  ${result.request}\n${indent(problem, 4)}`);
   }

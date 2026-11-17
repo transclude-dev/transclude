@@ -16,6 +16,9 @@ import { differences } from './compare.js';
 const [caseDir, buildDir] = process.argv.slice(2);
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
+// What a case holds about itself, as opposed to the app it describes.
+const NOT_THE_APP = new Set(['CASE.md', 'expect.json', 'expected']);
+
 // The cookies earlier answers in this case set, by name, the way a browser
 // keeps them. Every request sends them back.
 const jar = new Map();
@@ -29,18 +32,28 @@ async function run() {
   const build = runBuild();
 
   const expectsFailure = entries.some((entry) => entry.build === 'fails');
-  if (expectsFailure) return { build, results: entries.map((entry) => checkDiagnostic(entry, build)) };
+  if (expectsFailure) return { build, results: entries.map((entry) => marked(entry, checkDiagnostic(entry, build))) };
   if (build.status !== 0) return { build, results: [], error: 'the build failed' };
 
   process.chdir(buildDir);
   const { app } = await import('@transclude/core/production');
   const results = [];
-  for (const entry of entries) results.push(await checkRequest(app, entry));
+  for (const entry of entries) results.push(marked(entry, await checkRequest(app, entry)));
   return { build, results };
 }
 
 /**
- * The case's app and config, copied where the build may write `dist/`.
+ * A result with its entry's `todo` note, if it has one. A `todo` entry
+ * records a known gap: the parent lets it fail, and fails it once it passes.
+ */
+function marked(entry, result) {
+  return { ...result, todo: entry.todo ?? null };
+}
+
+/**
+ * The case's app, copied where the build may write `dist/`. Everything but the
+ * case's own files, so a directory beside `app/`, such as a second
+ * `elementsDir`, comes along.
  *
  * Never a `package.json`. The build directory sits inside this package so the
  * built server can import `@transclude/core` by name, which Node resolves by
@@ -49,12 +62,15 @@ async function run() {
 function copyApp() {
   fs.rmSync(buildDir, { recursive: true, force: true });
   fs.mkdirSync(buildDir, { recursive: true });
-  fs.cpSync(path.join(caseDir, 'app'), path.join(buildDir, 'app'), { recursive: true });
+  for (const name of fs.readdirSync(caseDir)) {
+    if (NOT_THE_APP.has(name)) continue;
+    if (name === 'package.json') throw new Error('a case may not hold a package.json');
+    fs.cpSync(path.join(caseDir, name), path.join(buildDir, name), { recursive: true });
+  }
 
-  const config = path.join(caseDir, 'transclude.config.js');
+  // No config is the default config.
   const target = path.join(buildDir, 'transclude.config.js');
-  if (fs.existsSync(config)) fs.copyFileSync(config, target);
-  else fs.writeFileSync(target, 'export default {};\n');
+  if (!fs.existsSync(target)) fs.writeFileSync(target, 'export default {};\n');
 }
 
 /** The package's own `transclude-build`, found the way npm finds it: by `bin`. */
@@ -85,18 +101,31 @@ function checkDiagnostic(entry, build) {
 
 /**
  * The part of a failed build's output that is the diagnostic: from the first
- * line naming a file under `app/` to the first stack frame. The frames name
+ * line `startsDiagnostic` accepts to the first stack frame. The frames name
  * the framework's own files, which a rewrite is free to move.
  *
  * @param {string} stderr
  */
 function excerpt(stderr) {
   const lines = stderr.split('\n');
-  const first = lines.findIndex((line) => /\bapp\/\S+:\d+/.test(line));
+  const first = lines.findIndex((line) => startsDiagnostic(line));
   const from = Math.max(first, 0);
   const frame = lines.findIndex((line, index) => index > from && /^\s+at /.test(line));
   const to = frame === -1 ? lines.length : frame;
   return lines.slice(from, to).join('\n').trim() + '\n';
+}
+
+/**
+ * A line a diagnostic can start on: one naming a file under `app/`, the
+ * bundler's `[plugin …]` line, or the error itself. Lines before it are the
+ * build's own, and one of them carries a time that changes every run.
+ *
+ * @param {string} line
+ */
+function startsDiagnostic(line) {
+  if (/\bapp\/\S+:\d+/.test(line)) return true;
+  if (line.startsWith('[plugin ')) return true;
+  return /^\w*Error: /.test(line);
 }
 
 /**

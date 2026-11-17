@@ -35,7 +35,8 @@ spec/cases/fragments/marked-element/
 
 `transclude.config.js` sits beside `app/` when a case needs a config other
 than the default. Without one, the runner writes `export default {};`, so a
-case with no config checks the defaults.
+case with no config checks the defaults. Anything else beside `app/`, such as
+a second `elementsDir`, is copied with it.
 
 `expect.json` is a list. Each entry is one request:
 
@@ -83,8 +84,13 @@ A case about a refusal expects the build to fail:
 ```
 
 The build must exit non-zero, and what it prints must contain the file. The
-file holds the message, the file and line, and the code frame. Stack frames are
-left out, because they name the framework's own files.
+file holds the message, the file and line, and the code frame. It starts at
+the first line naming a file under `app/`, the bundler's `[plugin …]` line, or
+the error, whichever comes first, and it stops before the stack frames, which
+name the framework's own files.
+
+An entry with `"todo": "<why>"` records a known gap. The run lets it fail, and
+fails it once it passes, so the mark comes off in the change that fixes it.
 
 ## Adding one
 

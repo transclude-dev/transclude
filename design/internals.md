@@ -1215,6 +1215,12 @@ against.
   written before compression, so no `.br` twin counts against the platform's
   file limit. A Range request still gets the whole file with a 200: the edge
   does not answer ranges either.
+- **`dist/edge` is made before `_headers` is written, not by the links.**
+  `linkTree` makes a directory only for a file it links. An app with no public
+  files and no client JavaScript has none, so `dist/edge` did not exist and the
+  build threw `ENOENT` on `dist/edge/_headers` after every page had rendered.
+  Every example has one or the other, so nothing here met it; the smallest app
+  the docs describe did. `spec: routing/index-page`, and every case after it.
 - **Internals are attached for a boolean state field, not for any state.** A
   custom state is a name, so a number or a string has nothing to reflect.
   Attaching for every stateful element gave `user-card` internals it never uses

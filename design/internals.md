@@ -1713,6 +1713,14 @@ against.
   what lets a prerendered page carry one: it reads the source once at build time
   and is still a file. Making render async instead would have taxed every
   component call for a feature few pages use.
+- **A source nobody allowed throws; a source that is down falls back.** Both
+  reached the include as a refusal from the read, and one `catch` turned both
+  into the fallback, so a host missing from `proxy.allow` rendered the
+  children and the build passed. The src is a literal in the page, so
+  `includeResolver` checks it with `checkUrl` before reading and throws a
+  message `resolveIncludes` rethrows. A redirect to a host not allowed is
+  still the source's doing and still falls back.
+  `spec: diagnostics/include-host-not-allowed`.
 - **A src that is interpolated cannot be an include.** The set has to be known
   before the render that would produce it, so `src="/docs/${slug}#a"` is a
   compile error rather than a value nobody could resolve in time.

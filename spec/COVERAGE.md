@@ -136,7 +136,7 @@ Complete.
 
 ## /docs/includes
 
-Complete. Three entries are `todo`. The cases that read another site carry an
+Complete. Two entries are `todo`. The cases that read another site carry an
 `upstream.json`, so they run on Node only.
 
 | Claim | Case, or why none | Snapshot |
@@ -150,7 +150,7 @@ Complete. Three entries are `todo`. The cases that read another site carry an
 | On success the children are dropped | `includes/remote-section` | reviewed |
 | A source that cannot be read renders the children | `includes/fallback-on-failure` | reviewed |
 | With no children, a failing source stops the render | `diagnostics/include-source-down-no-fallback` | reviewed |
-| A host nobody allowed throws, children or not | `diagnostics/include-host-not-allowed`, `todo`: it falls back | - |
+| A host nobody allowed throws, children or not | `diagnostics/include-host-not-allowed` | unreviewed |
 | A prerendered page reads its sources once, at build time | `includes/prerendered-reads-once` | reviewed |
 | `#nope`, `#a` inside `#a`, and an interpolated `src` are compile errors | `diagnostics/include-names-no-fragment`, `include-includes-itself`, `include-src-interpolated` | reviewed |
 | A loop round other routes is caught at render, naming the way round | `diagnostics/include-cycle` | reviewed |

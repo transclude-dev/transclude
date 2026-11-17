@@ -31,3 +31,8 @@ CLAUDE.md
 
 # vsce output, built from editor/vscode when someone packages the extension
 *.vsix
+
+# What `npm run spec` builds and what it last reported. Both are rewritten on
+# every run.
+spec/.build/
+spec/report/

@@ -89,6 +89,7 @@
   ],
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
+    "spec": "node spec/runner/index.js",
     "types": "tsc -p tsconfig.types.json",
     "crap": "node scripts/crap.js",
     "test:examples": "npm test --prefix examples/showcase && npm test --prefix examples/todomvc && npm test --prefix examples/dungeon && npm test --prefix examples/lite-brite && npm test --prefix examples/blog && npm test --prefix examples/search && npm test --prefix examples/htmx && npm test --prefix examples/includes && npm test --prefix examples/auth && npm test --prefix examples/live && npm test --prefix examples/elements && npm test --prefix examples/markdown",

@@ -1,0 +1,7 @@
+<script server>
+  export default async () => ({ tags: ['notes', 'ideas'] });
+</script>
+
+<ul>
+  <li each="tag, i of tags">${i + 1}. ${tag}</li>
+</ul>

@@ -1,0 +1,7 @@
+[plugin transclude] app/routes/index.html:5:1
+CompileError: <div> interpolates an attribute name: "data-${kind}". Only a value takes ${…}, so write the name out. To choose between two, put the condition in the value: class="${cond ? 'a' : 'b'}". (line 5)
+  3 | </script>
+  4 | 
+> 5 | <div data-${kind}="1">Milk</div>
+    | ^
+  6 |

@@ -1,0 +1,6 @@
+[plugin transclude] app/routes/index.html:2:1
+CompileError: "else" on <p> has no "if" before it (line 2)
+  1 | <p>A</p>
+> 2 | <p else>B</p>
+    | ^
+  3 |

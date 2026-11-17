@@ -1,0 +1,7 @@
+[plugin transclude] app/routes/index.html:5:1
+CompileError: <title> cannot carry a directive. Which level's title wins is settled when this compiles. Interpolate the text instead, or move the condition into the loader. (line 5)
+  3 | </script>
+  4 | 
+> 5 | <title if="person">${person.name}</title>
+    | ^
+  6 |

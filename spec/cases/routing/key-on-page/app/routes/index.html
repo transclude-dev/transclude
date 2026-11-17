@@ -1,0 +1,17 @@
+<script server>
+  export default async () => ({
+    notes: [{ id: 1, text: 'Milk' }, { id: 2, text: 'Eggs' }],
+  });
+</script>
+
+<ul id="keyed">
+  <li each="note of notes" key="note.id">
+    <input name="text" value="${note.text}" />
+  </li>
+</ul>
+
+<ul id="plain">
+  <li each="note of notes">
+    <input name="text" value="${note.text}" />
+  </li>
+</ul>

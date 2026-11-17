@@ -1,0 +1,5 @@
+[
+  { "request": "GET /blog/001", "status": 200 },
+  { "request": "GET /blog/002", "status": 404 },
+  { "request": "GET /sitemap.xml", "status": 200, "body": "expected/sitemap.xml" }
+]

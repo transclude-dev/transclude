@@ -1,0 +1,15 @@
+<script server>
+  import { people } from '../../data/people.js';
+
+  export const prerender = false;
+
+  export default async ({ params }) => ({
+    person: people.find((p) => p.slug === params.name),
+  });
+</script>
+
+<title>${person.name}</title>
+<meta name="description" content="${person.bio}" />
+<link if="person.feed" rel="alternate" type="application/rss+xml" href="${person.feed}" />
+
+<h1>${person.name}</h1>

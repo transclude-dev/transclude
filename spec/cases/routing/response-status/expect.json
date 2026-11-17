@@ -1,0 +1,4 @@
+[
+  { "request": "GET /people/ada", "status": 200, "body": "expected/ada.html" },
+  { "request": "GET /people/nobody", "status": 404, "body": "expected/nobody.html" }
+]

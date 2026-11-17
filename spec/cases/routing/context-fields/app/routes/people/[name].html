@@ -1,0 +1,19 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ url, params, route, fragment, request }) => ({
+    url,
+    name: params.name,
+    path: route.path,
+    fragment,
+    method: request === null ? 'none' : request.method,
+  });
+</script>
+
+<dl id="fields" fragment>
+  <dt>url</dt><dd>${url}</dd>
+  <dt>name</dt><dd>${name}</dd>
+  <dt>path</dt><dd>${path}</dd>
+  <dt>fragment</dt><dd>${fragment === null ? 'null' : fragment}</dd>
+  <dt>request</dt><dd>${method}</dd>
+</dl>

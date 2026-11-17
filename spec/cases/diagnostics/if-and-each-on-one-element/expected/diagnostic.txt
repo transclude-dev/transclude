@@ -1,0 +1,8 @@
+[plugin transclude] app/routes/index.html:6:3
+CompileError: <li> carries both "each" and "if". Which runs first would be unclear. Wrap one in a <template>. (line 6)
+  4 | 
+  5 | <ul>
+> 6 |   <li if="note.done" each="note of notes">${note.text}</li>
+    |   ^
+  7 | </ul>
+  8 |

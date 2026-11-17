@@ -1,0 +1,13 @@
+<script server>
+  import { find } from '../../data/people.js';
+
+  export const prerender = false;
+
+  export default async ({ params }) => {
+    const person = find(params.name);
+    if (!person) return new Response('no such person', { status: 404 });
+    return { person };
+  };
+</script>
+
+<h1>${person.name}</h1>

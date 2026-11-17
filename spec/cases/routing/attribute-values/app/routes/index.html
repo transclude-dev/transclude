@@ -1,0 +1,21 @@
+<script server>
+  export default async () => ({
+    note: { id: 7, text: 'Buy "milk" & eggs', done: true },
+    q: 'a < b',
+    busy: true,
+    idle: false,
+    missing: null,
+    person: { name: 'Ada', tags: ['math', 'engines'] },
+    meta: { born: 1815 },
+  });
+</script>
+
+<a href="/notes/${note.id}" class="${note.done ? 'done' : ''}">
+  ${note.text}
+</a>
+
+<input name="q" value="${q}" disabled="${busy}" />
+<user-card name="${person.name}" tags="${person.tags}"></user-card>
+
+<button disabled="${idle}" title="${missing}" data-gone="${undefined}">Save</button>
+<div data-meta="${meta}" class="note note-${note.id} ${note.done ? 'done' : 'open'}"></div>

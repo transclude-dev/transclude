@@ -1,0 +1,5 @@
+[
+  { "request": "GET /people/ada?tab=notes", "status": 200, "body": "expected/ada.html" },
+  { "request": "GET /people/ada?fragment=fields", "status": 200, "body": "expected/fields.html" },
+  { "request": "GET /", "status": 200, "body": "expected/index.html" }
+]

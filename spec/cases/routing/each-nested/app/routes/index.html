@@ -1,0 +1,15 @@
+<script server>
+  export default async () => ({
+    groups: [
+      { name: 'Math', people: [{ slug: 'ada', name: 'Ada' }, { slug: 'emmy', name: 'Emmy' }] },
+      { name: 'Code', people: [{ slug: 'grace', name: 'Grace' }] },
+    ],
+  });
+</script>
+
+<div each="group of groups">
+  <h2>${group.name}</h2>
+  <a each="person of group.people" href="/people/${person.slug}">
+    ${person.name}, ${group.name}
+  </a>
+</div>

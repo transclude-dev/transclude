@@ -253,19 +253,19 @@ Complete.
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
 | `app` is a Hono instance, so Hono's middleware works | `endpoints/cors`, `security/own-headers` | reviewed |
-| `app/server.js` reaches a rendered page, a prerendered page and a public file | `middleware/server-header` | unreviewed |
-| The order: trailing-slash redirect, CSRF, `app/server.js`, public files, routes | `middleware/order`, `middleware/server-header` | unreviewed |
-| A real file beats a `[...path]` catch-all | `middleware/public-before-routes` | unreviewed |
+| `app/server.js` reaches a rendered page, a prerendered page and a public file | `middleware/server-header` | reviewed |
+| The order: trailing-slash redirect, CSRF, `app/server.js`, public files, routes | `middleware/order`, `middleware/server-header` | reviewed |
+| A real file beats a `[...path]` catch-all | `middleware/public-before-routes` | reviewed |
 | Middleware does not run during the build | Not visible over HTTP: the middleware runs again when the prerendered file is served | - |
-| `gated` leaves its paths out of the sitemap, and the middleware still answers them | `middleware/gated` | unreviewed |
+| `gated` leaves its paths out of the sitemap, and the middleware still answers them | `middleware/gated` | reviewed |
 | The build writes no file for a gated path | A property of `dist/static` as files. A gated page served from a file and one rendered per request answer the same bytes | - |
-| `/api/*` matches `/api` and everything under it | `middleware/gated` | unreviewed |
-| An entry that is not a path fails the build | `diagnostics/gated-not-a-path` | unreviewed |
-| An entry that covers no route, URL or public file fails the build | `diagnostics/gated-covers-nothing` | unreviewed |
+| `/api/*` matches `/api` and everything under it | `middleware/gated` | reviewed |
+| An entry that is not a path fails the build | `diagnostics/gated-not-a-path` | reviewed |
+| An entry that covers no route, URL or public file fails the build | `diagnostics/gated-covers-nothing` | reviewed |
 | A layout guard is already caught | `diagnostics/prerender-reads-cookie` | reviewed |
 | `trailingSlash: 'never'`, the default: `/about/` answers 301 | `middleware/trailing-slash-never` | - |
-| `trailingSlash: 'ignore'`: both URLs answer 200 | `middleware/trailing-slash-ignore` | unreviewed |
-| `canonical: true` names the same URL either way | `middleware/canonical` | unreviewed |
+| `trailingSlash: 'ignore'`: both URLs answer 200 | `middleware/trailing-slash-ignore` | reviewed |
+| `canonical: true` names the same URL either way | `middleware/canonical` | reviewed |
 
 ## /docs/refusals
 

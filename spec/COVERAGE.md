@@ -420,27 +420,27 @@ branch.
 | --- | --- | --- |
 | `npm start` serves `dist/` on 1960; `PORT` wins | Starting a server, not an `app.request()`: phase 4 | - |
 | Every page is a file unless it says `prerender = false` | `production/cache-control`, and every case with a prerendered page | - |
-| A page that reads a cookie, answers with a `Response` or sets a status cannot be prerendered | `diagnostics/prerender-reads-cookie`, `prerender-response`, `prerender-status` | unreviewed |
-| A loader that throws fails the build, naming the page, the error and the line | `diagnostics/prerender-throws` | unreviewed |
-| `speculate: true`: prerendered URLs in `prerender`, server routes in `prefetch`, endpoints in neither | `production/speculate` | unreviewed |
-| `eagerness` and `exclude`, matched against the emitted pattern | `production/speculate-options` | unreviewed |
+| A page that reads a cookie, answers with a `Response` or sets a status cannot be prerendered | `diagnostics/prerender-reads-cookie`, `prerender-response`, `prerender-status` | reviewed |
+| A loader that throws fails the build, naming the page, the error and the line | `diagnostics/prerender-throws` | reviewed |
+| `speculate: true`: prerendered URLs in `prerender`, server routes in `prefetch`, endpoints in neither | `production/speculate` | reviewed |
+| `eagerness` and `exclude`, matched against the emitted pattern | `production/speculate-options` | reviewed |
 | A browser acts on the rules, or ignores them | Browser behavior | - |
 | `/people/*` asked for as a URL answers 404 | `routing/route-table` shows a parameter route answering for a name it does not know | - |
-| `Cache-Control` per kind of response; the 500 page is `no-store` with no ETag | `production/cache-control` | unreviewed |
+| `Cache-Control` per kind of response; the 500 page is `no-store` with no ETag | `production/cache-control` | reviewed |
 | Build output is compressed once; each encoding gets its own ETag | `production/encodings` | - |
-| Public files are served with byte ranges | `production/public-files` | unreviewed |
-| `Content-Type` from one table, `application/octet-stream` for an unknown kind | `production/public-files` | unreviewed |
+| Public files are served with byte ranges | `production/public-files` | reviewed |
+| `Content-Type` from one table, `application/octet-stream` for an unknown kind | `production/public-files` | reviewed |
 | The build prints the kinds it could not type | Build output, which the runner does not read | - |
-| `nosniff` on every response | `production/public-files`, `endpoints/envelope` | unreviewed |
-| `404.html` and `500.html` are served as built | `production/error-pages` | unreviewed |
-| A layout above them reading a cookie stops the build | `diagnostics/error-page-layout-cookie` | unreviewed |
+| `nosniff` on every response | `production/public-files`, `endpoints/envelope` | reviewed |
+| `404.html` and `500.html` are served as built | `production/error-pages` | reviewed |
+| A layout above them reading a cookie stops the build | `diagnostics/error-page-layout-cookie` | reviewed |
 | `ctx.request` is `null` while prerendering | `routing/context-fields` | reviewed |
-| In production the error is logged and kept out of the page | `production/error-pages` | unreviewed |
+| In production the error is logged and kept out of the page | `production/error-pages` | reviewed |
 | In dev the stack is shown | The dev server | - |
 | A page loads a script only if something on it needs one | `elements/javascript-shipped` | reviewed |
-| `ctx.absolute()` uses `metadataBase`, or the request's host without it | `production/absolute`, `production/absolute-no-base` | unreviewed |
-| `onError` gets the request, URL, method, route, params and phase; the 500 page ships | `production/on-error` | unreviewed |
-| A reporter that throws is caught; without one the error is logged | `production/on-error-throws`, `production/error-pages` | unreviewed |
+| `ctx.absolute()` uses `metadataBase`, or the request's host without it | `production/absolute`, `production/absolute-no-base` | reviewed |
+| `onError` gets the request, URL, method, route, params and phase; the 500 page ships | `production/on-error` | reviewed |
+| A reporter that throws is caught; without one the error is logged | `production/on-error-throws`, `production/error-pages` | reviewed |
 
 ## /docs/refusals
 

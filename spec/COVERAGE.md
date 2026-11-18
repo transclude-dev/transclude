@@ -330,6 +330,27 @@ Complete.
 | Nothing writes a `<link rel="alternate">` for the feed | `feeds/feed-rss` | reviewed |
 | Both are written into `dist/static` | A property of the build output, not of an HTTP answer | - |
 
+## /docs/markdown
+
+Complete.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| `notes.md` answers `/notes`, as `notes.html` would | `markdown/page` | unreviewed |
+| One of each in a directory, and the build refuses | `diagnostics/markdown-and-html-same-url` | unreviewed |
+| `markdown` is a function from source to HTML; it is given the file | `markdown/page` | unreviewed |
+| A `.md` page with no converter is an error naming the file | `diagnostics/markdown-without-converter` | unreviewed |
+| The `<script server>` loader is the same block | `markdown/page` | unreviewed |
+| CommonMark passes a `<script>` block through raw | The parser's rule, and the parser is the app's. The cases use a converter of a few lines | - |
+| No frontmatter and no YAML | An absence. `markdown/page` has the loader as its only block | - |
+| Interpolation, directives and fragments work | `markdown/page`, `markdown/fragment` | unreviewed |
+| Type checking works, and a diagnostic points into the converted HTML | `npm run check` output, not an HTTP answer | - |
+| A closing script tag inside the loader turns the rest into prose | The parser's rule | - |
+| Elements need blank lines; inline tags do not | The parser's rule | - |
+| `\${` is the escape in any page | `markdown/escape` | unreviewed |
+| Escape code tokens in the converter with `walkTokens` | Code in the app's converter | - |
+| A name starting with `_` answers no URL, directories included | `markdown/underscore-skipped` | - |
+
 ## /docs/refusals
 
 Started.

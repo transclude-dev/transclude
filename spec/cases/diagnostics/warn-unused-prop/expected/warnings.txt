@@ -1,0 +1,1 @@
+[transclude] tone-chip: prop `tone` is declared but never used. It is not read in the template, and does not appear in <style> or <script element>

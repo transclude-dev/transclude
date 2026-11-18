@@ -1,0 +1,17 @@
+<script element>
+  export const prototype = {
+    connected({ signal }) {
+      const options = { passive: true };
+      this.addEventListener('click', () => {});
+      document.addEventListener('keydown', () => {});
+      window.addEventListener('resize', () => {}, true);
+      globalThis.addEventListener('focus', () => {}, { capture: true });
+      document.addEventListener('scroll', () => {}, options);
+      document.addEventListener('keyup', () => {}, { signal });
+      const span = this.querySelector('span');
+      span.addEventListener('click', () => {});
+    },
+  };
+</script>
+
+<span>watching</span>

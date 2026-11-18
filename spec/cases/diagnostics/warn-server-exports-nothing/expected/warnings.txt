@@ -1,0 +1,2 @@
+[transclude] index: index.html <script server> exports nothing, so nothing reads it. The loader is `export default`, and a handler is `export const POST`. A name declared here and not exported is not in scope for the markup
+[transclude] notes layout: notes/_layout.html <script server> exports nothing, so nothing reads it. The loader is `export default`, and a handler is `export const POST`. A name declared here and not exported is not in scope for the markup

@@ -99,6 +99,16 @@ the first line naming a file under `app/`, the bundler's `[plugin …]` line, or
 the error, whichever comes first, and it stops before the stack frames, which
 name the framework's own files.
 
+A case about a warning expects the build to succeed and say something:
+
+```json
+[{ "build": "warns", "diagnostic": "expected/warnings.txt" }]
+```
+
+The warnings are the lines the build prints with `[transclude]` in front.
+They must be the file exactly, all of them, so a case can also show that a
+warning stays quiet. The other entries in the case then run as requests.
+
 An entry with `"log": "expected/<name>.log"` checks what the server printed to
 `console.error` or `console.warn` while it answered that request. The log
 must contain the file, which stops before the first stack frame. A `null`

@@ -189,6 +189,7 @@ against.
   paints itself on connect. `__fragment` threads through both `emitShadow` and
   `emitLight`. Drop it from the second one and a shadow element inside a light one emits
   a shadow root nobody will process.
+  `spec: elements/shadow-inside-light-in-a-fragment`.
 - **A reference target has two places to be written, and missing one says
   nothing.** `export const referenceTarget` sends a `<label for>` or an
   `aria-labelledby` that names the host to one id inside the shadow root.
@@ -202,6 +203,7 @@ against.
   `referenceTarget` on `ShadowRootInit`, which is why the runtime declares its
   own `ShadowInit`. In Chrome, a form-associated host with a target reports no
   `internals.labels`, because the label now belongs to the inner element.
+  `spec: elements/reference-target`.
 - **A module variable does not bridge the two bundles.** An app holding `env`
   from `worker.js` for its loaders has to keep it on `globalThis`, because the
   build inlines a copy of that module into `dist/server/entry.js` and wrangler
@@ -219,6 +221,7 @@ against.
   would stop every client block in a project from compiling, which is what one
   falsification does on purpose. Interpolation into one is still refused by
   `assertRawTextSafe`, since being markup does not make raw text safe.
+  `spec: recipes/data-block`.
 - **A client entry is one module, so a layout's relative import is rewritten.**
   Every `<script>` in the chain goes into the page's entry, and `origin` can
   name one file for a virtual module, which is the page. A layout's
@@ -228,7 +231,7 @@ against.
   `rebaseImports` now writes each relative specifier as an absolute path from
   the file it was written in, and `compileClientEntry` takes a `rebase` per
   source. An `import()` built at runtime cannot be read, so it still resolves
-  against the page.
+  against the page. `spec: layouts/client-import-nested`.
 - **The dev server builds its own `ctx` too, and `test/context-shape.test.js` is
   what notices.** `ctx.after` shipped in 0.7.0 and was undefined in dev, so a form
   calling it worked in the build and threw `after is not a function` while you
@@ -358,6 +361,7 @@ against.
   what it replaced, which is why the cuts are applied in descending order — the
   offsets all came from the original, and rewriting front to back leaves each
   later cut off by however much the ones before it grew.
+  `spec: diagnostics/export-declares-two`.
 - **A prop or a state field cannot be named for a member the framework calls.**
   `defineProps` puts an accessor on the prototype where `connected` belongs, and
   `defineMembers` catches nothing, because it checks a member against what the
@@ -365,6 +369,7 @@ against.
   the attribute holds, which is a string. `assertNoHookShadow` refuses the name
   where it is declared. `RESERVED_LIFECYCLE` is the other half of this and covers
   the `*Callback` spellings on the prototype itself.
+  `spec: diagnostics/element-prop-named-for-hook`.
 - **A synchronous cleanup runs synchronously, and the order depends on it.**
   `release` handed every cleanup to `Promise.resolve().then()`, so it was
   deferred by a microtask even when it was already a function. Moving an element
@@ -378,7 +383,7 @@ against.
   blanked before the generated module is assembled, so `bindElementModule`
   filters them out of `declared`. Without that filter `export const
   formAssociated` collided with the module's own `formAssociated` export, which
-  is the very name the block is meant to use.
+  is the very name the block is meant to use. `spec: elements/form-associated`.
 
 - **A light element writes; only a shadow one rebuilds.** Both react to a prop
   change. The light one updates the text and attributes already in the document
@@ -390,7 +395,7 @@ against.
   rather than rebuilt, so a shadow element's list is not volatile at all. Removing
   the guard failed no test until one was written for it. State is held to the same
   rule, because a volatile name is whatever the template read and not where the
-  value came from.
+  value came from. `spec: diagnostics/light-element-structural-directive`.
 - **The unused-prop check reads code and skips comments, and the `[^:]` in that
   regex is doing real work.** `unusedProps` in `compiler/index.js` matches a
   declared name by word against `<style>` and `<script element>`, because a prop
@@ -403,7 +408,7 @@ against.
   which has no such thing, and the rest of that line goes with it along with any
   prop used on it. Measured across the 19 elements in this repository before and
   after: no new warning, and a synthetic prop named only in a comment goes from
-  quiet to reported.
+  quiet to reported. `spec: diagnostics/warn-unused-prop`.
 - **A light element's styles are `@scope`, and `@scope` reached the last engine
   in March 2026.** `scopeCss` in `compiler/index.js` writes the wrapper, and there
   is no fallback because there is no fallback to write: a browser skips an at-rule
@@ -423,6 +428,7 @@ against.
   While the two were one, everything from the first `if` to the end of a light
   element's template was volatile, so `<p if="true">fixed</p><span>${name}</span>`
   was refused over a name the block never read.
+  `spec: elements/light-block-then-binding`.
 - **A `<slot>` is as wide as the caller says.** It is fenced for the reason a
   block is. A light element's slot renders what was passed to it, which is no
   nodes or twenty, and the binder counted it as one: with two nodes slotted in,
@@ -436,7 +442,7 @@ against.
   sorts them now: `slot="x"` on a child, or a `<template slot="x">`. An
   `else` stays in its `if`'s slot, because a chain split across two would be
   two halves that each render alone, and naming another slot on it is an
-  error.
+  error. `spec: elements/light-slots`.
 - **The tag tells a fenced hole from a bare block.** `anchoredOf` holds both, and
   a branch reaches its own part *bare*, with its directive already consumed, so a
   block's node arrives at the walk as an ordinary element and is in that set.
@@ -449,7 +455,7 @@ against.
   places ask that question, and `readBehavior` in the compiler is the one reader
   all three go through: `defined` in the compile, `hasScript` in the plugin and
   `upgrades` in the type extractor. The early return in `defineLight` is the
-  fourth spelling and has to agree with it.
+  fourth spelling and has to agree with it. `spec: elements/state-only-defines`.
 - **`data()` is what a template sees, and the server has to build it too.**
   State defaults sit under the props. `shadow()` and `fragment()` rendered
   `def.coerce(props)` alone, so any template naming state wrote `undefined` into
@@ -457,6 +463,7 @@ against.
   for shadow elements the whole time and nothing failed, because no test rendered
   one with state through the server. Props go on top of state in both places: put
   them the other way and the first paint disagrees with every paint after it.
+  `spec: elements/state-default`.
 - **Reacting costs a definition, and only a definition.** `defineLight` returns
   before registering unless there is behavior, members or form association, so
   `observedAttributes` costs a page nothing it was not already paying. No element
@@ -466,6 +473,7 @@ against.
   is a test now rather than a claim. `www/test/site.test.js` names the pages
   allowed to ship one and fails on any other, so a page that grows a bundle is a
   decision somebody made rather than a number that moved.
+  `spec: elements/javascript-shipped`.
 
 - **The dev check is synchronous, and the yield between files is why that is
   fine.** `checker.check` drives the Go compiler through
@@ -579,7 +587,7 @@ against.
   adds another. `warnUnsignaled` in `script.js` reports a missing `signal` for
   those targets only. A boolean third argument is `capture` and counts as
   missing; a variable is left alone, because guessing would make the warning
-  something to switch off.
+  something to switch off. `spec: diagnostics/warn-document-listener`.
 - **One rule decides who ships a client entry, in `clientManifest`.** The dev
   server and the build both read `client.needed`. They each had their own copy of
   that condition once, and only one got updated, so dev served a page with no entry
@@ -823,6 +831,7 @@ against.
   stylesheet this compiler never reads, so the check is the spelling everyone
   writes rather than every spelling there is. `none` is allowed, being the one
   value two elements can share.
+  `spec: diagnostics/view-transition-name-repeated`.
 - **A rule nothing checks is a rule that drifts, and spelling was the proof.**
   `design/voice.md` asked for American spelling from the day it was written, and
   56 British ones accumulated across 18 files: a comment, the README built from
@@ -989,6 +998,7 @@ against.
   code inside a template literal and `this.regions` is a field, so reading only
   what is handed to an `Error` says exactly the rule. Identifiers keep their own
   names, which is what the site's check already allowed.
+  `spec: diagnostics/fragment-without-id`.
 - **A docs sample was wrong for as long as it had existed, and nothing read
   it.** `/docs/includes` showed three refusals in one block, and two of the
   three were written `<transclude src="…">` with no closing tag. That is refused
@@ -1013,6 +1023,7 @@ against.
   top-level code with a side effect and nothing to export is rare but real.
   `{{ name }}` and `v-if` still compile silently and should: the first is
   legitimate text, and this site's own pages write it.
+  `spec: diagnostics/warn-server-exports-nothing`.
 - **The expression error described jsep's grammar, not this one.**
   `${items.map((i) => i.name)}` came back "Expected comma at character 12", which
   sends a reader hunting a comma instead of telling them arrow functions are not
@@ -1021,7 +1032,7 @@ against.
   because it carries the position, and names the rule after it. The rule was
   already written down on `/docs/decisions`, which is the page explaining why it
   is small, and nowhere near where `${}` is taught. `/docs/routing` states it now
-  and links there for the reason.
+  and links there for the reason. `spec: diagnostics/expression-malformed`.
 - **The config table was pinned by its defaults and not by its types.** Two
   tests read `DEFAULTS`: one asserts an empty config derives it, and the site's
   own compares it against the documented table. Neither read the `Config`
@@ -1405,6 +1416,7 @@ against.
   compiled before its element would emit the wrong thing for that tag, with
   nothing said. `readFlags` and `compileComponent` share `ELEMENT_FLAGS` and the
   same extractors, so there is one answer to what a file declares.
+  `spec: elements/shadow-element`.
 - **Every reader of `elementsDir` goes through `src/elements.js`.** The plugin
   finds an element by tag, the checker decides by path which files are
   elements, and the dev server decides which edits change types. Each resolved
@@ -1413,7 +1425,7 @@ against.
   as a page. A tag in two directories is refused in the scan, naming both files:
   letting the first win meant an edit to the second changed nothing, with
   nothing said. The dev watcher adds a directory outside the root itself, since
-  Vite watches only the root.
+  Vite watches only the root. `spec: diagnostics/element-in-two-dirs`.
 - **`loadProject` refuses `partialsDir` and `componentsDir`.** Both are one
   `elementsDir` now. Left alone the old keys would be ignored, the app would look
   in `app/elements/`, find nothing, and every tag would render as an unmatched
@@ -1425,6 +1437,7 @@ against.
   parses the source again in document mode purely to read that element. Using the
   real parser rather than searching the text is what makes `<html>` inside a
   script block or a comment stay a string.
+  `spec: layouts/html-in-text-stays-text`.
 - **`Secure` follows the connection, and `X-Forwarded-Proto` is trusted only to
   turn it on.** A cookie had `Path`, `HttpOnly` and `SameSite=Lax` and no
   `Secure`, so a session could go over plain HTTP. Always on breaks
@@ -1561,6 +1574,7 @@ against.
   iOS and a few other browsers, all of them fixed, so it costs 19 bytes on
   every page and buys nothing. A test pins the omission, because the habit is
   strong enough that somebody will put it back.
+  `spec: layouts/viewport-replaced`.
 - **A config key lives in two lists, and only one of them is checked against.**
   `withDefaults` refuses a key it does not know, and `KEYS` is what it knows:
   `DEFAULTS` plus `UNDEFAULTED`. A key with a default needs no second entry,
@@ -1613,6 +1627,7 @@ against.
   its value and leaves the tail in the document. The test for that was vacuous
   at first: it searched for the whole value, which a truncated cut does not
   leave behind either. It counts the surviving tags now.
+  `spec: layouts/head-merge-by-key`.
 - **A hoisted tag's directive has to be decided before anything is emitted.**
   `<title>`, `<meta>`, `<link>` and `<base>` at the top level of a page are
   written into the head buffer, and `emitElement` used to be where that was
@@ -1627,7 +1642,7 @@ against.
   hoisted tag with an ordinary one has no single buffer, so it is refused, and so
   is a directive on `<title>`: which level's title wins is settled at compile
   time from `hasTitle`, and a false condition would leave the document untitled
-  with the layout's title already ruled out.
+  with the layout's title already ruled out. `spec: routing/head-tags`.
 - **`renderHtmlAttrs` returns an object, not markup.** The chain merges by name,
   innermost winning per attribute, so a root layout setting the theme and a page
   setting `dir` both survive. Concatenating serialized attributes instead would
@@ -1636,6 +1651,7 @@ against.
   escaped with the same four characters `attr` escapes in the runtime, because a
   theme comes from a cookie. Names are checked against a pattern rather than
   escaped: a name needing an escape is a mistake and should say so.
+  `spec: layouts/html-attrs`.
 - **An endpoint's `Response` goes through the envelope too.** Every other path
   wrapped one and this did not, so an endpoint that set a cookie and answered a
   redirect lost the cookie. The redirect worked, which is what made it hard to
@@ -1964,12 +1980,13 @@ against.
   `${}` in prose still fails with `bad expression "": empty expression` and a line
   number in the compiled file rather than the source. Passing examples in from the
   loader also works and is what most of `www/` does, because a JS string can hold
-  them without either escape.
+  them without either escape. `spec: markdown/escape`.
 - **The escape was applied to text and not to attributes.** `emitAttrs` took the
   static branch and wrote `attr.value` rather than the parts
   `splitInterpolations` had already unescaped, so `title="\${name}"` in the
   source put a backslash in the page. Text was right the whole time, which is why
   nobody saw it. If you touch either path, `test/markdown.test.js` asserts both.
+  `spec: routing/escape-in-attribute`.
 - **Markdown is converted in exactly two readers, and they must not disagree.**
   `plugin.js`'s `read` compiles the page; `typecheck.js`'s `sourceOf` reads the
   same page to collect its names. Both go through `sourceOf` in `src/markdown.js`.

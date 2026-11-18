@@ -1,0 +1,1 @@
+Error: [transclude] pages/ is now routes/. It holds .js endpoints as well as .html pages. Rename the directory, or set `routesDir` in transclude.config.js.

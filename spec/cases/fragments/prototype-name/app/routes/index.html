@@ -1,0 +1,13 @@
+<script server>
+  export const prerender = false;
+  let count = 0;
+
+  export const POST = () => {
+    count += 1;
+    return {};
+  };
+
+  export default () => ({ count });
+</script>
+
+<p id="count" fragment>${count}</p>

@@ -1,0 +1,13 @@
+<script server>
+  const people = { ada: 'Ada Lovelace' };
+
+  export const paths = () => [{ name: 'ada' }];
+
+  export default ({ params, response }) => {
+    const name = people[params.name];
+    if (!name) response.status = 404;
+    return { name: name ?? 'No one by that name' };
+  };
+</script>
+
+<h1>${name}</h1>

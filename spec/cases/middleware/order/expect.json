@@ -2,5 +2,6 @@
   {"request": "GET /about/", "status": 301, "headers": {"location": "http://localhost/about", "x-frame-options": null}},
   {"request": "POST /?fragment=got", "send": {"form": {"a": "1"}, "headers": {"origin": "https://evil.example"}}, "status": 403, "headers": {"x-frame-options": null}},
   {"request": "POST /?fragment=got", "send": {"form": {"a": "1"}}, "status": 200, "headers": {"x-frame-options": "DENY"}, "body": "expected/posted.html"},
-  {"request": "GET /about", "status": 200, "headers": {"x-frame-options": "DENY"}}
+  {"request": "GET /about", "status": 200, "headers": {"x-frame-options": "DENY"}},
+  {"request": "GET /note.txt", "status": 200, "headers": {"x-frame-options": "DENY"}}
 ]

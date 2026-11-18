@@ -281,6 +281,7 @@ against.
   file that has had three accidental ones, so the build prints what it skipped
   under everything it wrote. A page missing from production and silent about it is
   the failure this feature would otherwise create.
+  `spec: routing/draft-left-out`.
 - **The build's context refuses rather than omits.** `revalidateTag` and `after`
   are on the prerender context as functions that throw. Leaving them off is what
   it did before, and a loader calling one failed with `revalidateTag is not a
@@ -518,7 +519,7 @@ against.
   break production has to break dev first, and this one costs dev nothing
   because it writes no header of its own. An unreadable value counts as hiding.
   Wrong that way is an error naming the author's own header; wrong the other way
-  is the silent swap.
+  is the silent swap. `spec: fragments/no-vary-search-hides-fragment`.
 - **`baseApp` refuses an option it does not know.** `dev.js` passed `publicRoot`
   to a function that takes `publicFiles`, so dev served no public files at all
   while production served them. The only sign was a Vite warning about one of the
@@ -581,6 +582,7 @@ against.
   brought in an element, which is most of them: a page that renders its own
   elements defines them without it. `watchElements` in the config, off by
   default. The starter went from three client entries to none.
+  `spec: fragments/watch-elements`, `spec: routing/index-page`.
 - **A listener on `document` outlives the element that added it.** One on the
   element is collected with it, so it needs nothing; one on `document`,
   `window` or `globalThis` holds its closure forever and every element after it
@@ -631,7 +633,7 @@ against.
 - **An action runs after the region is known to exist.** `POST ?fragment=nope`
   used to change data and then 404. Anything that can refuse a request has to
   refuse it before `runAction`, not after. `hasRegion` is that check, in both
-  servers.
+  servers. `spec: fragments/post-unknown-name`.
 - **A layout guard is one of the things that can refuse a request, and it did
   not.** The same rule as above, missed for the case that matters most. A layout
   loader returning a `Response` stopped the render, and the render is after the
@@ -645,6 +647,7 @@ against.
   `examples/auth` could not catch this because every page under its guard was
   read-only; it has a `POST` under there now, and the test asserts nothing
   changed rather than asserting the status, which was never wrong.
+  `spec: layouts/guard-action`.
 - **`transclude-env.d.ts` has to compile, and one flag is why nobody saw that it
   did not.** Every context type named `__Cookies` and the file declared it
   nowhere, in every project, from the first `npm run check`. A `.d.ts` is the one
@@ -683,6 +686,7 @@ against.
   and say nothing about why. The shim types each handler's `ctx` from the same
   route context as the loader, and adds `{ request: Request }`: the request is
   null only while prerendering, and prerendering never runs an action.
+  `spec: forms/verbs`.
 - **A verb is a name on a list, not a shape.** Both shims key on the methods the
   router really dispatches: `ACTION_METHODS` from `document.js` for a page,
   `ENDPOINT_METHODS` from `server.js` for an endpoint. The endpoint rule was
@@ -691,20 +695,22 @@ against.
   test meant to cover that used a lowercase helper, which the old rule already
   allowed, so it passed for as long as it was wrong. `runEndpoint` checks
   membership as well as shape: `mod.HELPERS` may well be a function, and a request
-  naming it would otherwise reach it.
+  naming it would otherwise reach it. `spec: endpoints/verb-not-a-handler`.
 - **`ctx.response` is shared by reference, and has to be.** Loaders are called with
   `{ ...ctx, layout }`, so `ctx.status = 404` would be written to a copy nobody
   reads. `responseOf()` returns the one object every loader in the chain and the
   server all hold, which is why changing it works at all.
+  `spec: layouts/layout-status`.
 - **A loader returning a `Response` answers the request and skips the render.** It
   is the same rule an action already had, so there is one rule rather than two.
   When a layout does it, nothing below it runs, which is what makes a login
-  redirect a layout's job.
+  redirect a layout's job. `spec: routing/loader-response`.
 - **`serve.js` registers every route, not just `manifest.dynamic`.** A prerendered
   URL is answered by the static handler before it gets there. What gets there is a
   URL the pattern matches but `paths` never listed. Leaving those to the not-found
   handler is what made dev answer 200 with the page's own "not found" body while
   production answered the 404 page. Different status and different body.
+  `spec: routing/unlisted-param`.
 - **The order middleware is registered in is the behavior, so it lives in one
   function.** `baseApp` registers, in this order: the trailing-slash redirect,
   CSRF, `app/server.js`, the public-file handler, and then whatever routes the
@@ -713,7 +719,7 @@ against.
   serves bytes, so a guard can cover prerendered pages and public files. Public
   files come before the route table, so a real file beats a `[...path]` catch-all.
   Both servers call the same builder, so there is no second copy of that order to
-  get wrong.
+  get wrong. `spec: middleware/order`.
 - **Vite needs the http server, so the server is built first.** In middleware
   mode with no `hmr` option Vite starts its own WebSocket on port 24678, the
   browser refuses that socket as cross-origin, and nothing is ever delivered. The
@@ -732,7 +738,7 @@ against.
   `'never'` is strict routing plus a 301. `'ignore'` is the loose router and two
   URLs for one page. `alwaysRedirect: true` matters: without it Hono only redirects
   a request that already 404'd, and `/docs/:path{.+}` answers `/docs/intro/` as
-  `intro/` with a 200 first.
+  `intro/` with a 200 first. `spec: routing/trailing-slash-catch-all`.
 - **`publicDir` is relative to `appDir`, like every other directory key.** It
   landed at the project root first, which put the one directory of site content
   outside the boundary the config's own opening line draws. A favicon in
@@ -1359,18 +1365,19 @@ against.
   `ctx.response` on that path. `Response.redirect()` also has headers that cannot be
   changed, so appending throws rather than being ignored. `withEnvelope` copies with
   `new Response(body, response)`, which keeps the status and gives headers that can
-  be written to.
+  be written to. `spec: layouts/guard-redirect`, `spec: cookies/flash`.
 - **`parseSigned` says `false` for a forged cookie, not `undefined`.** Absent is a
   missing key, present but invalid is `false`, and `?? fallback` would sail past the
   second one. `cookies.signed.get` turns both into `undefined`.
+  `spec: cookies/forged`.
 - **`cookies.all()` has a null prototype.** That is Hono's doing and worth keeping.
   A cookie named `constructor` is attacker input, and on a plain object it would
-  collide with something real.
+  collide with something real. `spec: cookies/all`.
 - **Only the dev server invents a cookie secret.** A fresh clone should run, so dev
   signs with a random value for that process and prints a notice. Production does
   not. A server that invented one would invalidate every session on restart and
   share none with a second instance, and a 500 naming `cookieSecret` is better than
-  finding that out later.
+  finding that out later. `spec: cookies/signed-needs-secret`.
 - **A prerendered page hides what its loader needs.** The www site highlights its
   code samples with shiki, which at the time compiled WebAssembly, and workerd
   refuses that at runtime. Every page still answered, because a prerendered page
@@ -1388,7 +1395,7 @@ against.
   `?fragment=nope` is a 404, because someone typed it. `HX-Target: nope` is ignored,
   because htmx sends that header on every request, including ones that want the
   whole document. Turning on `fragmentHeader` also adds a header to `Vary`, which is
-  why it is off by default.
+  why it is off by default. `spec: fragments/header-unknown-name-ignored`.
 - **Strip comments before grepping source in a test.** Two of these guards failed
   on the comment that explains the rule rather than on code breaking it: the
   Node-globals check and the `process.env` one.
@@ -1407,6 +1414,7 @@ against.
   export still mean the `.html` kind, which is why `endpoints` sits beside it.
   `resolveRoutesDir` throws if the old name is still there, because the alternative
   is an empty route table and a site of 404s.
+  `spec: diagnostics/routes-dir-named-pages`.
 - **The framework ships nothing that swaps a region into a page, on purpose.** A
   region has a plain HTTP URL and that is the whole agreement. htmx, Turbo or a
   short `fetch` drives it. `watch` and `adoptStyles` are the exception, for one
@@ -1457,6 +1465,7 @@ against.
   that. Believing a client-set header is safe in exactly one direction: a lie
   turns `Secure` *on* and the cookie is then withheld over plain HTTP, which
   fails closed. Nothing reads it to turn `Secure` off.
+  `spec: cookies/write-defaults`.
 - **`nosniff` is sent always; `X-Frame-Options` and HSTS are not.** Nothing
   legitimate depends on a browser second-guessing a declared Content-Type, so
   that header has no judgment in it and is on for every response including a
@@ -1542,6 +1551,7 @@ against.
   from a loader and so are known before any loader runs. A proxy that reads it
   sends a 103. 103 cannot be sent from here directly: a `Response` carries one
   status, and the Fetch API does not model an informational one.
+  `spec: endpoints/stream`.
 - **The chunks behind the entry are named up front, and only the build can name
   them.** A client entry is a few imports and a call: the runtime chunk, one
   chunk per element the page renders, and the loader map. A browser found them
@@ -1666,7 +1676,7 @@ against.
   wrapped one and this did not, so an endpoint that set a cookie and answered a
   redirect lost the cookie. The redirect worked, which is what made it hard to
   see. Found by writing an endpoint that stores a preference and sends you back,
-  which is the shape that hits it.
+  which is the shape that hits it. `spec: endpoints/envelope`.
 - **A feed reads no clock.** `src/feed.js` stamps the document from the newest
   item it holds, and takes `updated` from the config when there is none. A
   prerendered feed is a file, written once and compressed once, so a build-time
@@ -1984,6 +1994,7 @@ against.
   action and then replied with whatever `Object(data)` stringifies to instead of
   the 404 the guard exists to send. `__proto__` gave a 500 instead. `regionOf` is
   the one lookup now, own properties only and the value has to be a function.
+  `spec: fragments/prototype-name`.
 - **A literal `${` is written `\${`, and the comment above the scanner said for a
   long time that it could not be written at all.** The escape is in
   `splitInterpolations` and has been. A bare `${` is read as an interpolation, so
@@ -2023,10 +2034,12 @@ against.
   matcher, and every mistake here fails open, so both mistakes are refused:
   `readGated` takes anything that is not a list of paths, and the build takes an
   entry that covers no route, no URL a `paths()` names, and no public file.
+  `spec: middleware/gated`, `spec: diagnostics/gated-not-a-path`,
+  `spec: diagnostics/gated-covers-nothing`.
 - **`gated` reaches the runtime through `routes.json`, not through a second
   config key.** `sitemapEntries` reads `manifest.gated`, which is how the written
   sitemap and the `/sitemap.xml` route leave out the same URLs. Two lists would
-  be two answers about what a crawler is invited to.
+  be two answers about what a crawler is invited to. `spec: middleware/gated`.
 - **The sitemap merges a path it already has, rather than keeping the first copy
   of it.** A page that exports `paths()` puts its URLs in the list with nothing
   but the path on them, because the route table holds no dates. The documented

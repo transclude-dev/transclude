@@ -1,0 +1,4 @@
+[
+  { "request": "GET /people/ada", "status": 200, "body": "expected/ada.html" },
+  { "request": "GET /people/bob", "status": 404, "headers": { "cache-control": "private, no-cache" }, "body": "expected/bob.html" }
+]

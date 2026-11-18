@@ -1,1 +1,4 @@
-[{ "request": "GET /events", "status": 200, "headers": { "content-type": "text/event-stream", "cache-control": "no-store" }, "body": "expected/events.txt" }]
+[
+  { "request": "GET /events", "status": 200, "headers": { "content-type": "text/event-stream", "cache-control": "no-store" }, "body": "expected/events.txt" },
+  { "request": "GET /session-events", "status": 200, "headers": { "content-type": "text/event-stream", "set-cookie": "session=ada; Path=/; HttpOnly; SameSite=Lax" }, "body": "expected/session-events.txt" }
+]

@@ -73,6 +73,11 @@ a second `elementsDir`, is copied with it.
   matches `/assets/index-AAAAAAAA.js`. The hash changes with any edit to the
   file behind it. Which asset a page names still counts.
 
+A request may name a built asset by its hash placeholder:
+`GET /assets/global-[hash].css`. The runner finds the real name in a body an
+earlier entry in the case was sent, the way a browser follows a link the page
+gave it. An entry fails when no earlier answer names the asset.
+
 The entries in one case run in order, in one process. A POST and the GET after
 it see the same app, which is how a case shows that an action ran or did not.
 

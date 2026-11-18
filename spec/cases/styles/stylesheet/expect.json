@@ -1,0 +1,5 @@
+[
+  {"request": "GET /", "status": 200, "body": "expected/index.html"},
+  {"request": "GET /live", "status": 200, "body": "expected/live.html"},
+  {"request": "GET /assets/__global-[hash].css", "status": 200, "headers": {"content-type": "text/css; charset=utf-8"}, "body": "expected/global.css"}
+]

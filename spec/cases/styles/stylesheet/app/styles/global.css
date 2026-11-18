@@ -1,0 +1,9 @@
+@import './tokens.css';
+
+.card {
+  color: brand;
+
+  & p {
+    margin: 0;
+  }
+}

@@ -1,0 +1,3 @@
+[
+  {"request": "GET /people", "status": 200, "body": "expected/people.html"}
+]

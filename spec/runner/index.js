@@ -39,7 +39,8 @@ for (const outcome of failed) console.log(describe(outcome));
 const seconds = ((performance.now() - started) / 1000).toFixed(1);
 const atOnce = Math.min(jobs, ids.length);
 const todos = todosOf(outcomes);
-const marks = todos ? `, ${todos} todo` : '';
+const exempt = exemptOf(outcomes);
+const marks = (todos ? `, ${todos} todo` : '') + (exempt ? `, ${exempt} exempt` : '');
 console.log(`${ids.length - failed.length} of ${ids.length} cases pass${marks}, ${atOnce} at a time, in ${seconds} s`);
 
 fs.mkdirSync(path.dirname(reportFile), { recursive: true });
@@ -143,10 +144,14 @@ function passed(outcome) {
  * A clean result passes. One marked `todo` passes by failing, because the
  * mark says the gap is known. Once it comes back clean the mark is stale, and
  * that fails until someone takes it off.
+ *
+ * An invariant a case is `exempt` from is read the same way. The two are kept
+ * apart because a `todo` is a gap to close, and an exemption is the case
+ * being about the very thing the invariant forbids.
  */
 function resultPasses(result) {
   const clean = !result.missing && result.problems.length === 0;
-  if (result.todo) return !clean;
+  if (result.todo || result.exempt) return !clean;
   return clean;
 }
 
@@ -156,13 +161,21 @@ function todosOf(outcomes) {
   return all.filter((result) => result.todo && !resultPasses({ ...result, todo: null })).length;
 }
 
+/** How many invariants a case is exempt from and still fail there, as they should. */
+function exemptOf(outcomes) {
+  const all = outcomes.flatMap((outcome) => outcome.results);
+  return all.filter((result) => result.exempt && !resultPasses({ ...result, exempt: null })).length;
+}
+
 function describe(outcome) {
   const lines = [`✗ ${outcome.id}`];
   if (outcome.error) lines.push(indent(outcome.error));
   if (outcome.error && outcome.build?.stderr) lines.push(indent(outcome.build.stderr.trim()));
   for (const result of outcome.results) {
-    if (result.todo && resultPasses(result)) continue;
+    const marked = result.todo || result.exempt;
+    if (marked && resultPasses(result)) continue;
     if (result.todo) lines.push(`  ${result.request}: passes now, so its todo is stale: ${result.todo}`);
+    if (result.exempt) lines.push(`  ${result.request}: passes now, so the exemption is stale: ${result.exempt}`);
     if (result.missing) lines.push(`  ${result.request}: no ${result.missing} yet (--snapshot writes it)`);
     for (const problem of result.problems ?? []) lines.push(`  ${result.request}\n${indent(problem, 4)}`);
   }

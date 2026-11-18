@@ -19,7 +19,7 @@ Complete.
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
 | `GET /?q=ada` is the whole document, `&fragment=matches` the `<ul>` alone, `?fragment=nope` a 404 | `fragments/marked-element` | reviewed |
-| The page and the fragment come from one template, so they agree | Phase 3, the fragment equivalence invariant | - |
+| The page and the fragment come from one template, so they agree | The fragment equivalence invariant. Two cases disagree: see Invariants | - |
 | `#list` never reaches the server | Browser behavior, not the framework's | - |
 | `<transclude src="/notes#list">` resolves while the page renders | The includes area | - |
 | `setHTMLUnsafe` builds the shadow roots in a fragment | Needs a browser, phase 5 | - |
@@ -326,7 +326,7 @@ Complete.
 | `format: 'atom'` writes Atom 1.0; `path` moves the feed | `feeds/feed-atom` | reviewed |
 | Atom needs an author, the feed's or every item's | `feeds/feed-atom-needs-author` | reviewed |
 | Atom needs a date: an item's, or `updated` | `feeds/feed-atom-needs-date`, `feeds/feed-updated` | reviewed |
-| Nothing reads the clock; the feed is stamped from its newest item | `feeds/feed-rss`, `feeds/feed-updated`. Same bytes every run is the determinism invariant, phase 3 | reviewed |
+| Nothing reads the clock; the feed is stamped from its newest item | `feeds/feed-rss`, `feeds/feed-updated`. Same bytes every run is the determinism invariant | reviewed |
 | Nothing writes a `<link rel="alternate">` for the feed | `feeds/feed-rss` | reviewed |
 | Both are written into `dist/static` | A property of the build output, not of an HTTP answer | - |
 
@@ -490,7 +490,7 @@ Complete. The runner is what this page describes: a built app asked through
 | It reads a build, so build first and skip without one | Advice about a test file | - |
 | `node --test` has no `.env`, so a signed cookie answers 500 | `cookies/signed-needs-secret` | reviewed |
 | A form post needs an origin, or CSRF refuses it | `forms/csrf-default` | reviewed |
-| The page and the fragment agree | `fragments/marked-element`. For every fragment, phase 3 | reviewed |
+| The page and the fragment agree | `fragments/marked-element`. For every fragment, the fragment equivalence invariant | reviewed |
 | A browser is needed for upgrades, shadow roots, focus and swaps | Phase 5 | - |
 
 ## /docs/types
@@ -539,7 +539,7 @@ contract. What it produces is checked through HTTP.
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
 | The module's exports: `load`, `render`, `regions`, `css`, `client`, `includes` | The `./compiler` export, outside the contract | - |
-| A fragment is the same markup the page renders | `fragments/marked-element`; phase 3 | reviewed |
+| A fragment is the same markup the page renders | `fragments/marked-element`; the fragment equivalence invariant | reviewed |
 | The build prerenders, or names the page and exits | `diagnostics/prerender-reads-cookie`, `prerender-response`, `prerender-status` | reviewed |
 | The order of what answers a request | `middleware/order`, `middleware/server-header`, `middleware/public-before-routes` | reviewed |
 | Inside the route: layouts, the action, the loader, render, includes | `layouts/guard-redirect`, `layouts/guard-action`, `fragments/post-unknown-name` | reviewed |
@@ -675,6 +675,27 @@ named here by what it refuses.
 | each="…" is malformed. | `diagnostics/directive-takes-no-interpolation` | reviewed |
 | exports "actions", which nothing reads. | `diagnostics/exports-actions` | reviewed |
 | two fragments are both named "…". | `diagnostics/fragment-id-twice` | reviewed |
+
+## Invariants
+
+Properties of every app, run over every case once its entries are asked.
+`spec/invariants/` holds one module per invariant. A case that is about the
+very thing an invariant forbids is exempt in its `invariants.json`, with the
+reason.
+
+| Invariant | What it asks | Broken in `src/` to see it fail | Exempt |
+| --- | --- | --- | --- |
+| fragment equivalence | Each page behind a request, then `?fragment=<id>` for each marked id it holds. The fragment must be the page's copy, less its declarative shadow roots | A fragment that keeps its shadow roots fails 2 cases. A fragment that answers the page's whole body fails 6 | `routing/context-fields`, which prints `url` and `fragment`. `fragments/action-fragment` and `fragments/post-unknown-name`: a question for Joe, below |
+| unknown fragment | `?fragment=` with each id the page has unmarked, each name an object inherits, and 20 generated names. Each must be 404 | An unknown name that answers the page fails 127 cases. A lookup with `in` for `Object.hasOwn` fails 126 | none |
+| determinism | Each GET twice more, as it went. Status, every header and the body must be the same. Nothing is put aside | A random header on each render fails 59 cases | 4 cases whose loader counts its runs |
+
+**For Joe.** `fragments/action-fragment` and `fragments/post-unknown-name` have
+a page with an action and no `prerender = false`. The build writes the page
+to a file. After the POST, `GET /` still answers that file, and
+`?fragment=list` renders live, so the list is empty in one and full in the
+other. `/docs/fragments` says the two always agree. A fix is more than one
+line: the build could refuse or warn, or a page with an action could stay
+dynamic.
 
 ## Gotchas
 

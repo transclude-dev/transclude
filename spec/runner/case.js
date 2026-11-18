@@ -13,12 +13,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { differences } from './compare.js';
+import { checkInvariants } from './invariants.js';
 
 const [caseDir, buildDir] = process.argv.slice(2);
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 // What a case holds about itself, as opposed to the app it describes.
-const NOT_THE_APP = new Set(['CASE.md', 'expect.json', 'expected', 'upstream.json', 'upstream']);
+const NOT_THE_APP = new Set(['CASE.md', 'expect.json', 'expected', 'invariants.json', 'upstream.json', 'upstream']);
 
 // A case that reads another site carries a fake one. Both the build and this
 // process are given it, through `SPEC_UPSTREAM`, before any app code runs.
@@ -39,6 +40,10 @@ let heard = [];
 // names it with `[hash]`, and the name is read back from these, the way a
 // browser follows a link the page gave it.
 const answers = [];
+
+// Every request the entries made, as it went, with what came back. The
+// invariants read these once the entries are done, and ask some of them again.
+const exchanges = [];
 
 // The ETag the last answer carried. A request that sends `[etag]` as a header
 // value sends this one back, the way a browser revalidates what it holds. A
@@ -67,7 +72,19 @@ async function run() {
     const result = entry.build === 'warns' ? checkWarning(entry, build) : await checkEntry(app, entry);
     results.push(marked(entry, result));
   }
+  const ask = (method, url, init) => askAgain(app, method, url, init);
+  results.push(...(await checkInvariants({ caseDir, buildDir, exchanges, ask })));
   return { build, results };
+}
+
+/**
+ * A request for an invariant. It goes as it went the first time, cookies
+ * included, and keeps nothing: the jar, the answers and the ETag stay as the
+ * entries left them.
+ */
+async function askAgain(app, method, url, init) {
+  const res = await app.request(`http://localhost${url}`, { ...init, method, headers: new Headers(init.headers) });
+  return { status: res.status, headers: res.headers, body: await res.text() };
 }
 
 /**
@@ -259,9 +276,11 @@ async function checkRequest(app, entry) {
   if (url === null) return { request: entry.request, problems: [`no earlier answer in this case names ${written}`] };
 
   heard = [];
-  const res = await app.request(`http://localhost${url}`, initFor(method, entry.send));
+  const init = initFor(method, entry.send);
+  const res = await app.request(`http://localhost${url}`, init);
   const actual = { status: res.status, headers: res.headers, body: await res.text() };
   answers.push(actual.body);
+  exchanges.push({ method, url, init, ...actual });
   lastEtag = res.headers.get('etag');
   keepCookies(res.headers.getSetCookie());
   const log = relative(heard.join('\n'));

@@ -1,0 +1,1 @@
+{ "determinism": "The loader counts its runs, and the page prints the count." }

@@ -771,23 +771,23 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | A hash never covers a `style` attribute, so `style-src` is not hashed. | `security/csp-meta` | yes | reviewed |
 | `csp.js` uses `crypto.subtle`, not the injected `hash`. | `security/csp-meta` | yes | reviewed |
 | Reading a cookie is what makes a page personal, not writing one. | `production/revalidate-not-held` | yes | reviewed |
-| Three servers render pages, so the include context is built in one place. | `includes/another-route` | - | reviewed |
-| An included route reads cookies through the host's, and that is the point. | `diagnostics/include-reads-cookie` | - | reviewed |
-| One route included twice loads once, and the memo dies with the request. | `includes/route-twice-loads-once` | - | reviewed |
-| The loop guard is a chain, not a counter. | `diagnostics/include-cycle` | - | reviewed |
-| An external include is resolved before the render, because render is synchronous. | `includes/prerendered-reads-once` | - | reviewed |
-| Includes of one document share the read in progress, not only the copy. | `includes/remote-section` | - | reviewed |
-| A source nobody allowed throws; a source that is down falls back. | `diagnostics/include-host-not-allowed` | - | reviewed |
-| A src that is interpolated cannot be an include. | `diagnostics/include-src-interpolated` | - | reviewed |
-| An included region drops its id, and the region keeps it. | `includes/same-page` | - | reviewed |
-| `<transclude>` has no dash, and that is only safe because it never reaches the browser. | `diagnostics/include-never-closed` | - | reviewed |
+| Three servers render pages, so the include context is built in one place. | `includes/another-route`, `includes/route-twice-loads-once` | yes | reviewed |
+| An included route reads cookies through the host's, and that is the point. | `diagnostics/include-reads-cookie` | yes | reviewed |
+| One route included twice loads once, and the memo dies with the request. | `includes/route-twice-loads-once` | yes | reviewed |
+| The loop guard is a chain, not a counter. | `diagnostics/include-cycle`, `diagnostics/include-chain-too-deep` | yes | reviewed |
+| An external include is resolved before the render, because render is synchronous. | `includes/prerendered-reads-once` | yes | reviewed |
+| Includes of one document share the read in progress, not only the copy. | `includes/remote-section` | yes | reviewed |
+| A source nobody allowed throws; a source that is down falls back. | `diagnostics/include-host-not-allowed` | yes | reviewed |
+| A src that is interpolated cannot be an include. | `diagnostics/include-src-interpolated` | yes | reviewed |
+| An included region drops its id, and the region keeps it. | `includes/same-page` | yes | reviewed |
+| `<transclude>` has no dash, and that is only safe because it never reaches the browser. | `diagnostics/include-never-closed` | yes | reviewed |
 | A file in `elements/` with no dash in its name stops the build. | `diagnostics/element-name-needs-dash` | yes | reviewed |
-| The proxy follows redirects itself, and that is the point. | `includes/redirects` | - | reviewed |
-| The slug table is built for the whole document, once. | `includes/generated-ids` | - | reviewed |
-| The cleaning descends into a template, because a declarative shadow root is not inert. | `includes/sanitize` | - | reviewed |
-| SVG animation is stripped, because it writes an attribute after the check has read it. | `includes/sanitize` | - | reviewed |
-| A scheme is what the browser reads, not what the bytes spell. | `includes/sanitize` | - | reviewed |
-| A parser reads some elements' content as text, and the walk never cleans it. | `includes/sanitize` | - | reviewed |
+| The proxy follows redirects itself, and that is the point. | `includes/redirects` | yes | reviewed |
+| The slug table is built for the whole document, once. | `includes/generated-ids` | yes | reviewed |
+| The cleaning descends into a template, because a declarative shadow root is not inert. | `includes/sanitize` | yes | reviewed |
+| SVG animation is stripped, because it writes an attribute after the check has read it. | `includes/sanitize` | yes | reviewed |
+| A scheme is what the browser reads, not what the bytes spell. | `includes/sanitize` | yes | reviewed |
+| A parser reads some elements' content as text, and the walk never cleans it. | `includes/sanitize` | yes | reviewed |
 | Report-only is a header, never a meta. | `security/csp-report-only` | yes | reviewed |
 | `${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the one way through. | `diagnostics/page-style-takes-no-expression` | yes | reviewed |
 | A region name is attacker input, so look it up with `Object.hasOwn`. | `fragments/prototype-name` | yes | reviewed |

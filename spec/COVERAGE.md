@@ -296,16 +296,16 @@ Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| `stylesheet` names one file, built by Vite: `@import`, nesting and PostCSS work | `styles/stylesheet` | unreviewed |
-| `stylesheet: null`, the default, links nothing | Every case with no config, such as `styles/style-hoisted` | unreviewed |
+| `stylesheet` names one file, built by Vite: `@import`, nesting and PostCSS work | `styles/stylesheet` | reviewed |
+| `stylesheet: null`, the default, links nothing | Every case with no config, such as `styles/style-hoisted` | reviewed |
 | Custom properties cross a shadow boundary, selectors do not; `::part()` | Needs a browser, phase 5 | - |
-| A `<style>` in a page or a layout is hoisted into `<head>` | `styles/style-hoisted` | unreviewed |
+| A `<style>` in a page or a layout is hoisted into `<head>` | `styles/style-hoisted` | reviewed |
 | In an element it is scoped to the tag, and `:scope` is the element | `elements/light-element`, `elements/in-a-fragment` | reviewed |
 | An element in a fragment brings its styles, added to `<head>` once | Needs a browser, phase 5: the fragment carries no `<style>`, and the runtime adds it on connect | - |
 | A shadow element's `:host` rules live inside its shadow root | `elements/shadow-element`, `elements/in-a-fragment` | reviewed |
 | `:scope` loses to page CSS of equal specificity; page CSS cannot reach `:host` | Needs a browser, phase 5 | - |
-| A view-transition rule is CSS only; both documents carry it | `styles/style-hoisted`: the rule passes through untouched. The transition itself needs a browser | unreviewed |
-| A name derived from the data in a `style` attribute | `styles/transition-name` | unreviewed |
+| A view-transition rule is CSS only; both documents carry it | `styles/style-hoisted`: the rule passes through untouched. The transition itself needs a browser | reviewed |
+| A name derived from the data in a `style` attribute | `styles/transition-name` | reviewed |
 
 ## /docs/refusals
 

@@ -336,18 +336,18 @@ Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| `notes.md` answers `/notes`, as `notes.html` would | `markdown/page` | unreviewed |
-| One of each in a directory, and the build refuses | `diagnostics/markdown-and-html-same-url` | unreviewed |
-| `markdown` is a function from source to HTML; it is given the file | `markdown/page` | unreviewed |
-| A `.md` page with no converter is an error naming the file | `diagnostics/markdown-without-converter` | unreviewed |
-| The `<script server>` loader is the same block | `markdown/page` | unreviewed |
+| `notes.md` answers `/notes`, as `notes.html` would | `markdown/page` | reviewed |
+| One of each in a directory, and the build refuses | `diagnostics/markdown-and-html-same-url` | reviewed |
+| `markdown` is a function from source to HTML; it is given the file | `markdown/page` | reviewed |
+| A `.md` page with no converter is an error naming the file | `diagnostics/markdown-without-converter` | reviewed |
+| The `<script server>` loader is the same block | `markdown/page` | reviewed |
 | CommonMark passes a `<script>` block through raw | The parser's rule, and the parser is the app's. The cases use a converter of a few lines | - |
 | No frontmatter and no YAML | An absence. `markdown/page` has the loader as its only block | - |
-| Interpolation, directives and fragments work | `markdown/page`, `markdown/fragment` | unreviewed |
+| Interpolation, directives and fragments work | `markdown/page`, `markdown/fragment` | reviewed |
 | Type checking works, and a diagnostic points into the converted HTML | `npm run check` output, not an HTTP answer | - |
 | A closing script tag inside the loader turns the rest into prose | The parser's rule | - |
 | Elements need blank lines; inline tags do not | The parser's rule | - |
-| `\${` is the escape in any page | `markdown/escape` | unreviewed |
+| `\${` is the escape in any page | `markdown/escape` | reviewed |
 | Escape code tokens in the converter with `walkTokens` | Code in the app's converter | - |
 | A name starting with `_` answers no URL, directories included | `markdown/underscore-skipped` | - |
 
@@ -357,13 +357,13 @@ Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| `lang` in the config lands on `<html>` | `languages/lang-config` | unreviewed |
-| It defaults to `en` | Every case with no config, such as `languages/page-lang` | unreviewed |
+| `lang` in the config lands on `<html>` | `languages/lang-config` | reviewed |
+| It defaults to `en` | Every case with no config, such as `languages/page-lang` | reviewed |
 | A generated project writes the key out | The create area | - |
-| A bare `<html>` in a page merges in and wins over the config; `dir` rides along | `languages/page-lang`, `layouts/html-attrs` | unreviewed |
+| A bare `<html>` in a page merges in and wins over the config; `dir` rides along | `languages/page-lang`, `layouts/html-attrs` | reviewed |
 | Logical CSS properties flip with the text | Browser behavior, not the framework's | - |
-| A locale is a route parameter; `/cy/about` and `/en/about` reach one file | `languages/locale-route` | unreviewed |
-| Both URLs are in the sitemap and prerendered | `languages/locale-route`, once the docs example gained its `paths()` | unreviewed |
+| A locale is a route parameter; `/cy/about` and `/en/about` reach one file | `languages/locale-route` | reviewed |
+| Both URLs are in the sitemap and prerendered | `languages/locale-route`, once the docs example gained its `paths()` | reviewed |
 | `Accept-Language` is read in middleware, which redirects from the bare path | `languages/negotiate` | - |
 | Redirect, do not vary | Advice about caches | - |
 | No message catalog, plural engine or negotiation ship; `Intl` does most of it | Absences, and the platform's | - |

@@ -675,3 +675,264 @@ named here by what it refuses.
 | each="…" is malformed. | `diagnostics/directive-takes-no-interpolation` | reviewed |
 | exports "actions", which nothing reads. | `diagnostics/exports-actions` | unreviewed |
 | two fragments are both named "…". | `diagnostics/fragment-id-twice` | unreviewed |
+
+## Gotchas
+
+Phase 2 sorts every gotcha in `design/internals.md`. A behavioral one fails at
+the boundary: a status, a header, a body, a build that stops or does not. Each
+gets a case, the gotcha ends with `spec: <case id>`, and the case fails with
+the old bug put back. An internal one is about how `src/` is written, or needs
+something the runner does not have.
+
+Gotchas are named by their bold title, in file order. Line numbers move with
+every edit to the file.
+
+### Behavioral, shown by a case (84)
+
+Each needs the `spec:` tag and a check that its case fails with the old bug.
+
+| Gotcha | Case |
+| --- | --- |
+| A reference target has two places to be written, and missing one says nothing. | `elements/reference-target` |
+| A `<script>` with a non-JavaScript type is markup, not a client block. | `recipes/data-block` |
+| `draft` is filtered out of `manifest.routes` once, and the manifest is reassigned. | `routing/draft-left-out` |
+| The build's context refuses rather than omits. | `diagnostics/prerender-after` |
+| `ctx.after` catches the rejection before `waitUntil` sees it. | `runtimes/after-rejects` |
+| Every export in `<script element>` declares one name, and `splice` works back to front. | `diagnostics/export-declares-two` |
+| A prop or a state field cannot be named for a member the framework calls. | `diagnostics/element-prop-named-for-hook` |
+| The reserved names are not module-scope declarations. | `elements/form-associated` |
+| A light element writes; only a shadow one rebuilds. | `diagnostics/light-element-structural-directive` |
+| The caller sorts a light element's children into its slots. | `elements/light-slots` |
+| `data()` is what a template sees, and the server has to build it too. | `elements/state-default` |
+| Reacting costs a definition, and only a definition. | `elements/javascript-shipped` |
+| The `No-Vary-Search` guard reads a header instead of writing one, and it has to run at request time. | `fragments/no-vary-search-hides-fragment` |
+| The swap watcher is opt-in, and used to follow `fragmentParam`. | `fragments/watch-elements` |
+| An action runs after the region is known to exist. | `fragments/post-unknown-name` |
+| A layout guard is one of the things that can refuse a request, and it did not. | `layouts/guard-action` |
+| A page's handlers are verb exports, the same as an endpoint's. | `forms/verbs` |
+| `ctx.response` is shared by reference, and has to be. | `layouts/layout-status` |
+| A loader returning a `Response` answers the request and skips the render. | `routing/loader-response` |
+| The order middleware is registered in is the behavior, so it lives in one function. | `middleware/order` |
+| `publicDir` is relative to `appDir`, like every other directory key. | `config/dirs-renamed` |
+| `app/public/` is copied to `dist/public`, and Vite's own `publicDir` is off. | `production/public-files` |
+| A `serveStatic` wrapper has to return what it was given. | `production/public-files` |
+| A cache store may answer with a promise. | `production/cache-store-async` |
+| A header set in `onFound` lands only under `serve`. | `production/public-files` |
+| Public files are served by Hono, build output by the in-memory cache. | `production/public-files` |
+| A repeated `view-transition-name` is a compile error, because the browser's answer is silence. | `diagnostics/view-transition-name-repeated` |
+| A refusal knew where it was and could not say. | `diagnostics/script-syntax-error` |
+| Nine refusals said `region`, a word no page of the documentation contains. | `diagnostics/fragment-without-id` |
+| The expression error described jsep's grammar, not this one. | `diagnostics/expression-malformed` |
+| `dist/edge` is made before `_headers` is written, not by the links. | `routing/index-page` |
+| A prerender runs the page; a prefetch does not. | `production/speculate` |
+| The rules are computed before the render pass and carried in the manifest. | `production/speculate` |
+| A directory inside a library is refused, not flattened or skipped. | `diagnostics/icon-library-nested` |
+| An icon with no `viewBox` is refused, not warned. | `diagnostics/icon-needs-viewbox` |
+| A library of one name in two icon directories is merged, not refused. | `icons/shared-dirs` |
+| `parseSigned` says `false` for a forged cookie, not `undefined`. | `cookies/forged` |
+| `cookies.all()` has a null prototype. | `cookies/all` |
+| Only the dev server invents a cookie secret. | `cookies/signed-needs-secret` |
+| A header naming a region is a hint; the query parameter is strict. | `fragments/header-unknown-name-ignored` |
+| `404.html` and `500.html` are reached for, not routed to. | `production/error-pages` |
+| How an element renders is read from the file, before anything is compiled. | `elements/shadow-element` |
+| Every reader of `elementsDir` goes through `src/elements.js`. | `diagnostics/element-in-two-dirs` |
+| `Secure` follows the connection, and `X-Forwarded-Proto` is trusted only to turn it on. | `cookies/write-defaults` |
+| The `\0` prefix was what kept the production bundle from mapping. | `diagnostics/prerender-throws` |
+| A preload hint is set on the way out, never on `ctx.response`. | `production/cache-control` |
+| A page does not stream, and the synchronous render is why. | `endpoints/stream` |
+| The chunks behind the entry are named up front, and only the build can name them. | `decisions/link-preload` |
+| The precache list is a build artifact, and cannot be anything else. | `production/precache` |
+| A config key lives in two lists, and only one of them is checked against. | `diagnostics/config-unknown-key` |
+| `canonical: true` is refused in `withDefaults`, not at the render. | `diagnostics/canonical-needs-metadata-base` |
+| A hoisted tag's directive has to be decided before anything is emitted. | `routing/head-tags` |
+| `renderHtmlAttrs` returns an object, not markup. | `layouts/html-attrs` |
+| An endpoint's `Response` goes through the envelope too. | `endpoints/envelope` |
+| A feed reads no clock. | `feeds/feed-updated` |
+| A feed item with no title or path was published as `undefined`. | `feeds/feed-item-needs-title` |
+| `prerender` is read off the page, never off its layouts. | `diagnostics/prerender-reads-cookie` |
+| The CSP is hashes, not a nonce, because a prerendered page is a file. | `security/csp-per-page` |
+| A hash never covers a `style` attribute, so `style-src` is not hashed. | `security/csp-meta` |
+| `csp.js` uses `crypto.subtle`, not the injected `hash`. | `security/csp-meta` |
+| Reading a cookie is what makes a page personal, not writing one. | `production/revalidate-not-held` |
+| Three servers render pages, so the include context is built in one place. | `includes/another-route` |
+| An included route reads cookies through the host's, and that is the point. | `diagnostics/include-reads-cookie` |
+| One route included twice loads once, and the memo dies with the request. | `includes/route-twice-loads-once` |
+| The loop guard is a chain, not a counter. | `diagnostics/include-cycle` |
+| An external include is resolved before the render, because render is synchronous. | `includes/prerendered-reads-once` |
+| Includes of one document share the read in progress, not only the copy. | `includes/remote-section` |
+| A source nobody allowed throws; a source that is down falls back. | `diagnostics/include-host-not-allowed` |
+| A src that is interpolated cannot be an include. | `diagnostics/include-src-interpolated` |
+| An included region drops its id, and the region keeps it. | `includes/same-page` |
+| `<transclude>` has no dash, and that is only safe because it never reaches the browser. | `diagnostics/include-never-closed` |
+| A file in `elements/` with no dash in its name stops the build. | `diagnostics/element-name-needs-dash` |
+| The proxy follows redirects itself, and that is the point. | `includes/redirects` |
+| The slug table is built for the whole document, once. | `includes/generated-ids` |
+| The cleaning descends into a template, because a declarative shadow root is not inert. | `includes/sanitize` |
+| SVG animation is stripped, because it writes an attribute after the check has read it. | `includes/sanitize` |
+| A scheme is what the browser reads, not what the bytes spell. | `includes/sanitize` |
+| A parser reads some elements' content as text, and the walk never cleans it. | `includes/sanitize` |
+| Report-only is a header, never a meta. | `security/csp-report-only` |
+| `${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the one way through. | `diagnostics/page-style-takes-no-expression` |
+| A literal `${` is written `\${`, and the comment above the scanner said for a long time that it could not be written at all. | `markdown/escape` |
+| The build cannot see a gate in `app/server.js`, and the failure looks like a success. | `middleware/gated` |
+| `gated` reaches the runtime through `routes.json`, not through a second config key. | `middleware/gated` |
+| The sitemap merges a path it already has, rather than keeping the first copy of it. | `feeds/sitemap-entries` |
+
+### Behavioral, case to write (31)
+
+| Gotcha | What the case shows |
+| --- | --- |
+| Fragment mode emits components bare, and the flag has to reach all the way down. | a shadow element inside a light one, in a fragment |
+| A client entry is one module, so a layout's relative import is rewritten. | a layout's relative client import, on a nested page |
+| Both halves fence a block. Only the shadow half compiles one. | an `if` followed by a bound node in a light element builds |
+| State is behavior, so it defines the element. | a light element with only `state` ships a definition |
+| A verb is a name on a list, not a shape. | a request whose method names a non-verb export answers 405 |
+| `serve.js` registers every route, not just `manifest.dynamic`. | a URL a pattern matches and `paths()` never listed answers the 404 page |
+| `strict: false` and `trimTrailingSlash` exclude each other. | `/docs/intro/` on a catch-all answers 301, not 200 |
+| The public copy skips what an operating system left there. | `/.DS_Store` in `app/public/` answers 404 |
+| A public file's validator is its size and mtime, not a hash of it. | a public file is `public, max-age=0, must-revalidate`; its ETag value changes with the file's mtime |
+| One table says what a file is, and there were three. | `/x.constructor` goes out as `application/octet-stream` |
+| The sprite is written after the public copy and before anything that reads `dist/public`. | `/precache.json` lists `/icons.svg` |
+| The speculation block is hashed by the CSP that already exists. | the speculation block's hash is in the CSP |
+| One thing answers for `/icons.svg`, and the two servers pick opposite winners. | `app/public/icons.svg` beside `app/icons/` stops the build |
+| parse5 closes an SVG element by namespace, not by tag name. | a sprite icon with `<use>` and `<image>` closes them as XML |
+| A `Response` that answers early still needs the envelope. | a page action's returned redirect keeps the cookie it set |
+| The directory holds routes; a page is one kind of route. | an old `routes` directory named `pages/` stops the build |
+| `loadProject` refuses `partialsDir` and `componentsDir`. | `partialsDir` or `componentsDir` stops the build |
+| `<html>` is read with a second parse, because the fragment parser drops it. | `<html>` inside a script block stays text |
+| `nosniff` is sent always; `X-Frame-Options` and HSTS are not. | no `X-Frame-Options` and no HSTS by default |
+| The framework's own `<meta>` defaults go through the merge too. | a page's own viewport replaces the default |
+| `<head>` merges across the chain, `<meta>` and canonical by key. | `og:image` from a layout and a page ships once; `content="a > b"` survives |
+| `]]>` has to be split, and it turns up in ordinary code. | `]]>` in a feed item is split across two CDATA sections |
+| Building the include context is half of it. Every render call site has to be handed it. | a fragment of a page that holds an include, and the render after an action |
+| One IPv4 address has four spellings in IPv6, and only one was read. | the IPv6 spellings of a private IPv4 address are refused |
+| Sanitize, then rewrite, then index. | the proxy outline lists no id the cleaning removed |
+| `<base>`, `<link>` and `<style>` are stripped from foreign markup for the host page's sake, not the fragment's. | a misspelled `styles` value is refused |
+| Template content is not addressable, and `childNodes` is why it looks like it is. | an id inside a foreign `<template>` answers 404 |
+| XML 1.0 cannot carry a C0 control, so one has to be dropped before it is written. | a C0 control in a feed or sitemap field is dropped |
+| A route that is not in the table still fails like one. | a throw in `paths()` or `items()` gives the 500 page and `onError` with phase `sitemap` or `feed` |
+| A region name is attacker input, so look it up with `Object.hasOwn`. | `?fragment=constructor` and `__proto__` answer 404 |
+| The escape was applied to text and not to attributes. | `\${` in an attribute leaves no backslash |
+
+### For Joe (4)
+
+| Gotcha | Why it is not sorted |
+| --- | --- |
+| The unused-prop check reads code and skips comments, and the `[^:]` in that regex is doing real work. | A build warning. The runner reads build output only when the build fails |
+| A listener on `document` outlives the element that added it. | A build warning, as above |
+| Five of the seven mistakes a beginner makes compiled silently. | A build warning, as above |
+| The page cache sees a cookie read and a header write, and nothing else. | A known gap the docs state: the cache cannot see a header read off `ctx.request`. A case would pin the gap |
+
+### Internal (109)
+
+| Gotcha | What it is about |
+| --- | --- |
+| `<template>` children are not `childNodes`. | How `src/` is written |
+| `setHTMLUnsafe()`, never `innerHTML`. | A browser: phase 5 |
+| Empty type shapes must be `{}`, not `Record<string, never>`. | The type checker or the generated types |
+| The shim is `.js` on purpose. | How `src/` is written |
+| `transclude-check` drives TypeScript 7, and refuses anything else by name. | The type checker or the generated types |
+| A shim diagnostic that does not map is dropped. | The type checker or the generated types |
+| A type name JSDoc cannot resolve is `any`, not an error. | The type checker or the generated types |
+| TypeScript ignores `@satisfies` on a function declaration. | The type checker or the generated types |
+| The shim's globals come from `expr.js`, and used not to. | The type checker or the generated types |
+| Report parse failures directly. | The type checker or the generated types |
+| Never bind twice. | A browser: phase 5 |
+| `createElement` cannot express a namespace, and the parser will not enter one without a real tag. | A browser: phase 5 |
+| Directive values are expressions, not interpolations. | A browser: phase 5 |
+| A module variable does not bridge the two bundles. | Another runtime or a real listener: phase 4 |
+| The dev server builds its own `ctx` too, and `test/context-shape.test.js` is what notices. | The dev server |
+| The check ran one direction, and the type promised a field for three weeks. | The type checker or the generated types |
+| The dev server mounts its own routes, so `createApp` is not the only list. | The dev server |
+| Config defaults are applied in `createApp`, not in `loadProject`. | Another runtime or a real listener: phase 4 |
+| The cache's own background work forgot `after`, which is the rule `after` exists for. | Another runtime or a real listener: phase 4 |
+| `contextFor` names no runtime, and that is why it has no `env`. | Another runtime or a real listener: phase 4 |
+| The form value is reported before the render, not after. | A browser: phase 5 |
+| `formResetCallback` removes the value attribute. | A browser: phase 5 |
+| `static formAssociated` can only be checked in a browser. | A browser: phase 5 |
+| Nothing is hoisted out of `<script element>`, and that is the design. | How `src/` is written |
+| `connected`, `disconnected` and `updated` are members the framework calls. | A browser: phase 5 |
+| A synchronous cleanup runs synchronously, and the order depends on it. | A browser: phase 5 |
+| A light element's styles are `@scope`, and `@scope` reached the last engine in March 2026. | A browser: phase 5 |
+| A `<slot>` is as wide as the caller says. | A browser: phase 5 |
+| The tag tells a fenced hole from a bare block. | How `src/` is written |
+| The dev check is synchronous, and the yield between files is why that is fine. | The dev server |
+| The dev check prints on a clean run, and that is not noise. | The dev server |
+| The dev check writes no `transclude-env.d.ts`, and scheduling comes before the routing branch. | The dev server |
+| `createChecker` has a `Checker` typedef because three callers hold one. | The type checker or the generated types |
+| `baseApp` refuses an option it does not know. | The dev server |
+| Nothing here may import upward. | How `src/` is written |
+| An app has one port, and `PORT` beats the config. | Another runtime or a real listener: phase 4 |
+| A bin needs `#!/usr/bin/env node`. | Release, CI or packaging |
+| A rename has to cover `dataset.x` as well as `data-x`. | A browser: phase 5 |
+| Check that the listener is yours before believing a server test. | The repository's own tests |
+| `<style data-transclude="tag">` in `<head>` is an agreement, not decoration. | A browser: phase 5 |
+| `define()` is transitive, and it is safe to call twice. | A browser: phase 5 |
+| One rule decides who ships a client entry, in `clientManifest`. | The dev server |
+| The two element classes are duplicated on purpose, and a test holds them together. | How `src/` is written |
+| A test that loops over the thing it checks proves nothing. | The repository's own tests |
+| The compiler leaves `>` in an attribute and escapes it in text. | The HTML escaping in the runtime; the head merge half is 1603 |
+| `transclude-env.d.ts` has to compile, and one flag is why nobody saw that it did not. | The type checker or the generated types |
+| A project needs no `vite.config.js`, so both bins register the compiler themselves. | The dev server |
+| Vite needs the http server, so the server is built first. | The dev server |
+| Invalidate before `ssrLoadModule` in dev. | The dev server |
+| A release tag is written `--cleanup=verbatim`, or markdown loses its headings. | Release, CI or packaging |
+| The `release` job's checkout is not shallow. | Release, CI or packaging |
+| One job in `publish.yml` holds `id-token: write`, and it installs nothing. | Release, CI or packaging |
+| `stage publish` stages, and a human publishes. | Release, CI or packaging |
+| A rule nothing checks is a rule that drifts, and spelling was the proof. | The repository's own tests |
+| A template file whose name starts with `_` becomes a dot on scaffold. | The project generator |
+| The editor's built-in HTML validation misreads every element with props and state. | The editor |
+| The extension looked for a package that does not exist. | The editor |
+| A release page here is immutable, so an asset goes up with it or not at all. | Release, CI or packaging |
+| A candidate has to be marked a prerelease twice. | Release, CI or packaging |
+| `npm run check:src` was red for 476 errors, and nothing ran it. | The type checker or the generated types |
+| `return` and a block comment holding a newline is `return;`. | How `src/` is written |
+| The promise nothing pinned was the API itself. | Release, CI or packaging |
+| A docs sample was wrong for as long as it had existed, and nothing read it. | The repository's own tests |
+| The config table was pinned by its defaults and not by its types. | The type checker or the generated types |
+| The type printer is a dependency, and now there is a canary for it. | The type checker or the generated types |
+| A guard that exits first hides everything behind it. | The type checker or the generated types |
+| The first thing `typescript-next` reported was not about TypeScript. | Release, CI or packaging |
+| `npm test` reports `src/runtime/index.js` at 43%, and the number is an artifact. | The repository's own tests |
+| Sixty-one passing checks were the whole of what anybody knew. | A browser: phase 5 |
+| The four-runtime claim ran on one runtime. | Another runtime or a real listener: phase 4 |
+| A compiled binary is started outside the project it carries. | Another runtime or a real listener: phase 4 |
+| A dotfile made the build look stale. | A startup log, not an answer to a request |
+| The package shipped no type declarations. | Release, CI or packaging |
+| Nothing builds at publish time, so a generated file has to be committed. | Release, CI or packaging |
+| `typescript` was a required peer for a command most projects never run. | Release, CI or packaging |
+| A documented snippet named a package that does not exist. | The repository's own tests |
+| A directory in `files` publishes what git ignores. | Release, CI or packaging |
+| A directive rule that matches the name alone leaves the value to the HTML grammar, which has moved past it. | The editor |
+| A directive is only a directive inside a tag. | The editor |
+| A file the edge serves never passes through `baseApp`. | Another runtime or a real listener: phase 4 |
+| Internals are attached for a boolean state field, not for any state. | A browser: phase 5 |
+| A custom state lands with the render, not with the assignment. | A browser: phase 5 |
+| `updateComplete` is the microtask's own promise. | A browser: phase 5 |
+| `formDisabledCallback` reflects to a state, not the `disabled` attribute. | A browser: phase 5 |
+| A crawler reads the speculation block and asks for the pattern. | Advice: the emitted rule is right, and `speculate.exclude` is the lever |
+| A library is a directory, so the URLs the sprite claims are not a fixed list. | The dev server |
+| Dev builds the sprite per request; the build writes it once. | The dev server |
+| A prerendered page hides what its loader needs. | Another runtime or a real listener: phase 4 |
+| The core has no `node:` imports and no Node-only globals, and both are tested. | How `src/` is written |
+| Strip comments before grepping source in a test. | The repository's own tests |
+| Use `fileURLToPath`, never `url.pathname`. | How `src/` is written |
+| The framework ships nothing that swaps a region into a page, on purpose. | A browser: phase 5 |
+| `hx-*`, `data-*` and `aria-*` are not props. | The type checker or the generated types |
+| Most of what `check:src` reported was the JSDoc being wrong, not the code being untypeable. | The type checker or the generated types |
+| A source map is handed back from `load`, not written into the code. | The dev server |
+| A cache hit is sent the way a file is, and the work is kept beside the entry. | How `src/` is written |
+| Two packages, and `@transclude/create` depends on neither. | Release, CI or packaging |
+| `create/templates/` is what a new project is, and `_gitignore` is why. | The project generator |
+| A route include is rendered, not fetched. | How `src/` is written |
+| `transclude` is read before the component table. | The dash rule refuses `elements/transclude.html` first |
+| Resolving a name is injected, because one runtime cannot do it. | Another runtime or a real listener: phase 4 |
+| `src/extract.js` never runs on our own pages. | How `src/` is written |
+| Markdown is converted in exactly two readers, and they must not disagree. | The type checker or the generated types |
+| A diagnostic in a `.md` page is an offset into the converted HTML. | The type checker or the generated types |
+| A closing script tag inside a `<script server>` block ends it in Markdown too. | The Markdown parser, which is the app's |
+| Three places decide what a page file is. | The dev server |
+| `src/gate.js` has no imports on purpose. | How `src/` is written |
+| Nothing installs Vite or TypeScript for you. | Release, CI or packaging |
+| Only `src/vite.js` may import `vite`. | Release, CI or packaging |

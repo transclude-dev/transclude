@@ -29,6 +29,13 @@ const P_CLIENT = 'virtual:transclude-client/';
 const P_LAYOUT = 'virtual:transclude-layout/';
 const SERVER_ENTRY = 'virtual:transclude-server';
 
+// The source each file's warnings were last printed for. The build compiles
+// an element that ships JavaScript twice, once for the client and once for the
+// server, with two instances of this plugin in one process, so the record is
+// the module's and not an instance's. An edit changes the source, and the
+// warnings print again.
+const reported = new Map();
+
 const RUNTIME_FILE = fileURLToPath(new URL('./runtime/index.js', import.meta.url));
 
 /**
@@ -210,7 +217,9 @@ export default function transclude({
     return { id: route.id, rel: route.rel, params: [], client: clientManifest(route) };
   };
 
-  const report = (label, warnings) => {
+  const report = (file, source, label, warnings) => {
+    if (reported.get(file) === source) return;
+    reported.set(file, source);
     for (const w of warnings ?? []) console.warn(`[transclude] ${label}: ${w}`);
   };
 
@@ -414,7 +423,7 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
           runtime,
           filename: tag,
         }));
-        report(tag, out.warnings);
+        report(file, body, tag, out.warnings);
         return out.code;
       }
 
@@ -424,14 +433,15 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
         if (!file) throw new Error(`[transclude] no layout "${layoutId}"`);
         origin.set(id, file);
         // `sourcePath` absolute for the same reason as the page's below.
-        const out = compileLayout(read(file), {
+        const source = read(file);
+        const out = compileLayout(source, {
           id: layoutId,
           components,
           shadowTags,
           runtime,
           sourcePath: file,
         });
-        report(`${layoutId} layout`, out.warnings);
+        report(file, source, `${layoutId} layout`, out.warnings);
         return out.map ? { code: out.code, map: out.map } : out.code;
       }
 
@@ -454,7 +464,7 @@ export const gated = ${hasMiddleware ? '__server.gated ?? []' : '[]'};
           layouts: chainFor(route),
           client: clientManifest(route),
         }));
-        report(name, out.warnings);
+        report(route.file, pageBody, name, out.warnings);
         // The map goes back with it. Vite composes what a load hook returns; a
         // comment on the code is not read, so a stack named the virtual module.
         return out.map ? { code: out.code, map: out.map } : out.code;

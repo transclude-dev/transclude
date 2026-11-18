@@ -588,6 +588,16 @@ against.
   those targets only. A boolean third argument is `capture` and counts as
   missing; a variable is left alone, because guessing would make the warning
   something to switch off. `spec: diagnostics/warn-document-listener`.
+- **A warning prints once per version of a file, not once per compile.** The
+  build compiles an element that ships JavaScript twice, for the client and
+  for the server, and each compile printed the element's warnings, so every
+  one appeared twice. `report` in `plugin.js` keeps the source it last printed
+  for each file and skips the same source. The record is at module scope
+  because `bin/build.js` makes two instances of the plugin in one process. It
+  is not keyed on the build: an element only the client entry reaches, with
+  `watchElements` on, compiles in the client build alone, and an element with
+  no behavior in the server build alone. An edit changes the source, so the dev
+  server prints again. `spec: diagnostics/warn-document-listener`.
 - **One rule decides who ships a client entry, in `clientManifest`.** The dev
   server and the build both read `client.needed`. They each had their own copy of
   that condition once, and only one got updated, so dev served a page with no entry

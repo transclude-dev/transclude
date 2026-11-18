@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Acme</title>
+    <link>https://acme.com/</link>
+    <description>Latest from Acme.</description>
+    <atom:link href="https://acme.com/feed.xml" rel="self" type="application/rss+xml"/>
+    <lastBuildDate>Fri, 20 Mar 2026 00:00:00 GMT</lastBuildDate>
+    <item>
+      <title>Third</title>
+      <link>https://acme.com/posts/third</link>
+      <guid isPermaLink="true">https://acme.com/posts/third</guid>
+      <pubDate>Fri, 20 Mar 2026 00:00:00 GMT</pubDate>
+      <description><![CDATA[The <em>third</em> post.]]></description>
+    </item>
+    <item>
+      <title>Second</title>
+      <link>https://acme.com/posts/second</link>
+      <guid isPermaLink="true">https://acme.com/posts/second</guid>
+      <pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate>
+      <description><![CDATA[The second post.]]></description>
+    </item>
+    <item>
+      <title>First</title>
+      <link>https://acme.com/posts/first</link>
+      <guid isPermaLink="true">https://acme.com/posts/first</guid>
+      <pubDate>Mon, 05 Jan 2026 00:00:00 GMT</pubDate>
+      <description><![CDATA[The first post.]]></description>
+    </item>
+    <item>
+      <title>Full</title>
+      <link>https://acme.com/posts/full</link>
+      <guid isPermaLink="true">https://acme.com/posts/full</guid>
+      <pubDate>Thu, 01 Jan 2026 00:00:00 GMT</pubDate>
+      <content:encoded><![CDATA[<p>All of it, <b>bold</b>.</p>]]></content:encoded>
+    </item>
+    <item>
+      <title>Undated</title>
+      <link>https://acme.com/posts/undated</link>
+      <guid isPermaLink="true">https://acme.com/posts/undated</guid>
+    </item>
+  </channel>
+</rss>

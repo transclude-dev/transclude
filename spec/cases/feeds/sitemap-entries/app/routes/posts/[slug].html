@@ -1,0 +1,7 @@
+<script server>
+  export const paths = () => [{ slug: 'first' }, { slug: 'second' }];
+
+  export default async ({ params }) => ({ slug: params.slug });
+</script>
+
+<h1>${slug}</h1>

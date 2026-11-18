@@ -1,0 +1,6 @@
+[
+  {"request": "GET /sitemap.xml", "status": 200, "body": "expected/index.xml"},
+  {"request": "GET /sitemap.xml?p=0", "status": 200, "body": "expected/p0.xml"},
+  {"request": "GET /sitemap.xml?p=1", "status": 200, "body": "expected/p1.xml"},
+  {"request": "GET /sitemap.xml?p=2", "status": 200, "body": "expected/p2.xml"}
+]

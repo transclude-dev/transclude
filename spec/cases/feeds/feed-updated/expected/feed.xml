@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Acme</title>
+  <link href="https://acme.com/"/>
+  <link rel="self" href="https://acme.com/feed.xml"/>
+  <id>https://acme.com/</id>
+  <updated>2026-05-01T00:00:00.000Z</updated>
+  <author><name>Ada Lovelace</name></author>
+  <entry>
+    <title>First</title>
+    <link href="https://acme.com/posts/first"/>
+    <id>https://acme.com/posts/first</id>
+    <updated>2026-05-01T00:00:00.000Z</updated>
+  </entry>
+</feed>

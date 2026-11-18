@@ -307,6 +307,29 @@ Complete.
 | A view-transition rule is CSS only; both documents carry it | `styles/style-hoisted`: the rule passes through untouched. The transition itself needs a browser | reviewed |
 | A name derived from the data in a `style` attribute | `styles/transition-name` | reviewed |
 
+## /docs/feeds
+
+Complete.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| A hostname mounts `/sitemap.xml`; without one there is none | `feeds/sitemap-routes`, `feeds/sitemap-off` | unreviewed |
+| Every page route with no parameters is listed; a parameter route as its `paths()` | `feeds/sitemap-routes` | unreviewed |
+| A route with no `paths()` is left out | `feeds/sitemap-routes` | unreviewed |
+| A draft is left out | `routing/draft-left-out` | reviewed |
+| `entries` as a function or an array; `exclude` by path or pattern | `feeds/sitemap-entries`, `feeds/sitemap-entries-array` | unreviewed |
+| An entry naming a route's URL is listed once, with the fields of both | `feeds/sitemap-entries` | unreviewed |
+| Past `limit` URLs the bare path is an index and `?p=` a slice | `feeds/sitemap-index`, with `limit: 2`. The 50,000 default is the same rule | unreviewed |
+| `feed` mounts `/feed.xml` as RSS 2.0 | `feeds/feed-rss` | unreviewed |
+| Each item needs a `title` and a `path`; the rest is optional; `content` is full HTML | `feeds/feed-rss`, `feeds/feed-item-needs-title` | unreviewed |
+| Newest first, capped at 50, or at `limit` | `feeds/feed-rss`, `feeds/feed-limit`, `feeds/feed-limit-set` | unreviewed |
+| `format: 'atom'` writes Atom 1.0; `path` moves the feed | `feeds/feed-atom` | unreviewed |
+| Atom needs an author, the feed's or every item's | `feeds/feed-atom-needs-author` | unreviewed |
+| Atom needs a date: an item's, or `updated` | `feeds/feed-atom-needs-date`, `feeds/feed-updated` | unreviewed |
+| Nothing reads the clock; the feed is stamped from its newest item | `feeds/feed-rss`, `feeds/feed-updated`. Same bytes every run is the determinism invariant, phase 3 | unreviewed |
+| Nothing writes a `<link rel="alternate">` for the feed | `feeds/feed-rss` | unreviewed |
+| Both are written into `dist/static` | A property of the build output, not of an HTTP answer | - |
+
 ## /docs/refusals
 
 Started.

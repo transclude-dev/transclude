@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Acme</title>
+    <link>https://acme.com/</link>
+    <description></description>
+    <atom:link href="https://acme.com/feed.xml" rel="self" type="application/rss+xml"/>
+    <lastBuildDate>Fri, 20 Feb 2026 00:00:00 GMT</lastBuildDate>
+    <item>
+      <title>Post 50</title>
+      <link>https://acme.com/posts/50</link>
+      <guid isPermaLink="true">https://acme.com/posts/50</guid>
+      <pubDate>Fri, 20 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 49</title>
+      <link>https://acme.com/posts/49</link>
+      <guid isPermaLink="true">https://acme.com/posts/49</guid>
+      <pubDate>Thu, 19 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 48</title>
+      <link>https://acme.com/posts/48</link>
+      <guid isPermaLink="true">https://acme.com/posts/48</guid>
+      <pubDate>Wed, 18 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 47</title>
+      <link>https://acme.com/posts/47</link>
+      <guid isPermaLink="true">https://acme.com/posts/47</guid>
+      <pubDate>Tue, 17 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 46</title>
+      <link>https://acme.com/posts/46</link>
+      <guid isPermaLink="true">https://acme.com/posts/46</guid>
+      <pubDate>Mon, 16 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 45</title>
+      <link>https://acme.com/posts/45</link>
+      <guid isPermaLink="true">https://acme.com/posts/45</guid>
+      <pubDate>Sun, 15 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 44</title>
+      <link>https://acme.com/posts/44</link>
+      <guid isPermaLink="true">https://acme.com/posts/44</guid>
+      <pubDate>Sat, 14 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 43</title>
+      <link>https://acme.com/posts/43</link>
+      <guid isPermaLink="true">https://acme.com/posts/43</guid>
+      <pubDate>Fri, 13 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 42</title>
+      <link>https://acme.com/posts/42</link>
+      <guid isPermaLink="true">https://acme.com/posts/42</guid>
+      <pubDate>Thu, 12 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 41</title>
+      <link>https://acme.com/posts/41</link>
+      <guid isPermaLink="true">https://acme.com/posts/41</guid>
+      <pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 40</title>
+      <link>https://acme.com/posts/40</link>
+      <guid isPermaLink="true">https://acme.com/posts/40</guid>
+      <pubDate>Tue, 10 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 39</title>
+      <link>https://acme.com/posts/39</link>
+      <guid isPermaLink="true">https://acme.com/posts/39</guid>
+      <pubDate>Mon, 09 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 38</title>
+      <link>https://acme.com/posts/38</link>
+      <guid isPermaLink="true">https://acme.com/posts/38</guid>
+      <pubDate>Sun, 08 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 37</title>
+      <link>https://acme.com/posts/37</link>
+      <guid isPermaLink="true">https://acme.com/posts/37</guid>
+      <pubDate>Sat, 07 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 36</title>
+      <link>https://acme.com/posts/36</link>
+      <guid isPermaLink="true">https://acme.com/posts/36</guid>
+      <pubDate>Fri, 06 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 35</title>
+      <link>https://acme.com/posts/35</link>
+      <guid isPermaLink="true">https://acme.com/posts/35</guid>
+      <pubDate>Thu, 05 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 34</title>
+      <link>https://acme.com/posts/34</link>
+      <guid isPermaLink="true">https://acme.com/posts/34</guid>
+      <pubDate>Wed, 04 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 33</title>
+      <link>https://acme.com/posts/33</link>
+      <guid isPermaLink="true">https://acme.com/posts/33</guid>
+      <pubDate>Tue, 03 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 32</title>
+      <link>https://acme.com/posts/32</link>
+      <guid isPermaLink="true">https://acme.com/posts/32</guid>
+      <pubDate>Mon, 02 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 31</title>
+      <link>https://acme.com/posts/31</link>
+      <guid isPermaLink="true">https://acme.com/posts/31</guid>
+      <pubDate>Sun, 01 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 30</title>
+      <link>https://acme.com/posts/30</link>
+      <guid isPermaLink="true">https://acme.com/posts/30</guid>
+      <pubDate>Sat, 31 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 29</title>
+      <link>https://acme.com/posts/29</link>
+      <guid isPermaLink="true">https://acme.com/posts/29</guid>
+      <pubDate>Fri, 30 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 28</title>
+      <link>https://acme.com/posts/28</link>
+      <guid isPermaLink="true">https://acme.com/posts/28</guid>
+      <pubDate>Thu, 29 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 27</title>
+      <link>https://acme.com/posts/27</link>
+      <guid isPermaLink="true">https://acme.com/posts/27</guid>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 26</title>
+      <link>https://acme.com/posts/26</link>
+      <guid isPermaLink="true">https://acme.com/posts/26</guid>
+      <pubDate>Tue, 27 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 25</title>
+      <link>https://acme.com/posts/25</link>
+      <guid isPermaLink="true">https://acme.com/posts/25</guid>
+      <pubDate>Mon, 26 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 24</title>
+      <link>https://acme.com/posts/24</link>
+      <guid isPermaLink="true">https://acme.com/posts/24</guid>
+      <pubDate>Sun, 25 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 23</title>
+      <link>https://acme.com/posts/23</link>
+      <guid isPermaLink="true">https://acme.com/posts/23</guid>
+      <pubDate>Sat, 24 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 22</title>
+      <link>https://acme.com/posts/22</link>
+      <guid isPermaLink="true">https://acme.com/posts/22</guid>
+      <pubDate>Fri, 23 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 21</title>
+      <link>https://acme.com/posts/21</link>
+      <guid isPermaLink="true">https://acme.com/posts/21</guid>
+      <pubDate>Thu, 22 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 20</title>
+      <link>https://acme.com/posts/20</link>
+      <guid isPermaLink="true">https://acme.com/posts/20</guid>
+      <pubDate>Wed, 21 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 19</title>
+      <link>https://acme.com/posts/19</link>
+      <guid isPermaLink="true">https://acme.com/posts/19</guid>
+      <pubDate>Tue, 20 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 18</title>
+      <link>https://acme.com/posts/18</link>
+      <guid isPermaLink="true">https://acme.com/posts/18</guid>
+      <pubDate>Mon, 19 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 17</title>
+      <link>https://acme.com/posts/17</link>
+      <guid isPermaLink="true">https://acme.com/posts/17</guid>
+      <pubDate>Sun, 18 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 16</title>
+      <link>https://acme.com/posts/16</link>
+      <guid isPermaLink="true">https://acme.com/posts/16</guid>
+      <pubDate>Sat, 17 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 15</title>
+      <link>https://acme.com/posts/15</link>
+      <guid isPermaLink="true">https://acme.com/posts/15</guid>
+      <pubDate>Fri, 16 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 14</title>
+      <link>https://acme.com/posts/14</link>
+      <guid isPermaLink="true">https://acme.com/posts/14</guid>
+      <pubDate>Thu, 15 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 13</title>
+      <link>https://acme.com/posts/13</link>
+      <guid isPermaLink="true">https://acme.com/posts/13</guid>
+      <pubDate>Wed, 14 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 12</title>
+      <link>https://acme.com/posts/12</link>
+      <guid isPermaLink="true">https://acme.com/posts/12</guid>
+      <pubDate>Tue, 13 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 11</title>
+      <link>https://acme.com/posts/11</link>
+      <guid isPermaLink="true">https://acme.com/posts/11</guid>
+      <pubDate>Mon, 12 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 10</title>
+      <link>https://acme.com/posts/10</link>
+      <guid isPermaLink="true">https://acme.com/posts/10</guid>
+      <pubDate>Sun, 11 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 9</title>
+      <link>https://acme.com/posts/9</link>
+      <guid isPermaLink="true">https://acme.com/posts/9</guid>
+      <pubDate>Sat, 10 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 8</title>
+      <link>https://acme.com/posts/8</link>
+      <guid isPermaLink="true">https://acme.com/posts/8</guid>
+      <pubDate>Fri, 09 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 7</title>
+      <link>https://acme.com/posts/7</link>
+      <guid isPermaLink="true">https://acme.com/posts/7</guid>
+      <pubDate>Thu, 08 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 6</title>
+      <link>https://acme.com/posts/6</link>
+      <guid isPermaLink="true">https://acme.com/posts/6</guid>
+      <pubDate>Wed, 07 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 5</title>
+      <link>https://acme.com/posts/5</link>
+      <guid isPermaLink="true">https://acme.com/posts/5</guid>
+      <pubDate>Tue, 06 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 4</title>
+      <link>https://acme.com/posts/4</link>
+      <guid isPermaLink="true">https://acme.com/posts/4</guid>
+      <pubDate>Mon, 05 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 3</title>
+      <link>https://acme.com/posts/3</link>
+      <guid isPermaLink="true">https://acme.com/posts/3</guid>
+      <pubDate>Sun, 04 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 2</title>
+      <link>https://acme.com/posts/2</link>
+      <guid isPermaLink="true">https://acme.com/posts/2</guid>
+      <pubDate>Sat, 03 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Post 1</title>
+      <link>https://acme.com/posts/1</link>
+      <guid isPermaLink="true">https://acme.com/posts/1</guid>
+      <pubDate>Fri, 02 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

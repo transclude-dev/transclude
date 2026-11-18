@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url><loc>https://acme.com/</loc></url>
+<url><loc>https://acme.com/posts/first</loc><lastmod>2026-01-05</lastmod></url>
+<url><loc>https://acme.com/posts/second</loc><lastmod>2026-02-11</lastmod></url>
+<url><loc>https://acme.com/posts/third</loc><lastmod>2026-03-20</lastmod></url>
+</urlset>

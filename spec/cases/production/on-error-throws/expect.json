@@ -1,0 +1,4 @@
+[
+  {"request": "GET /boom", "status": 500, "body": "expected/500.html", "log": "expected/boom.log"},
+  {"request": "GET /boom", "status": 500, "log": "expected/reporter.log"}
+]

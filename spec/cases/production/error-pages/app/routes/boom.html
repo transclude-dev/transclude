@@ -1,0 +1,9 @@
+<script server>
+  export const prerender = false;
+
+  export default async () => {
+    throw new Error('the secret password is hunter2');
+  };
+</script>
+
+<h1>Never</h1>

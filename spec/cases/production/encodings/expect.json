@@ -1,0 +1,7 @@
+[
+  {"request": "GET /", "status": 200, "headers": {"content-encoding": null, "vary": "Accept-Encoding", "etag": "\"LXXXXClsOiT7_WWhTRfH\""}},
+  {"request": "GET /", "send": {"headers": {"accept-encoding": "gzip"}}, "status": 200, "headers": {"content-encoding": "gzip", "vary": "Accept-Encoding", "etag": "\"LXXXXClsOiT7_WWhTRfH-gzip\""}},
+  {"request": "GET /", "send": {"headers": {"accept-encoding": "br"}}, "status": 200, "headers": {"content-encoding": "br", "vary": "Accept-Encoding", "etag": "\"LXXXXClsOiT7_WWhTRfH-br\""}},
+  {"request": "GET /", "send": {"headers": {"accept-encoding": "br", "if-none-match": "\"LXXXXClsOiT7_WWhTRfH-br\""}}, "status": 304},
+  {"request": "GET /", "send": {"headers": {"accept-encoding": "gzip", "if-none-match": "\"LXXXXClsOiT7_WWhTRfH-br\""}}, "status": 200}
+]

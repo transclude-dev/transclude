@@ -1,0 +1,1 @@
+{"error":"the endpoint failed","request":true,"url":"http://localhost/api/fail","method":"GET","route":{"id":"api-fail","pattern":"/api/fail","params":{}},"phase":"endpoint"}

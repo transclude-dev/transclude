@@ -1,0 +1,13 @@
+<script server>
+  export const prerender = false;
+
+  export default async () => {
+    throw new Error('the loader failed');
+  };
+
+  export const POST = async () => {
+    throw new Error('the action failed');
+  };
+</script>
+
+<p id="part" fragment>Never</p>

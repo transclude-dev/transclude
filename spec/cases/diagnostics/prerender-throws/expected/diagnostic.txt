@@ -1,0 +1,4 @@
+1 page failed to render:
+  /broken
+    the database is not there at build time
+    at app/routes/broken.html:3

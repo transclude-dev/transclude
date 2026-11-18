@@ -1,0 +1,5 @@
+<script server>
+  export default async ({ cookies }) => ({ theme: cookies.get('theme') ?? 'light' });
+</script>
+
+<div class="${theme}"><slot></slot></div>

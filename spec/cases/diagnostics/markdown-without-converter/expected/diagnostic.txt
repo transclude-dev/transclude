@@ -1,0 +1,1 @@
+Error: [transclude] app/routes/notes.md is Markdown, and transclude.config.js sets no "markdown". It takes (source, file) and returns HTML. This package ships no parser, so the flavor is yours to choose.

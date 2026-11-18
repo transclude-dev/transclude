@@ -1,5 +1,12 @@
 export declare class ScriptError extends Error {
-    constructor(message: any);
+    line: number;
+    /**
+     * @param {string} message
+     * @param {number} [line] the line in the file, when the statement is known.
+     *   Carried apart from the message, as `CompileError` carries it, so the
+     *   plugin can say where in which file
+     */
+    constructor(message: string, line?: number);
 }
 /** @type {import('acorn').Options} */
 export declare const PARSE_OPTIONS: import('acorn').Options;

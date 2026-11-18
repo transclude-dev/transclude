@@ -182,7 +182,7 @@ export function splitBlocks(source) {
       // else. Some things have to run before the body parses: a theme applied
       // before first paint, or a `pagereveal` listener, which fires too early for
       // any script in the body to see.
-      else if (attrs.has('head')) out.head.push({ ...block, attrs: node.attrs ?? [] });
+      else if (attrs.has('head')) out.head.push({ ...block, attrs: node.attrs ?? [], node });
       // A `src` means there is no code here to compile, so this is markup: an
       // ordinary external script the page wants in its body. Read as a client
       // block it became an empty one and the tag was dropped, `src` and all,
@@ -266,11 +266,13 @@ export function compileComponent(
   // A bare <script> is a page's client entry. An element has one block, and its
   // per-element code is `connected` in the prototype, so a loose one here is
   // code that would never run rather than code with another home.
-  if (blocks.client.some((block) => block.code.trim())) {
+  const loose = blocks.client.find((block) => block.code.trim());
+  if (loose) {
     throw new ScriptError(
       `${where('')}: an element's code lives in <script element>. Per-element setup is ` +
         `\`connected({ signal })\` in \`export const prototype\`, which runs on every connect ` +
         `and returns its own cleanup.`,
+      loose.line,
     );
   }
 
@@ -1123,7 +1125,8 @@ function headScript(blocks, where) {
       if (external && block.code.trim()) {
         throw new CompileError(
           `${where}: a <script head src="${external.value}"> cannot also have a body. ` +
-            `the browser runs the file and ignores the code`,
+            `The browser runs the file and ignores the code.`,
+          block.node,
         );
       }
       // This is emitted as a static string, so there is nothing to interpolate
@@ -1132,7 +1135,8 @@ function headScript(blocks, where) {
         if (!attr.value.includes('${')) continue;
         throw new CompileError(
           `${where}: \`${attr.name}\` on a <script head> cannot interpolate. ` +
-            `the block is emitted into <head> before any data exists`,
+            `The block is written into <head> before any data exists.`,
+          block.node,
         );
       }
 

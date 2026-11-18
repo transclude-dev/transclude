@@ -230,6 +230,10 @@ export default function transclude({
    * and `frame` into the overlay and the terminal, so filling them in here is
    * the difference between a sentence about line 4 and a picture of line 4.
    *
+   * A `ScriptError` is the same, about a script block, and it knows a line when
+   * the statement is known. One with no line still gets the file, as `id`, so
+   * the report names a path an editor can open rather than a bare file name.
+   *
    * @param {string} source what was compiled, for the frame
    * @param {string} file the path an editor can open
    * @param {Function} run the compile
@@ -238,7 +242,9 @@ export default function transclude({
     try {
       return run();
     } catch (err) {
-      if (err?.name !== 'CompileError' || !err.line) throw err;
+      if (err?.name !== 'CompileError' && err?.name !== 'ScriptError') throw err;
+      err.id = file;
+      if (!err.line) throw err;
       err.loc = { file, line: err.line, column: err.column ?? 1 };
       err.frame = frameOf(source, err.line, err.column);
       throw err;

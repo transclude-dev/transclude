@@ -273,21 +273,21 @@ Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| The docs loader reads a plain and a signed cookie | `cookies/read` | unreviewed |
-| `cookies.get` is the value, or `undefined` | `cookies/read`, `cookies/get-missing` | unreviewed |
+| The docs loader reads a plain and a signed cookie | `cookies/read` | reviewed |
+| `cookies.get` is the value, or `undefined` | `cookies/read`, `cookies/get-missing` | reviewed |
 | `cookies.set` writes on the response | `cookies/write-defaults`, `endpoints/response-cookies` | - |
-| `cookies.delete` expires it | `cookies/delete` | unreviewed |
-| `cookies.all()` is every cookie, on a null-prototype object | `cookies/all` | unreviewed |
-| `cookies.signed.get` is the value if the signature holds, else `undefined` | `cookies/read`, `cookies/forged` | unreviewed |
-| `cookies.signed.set` signs and writes | `cookies/read`, `cookies/forged` | unreviewed |
+| `cookies.delete` expires it | `cookies/delete` | reviewed |
+| `cookies.all()` is every cookie, on a null-prototype object | `cookies/all` | reviewed |
+| `cookies.signed.get` is the value if the signature holds, else `undefined` | `cookies/read`, `cookies/forged` | reviewed |
+| `cookies.signed.set` signs and writes | `cookies/read`, `cookies/forged` | reviewed |
 | Write defaults: `Path=/`, `HttpOnly`, `SameSite=Lax`, `Secure` over TLS | `cookies/write-defaults` | - |
 | An option you pass wins | `cookies/options-win` | - |
-| `sameSite: 'None'` without `secure: true` is refused | `cookies/samesite-none-refused` | unreviewed |
-| `cookies.signed` throws with no `cookieSecret` | `cookies/signed-needs-secret` | unreviewed |
+| `sameSite: 'None'` without `secure: true` is refused | `cookies/samesite-none-refused` | reviewed |
+| `cookies.signed` throws with no `cookieSecret` | `cookies/signed-needs-secret` | reviewed |
 | Use `globalThis.process?.env` in the config | Advice about a runtime with no `process`; phase 4 | - |
 | Only dev invents a secret | The dev server is not this boundary. Production refusing is `cookies/signed-needs-secret` | - |
-| A forged cookie reads the same as a missing one | `cookies/forged` | unreviewed |
-| A flash crosses a redirect once | `cookies/flash` | unreviewed |
+| A forged cookie reads the same as a missing one | `cookies/forged` | reviewed |
+| A flash crosses a redirect once | `cookies/flash` | reviewed |
 | `curl -L` does not send a cookie set on the hop it follows | About curl, not the framework | - |
 
 ## /docs/refusals

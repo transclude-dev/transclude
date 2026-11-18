@@ -413,7 +413,7 @@ Complete. Most keys have their own page, and their rows are there.
 
 ## /docs/production
 
-Complete. One entry is `todo`.
+Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
@@ -449,7 +449,7 @@ Complete. One entry is `todo`.
 | A prerendered loader calling it stops the build | `diagnostics/prerender-revalidate-tag` | unreviewed |
 | Not held: a cookie read, a header set, a `Response`, a status outside 2xx | `production/revalidate-not-held` | unreviewed |
 | A loader reading `Authorization` off `ctx.request` is invisible to the cache | Advice. The cache sees what `production/revalidate-not-held` shows | - |
-| `cache` takes any store with the four methods | `production/cache-store`, and `production/cache-store-async`, `todo` | unreviewed |
+| `cache` takes any store with the four methods | `production/cache-store`, `production/cache-store-async` | unreviewed |
 | `precache: true` writes `/precache.json`: pages and public files with ETags, assets with `revision: null`, a `version` | `production/precache`, `production/precache-off` | unreviewed |
 | `npm run dev` answers `/precache.json` with a 404 | The dev server | - |
 | No service worker ships | An absence | - |

@@ -1,0 +1,5 @@
+<script server>
+  export default async () => ({ id: 7, label: 'A note' });
+</script>
+
+<note-card title="Milk" data-id="${id}" aria-label="${label}" hx-get="/notes/${id}"></note-card>

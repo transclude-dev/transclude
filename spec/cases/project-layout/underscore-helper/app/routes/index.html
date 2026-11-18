@@ -1,0 +1,7 @@
+<script server>
+  import { shout } from './_format.js';
+
+  export default async () => ({ title: shout('notes') });
+</script>
+
+<h1>${title}</h1>

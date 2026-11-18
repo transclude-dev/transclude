@@ -1,0 +1,8 @@
+[
+  {
+    "request": "GET /live",
+    "status": 200,
+    "headers": { "link": "</assets/__global-[hash].css>; rel=preload; as=style, </assets/live-[hash].js>; rel=preload; as=script; crossorigin, </assets/dismiss-note-[hash].js>; rel=preload; as=script; crossorigin" },
+    "body": "expected/live.html"
+  }
+]

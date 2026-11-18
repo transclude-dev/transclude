@@ -1,0 +1,9 @@
+<script server>
+  export default async () => ({ headline: 'Written once' });
+</script>
+
+<script type="application/ld+json">
+  { "@type": "Article", "headline": "${headline}" }
+</script>
+
+<h1>${headline}</h1>

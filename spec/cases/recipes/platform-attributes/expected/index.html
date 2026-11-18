@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+
+
+
+
+</head>
+<body>
+<button command="show-modal" commandfor="prefs">Preferences</button>
+
+<dialog id="prefs">
+  <h2>Preferences</h2>
+  <button command="close" commandfor="prefs">Done</button>
+</dialog>
+
+<details name="faq">
+  <summary>What does it cost?</summary>
+  <p>Nothing.</p>
+</details>
+
+<details name="faq">
+  <summary>Where does it run?</summary>
+  <p>Node, Bun, Deno and workerd.</p>
+</details>
+
+<p hidden="until-found" id="answer">The part a search should still reach.</p>
+
+</body>
+</html>

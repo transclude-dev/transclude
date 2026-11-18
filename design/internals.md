@@ -1692,10 +1692,15 @@ against.
   contagious for free. The build refuses to prerender a page whose
   `ctx.cookies.personal` came out true, whether the page read one or something
   it includes did.
-- **One route included twice renders once, and the memo dies with the request.**
+- **One route included twice loads once, and the memo dies with the request.**
   `includeMemo` is created in `renderRoute` per call. A store that outlived the
   request would be a second page cache with none of the rules the real one has,
-  and it would serve one visitor's render to the next.
+  and it would serve one visitor's render to the next. It holds a route's
+  loaded data by path, not a fragment's markup by path and id: keyed by both,
+  `/count#count` and `/count#again` each ran the loader, and one page showed
+  two different answers from one route. `loadFragment` runs the chain once and
+  `renderLoaded` renders each fragment from it.
+  `spec: includes/route-twice-loads-once`.
 - **A route include is rendered, not fetched.** It is the same process. Asking
   ourselves over HTTP would run the whole middleware stack, take a second trip
   through CSRF and the trailing-slash redirect, and need a URL the server can

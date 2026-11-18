@@ -5,7 +5,7 @@
 // the others, so an include that worked in production threw in dev with nothing
 // to suggest why. One function answers it for all three.
 
-import { paramsFor, renderFragment } from './document.js';
+import { loadFragment, paramsFor, regionOf, renderLoaded } from './document.js';
 import { includeResolver } from './proxy.js';
 
 /**
@@ -27,17 +27,29 @@ export function includeContext({ config, routes = [], pageFor, lookup = null }) 
     resolve: foreign?.resolve ?? null,
 
     route: async (path, id, ctx, options) => {
-      const memo = options?.includeMemo;
-      const key = `${path}#${id}`;
-      if (memo?.has(key)) return memo.get(key);
+      const loaded = await loadOnce(path, ctx, options);
+      if (!loaded) return null;
 
-      const answer = render(path, id, ctx, options);
-      // The promise is held, not the result: two includes of one route that
-      // start together should still be one render.
-      memo?.set(key, answer);
-      return answer;
+      const target = regionOf(loaded.page, id);
+      if (!target) return null;
+      return renderLoaded(loaded.page, loaded.data, target);
     },
   };
+
+  /**
+   * A route's loaders, run once per request however many of its fragments the
+   * page includes, so every one of them renders from the same data. Keyed by
+   * the path, query included, and held as the promise: includes that start
+   * together still share one run.
+   */
+  function loadOnce(path, ctx, options) {
+    const memo = options?.includeMemo;
+    if (memo?.has(path)) return memo.get(path);
+
+    const loading = load(path, ctx, options);
+    memo?.set(path, loading);
+    return loading;
+  }
 
   /**
    * Rendered rather than fetched. It is the same process, so a request to
@@ -49,7 +61,7 @@ export function includeContext({ config, routes = [], pageFor, lookup = null }) 
    * contagious: a page including a route whose loader reads a cookie is personal
    * too, and the cache has to know.
    */
-  async function render(path, id, ctx, options) {
+  async function load(path, ctx, options) {
     const url = new URL(path, ctx.url);
 
     let found = null;
@@ -65,7 +77,7 @@ export function includeContext({ config, routes = [], pageFor, lookup = null }) 
     const page = await pageFor(found.route.id);
     if (!page) throw new Error(`[transclude] ${path} is not a page`);
 
-    const html = await renderFragment(
+    const data = await loadFragment(
       page,
       {
         ...ctx,
@@ -77,12 +89,13 @@ export function includeContext({ config, routes = [], pageFor, lookup = null }) 
         fragment: null,
         action: null,
       },
-      { region: id, ...options, include: context },
+      { ...options, include: context },
     );
 
     // A loader answering for itself has nothing to say here: the including page
     // asked for markup, not for a redirect.
-    return html instanceof Response ? null : html;
+    if (data instanceof Response) return null;
+    return { page, data };
   }
 
   return context;

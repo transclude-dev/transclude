@@ -144,7 +144,7 @@ Complete. Two entries are `todo`. The cases that read another site carry an
 | `#pricing` copies a fragment of this page; the copy leaves the id behind | `includes/same-page` | reviewed |
 | `/notes#notes` runs that route's loaders and not its layouts' markup | `includes/another-route` | reviewed |
 | A copy from another route keeps its id | `includes/another-route` | reviewed |
-| One route included twice runs its loaders once | `includes/route-twice-loads-once`, `todo`: the memo is per fragment | reviewed |
+| One route included twice runs its loaders once | `includes/route-twice-loads-once` | unreviewed |
 | Reading spreads: a page including a route that reads a cookie is personal | `diagnostics/include-reads-cookie` | reviewed |
 | A remote include needs `proxy.allow` and renders the section | `includes/remote-section` | reviewed |
 | On success the children are dropped | `includes/remote-section` | reviewed |

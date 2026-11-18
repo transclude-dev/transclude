@@ -2,7 +2,6 @@
   {
     "request": "GET /",
     "status": 200,
-    "body": "expected/index.html",
-    "todo": "two fragments of /count run its loader twice; the memo is per fragment, not per route"
+    "body": "expected/index.html"
   }
 ]

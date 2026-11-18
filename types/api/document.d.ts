@@ -239,6 +239,30 @@ export declare function renderFragment(page: PageModule, ctx: Ctx, { region, ...
     includeMemo?: Map<string, unknown>;
 }): Promise<string | Response | null>;
 /**
+ * What a fragment renders from: every loader in the chain, run once, and the
+ * page's own includes resolved. Split from `renderFragment` so an include can
+ * load a route once and render several of its fragments from the one result.
+ *
+ * @param {PageModule} page
+ * @param {Ctx} ctx
+ * @param {{ include?: object, includeMemo?: Map<string, unknown> }} [options]
+ * @returns {Promise<object|Response>} a loader's own `Response` outranks the data
+ */
+export declare function loadFragment(page: PageModule, ctx: Ctx, options?: {
+    include?: object;
+    includeMemo?: Map<string, unknown>;
+}): Promise<object | Response>;
+/**
+ * One fragment, or the page's whole body when `target` is null, from data
+ * `loadFragment` already returned.
+ *
+ * @param {PageModule} page
+ * @param {object} data
+ * @param {Function|null} target a region's render function, from `regionOf`
+ * @returns {string}
+ */
+export declare function renderLoaded(page: PageModule, data: object, target: Function | null): string;
+/**
  * The methods a server routes to `runAction`. Both servers register all of them
  * for every route: a page that answers none of them should say 405 with an
  * `Allow` header rather than fall through to the not-found page, because the URL

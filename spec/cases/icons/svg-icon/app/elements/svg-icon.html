@@ -1,0 +1,22 @@
+<!-- app/elements/svg-icon.html -->
+<script element>
+  export const properties = {
+    library: 'icons',
+    name: '',
+    label: '',
+  };
+</script>
+
+<style>
+  :scope {
+    display: inline-flex;
+    vertical-align: -0.125em;
+  }
+  svg {
+    width: 1em;
+    height: 1em;
+  }
+</style>
+
+<svg if="label" role="img" aria-label="${label}"><use href="/${library}.svg#${name}"></use></svg>
+<svg else aria-hidden="true"><use href="/${library}.svg#${name}"></use></svg>

@@ -1,0 +1,4 @@
+[
+  {"request": "GET /icons.svg", "status": 200, "body": "expected/icons.svg"},
+  {"request": "GET /lucide.svg", "status": 200, "body": "expected/lucide.svg"}
+]

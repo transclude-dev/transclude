@@ -1,0 +1,1 @@
+Error: [transclude] app/icons/dot.svg has no viewBox. A symbol scales by its viewBox, so without one the icon renders at the wrong size and says nothing. Add viewBox="0 0 24 24", with the numbers the artwork was drawn at.

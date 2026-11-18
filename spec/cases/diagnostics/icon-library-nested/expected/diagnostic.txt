@@ -1,0 +1,1 @@
+Error: [transclude] app/icons/lucide/arrows is a directory inside a library, and a library is one flat directory of icons. Move it up to be a library of its own, or flatten it into the one it is in.

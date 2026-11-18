@@ -1,0 +1,1 @@
+Error: [transclude] app/icons/check.svg and kit/icons/check.svg would both be #check. An icon is named by its file, so two files cannot share a name even in different directories. Rename one.

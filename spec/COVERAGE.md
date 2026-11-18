@@ -687,105 +687,113 @@ something the runner does not have.
 Gotchas are named by their bold title, in file order. Line numbers move with
 every edit to the file.
 
-### Behavioral, shown by a case (84)
+### Behavioral, shown by a case (95)
 
-Each needs the `spec:` tag and a check that its case fails with the old bug.
+`Tagged` is `yes` once the gotcha ends with its `spec:` tag and the case
+fails with the old bug put back. `Snapshot` is as in the sections above.
 
-| Gotcha | Case |
-| --- | --- |
-| A reference target has two places to be written, and missing one says nothing. | `elements/reference-target` |
-| A `<script>` with a non-JavaScript type is markup, not a client block. | `recipes/data-block` |
-| `draft` is filtered out of `manifest.routes` once, and the manifest is reassigned. | `routing/draft-left-out` |
-| The build's context refuses rather than omits. | `diagnostics/prerender-after` |
-| `ctx.after` catches the rejection before `waitUntil` sees it. | `runtimes/after-rejects` |
-| Every export in `<script element>` declares one name, and `splice` works back to front. | `diagnostics/export-declares-two` |
-| A prop or a state field cannot be named for a member the framework calls. | `diagnostics/element-prop-named-for-hook` |
-| The reserved names are not module-scope declarations. | `elements/form-associated` |
-| A light element writes; only a shadow one rebuilds. | `diagnostics/light-element-structural-directive` |
-| The caller sorts a light element's children into its slots. | `elements/light-slots` |
-| `data()` is what a template sees, and the server has to build it too. | `elements/state-default` |
-| Reacting costs a definition, and only a definition. | `elements/javascript-shipped` |
-| The `No-Vary-Search` guard reads a header instead of writing one, and it has to run at request time. | `fragments/no-vary-search-hides-fragment` |
-| The swap watcher is opt-in, and used to follow `fragmentParam`. | `fragments/watch-elements` |
-| An action runs after the region is known to exist. | `fragments/post-unknown-name` |
-| A layout guard is one of the things that can refuse a request, and it did not. | `layouts/guard-action` |
-| A page's handlers are verb exports, the same as an endpoint's. | `forms/verbs` |
-| `ctx.response` is shared by reference, and has to be. | `layouts/layout-status` |
-| A loader returning a `Response` answers the request and skips the render. | `routing/loader-response` |
-| The order middleware is registered in is the behavior, so it lives in one function. | `middleware/order` |
-| `publicDir` is relative to `appDir`, like every other directory key. | `config/dirs-renamed` |
-| `app/public/` is copied to `dist/public`, and Vite's own `publicDir` is off. | `production/public-files` |
-| A `serveStatic` wrapper has to return what it was given. | `production/public-files` |
-| A cache store may answer with a promise. | `production/cache-store-async` |
-| A header set in `onFound` lands only under `serve`. | `production/public-files` |
-| Public files are served by Hono, build output by the in-memory cache. | `production/public-files` |
-| A repeated `view-transition-name` is a compile error, because the browser's answer is silence. | `diagnostics/view-transition-name-repeated` |
-| A refusal knew where it was and could not say. | `diagnostics/script-syntax-error` |
-| Nine refusals said `region`, a word no page of the documentation contains. | `diagnostics/fragment-without-id` |
-| The expression error described jsep's grammar, not this one. | `diagnostics/expression-malformed` |
-| `dist/edge` is made before `_headers` is written, not by the links. | `routing/index-page` |
-| A prerender runs the page; a prefetch does not. | `production/speculate` |
-| The rules are computed before the render pass and carried in the manifest. | `production/speculate` |
-| A directory inside a library is refused, not flattened or skipped. | `diagnostics/icon-library-nested` |
-| An icon with no `viewBox` is refused, not warned. | `diagnostics/icon-needs-viewbox` |
-| A library of one name in two icon directories is merged, not refused. | `icons/shared-dirs` |
-| `parseSigned` says `false` for a forged cookie, not `undefined`. | `cookies/forged` |
-| `cookies.all()` has a null prototype. | `cookies/all` |
-| Only the dev server invents a cookie secret. | `cookies/signed-needs-secret` |
-| A header naming a region is a hint; the query parameter is strict. | `fragments/header-unknown-name-ignored` |
-| `404.html` and `500.html` are reached for, not routed to. | `production/error-pages` |
-| How an element renders is read from the file, before anything is compiled. | `elements/shadow-element` |
-| Every reader of `elementsDir` goes through `src/elements.js`. | `diagnostics/element-in-two-dirs` |
-| `Secure` follows the connection, and `X-Forwarded-Proto` is trusted only to turn it on. | `cookies/write-defaults` |
-| The `\0` prefix was what kept the production bundle from mapping. | `diagnostics/prerender-throws` |
-| A preload hint is set on the way out, never on `ctx.response`. | `production/cache-control` |
-| A page does not stream, and the synchronous render is why. | `endpoints/stream` |
-| The chunks behind the entry are named up front, and only the build can name them. | `decisions/link-preload` |
-| The precache list is a build artifact, and cannot be anything else. | `production/precache` |
-| A config key lives in two lists, and only one of them is checked against. | `diagnostics/config-unknown-key` |
-| `canonical: true` is refused in `withDefaults`, not at the render. | `diagnostics/canonical-needs-metadata-base` |
-| A hoisted tag's directive has to be decided before anything is emitted. | `routing/head-tags` |
-| `renderHtmlAttrs` returns an object, not markup. | `layouts/html-attrs` |
-| An endpoint's `Response` goes through the envelope too. | `endpoints/envelope` |
-| A feed reads no clock. | `feeds/feed-updated` |
-| A feed item with no title or path was published as `undefined`. | `feeds/feed-item-needs-title` |
-| `prerender` is read off the page, never off its layouts. | `diagnostics/prerender-reads-cookie` |
-| The CSP is hashes, not a nonce, because a prerendered page is a file. | `security/csp-per-page` |
-| A hash never covers a `style` attribute, so `style-src` is not hashed. | `security/csp-meta` |
-| `csp.js` uses `crypto.subtle`, not the injected `hash`. | `security/csp-meta` |
-| Reading a cookie is what makes a page personal, not writing one. | `production/revalidate-not-held` |
-| Three servers render pages, so the include context is built in one place. | `includes/another-route` |
-| An included route reads cookies through the host's, and that is the point. | `diagnostics/include-reads-cookie` |
-| One route included twice loads once, and the memo dies with the request. | `includes/route-twice-loads-once` |
-| The loop guard is a chain, not a counter. | `diagnostics/include-cycle` |
-| An external include is resolved before the render, because render is synchronous. | `includes/prerendered-reads-once` |
-| Includes of one document share the read in progress, not only the copy. | `includes/remote-section` |
-| A source nobody allowed throws; a source that is down falls back. | `diagnostics/include-host-not-allowed` |
-| A src that is interpolated cannot be an include. | `diagnostics/include-src-interpolated` |
-| An included region drops its id, and the region keeps it. | `includes/same-page` |
-| `<transclude>` has no dash, and that is only safe because it never reaches the browser. | `diagnostics/include-never-closed` |
-| A file in `elements/` with no dash in its name stops the build. | `diagnostics/element-name-needs-dash` |
-| The proxy follows redirects itself, and that is the point. | `includes/redirects` |
-| The slug table is built for the whole document, once. | `includes/generated-ids` |
-| The cleaning descends into a template, because a declarative shadow root is not inert. | `includes/sanitize` |
-| SVG animation is stripped, because it writes an attribute after the check has read it. | `includes/sanitize` |
-| A scheme is what the browser reads, not what the bytes spell. | `includes/sanitize` |
-| A parser reads some elements' content as text, and the walk never cleans it. | `includes/sanitize` |
-| Report-only is a header, never a meta. | `security/csp-report-only` |
-| `${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the one way through. | `diagnostics/page-style-takes-no-expression` |
-| A literal `${` is written `\${`, and the comment above the scanner said for a long time that it could not be written at all. | `markdown/escape` |
-| The build cannot see a gate in `app/server.js`, and the failure looks like a success. | `middleware/gated` |
-| `gated` reaches the runtime through `routes.json`, not through a second config key. | `middleware/gated` |
-| The sitemap merges a path it already has, rather than keeping the first copy of it. | `feeds/sitemap-entries` |
+| Gotcha | Case | Tagged | Snapshot |
+| --- | --- | --- | --- |
+| Fragment mode emits components bare, and the flag has to reach all the way down. | `elements/shadow-inside-light-in-a-fragment` | yes | unreviewed |
+| A reference target has two places to be written, and missing one says nothing. | `elements/reference-target` | yes | reviewed |
+| A `<script>` with a non-JavaScript type is markup, not a client block. | `recipes/data-block` | yes | reviewed |
+| A client entry is one module, so a layout's relative import is rewritten. | `layouts/client-import-nested` | yes | unreviewed |
+| `draft` is filtered out of `manifest.routes` once, and the manifest is reassigned. | `routing/draft-left-out` | - | reviewed |
+| The build's context refuses rather than omits. | `diagnostics/prerender-after` | - | reviewed |
+| `ctx.after` catches the rejection before `waitUntil` sees it. | `runtimes/after-rejects` | - | reviewed |
+| Every export in `<script element>` declares one name, and `splice` works back to front. | `diagnostics/export-declares-two` | yes | reviewed |
+| A prop or a state field cannot be named for a member the framework calls. | `diagnostics/element-prop-named-for-hook` | yes | reviewed |
+| The reserved names are not module-scope declarations. | `elements/form-associated` | yes | reviewed |
+| A light element writes; only a shadow one rebuilds. | `diagnostics/light-element-structural-directive` | yes | reviewed |
+| The unused-prop check reads code and skips comments, and the `[^:]` in that regex is doing real work. | `diagnostics/warn-unused-prop` | yes | unreviewed |
+| Both halves fence a block. Only the shadow half compiles one. | `elements/light-block-then-binding` | yes | unreviewed |
+| The caller sorts a light element's children into its slots. | `elements/light-slots` | yes | reviewed |
+| State is behavior, so it defines the element. | `elements/state-only-defines` | yes | unreviewed |
+| `data()` is what a template sees, and the server has to build it too. | `elements/state-default` | yes | reviewed |
+| Reacting costs a definition, and only a definition. | `elements/javascript-shipped` | yes | reviewed |
+| The `No-Vary-Search` guard reads a header instead of writing one, and it has to run at request time. | `fragments/no-vary-search-hides-fragment` | - | reviewed |
+| The swap watcher is opt-in, and used to follow `fragmentParam`. | `fragments/watch-elements` | - | reviewed |
+| A listener on `document` outlives the element that added it. | `diagnostics/warn-document-listener` | yes | unreviewed |
+| An action runs after the region is known to exist. | `fragments/post-unknown-name` | - | reviewed |
+| A layout guard is one of the things that can refuse a request, and it did not. | `layouts/guard-action` | - | reviewed |
+| A page's handlers are verb exports, the same as an endpoint's. | `forms/verbs` | - | reviewed |
+| `ctx.response` is shared by reference, and has to be. | `layouts/layout-status` | - | reviewed |
+| A loader returning a `Response` answers the request and skips the render. | `routing/loader-response` | - | reviewed |
+| The order middleware is registered in is the behavior, so it lives in one function. | `middleware/order` | - | reviewed |
+| `publicDir` is relative to `appDir`, like every other directory key. | `config/dirs-renamed` | - | reviewed |
+| `app/public/` is copied to `dist/public`, and Vite's own `publicDir` is off. | `production/public-files` | - | reviewed |
+| A `serveStatic` wrapper has to return what it was given. | `production/public-files` | - | reviewed |
+| A cache store may answer with a promise. | `production/cache-store-async` | - | reviewed |
+| A header set in `onFound` lands only under `serve`. | `production/public-files` | - | reviewed |
+| Public files are served by Hono, build output by the in-memory cache. | `production/public-files` | - | reviewed |
+| A repeated `view-transition-name` is a compile error, because the browser's answer is silence. | `diagnostics/view-transition-name-repeated` | yes | reviewed |
+| A refusal knew where it was and could not say. | `diagnostics/script-syntax-error` | yes | reviewed |
+| Nine refusals said `region`, a word no page of the documentation contains. | `diagnostics/fragment-without-id` | yes | reviewed |
+| Five of the seven mistakes a beginner makes compiled silently. | `diagnostics/warn-server-exports-nothing` | yes | unreviewed |
+| The expression error described jsep's grammar, not this one. | `diagnostics/expression-malformed` | yes | reviewed |
+| `dist/edge` is made before `_headers` is written, not by the links. | `routing/index-page` | - | reviewed |
+| A prerender runs the page; a prefetch does not. | `production/speculate` | - | reviewed |
+| The rules are computed before the render pass and carried in the manifest. | `production/speculate` | - | reviewed |
+| A directory inside a library is refused, not flattened or skipped. | `diagnostics/icon-library-nested` | - | reviewed |
+| An icon with no `viewBox` is refused, not warned. | `diagnostics/icon-needs-viewbox` | - | reviewed |
+| A library of one name in two icon directories is merged, not refused. | `icons/shared-dirs` | - | reviewed |
+| `parseSigned` says `false` for a forged cookie, not `undefined`. | `cookies/forged` | - | reviewed |
+| `cookies.all()` has a null prototype. | `cookies/all` | - | reviewed |
+| Only the dev server invents a cookie secret. | `cookies/signed-needs-secret` | - | reviewed |
+| A header naming a region is a hint; the query parameter is strict. | `fragments/header-unknown-name-ignored` | - | reviewed |
+| `404.html` and `500.html` are reached for, not routed to. | `production/error-pages` | - | reviewed |
+| How an element renders is read from the file, before anything is compiled. | `elements/shadow-element` | yes | reviewed |
+| Every reader of `elementsDir` goes through `src/elements.js`. | `diagnostics/element-in-two-dirs` | yes | reviewed |
+| `<html>` is read with a second parse, because the fragment parser drops it. | `layouts/html-in-text-stays-text` | yes | unreviewed |
+| `Secure` follows the connection, and `X-Forwarded-Proto` is trusted only to turn it on. | `cookies/write-defaults` | - | reviewed |
+| The `\0` prefix was what kept the production bundle from mapping. | `diagnostics/prerender-throws` | - | reviewed |
+| A preload hint is set on the way out, never on `ctx.response`. | `production/cache-control` | - | reviewed |
+| A page does not stream, and the synchronous render is why. | `endpoints/stream` | - | reviewed |
+| The chunks behind the entry are named up front, and only the build can name them. | `decisions/link-preload` | - | reviewed |
+| The precache list is a build artifact, and cannot be anything else. | `production/precache` | - | reviewed |
+| The framework's own `<meta>` defaults go through the merge too. | `layouts/viewport-replaced` | yes | unreviewed |
+| A config key lives in two lists, and only one of them is checked against. | `diagnostics/config-unknown-key` | - | reviewed |
+| `canonical: true` is refused in `withDefaults`, not at the render. | `diagnostics/canonical-needs-metadata-base` | - | reviewed |
+| `<head>` merges across the chain, `<meta>` and canonical by key. | `layouts/head-merge-by-key` | yes | unreviewed |
+| A hoisted tag's directive has to be decided before anything is emitted. | `routing/head-tags` | yes | reviewed |
+| `renderHtmlAttrs` returns an object, not markup. | `layouts/html-attrs` | yes | reviewed |
+| An endpoint's `Response` goes through the envelope too. | `endpoints/envelope` | - | reviewed |
+| A feed reads no clock. | `feeds/feed-updated` | - | reviewed |
+| A feed item with no title or path was published as `undefined`. | `feeds/feed-item-needs-title` | - | reviewed |
+| `prerender` is read off the page, never off its layouts. | `diagnostics/prerender-reads-cookie` | - | reviewed |
+| The CSP is hashes, not a nonce, because a prerendered page is a file. | `security/csp-per-page` | - | reviewed |
+| A hash never covers a `style` attribute, so `style-src` is not hashed. | `security/csp-meta` | - | reviewed |
+| `csp.js` uses `crypto.subtle`, not the injected `hash`. | `security/csp-meta` | - | reviewed |
+| Reading a cookie is what makes a page personal, not writing one. | `production/revalidate-not-held` | - | reviewed |
+| Three servers render pages, so the include context is built in one place. | `includes/another-route` | - | reviewed |
+| An included route reads cookies through the host's, and that is the point. | `diagnostics/include-reads-cookie` | - | reviewed |
+| One route included twice loads once, and the memo dies with the request. | `includes/route-twice-loads-once` | - | reviewed |
+| The loop guard is a chain, not a counter. | `diagnostics/include-cycle` | - | reviewed |
+| An external include is resolved before the render, because render is synchronous. | `includes/prerendered-reads-once` | - | reviewed |
+| Includes of one document share the read in progress, not only the copy. | `includes/remote-section` | - | reviewed |
+| A source nobody allowed throws; a source that is down falls back. | `diagnostics/include-host-not-allowed` | - | reviewed |
+| A src that is interpolated cannot be an include. | `diagnostics/include-src-interpolated` | - | reviewed |
+| An included region drops its id, and the region keeps it. | `includes/same-page` | - | reviewed |
+| `<transclude>` has no dash, and that is only safe because it never reaches the browser. | `diagnostics/include-never-closed` | - | reviewed |
+| A file in `elements/` with no dash in its name stops the build. | `diagnostics/element-name-needs-dash` | yes | reviewed |
+| The proxy follows redirects itself, and that is the point. | `includes/redirects` | - | reviewed |
+| The slug table is built for the whole document, once. | `includes/generated-ids` | - | reviewed |
+| The cleaning descends into a template, because a declarative shadow root is not inert. | `includes/sanitize` | - | reviewed |
+| SVG animation is stripped, because it writes an attribute after the check has read it. | `includes/sanitize` | - | reviewed |
+| A scheme is what the browser reads, not what the bytes spell. | `includes/sanitize` | - | reviewed |
+| A parser reads some elements' content as text, and the walk never cleans it. | `includes/sanitize` | - | reviewed |
+| Report-only is a header, never a meta. | `security/csp-report-only` | - | reviewed |
+| `${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the one way through. | `diagnostics/page-style-takes-no-expression` | yes | reviewed |
+| A literal `${` is written `\${`, and the comment above the scanner said for a long time that it could not be written at all. | `markdown/escape` | yes | reviewed |
+| The escape was applied to text and not to attributes. | `routing/escape-in-attribute` | yes | unreviewed |
+| The build cannot see a gate in `app/server.js`, and the failure looks like a success. | `middleware/gated` | - | reviewed |
+| `gated` reaches the runtime through `routes.json`, not through a second config key. | `middleware/gated` | - | reviewed |
+| The sitemap merges a path it already has, rather than keeping the first copy of it. | `feeds/sitemap-entries` | - | reviewed |
 
-### Behavioral, case to write (31)
+### Behavioral, case to write (23)
 
 | Gotcha | What the case shows |
 | --- | --- |
-| Fragment mode emits components bare, and the flag has to reach all the way down. | a shadow element inside a light one, in a fragment |
-| A client entry is one module, so a layout's relative import is rewritten. | a layout's relative client import, on a nested page |
-| Both halves fence a block. Only the shadow half compiles one. | an `if` followed by a bound node in a light element builds |
-| State is behavior, so it defines the element. | a light element with only `state` ships a definition |
 | A verb is a name on a list, not a shape. | a request whose method names a non-verb export answers 405 |
 | `serve.js` registers every route, not just `manifest.dynamic`. | a URL a pattern matches and `paths()` never listed answers the 404 page |
 | `strict: false` and `trimTrailingSlash` exclude each other. | `/docs/intro/` on a catch-all answers 301, not 200 |
@@ -799,10 +807,7 @@ Each needs the `spec:` tag and a check that its case fails with the old bug.
 | A `Response` that answers early still needs the envelope. | a page action's returned redirect keeps the cookie it set |
 | The directory holds routes; a page is one kind of route. | an old `routes` directory named `pages/` stops the build |
 | `loadProject` refuses `partialsDir` and `componentsDir`. | `partialsDir` or `componentsDir` stops the build |
-| `<html>` is read with a second parse, because the fragment parser drops it. | `<html>` inside a script block stays text |
 | `nosniff` is sent always; `X-Frame-Options` and HSTS are not. | no `X-Frame-Options` and no HSTS by default |
-| The framework's own `<meta>` defaults go through the merge too. | a page's own viewport replaces the default |
-| `<head>` merges across the chain, `<meta>` and canonical by key. | `og:image` from a layout and a page ships once; `content="a > b"` survives |
 | `]]>` has to be split, and it turns up in ordinary code. | `]]>` in a feed item is split across two CDATA sections |
 | Building the include context is half of it. Every render call site has to be handed it. | a fragment of a page that holds an include, and the render after an action |
 | One IPv4 address has four spellings in IPv6, and only one was read. | the IPv6 spellings of a private IPv4 address are refused |
@@ -812,18 +817,8 @@ Each needs the `spec:` tag and a check that its case fails with the old bug.
 | XML 1.0 cannot carry a C0 control, so one has to be dropped before it is written. | a C0 control in a feed or sitemap field is dropped |
 | A route that is not in the table still fails like one. | a throw in `paths()` or `items()` gives the 500 page and `onError` with phase `sitemap` or `feed` |
 | A region name is attacker input, so look it up with `Object.hasOwn`. | `?fragment=constructor` and `__proto__` answer 404 |
-| The escape was applied to text and not to attributes. | `\${` in an attribute leaves no backslash |
 
-### For Joe (4)
-
-| Gotcha | Why it is not sorted |
-| --- | --- |
-| The unused-prop check reads code and skips comments, and the `[^:]` in that regex is doing real work. | A build warning. The runner reads build output only when the build fails |
-| A listener on `document` outlives the element that added it. | A build warning, as above |
-| Five of the seven mistakes a beginner makes compiled silently. | A build warning, as above |
-| The page cache sees a cookie read and a header write, and nothing else. | A known gap the docs state: the cache cannot see a header read off `ctx.request`. A case would pin the gap |
-
-### Internal (109)
+### Internal (110)
 
 | Gotcha | What it is about |
 | --- | --- |
@@ -922,6 +917,7 @@ Each needs the `spec:` tag and a check that its case fails with the old bug.
 | `hx-*`, `data-*` and `aria-*` are not props. | The type checker or the generated types |
 | Most of what `check:src` reported was the JSDoc being wrong, not the code being untypeable. | The type checker or the generated types |
 | A source map is handed back from `load`, not written into the code. | The dev server |
+| The page cache sees a cookie read and a header write, and nothing else. | Advice the docs give. `/docs/production` says not to set `revalidate` on a page that reads a header off `ctx.request`, and a case would pin the gap as the contract |
 | A cache hit is sent the way a file is, and the work is kept beside the entry. | How `src/` is written |
 | Two packages, and `@transclude/create` depends on neither. | Release, CI or packaging |
 | `create/templates/` is what a new project is, and `_gitignore` is why. | The project generator |

@@ -349,6 +349,14 @@ export function includeResolver(options = {}, deps = {}) {
 
   return {
     resolve: async (url, id) => {
+      // The src is a literal in the page, so a host nobody allowed is the
+      // author's mistake, not a source being down: it throws rather than
+      // falling back. A redirect to such a host is the source's doing, and
+      // is refused inside the read like any other unreachable source.
+      const why = checkUrl(url, config);
+      if (why) {
+        throw new Error(`[transclude] <transclude src="${url}#${id}"> names a source this app may not read: ${why}.`);
+      }
       const entry = await read(url);
       return resolveFragment(entry.doc, id)?.html ?? null;
     },

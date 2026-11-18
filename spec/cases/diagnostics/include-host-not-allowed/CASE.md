@@ -3,5 +3,5 @@ even when it has children.
 
 Source: `/docs/includes`, "Children are the fallback".
 
-Marked `todo`. The refusal is caught with the unreachable sources, so the
-children render and the build passes.
+A redirect from an allowed host to one that is not is the source's doing, and
+falls back like any other source that cannot be read.

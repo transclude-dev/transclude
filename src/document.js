@@ -516,7 +516,7 @@ export async function resolveIncludes(includes, ctx, options = {}) {
       } catch (error) {
         // A source that is unreachable is what the fallback is for. A source
         // that is misconfigured, or a loop, is a mistake and should be heard.
-        if (/includes itself|past the limit|no host is allowed|no way to reach/.test(error.message)) {
+        if (/includes itself|past the limit|no host is allowed|may not read|no way to reach/.test(error.message)) {
           throw error;
         }
         return [key, null];

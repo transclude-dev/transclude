@@ -1,7 +1,6 @@
 [
   {
     "build": "fails",
-    "diagnostic": "expected/diagnostic.txt",
-    "todo": "a host not in proxy.allow is caught with unreachable sources, so the children render and the build passes"
+    "diagnostic": "expected/diagnostic.txt"
   }
 ]

@@ -473,10 +473,10 @@ runner is Node. Phase 4 serves every case on all four.
 | Node 22 is the floor | The `node` CI job | - |
 | What differs: bytes, hashing, compression, ranges | Phase 4 compares the answers | - |
 | Bindings arrive on `env`; a loader's context names no runtime | workerd; phase 4. `routing/context-fields` lists the context | - |
-| A page reading a binding or calling `after` needs `prerender = false` | `diagnostics/prerender-after` | unreviewed |
-| `ctx.after` takes a promise the reader does not wait for | `runtimes/after`. On Node nothing in `src/` waits for the work, so no change breaks only this; the case fails when `after` is missing | unreviewed |
-| A function is refused rather than wrapped | `runtimes/after-function-refused` | unreviewed |
-| A rejection goes to `onError`; the response does not change | `runtimes/after-rejects` | unreviewed |
+| A page reading a binding or calling `after` needs `prerender = false` | `diagnostics/prerender-after` | reviewed |
+| `ctx.after` takes a promise the reader does not wait for | `runtimes/after`. On Node nothing in `src/` waits for the work, so no change breaks only this; the case fails when `after` is missing | reviewed |
+| A function is refused rather than wrapped | `runtimes/after-function-refused` | reviewed |
+| A rejection goes to `onError`; the response does not change | `runtimes/after-rejects` | reviewed |
 
 ## /docs/refusals
 

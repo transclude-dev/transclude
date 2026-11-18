@@ -16,6 +16,7 @@ import { includeContext } from './include.js';
 import { sitemap } from './sitemap.js';
 import { PRECACHE_PATH } from './precache.js';
 import { absoluteFrom } from './document.js';
+import { reportOnlyHeader } from './csp.js';
 import {
   ACTION_METHODS,
   hasRegion,
@@ -444,9 +445,16 @@ export function createApp({
   }
 
   // Prerendered pages. /about and /about/ are the same page.
-  app.get('*', (c, next) => {
+  app.get('*', async (c, next) => {
     const page = statics.get(c.req.path);
-    return page ? send(c, page, REVALIDATE) : next();
+    if (!page) return next();
+
+    // Taken from the file's own bytes once, and kept on the entry: the hashes
+    // in it are a fact about the file, which does not change while it is served.
+    page.reporting ??= reportOnlyHeader(new TextDecoder().decode(page.body), config.csp);
+    const reporting = await page.reporting;
+    if (reporting) c.header(reporting.name, reporting.value);
+    return send(c, page, REVALIDATE);
   });
 
   /**
@@ -584,6 +592,9 @@ export function createApp({
     // be within its rights to believe it.
     c.header('Cache-Control', ctx && !isShareable(html, ctx) ? PERSONAL : REVALIDATE);
     c.header('ETag', etag);
+
+    const reporting = await reportOnlyHeader(html, config.csp);
+    if (reporting) c.header(reporting.name, reporting.value);
 
     // Whatever the loaders put on `ctx.response`, after the defaults above so a
     // page can override its own Cache-Control, and before the conditional check

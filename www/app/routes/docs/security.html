@@ -243,6 +243,19 @@ export default {
 
   ${html(s.report)}
 
+  <p>
+    The whole policy then rides in a
+    <code>Content-Security-Policy-Report-Only</code> header, this page's hashes
+    included. A browser ignores report-only in a <code>&lt;meta&gt;</code>, so
+    no meta is written.
+  </p>
+
+  <doc-note label="A static host reports nothing" tone="warn">
+    The header is set by the server that answers the page. A prerendered page
+    served from <code>dist/static</code> by a host that runs none of this
+    carries no policy at all in report-only mode.
+  </doc-note>
+
   <h2>The features a page refuses</h2>
 
   <p>

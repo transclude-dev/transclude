@@ -1891,6 +1891,16 @@ against.
   `route`, which is why `report` reads `at?.route` rather than assuming a truthy
   `at` carries one. The seam that pages a human covers every failed request
   again, not most of them.
+- **Report-only is a header, never a meta.** A browser ignores
+  `content-security-policy-report-only` in a `<meta>`, and the policy went out
+  that way: `reportOnly: true` reported nothing for scripts and styles, and
+  only `frame-ancestors`, which rode in the shared header, could report. Now
+  `withPolicy` writes no meta in that mode, `headerPolicy` sends no shared
+  header, and `reportOnlyHeader` builds the whole policy from each document.
+  `sendRendered`, the static handler in `app.js` (once per file, kept on the
+  entry) and `renderPage` in `bin/dev.js` set it. A fragment gets none. A page
+  on a static host that runs none of this carries no policy in this mode.
+  `spec: security/csp-report-only`.
 - **`${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the
   one way through.** Text in those two is raw text: escaping it would change what
   the browser reads, since `&amp;` is an ampersand in prose and four characters

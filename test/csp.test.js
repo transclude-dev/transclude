@@ -9,7 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 
-import { CSP_DEFAULTS, inlineSources, policyFor, withPolicy } from '../src/csp.js';
+import { CSP_DEFAULTS, inlineSources, policyFor, reportOnlyHeader, withPolicy } from '../src/csp.js';
 import { renderRoute, responseOf } from '../src/document.js';
 
 /** What the browser will compute, from a library that is not the one under test. */
@@ -165,9 +165,26 @@ test('styles are digested only when a directive asks for them', async () => {
   assert.match(await policyFor(html, { directives: asked }), /style-src 'self' 'sha256-/);
 });
 
-test('reportOnly sets the other header name', async () => {
+test('reportOnly writes no meta, because a browser ignores report-only in one', async () => {
   const html = await withPolicy(doc(), { reportOnly: true });
-  assert.match(html, /content-security-policy-report-only/);
+  assert.doesNotMatch(html, /http-equiv/);
+});
+
+test('reportOnly sends the whole policy as the page header, hashes included', async () => {
+  const html = doc('<script>a()</script>');
+  const header = await reportOnlyHeader(html, {
+    reportOnly: true,
+    directives: { ...CSP_DEFAULTS, 'frame-ancestors': ["'self'"] },
+  });
+
+  assert.equal(header.name, 'Content-Security-Policy-Report-Only');
+  assert.match(header.value, /script-src 'self' 'sha256-/);
+  assert.match(header.value, /frame-ancestors 'self'/);
+});
+
+test('a report-only header is for a document, not a fragment or an enforced policy', async () => {
+  assert.equal(await reportOnlyHeader('<ul id="list"></ul>', { reportOnly: true }), null);
+  assert.equal(await reportOnlyHeader(doc(), true), null);
 });
 
 test('a directive a meta tag cannot carry is dropped', async () => {
@@ -268,7 +285,7 @@ test('no meta-only directive means no header at all', async () => {
   assert.equal(headerPolicy(false), null);
 });
 
-test('reportOnly names the other header here too', async () => {
+test('reportOnly leaves nothing for the shared header, since each page carries all of it', async () => {
   const { headerPolicy } = await import('../src/csp.js');
-  assert.equal(headerPolicy({ reportOnly: true }).name, 'Content-Security-Policy-Report-Only');
+  assert.equal(headerPolicy({ reportOnly: true }), null);
 });

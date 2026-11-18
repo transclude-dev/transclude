@@ -20,6 +20,8 @@ const DEFAULT_MAX_BYTES = 64 * 1024 * 1024;
  * @property {string} etag
  * @property {Map<string, { body: Uint8Array, etag: string }>} encodings one per content encoding
  * @property {string} type the Content-Type to send
+ * @property {Promise<{ name: string, value: string }|null>} [reporting] the
+ *   report-only header for this file, worked out on its first request
  */
 
 /**

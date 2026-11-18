@@ -2,7 +2,18 @@
   {
     "request": "GET /",
     "status": 200,
-    "body": "expected/index.html",
-    "todo": "the report-only policy goes out in a <meta>, which browsers ignore; it belongs in the header"
+    "headers": {
+      "content-security-policy-report-only": "default-src 'self'; script-src 'self' 'sha256-zZchUrLpwrNlYqHoTEpgeCKwKNoLlkjo7oZe29adXEM=' 'sha256-b/J+/o8TCyGhF3yK5AFF7uyMB8fxPWGnZEYZg1B7lAg='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
+      "content-security-policy": null
+    },
+    "body": "expected/index.html"
+  },
+  {
+    "request": "GET /live",
+    "status": 200,
+    "headers": {
+      "content-security-policy-report-only": "default-src 'self'; script-src 'self' 'sha256-tQPDCq40ypCWlk0SgM/fgfmGRERfzAZQn4hG6hfAZfs='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+    },
+    "body": "expected/live.html"
   }
 ]

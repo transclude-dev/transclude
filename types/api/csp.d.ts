@@ -85,3 +85,22 @@ export declare function withPolicy(html: string, config: {
     directives?: Record<string, string[]>;
     reportOnly?: boolean;
 } | boolean | null): Promise<string>;
+/**
+ * The whole report-only policy for one document, as its header.
+ *
+ * A browser ignores `content-security-policy-report-only` in a `<meta>`, so
+ * report-only mode cannot use the meta at all. Every directive, this page's
+ * hashes and the header-only ones together, goes in the header of the page it
+ * describes. A fragment is not a document and gets none.
+ *
+ * @param {string} html
+ * @param {{ directives?: Record<string, string[]>, reportOnly?: boolean }|boolean|null} config
+ * @returns {Promise<{ name: string, value: string }|null>} null unless report-only
+ */
+export declare function reportOnlyHeader(html: string, config: {
+    directives?: Record<string, string[]>;
+    reportOnly?: boolean;
+} | boolean | null): Promise<{
+    name: string;
+    value: string;
+} | null>;

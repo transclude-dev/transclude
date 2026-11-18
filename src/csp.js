@@ -157,6 +157,9 @@ export function headerPolicy(config) {
   if (!config) return null;
 
   const options = config === true ? {} : config;
+  // Report-only sends the whole policy per page, in its own header, so there
+  // is no half left over to send here.
+  if (options.reportOnly) return null;
   const directives = options.directives ?? CSP_DEFAULTS;
 
   const parts = Object.entries(directives)
@@ -182,6 +185,7 @@ export async function withPolicy(html, config) {
   if (!config) return html;
 
   const options = config === true ? {} : config;
+  if (options.reportOnly) return html;
   const directives = options.directives ?? CSP_DEFAULTS;
 
   const deliverable = Object.fromEntries(
@@ -207,6 +211,27 @@ export async function withPolicy(html, config) {
     return `${html.slice(0, after)}\n${meta}${html.slice(after)}`;
   }
   return html.replace(/<head[^>]*>/, (open) => `${open}\n${meta}`);
+}
+
+/**
+ * The whole report-only policy for one document, as its header.
+ *
+ * A browser ignores `content-security-policy-report-only` in a `<meta>`, so
+ * report-only mode cannot use the meta at all. Every directive, this page's
+ * hashes and the header-only ones together, goes in the header of the page it
+ * describes. A fragment is not a document and gets none.
+ *
+ * @param {string} html
+ * @param {{ directives?: Record<string, string[]>, reportOnly?: boolean }|boolean|null} config
+ * @returns {Promise<{ name: string, value: string }|null>} null unless report-only
+ */
+export async function reportOnlyHeader(html, config) {
+  if (!config || config === true || !config.reportOnly) return null;
+  if (!/^\s*<!doctype/i.test(html)) return null;
+
+  const policy = await policyFor(html, { directives: config.directives ?? CSP_DEFAULTS });
+  if (!policy) return null;
+  return { name: 'Content-Security-Policy-Report-Only', value: policy };
 }
 
 /** What `renderDocument` writes first in every head. */

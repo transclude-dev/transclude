@@ -1,0 +1,3 @@
+[
+  {"request": "GET /set", "status": 200, "headers": {"set-cookie": "a=1; Max-Age=60; Path=/x; SameSite=Strict"}}
+]

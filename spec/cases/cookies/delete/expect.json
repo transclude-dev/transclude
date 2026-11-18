@@ -1,0 +1,6 @@
+[
+  {"request": "GET /set", "status": 200},
+  {"request": "GET /show", "status": 200, "body": "expected/set.html"},
+  {"request": "GET /delete", "status": 200, "headers": {"set-cookie": "a=; Max-Age=0; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax"}},
+  {"request": "GET /show", "status": 200, "body": "expected/gone.html"}
+]

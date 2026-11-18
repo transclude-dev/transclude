@@ -1,0 +1,8 @@
+[
+  {"request": "GET /login", "status": 200},
+  {"request": "GET /", "status": 200, "body": "expected/ada.html"},
+  {"request": "GET /", "send": {"headers": {"cookie": "user=eve"}}, "status": 200, "body": "expected/guest.html"},
+  {"request": "GET /", "send": {"headers": {"cookie": "user=eve.65Bhn3BHiLQ78R1uDp%2FvbJFKnVCiXd6CriKkEOGQYbw%3D"}}, "status": 200, "body": "expected/guest.html"},
+  {"request": "GET /", "send": {"headers": {"cookie": "user=ada.forged"}}, "status": 200, "body": "expected/guest.html"},
+  {"request": "GET /", "send": {"headers": {"cookie": ""}}, "status": 200, "body": "expected/guest.html"}
+]

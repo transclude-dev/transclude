@@ -1,0 +1,3 @@
+[
+  {"request": "GET /", "send": {"headers": {"cookie": "other=1"}}, "status": 200, "body": "expected/index.html"}
+]

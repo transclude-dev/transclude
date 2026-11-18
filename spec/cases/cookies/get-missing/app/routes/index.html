@@ -1,0 +1,7 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ cookies }) => ({ kind: typeof cookies.get('nope') });
+</script>
+
+<p>${kind}</p>

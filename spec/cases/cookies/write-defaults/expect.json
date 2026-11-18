@@ -1,0 +1,4 @@
+[
+  {"request": "GET /set", "status": 200, "headers": {"set-cookie": "a=1; Path=/; HttpOnly; SameSite=Lax"}},
+  {"request": "GET /set", "send": {"headers": {"x-forwarded-proto": "https"}}, "status": 200, "headers": {"set-cookie": "a=1; Path=/; HttpOnly; Secure; SameSite=Lax"}}
+]

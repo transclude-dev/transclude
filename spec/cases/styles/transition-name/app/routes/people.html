@@ -1,0 +1,11 @@
+<script server>
+  import { people } from '../data/people.js';
+
+  export default async () => ({ people });
+</script>
+
+<a
+  each="person of people"
+  href="/people/${person.slug}"
+  style="view-transition-name: person-${person.slug}"
+>${person.name}</a>

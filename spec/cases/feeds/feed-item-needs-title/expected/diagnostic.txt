@@ -1,0 +1,1 @@
+Error: [transclude] feed item 2 needs a title and a path: a reader shows the title and follows the path, and an item missing either is a broken entry

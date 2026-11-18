@@ -1,0 +1,4 @@
+[
+  {"request": "GET /atom.xml", "status": 200, "body": "expected/atom.xml"},
+  {"request": "GET /feed.xml", "status": 404}
+]

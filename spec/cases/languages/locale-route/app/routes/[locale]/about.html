@@ -1,0 +1,15 @@
+<script server>
+  import { copy } from '../../lib/copy.js';
+
+  export const paths = () => [{ locale: 'en' }, { locale: 'cy' }];
+
+  export default async ({ params }) => ({
+    t: copy[params.locale] ?? copy.en,
+    locale: params.locale,
+  });
+</script>
+
+<html lang="${locale}" />
+<title>${t.aboutTitle}</title>
+<h1>${t.aboutTitle}</h1>
+<p>${t.aboutBody}</p>

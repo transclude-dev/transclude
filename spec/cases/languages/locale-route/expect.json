@@ -1,0 +1,5 @@
+[
+  {"request": "GET /cy/about", "status": 200, "body": "expected/cy.html"},
+  {"request": "GET /en/about", "status": 200, "body": "expected/en.html"},
+  {"request": "GET /sitemap.xml", "status": 200, "body": "expected/sitemap.xml"}
+]

@@ -1,0 +1,8 @@
+<script server>
+  export const paths = () => [{ locale: 'en' }, { locale: 'cy' }];
+
+  export default async ({ params }) => ({ locale: params.locale });
+</script>
+
+<html lang="${locale}" />
+<h1>${locale}</h1>

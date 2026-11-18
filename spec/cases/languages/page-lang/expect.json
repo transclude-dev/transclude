@@ -1,0 +1,5 @@
+[
+  {"request": "GET /amdanom", "status": 200, "body": "expected/amdanom.html"},
+  {"request": "GET /%D8%B9%D9%86", "status": 200, "body": "expected/rtl.html"},
+  {"request": "GET /", "status": 200, "body": "expected/index.html"}
+]

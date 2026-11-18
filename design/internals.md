@@ -1750,6 +1750,7 @@ against.
   server-rendered page. `includeContext` in `src/include.js` answers it for all
   three, and a test reads all three files for the call. This is the same shape as
   `clientManifest` deciding who ships a client entry, and it broke the same way.
+  `spec: includes/another-route`, `spec: includes/route-twice-loads-once`.
 - **Building the include context is half of it. Every render call site has to be
   handed it.** All three servers built one and only `renderRoute` was given it,
   so a page holding any include served its whole document and answered 500 for
@@ -1767,7 +1768,7 @@ against.
   would be handed the first one's page. Sharing the object makes the read
   contagious for free. The build refuses to prerender a page whose
   `ctx.cookies.personal` came out true, whether the page read one or something
-  it includes did.
+  it includes did. `spec: diagnostics/include-reads-cookie`.
 - **One route included twice loads once, and the memo dies with the request.**
   `includeMemo` is created in `renderRoute` per call. A store that outlived the
   request would be a second page cache with none of the rules the real one has,
@@ -1786,6 +1787,7 @@ against.
   by name, so the error can say the way round; ten pages each including the next
   is not a loop and is caught by depth. Both are needed and neither finds the
   other's case.
+  `spec: diagnostics/include-cycle`, `spec: diagnostics/include-chain-too-deep`.
 - **An external include is resolved before the render, because render is
   synchronous.** Every render function down to the last component is
   `__o += …` string building, and a fetch is not that. So the compiler collects
@@ -1794,6 +1796,7 @@ against.
   what lets a prerendered page carry one: it reads the source once at build time
   and is still a file. Making render async instead would have taxed every
   component call for a feature few pages use.
+  `spec: includes/prerendered-reads-once`.
 - **Includes of one document share the read in progress, not only the copy.**
   A page's includes are resolved together, so two fragments of one document
   start in the same tick, before either read has a copy for the store to hold.
@@ -1812,6 +1815,7 @@ against.
 - **A src that is interpolated cannot be an include.** The set has to be known
   before the render that would produce it, so `src="/docs/${slug}#a"` is a
   compile error rather than a value nobody could resolve in time.
+  `spec: diagnostics/include-src-interpolated`.
 - **An included region drops its id, and the region keeps it.** A region is
   always rendered where it is declared, so `<transclude src="#id">` is
   always a second copy in the same document. Both carrying the id would be
@@ -1821,6 +1825,7 @@ against.
   the include calls the region function with `false`. The fragment served over
   HTTP keeps the name, because that is what a swap is matched against. This was
   shipped as a warning first, which was wrong: the warning fired on every use.
+  `spec: includes/same-page`.
 - **`<transclude>` has no dash, and that is only safe because it never reaches
   the browser.** The compiler consumes it: every form is resolved server-side and
   the tag leaves no trace, so it does not need to be a valid custom element name.
@@ -1830,7 +1835,7 @@ against.
   self-closing tag here, `/>` is read as `>`, and since the children are the
   fallback the rest of the page becomes them. Silent, and the include still
   works. `sourceCodeLocation.endTag` is absent exactly in that case, which is
-  what the guard reads.
+  what the guard reads. `spec: diagnostics/include-never-closed`.
 - **A file in `elements/` with no dash in its name stops the build.** It used to
   be dropped with a warning, which scrolled past with the rest of the build
   output, and its tag reached the page as written: `<note>` in the page, with
@@ -1843,7 +1848,7 @@ against.
   on the URL somebody configured says nothing about where hop three landed, and
   a redirect to `169.254.169.254` is the standard way in. `fetchChecked` loops
   with `redirect: 'manual'` and re-runs the allowlist and the address check on
-  every hop.
+  every hop. `spec: includes/redirects`.
 - **Resolving a name is injected, because one runtime cannot do it.** `address.js`
   decides what an address *means* and imports nothing; `lookup.js` turns a name
   into addresses and imports `node:dns`. The core reaches the first and never the
@@ -1890,6 +1895,7 @@ against.
   for, so `#notes-1` would name different headings on different requests.
   Explicit ids are all reserved before the first slug is handed out, which is why
   an id further down the document still beats a heading further up.
+  `spec: includes/generated-ids`.
 - **Template content is not addressable, and `childNodes` is why it looks like it
   is.** A `<template>`'s children live on `.content`, so a walk over
   `childNodes` finds nothing and an id inside one silently resolves to null. That
@@ -1912,7 +1918,7 @@ against.
   namespace. Both are the same rule: honor a base the browser would have honored.
   Template content is inert and `<base>` inside `<svg>` is an SVG element of that
   name, so either one would point every relative URL in the document at a host
-  the source never used.
+  the source never used. `spec: includes/sanitize`.
 - **SVG animation is stripped, because it writes an attribute after the check has
   read it.** `<animate attributeName="href" to="javascript:alert(1)">` inside an
   `<a>` leaves an anchor navigating to a value the scheme check never saw, and
@@ -1922,6 +1928,7 @@ against.
   names hold a URL. Refusing `animate`, `set`, `animateMotion` and
   `animateTransform` is the smaller rule. It costs animation in foreign SVG,
   which is less than this sanitizer already spends on `<style>`.
+  `spec: includes/sanitize`.
 - **A scheme is what the browser reads, not what the bytes spell.** The
   sanitizer read a URL attribute's scheme with a regex on the raw value, so
   `href="java&#9;script:alert(1)"` — a tab inside the word — matched no scheme,
@@ -1936,7 +1943,7 @@ against.
   rebases only a relative URL or an `http`/`https`/`ftp` one rather than running
   everything through `new URL`. A form feed inside the scheme is left alone,
   because the URL parser does not strip that one either. Eight vectors in
-  `test/rewrite.test.js`.
+  `test/rewrite.test.js`. `spec: includes/sanitize`.
 - **XML 1.0 cannot carry a C0 control, so one has to be dropped before it is
   written.** A feed and a sitemap escape the five metacharacters and stop there,
   which is right for injection and silent about control characters: a `\x00` or
@@ -1959,6 +1966,7 @@ against.
   conditional comment, a stray `--!>` — and the compiler already drops comments
   from a page it builds, so a fragment matches. `test/rewrite.test.js` covers
   both, and the mutation vectors that found them are in the commit.
+  `spec: includes/sanitize`.
 - **A route that is not in the table still fails like one.** `/sitemap.xml` and
   the feed had no `try`, so a throw in a page's `paths()` or a feed's `items()`
   — both usually a database read — slipped past the app's `internalError` to

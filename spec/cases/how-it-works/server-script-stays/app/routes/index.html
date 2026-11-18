@@ -1,0 +1,7 @@
+<script server>
+  const apiKey = 'sk-never-in-the-page';
+
+  export default async () => ({ greeting: apiKey ? 'Hello' : 'Hi' });
+</script>
+
+<h1>${greeting}</h1>

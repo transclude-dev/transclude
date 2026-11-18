@@ -70,8 +70,9 @@ a second `elementsDir`, is copied with it.
 - A body file that is not `.html` compares exactly, byte for byte: a sitemap,
   a plain-text answer, JSON.
 - A built asset's content hash counts as `[hash]`: `/assets/index-Cyt6b9Zw.js`
-  matches `/assets/index-AAAAAAAA.js`. The hash changes with any edit to the
-  file behind it. Which asset a page names still counts.
+  matches `/assets/index-AAAAAAAA.js`, in a body and in a header. The hash
+  changes with any edit to the file behind it. Which asset a page names still
+  counts.
 
 A request may name a built asset by its hash placeholder:
 `GET /assets/global-[hash].css`. The runner finds the real name in a body an

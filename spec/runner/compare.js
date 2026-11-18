@@ -79,7 +79,10 @@ export function differences(expected, actual) {
 
   for (const [name, value] of Object.entries(expected.headers ?? {})) {
     const got = actual.headers.get(name);
-    if (got !== value) found.push(`header ${name.toLowerCase()}: expected ${JSON.stringify(value)}, got ${JSON.stringify(got)}`);
+    // A hash in a header counts as `[hash]`, as it does in a body: a `Link`
+    // header names the same assets a page does.
+    const same = got === value || (got !== null && value !== null && withoutHashes(got) === withoutHashes(value));
+    if (!same) found.push(`header ${name.toLowerCase()}: expected ${JSON.stringify(value)}, got ${JSON.stringify(got)}`);
   }
 
   if (expected.body !== undefined && expected.exact) {

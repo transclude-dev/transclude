@@ -478,6 +478,146 @@ runner is Node. Phase 4 serves every case on all four.
 | A function is refused rather than wrapped | `runtimes/after-function-refused` | reviewed |
 | A rejection goes to `onError`; the response does not change | `runtimes/after-rejects` | reviewed |
 
+## /docs/testing
+
+Complete. The runner is what this page describes: a built app asked through
+`app.request()`.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| `@transclude/core/production` answers the way the server does | Every case | - |
+| The redirect, CSRF, middleware, cookies, the cache and the route table all run | `middleware/order`, `forms/csrf-default`, `cookies/read`, `production/revalidate-held`, `routing/route-table` | reviewed |
+| It reads a build, so build first and skip without one | Advice about a test file | - |
+| `node --test` has no `.env`, so a signed cookie answers 500 | `cookies/signed-needs-secret` | reviewed |
+| A form post needs an origin, or CSRF refuses it | `forms/csrf-default` | reviewed |
+| The page and the fragment agree | `fragments/marked-element`. For every fragment, phase 3 | reviewed |
+| A browser is needed for upgrades, shadow roots, focus and swaps | Phase 5 | - |
+
+## /docs/types
+
+Complete. `transclude-check` is a command, not an HTTP answer.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| A misspelled field, an unknown prop, a prop of the wrong type | The checker | - |
+| `typecheckStrict`, JSDoc, inferred loader types | The checker | - |
+| `data-*`, `aria-*` and `hx-*` pass through, an expression included | `types/pass-through` shows the rendered half. Whether the checker accepts them is the checker's | unreviewed |
+| `transclude-env.d.ts` is generated where `typesFile` says | Build output | - |
+| The editor setting, the language server, the extension | The editor | - |
+| The dev server checks in the background, and `typecheck: false` stops it | The dev server | - |
+
+## /docs/project-layout
+
+Complete.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| `.html` in `routes/` is a page, `.js` an endpoint | `routing/route-table`, `endpoints/json-api` | reviewed |
+| Everything in `elements/` is a custom element, light unless it exports `shadow` | `elements/light-element`, `elements/shadow-element` | reviewed |
+| A `_` prefix keeps a helper out of the route table | `project-layout/underscore-helper`, `markdown/underscore-skipped` | unreviewed |
+| `_layout.html`, `[name].html`, `[...path].html`, `404.html`, `500.html` | `layouts/wraps-page`, `routing/route-table`, `production/error-pages` | reviewed |
+
+## /docs/getting-started
+
+Complete.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| `npm create @transclude` writes a project | The create area | - |
+| Vite and TypeScript are optional peers, and a built app loads neither | Package metadata, and phase 6 | - |
+| A project needs no `vite.config.js` | Every case: none has one | - |
+| One that adds a Vite plugin is read | `getting-started/vite-plugin` | unreviewed |
+| `index.html` answers `/`; the loader returns what the markup reads | `routing/index-page`, `routing/route-table` | reviewed |
+| The four commands and their port | Commands, not HTTP answers | - |
+| `${}` is escaped; `html()` passes markup through | `routing/interpolation-escapes`, `security/html-in-place` | reviewed |
+
+## /docs/how-it-works
+
+Complete. The compiled module is the `./compiler` export, outside the
+contract. What it produces is checked through HTTP.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| The module's exports: `load`, `render`, `regions`, `css`, `client`, `includes` | The `./compiler` export, outside the contract | - |
+| A fragment is the same markup the page renders | `fragments/marked-element`; phase 3 | reviewed |
+| The build prerenders, or names the page and exits | `diagnostics/prerender-reads-cookie`, `prerender-response`, `prerender-status` | reviewed |
+| The order of what answers a request | `middleware/order`, `middleware/server-header`, `middleware/public-before-routes` | reviewed |
+| Inside the route: layouts, the action, the loader, render, includes | `layouts/guard-redirect`, `layouts/guard-action`, `fragments/post-unknown-name` | reviewed |
+| The same module four ways | `fragments/marked-element`, `forms/post-redirect-get`, `includes/another-route` | reviewed |
+| The `<script server>` block never appears in the page | `how-it-works/server-script-stays` | unreviewed |
+| A page ships JavaScript only for an element with behavior | `elements/javascript-shipped` | reviewed |
+
+## /docs/recipes
+
+Complete. Most recipes repeat a claim another page makes, and the case is
+there.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| Load data, a dynamic route, a 404, a redirect | `routing/route-table`, `routing/response-status`, `routing/loader-response` | reviewed |
+| A submission, a rejected one, two buttons | `forms/post-redirect-get`, `forms/intent-field` | reviewed |
+| A JSON endpoint, a cookie, a session, a guard, a header, middleware | `endpoints/json-api`, `cookies/read`, `layouts/guard-redirect`, `middleware/server-header` | reviewed |
+| x402 | A third-party middleware. `middleware/gated` holds the part that is ours | reviewed |
+| A data block is emitted as written, not compiled | `recipes/data-block` | unreviewed |
+| A `${}` in a data block is refused | `diagnostics/data-block-takes-no-expression` | unreviewed |
+| A dialog, an accordion, findable hidden text, with no JavaScript | `recipes/platform-attributes`. The attributes pass through, and what they do is the browser's | unreviewed |
+| A fragment URL, an include, an element, revalidate, tags, a feed, a test | Their own pages' cases | - |
+
+## /docs/accessibility
+
+Complete. Most of the page is about the markup an author writes, which the
+framework passes through.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| A page ships no JavaScript | `elements/javascript-shipped` | reviewed |
+| A light element is in the page's DOM, so `<label for>` reaches it | `elements/light-element`; the label itself is phase 5 | reviewed |
+| A new project's layout has a skip link and `aria-current` | The create area | - |
+| `lang` on `<html>` | `languages/lang-config` | reviewed |
+| A labeled icon is `role="img"`, a decorative one `aria-hidden` | `icons/svg-icon` | reviewed |
+| A light element never replaces a child, so focus stays | Phase 5 | - |
+| The framework adds no roles, invents no labels, reorders nothing | Every snapshot of plain markup, such as `recipes/platform-attributes` | - |
+
+## /docs/browsers
+
+Complete. The page is about browsers, and the server's part is shown
+elsewhere.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| An element's own styles are wrapped in `@scope` | `elements/in-a-fragment`, `elements/light-element` | reviewed |
+| What each browser does below each feature | Browser behavior | - |
+| Speculation rules, `referenceTarget` and a CSP are optional | `production/speculate`, `elements/reference-target`, `security/csp-meta` | reviewed |
+| The core imports nothing from `node:` | `test/portable.test.js`; phase 4 | - |
+
+## /docs (the overview)
+
+Complete. The overview restates claims each page makes, and the cases are
+there.
+
+## /docs/decisions
+
+Complete. Most of the page explains a choice, and the behavior it names has a
+case on its own page.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| A page does not stream; a `Link: rel=preload` header names the stylesheet, the entry and its chunks | `decisions/link-preload` | unreviewed |
+| The body is buffered for a strong ETag | `production/encodings` | - |
+| An endpoint can answer with a stream | `endpoints/stream` | reviewed |
+| `if` and `each` on one element is refused | `diagnostics/if-and-each-on-one-element` | reviewed |
+| A page ships JavaScript only for an element with behavior | `elements/javascript-shipped` | reviewed |
+| What a patch and a minor may change | Release policy | - |
+
+## The pages that make no claim about behavior
+
+`/docs/why`, `/docs/principles`, `/docs/compared`, `/docs/colophon`,
+`/docs/contributing` and `/docs/examples` explain choices, compare frameworks
+and describe this repository. Where one names a behavior, such as the cookie
+defaults on `/docs/principles`, the page that owns it has the case. Nothing on
+them is a claim of their own. `/docs/examples` points at apps under
+`examples/`, whose own suites run in CI.
+
 ## /docs/refusals
 
 Started.

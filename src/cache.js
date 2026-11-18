@@ -13,11 +13,14 @@
  *
  * @typedef {{ html: string, tags: string[], expires: number }} CacheEntry
  *
+ * Each method may answer at once or with a promise. A store several servers
+ * share is across a network, so its answers come later.
+ *
  * @typedef {object} CacheStore
- * @property {(key: string) => CacheEntry|undefined} get
- * @property {(key: string, entry: CacheEntry) => void} set
- * @property {(key: string) => void} delete
- * @property {(tag: string) => void} deleteByTag
+ * @property {(key: string) => CacheEntry|undefined|Promise<CacheEntry|undefined>} get
+ * @property {(key: string, entry: CacheEntry) => void|Promise<void>} set
+ * @property {(key: string) => void|Promise<void>} delete
+ * @property {(tag: string) => void|Promise<void>} deleteByTag
  *
  * @typedef {{ seconds: number, tags: string[] }} Window how long an entry lives
  */
@@ -150,12 +153,12 @@ export function createCache(store = memoryStore(), { now = () => Date.now() } = 
         // It stopped being cacheable. Holding the last good copy would serve a
         // page the app has decided not to give out. The answer still goes out,
         // in an entry nothing keeps.
-        store.delete(key);
+        await store.delete(key);
         return { html: result.html };
       }
 
       const entry = { html: result.html, tags: window.tags, expires: now() + window.seconds * 1000 };
-      store.set(key, entry);
+      await store.set(key, entry);
       return entry;
     })().finally(() => {
       // Only if this is still the entry made above. A render that ran past
@@ -185,7 +188,10 @@ export function createCache(store = memoryStore(), { now = () => Date.now() } = 
     async read(key, window, render, after = null) {
       if (!window) return null;
 
-      const hit = store.get(key);
+      // Awaited, because a shared store answers with a promise. Unawaited, the
+      // promise itself read as a hit: the first request answered 500 reading
+      // `html` off it, and every one after rendered again.
+      const hit = await store.get(key);
       if (!hit) return refresh(key, window, render);
 
       if (hit.expires > now()) return hit;

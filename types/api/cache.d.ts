@@ -4,10 +4,10 @@ export type CacheEntry = {
     expires: number;
 };
 export type CacheStore = {
-    get: (key: string) => CacheEntry | undefined;
-    set: (key: string, entry: CacheEntry) => void;
-    delete: (key: string) => void;
-    deleteByTag: (tag: string) => void;
+    get: (key: string) => CacheEntry | undefined | Promise<CacheEntry | undefined>;
+    set: (key: string, entry: CacheEntry) => void | Promise<void>;
+    delete: (key: string) => void | Promise<void>;
+    deleteByTag: (tag: string) => void | Promise<void>;
 };
 export type Window = {
     seconds: number;
@@ -18,11 +18,14 @@ export type Window = {
  *
  * @typedef {{ html: string, tags: string[], expires: number }} CacheEntry
  *
+ * Each method may answer at once or with a promise. A store several servers
+ * share is across a network, so its answers come later.
+ *
  * @typedef {object} CacheStore
- * @property {(key: string) => CacheEntry|undefined} get
- * @property {(key: string, entry: CacheEntry) => void} set
- * @property {(key: string) => void} delete
- * @property {(tag: string) => void} deleteByTag
+ * @property {(key: string) => CacheEntry|undefined|Promise<CacheEntry|undefined>} get
+ * @property {(key: string, entry: CacheEntry) => void|Promise<void>} set
+ * @property {(key: string) => void|Promise<void>} delete
+ * @property {(tag: string) => void|Promise<void>} deleteByTag
  *
  * @typedef {{ seconds: number, tags: string[] }} Window how long an entry lives
  */

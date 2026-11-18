@@ -94,6 +94,28 @@ jobs:
       - run: npm run build --prefix www
       - run: npm test --prefix www
 
+  # The contract: `.html` in, HTTP out, one built app per case. It needs no
+  # example and no site, so it is a job of its own and fails without waiting for
+  # the thirteen builds in `test`. A failure prints each case's difference, and
+  # `spec/report/last.json` holds the whole run. `design/harness-plan.md`,
+  # phase 7.
+  spec:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - run: npm ci
+      - run: npm run spec
+
   # The checks only a browser can answer: a shadow boundary, a form counting a
   # custom element as a field, moveBefore. They live in the showcase at /check
   # and, until this job, ran when somebody remembered to open the page. The
@@ -288,7 +310,7 @@ jobs:
           npm run check --prefix examples/showcase
 
   deploy:
-    needs: [test, browser, node, runtimes]
+    needs: [test, spec, browser, node, runtimes]
     # A pull request from a fork must not reach the Cloudflare secrets, and a
     # pull request has nothing to deploy anyway.
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'

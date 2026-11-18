@@ -146,6 +146,36 @@ not the build's.
 `dns.promises.lookup` in both processes. Nothing in `src/` is touched. These
 cases run on Node only.
 
+## Invariants
+
+An invariant is a property of every app. Each case process runs them all once
+the case's entries are asked, so every case that builds counts:
+
+- **fragment equivalence.** For each page the case asked about, and each id
+  the case marks `fragment`, `?fragment=<id>` answers the page's copy of that
+  element. The page's copy loses its declarative shadow roots first: a shadow
+  element arrives bare in a fragment, as `/docs/elements` says.
+- **unknown fragment.** `?fragment=` with a name the case does not mark
+  answers 404: an id the page has without the attribute, a name every object
+  inherits, and names fast-check generates.
+- **determinism.** Each GET, sent twice more as it went, answers the same
+  status, headers and body.
+
+`spec/invariants/` holds one module per invariant, and the module says what it
+checks and what it puts aside. Each one is a result in the run, written
+`invariant: determinism`.
+
+A case that is about the very thing an invariant forbids holds an
+`invariants.json`, naming the invariant and saying why:
+
+```json
+{ "determinism": "The loader counts its runs, and the page prints the count." }
+```
+
+The run lets that invariant fail there, and fails it once it passes, the way
+it reads a `todo`. The count prints them apart: a `todo` is a gap to close, and
+an exemption stays.
+
 ## Adding one
 
 1. Make the directory under the area that matches the docs page:

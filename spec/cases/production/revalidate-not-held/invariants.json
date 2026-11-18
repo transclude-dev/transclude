@@ -1,0 +1,1 @@
+{ "determinism": "Each page counts its renders and prints the count. The case is about pages that render on every request." }

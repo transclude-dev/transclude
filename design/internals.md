@@ -1713,6 +1713,13 @@ against.
   what lets a prerendered page carry one: it reads the source once at build time
   and is still a file. Making render async instead would have taxed every
   component call for a feature few pages use.
+- **Includes of one document share the read in progress, not only the copy.**
+  A page's includes are resolved together, so two fragments of one document
+  start in the same tick, before either read has a copy for the store to hold.
+  Both read it: a page that named two sections of one guide asked the source
+  twice, which the store's own comment says it exists to prevent.
+  `includeResolver` holds each read in flight by URL until it settles.
+  `spec: includes/remote-section`.
 - **A src that is interpolated cannot be an include.** The set has to be known
   before the render that would produce it, so `src="/docs/${slug}#a"` is a
   compile error rather than a value nobody could resolve in time.

@@ -1,2 +1,2 @@
 [plugin transclude]
-CompileError: <nav> carries "fragment", which addresses a fragment of a page over HTTP. A component re-renders itself and has no URL to be asked for. (line 1)
+CompileError: <nav> carries "fragment", which addresses a fragment of a page over HTTP. A layout wraps pages and has no URL of its own to be asked for. Put the fragment in the page. (line 1)

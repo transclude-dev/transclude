@@ -1,2 +1,8 @@
-[plugin transclude]
-CompileError: <p slot="b"> continues an if in the slot "a": a chain is one slot's
+[plugin transclude] app/routes/index.html:7:3
+CompileError: <p slot="b"> continues an if in the slot "a": a chain is one slot's (line 7)
+  5 | <x-card>
+  6 |   <p slot="a" if="on">On</p>
+> 7 |   <p slot="b" else>Off</p>
+    |   ^
+  8 | </x-card>
+  9 |

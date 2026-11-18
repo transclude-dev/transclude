@@ -1,2 +1,2 @@
-[plugin transclude]
+[plugin transclude] app/elements/x-card.html
 CompileError: x-card.html <script element>: `connectedCallback` belongs to the framework. write `connected({ signal })` instead, which runs on every connect

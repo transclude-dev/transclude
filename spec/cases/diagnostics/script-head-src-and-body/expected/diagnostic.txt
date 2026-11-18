@@ -1,2 +1,6 @@
-[plugin transclude]
-CompileError: index.html <script head>: a <script head src="/vendor/analytics.js"> cannot also have a body. the browser runs the file and ignores the code
+[plugin transclude] app/routes/index.html:1:1
+CompileError: index.html <script head>: a <script head src="/vendor/analytics.js"> cannot also have a body. The browser runs the file and ignores the code. (line 1)
+> 1 | <script head src="/vendor/analytics.js">
+    | ^
+  2 |   window.started = true;
+  3 | </script>

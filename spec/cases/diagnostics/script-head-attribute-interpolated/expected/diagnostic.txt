@@ -1,2 +1,8 @@
-[plugin transclude]
-CompileError: index.html <script head>: `data-version` on a <script head> cannot interpolate. the block is emitted into <head> before any data exists
+[plugin transclude] app/routes/index.html:5:1
+CompileError: index.html <script head>: `data-version` on a <script head> cannot interpolate. The block is written into <head> before any data exists. (line 5)
+  3 | </script>
+  4 | 
+> 5 | <script head data-version="${version}">
+    | ^
+  6 |   window.started = true;
+  7 | </script>

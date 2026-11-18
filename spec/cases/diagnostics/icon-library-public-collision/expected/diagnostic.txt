@@ -1,0 +1,1 @@
+Error: [transclude] app/public/lucide.svg and the lucide icons both answer for /lucide.svg. The sprite is built from the icons, so rename the public file or delete it.

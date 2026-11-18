@@ -288,7 +288,7 @@ against.
   function`, which names neither what the page did nor how to stop. Both are in
   the generated type either way, because the checker cannot know which pages
   become files. All six refusals live in `src/prerender.js` rather than in
-  `bin/build.js`, for the reason below.
+  `bin/build.js`, for the reason below. `spec: diagnostics/prerender-after`.
 - **The cache's own background work forgot `after`, which is the rule `after`
   exists for.** `src/after.js` says it in its first paragraph: workerd may stop
   the isolate when the response is sent, and work nothing holds stops with it.
@@ -311,6 +311,7 @@ against.
   ExecutionContext rather than answering undefined, and widening the `try` over
   the `waitUntil` call would swallow a real failure. A test asserts each of those
   three separately, because any one of them passes while the other two are wrong.
+  `spec: runtimes/after-rejects`.
 - **`contextFor` names no runtime, and that is why it has no `env`.** A loader is
   handed `ctx` from `app.js`, which the no-`node:` test keeps portable. Hono has
   `c.env` right there and it is tempting to forward: do not. It is the bindings on
@@ -743,6 +744,7 @@ against.
   landed at the project root first, which put the one directory of site content
   outside the boundary the config's own opening line draws. A favicon in
   `app/public/`, which is where it belongs, was not served and nothing said so.
+  `spec: config/dirs-renamed`.
 - **The public copy skips what an operating system left there.** `.DS_Store` was
   copied into the build and served: `/.DS_Store` answered 200 on the docs site
   and lists every file beside it. Being in `.gitignore` does nothing about this,
@@ -754,6 +756,7 @@ against.
   and SSR outputs, and production served none of it. Dev 200, prod 404. Both
   servers now mount the same Hono `serveStatic`. Only the root differs, and
   production's is under `dist` so the stale-build warning stays true.
+  `spec: production/public-files`.
 - **A public file's validator is its size and mtime, not a hash of it.** These
   went out with `Last-Modified` and nothing else, so a browser guessed how long
   to hold a favicon. Hashing is what the in-memory cache does and is wrong here:
@@ -766,7 +769,7 @@ against.
   that awaits and returns nothing leaves the context unfinalized and every Range
   request becomes a 500 saying "Context is not finalized". Nothing in the suite
   caught it, so the public-file tests run against a real listener on a port the
-  OS picks.
+  OS picks. `spec: production/public-files`.
 - **A cache store may answer with a promise.** `/docs/production` offers
   `cache` as the way several servers share held pages, and a store they share
   is across a network. `src/cache.js` read `store.get` without `await`, so the
@@ -811,7 +814,7 @@ against.
   are different on purpose. Build output is small, used often and never changes, and
   gets a strong ETag for each encoding. Public files belong to the author, can be
   large, and can be media. Media needs byte ranges, and the in-memory path answers
-  200 where a 206 was asked for.
+  200 where a 206 was asked for. `spec: production/public-files`.
 - **A release tag is written `--cleanup=verbatim`, or markdown loses its
   headings.** The notes live in the annotated tag and `publish.yml` makes the
   release page out of them, so the tag is the only copy. git's default cleanup
@@ -1303,12 +1306,13 @@ against.
   browser may run it. Everything in `dynamic` is a server render whose loader may
   read a cookie or count a view, so it is prefetch only. Put a dynamic route in
   the prerender list and a reader who merely hovered a link has visited it.
+  `spec: production/speculate`.
 - **The rules are computed before the render pass and carried in the manifest.**
   Every page embeds the block, so it cannot be computed from what the render pass
   produced, and `targets` already says which URLs will be files. Carried in
   `routes.json` because the server renders the dynamic routes and has to send
   what the files send. Computing it twice is two answers about what a browser may
-  run, and only one of them was ever checked.
+  run, and only one of them was ever checked. `spec: production/speculate`.
 - **A crawler reads the speculation block and asks for the pattern.** Googlebot
   took `{"href_matches":"/source/*"}` out of the JSON as a link and requested
   `/source/*`, which matches the catch-all route, names no file and answers 404.
@@ -1333,6 +1337,7 @@ against.
   Flattening gave `lucide/arrows/up.svg` and `lucide/up.svg` one id, which is the
   collision the flat reading used to stop the build over. Skipping loses icons
   and says nothing. One level, and the message names the path.
+  `spec: diagnostics/icon-library-nested`.
 - **One thing answers for `/icons.svg`, and the two servers pick opposite
   winners.** The build copies `app/public/` and then writes the sprite over it;
   dev asks the public handler first and never reaches the sprite. Same two files,
@@ -1347,6 +1352,7 @@ against.
   viewBox. Without one the icon renders at some other size, which reads as a CSS
   problem and is not one. Same for two files claiming one id: the second would
   quietly never be reachable, so the build stops and names both.
+  `spec: diagnostics/icon-needs-viewbox`.
 - **A library of one name in two icon directories is merged, not refused.**
   `iconsDir` may be a list, as `elementsDir` may, and the case it is for is a
   package that shares an icon set: the app's `lucide/` and the package's are
@@ -1354,7 +1360,7 @@ against.
   own. Refusing the name would make every app that adds one rename a set it
   downloaded. One icon in both is still refused, by `buildSprite`, which names
   both files. A directory named twice is read once, in `iconDirs`, or each of
-  its icons would be refused as its own twin.
+  its icons would be refused as its own twin. `spec: icons/shared-dirs`.
 - **Dev builds the sprite per request; the build writes it once.** Both call
   `iconDirs`, `readAllLibraries` then `buildSprite`, and that is the point. Two copies of those two
   lines is how `/icons.svg` comes to work in production and 404 in dev, which is
@@ -1408,6 +1414,7 @@ against.
   no ETag, because nothing about a failure should be cached or revalidated, and logs
   the throw without putting it in the body. Dev sends the stack instead, which is
   what you want when you are the one fixing it.
+  `spec: production/error-pages`, `spec: production/cache-control`.
 - **The directory holds routes; a page is one kind of route.** `routes/` was
   `pages/` until it started holding endpoints. Only the directory and its config key
   were renamed. `virtual:transclude-page/`, `pageModuleId` and the SSR entry's `pages`
@@ -1510,6 +1517,7 @@ against.
   spelling of `\0`, and with unprefixed ids that URL was a 404 on every page
   that ships JS, in dev only. The map costs `dist/server` an `entry.js.map`
   about the size of `entry.js`; nothing serves it.
+  `spec: diagnostics/prerender-throws`.
 - **A preload hint is set on the way out, never on `ctx.response`.** A header on
   that object is one of the things that makes a page too personal to cache, so
   writing the `Link` there would turn every page in the app into a miss.
@@ -1517,7 +1525,7 @@ against.
   decided. A test renders twice and counts, and the mutation that catches it is
   writing the header inside the render closure rather than at send time: doing it
   later in `sendRendered` is already too late to break anything, so that
-  mutation proves nothing.
+  mutation proves nothing. `spec: production/cache-control`.
 - **The page cache sees a cookie read and a header write, and nothing else.**
   `isShareable` asks `ctx.cookies.personal` and whether `ctx.response` has a
   header. A loader that reads `ctx.request.headers` directly is invisible to
@@ -1568,6 +1576,7 @@ against.
   the day this landed: the build passed `preload` and neither app path did, and
   the showcase test saw nothing wrong because it rendered through a helper of
   its own that did pass it. A serve test now reads the links off a response.
+  `spec: decisions/link-preload`.
 - **The precache list is a build artifact, and cannot be anything else.** Only
   the build knows an asset's hashed name, and a runtime with no disk cannot be
   asked: `bytesFrom` in `worker.js` returns `{ get }` and nothing that
@@ -1578,7 +1587,7 @@ against.
   `precacheList` throws on a page with no ETag rather than emitting null and
   having a service worker hold it forever. The revision is a build-time hash and
   is not compared against a served ETag: public files go out through Hono's
-  `serveStatic`, which sends none.
+  `serveStatic`, which sends none. `spec: production/precache`.
 - **The framework's own `<meta>` defaults go through the merge too.** The shell
   wrote `viewport` and so did anything that wanted its own, and both shipped.
   The default is now the outermost level handed to `mergeHead`, so a page or a
@@ -1609,7 +1618,7 @@ against.
   for months before anything did it. `settings` in `src/proxy.js` refuses the
   proxy's own keys the same way, its `KEYS` being `DEFAULTS` plus `lookup`. Its
   first run caught `fetch: undefined` in this repository's own test suite, a
-  key nothing had ever read.
+  key nothing had ever read. `spec: diagnostics/config-unknown-key`.
 - **`canonical: true` is refused in `withDefaults`, not at the render.** Four
   places render a page: two in `app.js`, one in `bin/dev.js`, one in
   `bin/build.js`. Only the first three hold a request whose origin `absolute()`
@@ -1620,6 +1629,7 @@ against.
   `ctx.route.path`, so the four callers pass a flag rather than each computing
   one. Under `trailingSlash: 'ignore'` that path already has its trailing slash
   stripped by Hono's loose router, so the tag names the one form without asking.
+  `spec: diagnostics/canonical-needs-metadata-base`.
 - **Two packages, and `@transclude/create` depends on neither.** Scaffolding six
   files should not download a compiler, so the CLI carries its own copy of the
   templates and names `@transclude/core` in what it writes rather than importing
@@ -1682,7 +1692,7 @@ against.
   prerendered feed is a file, written once and compressed once, so a build-time
   `new Date()` would change the bytes on every run for a feed whose contents did
   not change, and every ETag with them. Atom requires both an author and a date,
-  so it refuses rather than inventing either.
+  so it refuses rather than inventing either. `spec: feeds/feed-updated`.
 - **A feed item with no title or path was published as `undefined`.** The docs
   said each item needs both, and nothing checked. The item went out as
   `<title>undefined</title>` with a link to `https://acme.comundefined`, and
@@ -1699,6 +1709,7 @@ against.
   written with no request and quietly render whatever the default is. A theme
   read from a cookie in the root layout is the case that shows it: half the site
   honors the cookie and half serves a file, and both look fine on their own.
+  `spec: diagnostics/prerender-reads-cookie`.
 - **The CSP is hashes, not a nonce, because a prerendered page is a file.** A
   nonce has to be fresh per request, so a page carrying one cannot be written
   once and compressed once, and every prerendered page here is exactly that.
@@ -1707,7 +1718,7 @@ against.
   is fixed when the page renders, survives being written to disk, and is
   correct on a host that has never heard of this framework. `withPolicy` runs in
   `renderRoute`, after the document exists, because the policy is built from what
-  the document inlined.
+  the document inlined. `spec: security/csp-per-page`.
 - **A hash never covers a `style` attribute, so `style-src` is not hashed.**
   Hashing `<style>` blocks worked, the policy named every one of them, and the
   docs site lost all its syntax colors: shiki puts `style="--shiki-light:…"` on
@@ -1716,13 +1727,13 @@ against.
   `'unsafe-inline'` outright. The two exclude each other, so the default hashes
   scripts and leaves styles inline. CSS cannot run code; script is where the
   protection is. Checking that the policy covered every inline block was the
-  wrong check, and it passed.
+  wrong check, and it passed. `spec: security/csp-meta`.
 - **`csp.js` uses `crypto.subtle`, not the injected `hash`.** That one is an
   ETag, documented as a cache key and not a signature, and `portable.test.js`
   hands it a fake that returns a length. A CSP hash the browser does not agree
   with means the script is refused, so this needs a real digest. `crypto.subtle`
   and `btoa` are globals on all four runtimes, so the core keeps its no-`node:`
-  property.
+  property. `spec: security/csp-meta`.
 - **Reading a cookie is what makes a page personal, not writing one.** The cache
   first refused to hold a page whose loader set a header, which is the rule the
   build uses to decide a route can be a file. It is not enough. `/notes` renders
@@ -1730,6 +1741,7 @@ against.
   was cached: the next visitor got the first one's count. `cookiesOf` records the
   read and `cacheable` checks it. The unit test for the flag passed the whole
   time; only a request through `createApp` catches this.
+  `spec: production/revalidate-not-held`.
 - **Three servers render pages, so the include context is built in one place.**
   `src/app.js`, `bin/dev.js` and `bin/build.js` each render, and each was handed
   its own resolver. Dev got the external half and not the route half, so
@@ -2047,7 +2059,7 @@ against.
   which names the same URLs a second time. Keeping the first mention and dropping
   the second added a `lastmod` to nothing: 133 posts, a sitemap without one date
   in it, and no error anywhere. `sitemapEntries` keys a `Map` by path, and a
-  later mention fills its fields in on the first.
+  later mention fills its fields in on the first. `spec: feeds/sitemap-entries`.
 - **`src/gate.js` has no imports on purpose.** The sitemap reads it at runtime on
   every runtime, so it must not drag `prerender.js` and its context builder into
   a worker bundle. `test/portable.test.js` names every module the core reaches,

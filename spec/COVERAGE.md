@@ -411,6 +411,37 @@ Complete. Most keys have their own page, and their rows are there.
 | `typecheck`, `typecheckStrict`, `typesFile` | The dev server and the checker, not an HTTP answer | - |
 | The whole file, every key written out, is accepted | `config/whole-file` | reviewed |
 
+## /docs/production
+
+Started. Holding a render, tags, the cache store and `precache` are the next
+branch. Two entries are `todo`.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| `npm start` serves `dist/` on 1960; `PORT` wins | Starting a server, not an `app.request()`: phase 4 | - |
+| Every page is a file unless it says `prerender = false` | `production/cache-control`, and every case with a prerendered page | - |
+| A page that reads a cookie, answers with a `Response` or sets a status cannot be prerendered | `diagnostics/prerender-reads-cookie`, `prerender-response`, `prerender-status` | unreviewed |
+| A loader that throws fails the build, naming the page, the error and the line | `diagnostics/prerender-throws` | unreviewed |
+| `speculate: true`: prerendered URLs in `prerender`, server routes in `prefetch`, endpoints in neither | `production/speculate` | unreviewed |
+| `eagerness` and `exclude`, matched against the emitted pattern | `production/speculate-options` | unreviewed |
+| A browser acts on the rules, or ignores them | Browser behavior | - |
+| `/people/*` asked for as a URL answers 404 | `routing/route-table` shows a parameter route answering for a name it does not know | - |
+| `Cache-Control` per kind of response; the 500 page is `no-store` with no ETag | `production/cache-control` | unreviewed |
+| Build output is compressed once; each encoding gets its own ETag | `production/encodings` | - |
+| Public files are served with byte ranges | `production/public-files` | unreviewed |
+| `Content-Type` from one table, `application/octet-stream` for an unknown kind | `production/public-files`, `todo` for `.vtt` and `.m4a` | unreviewed |
+| The build prints the kinds it could not type | Build output, which the runner does not read | - |
+| `nosniff` on every response | `production/public-files`, `endpoints/envelope` | unreviewed |
+| `404.html` and `500.html` are served as built | `production/error-pages` | unreviewed |
+| A layout above them reading a cookie stops the build | `diagnostics/error-page-layout-cookie` | unreviewed |
+| `ctx.request` is `null` while prerendering | `routing/context-fields` | reviewed |
+| In production the error is logged and kept out of the page | `production/error-pages` | unreviewed |
+| In dev the stack is shown | The dev server | - |
+| A page loads a script only if something on it needs one | `elements/javascript-shipped` | reviewed |
+| `ctx.absolute()` uses `metadataBase`, or the request's host without it | `production/absolute`, `production/absolute-no-base` | unreviewed |
+| `onError` gets the request, URL, method, route, params and phase; the 500 page ships | `production/on-error` | unreviewed |
+| A reporter that throws is caught; without one the error is logged | `production/on-error-throws`, `production/error-pages` | unreviewed |
+
 ## /docs/refusals
 
 Started.

@@ -1,0 +1,13 @@
+<script server>
+  import { count } from '../data/count.js';
+
+  export const prerender = false;
+  export const revalidate = 0.2;
+
+  export default async (ctx) => {
+    if (count() > 1) throw new Error('the second render failed');
+    return { renders: 'first' };
+  };
+</script>
+
+<p>${renders}</p>

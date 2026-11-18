@@ -1,0 +1,17 @@
+<script server>
+  import { count } from '../data/count.js';
+
+  export const prerender = false;
+  export const revalidate = { seconds: 3600, tags: ['notes'] };
+
+  export const POST = async ({ revalidateTag }) => {
+    revalidateTag('notes');
+    return Response.redirect('http://localhost/notes', 303);
+  };
+
+  export default async (ctx) => {
+    return { renders: count() };
+  };
+</script>
+
+<p>${renders}</p>

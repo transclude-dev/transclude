@@ -1,0 +1,21 @@
+{
+  "version": "k9hgmhbicRNKNdJWaDyz",
+  "precache": [
+    {
+      "url": "/",
+      "revision": "\"yvPL40whxyELzJneDpy9\""
+    },
+    {
+      "url": "/about",
+      "revision": "\"FCqUqEqqKzSsxkHkI7Zc\""
+    },
+    {
+      "url": "/assets/__global-TZrNw7dA.css",
+      "revision": null
+    },
+    {
+      "url": "/robots.txt",
+      "revision": "\"fknf2XMZ9d182uqFGM9D\""
+    }
+  ]
+}

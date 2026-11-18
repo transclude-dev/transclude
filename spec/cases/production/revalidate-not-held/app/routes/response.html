@@ -1,0 +1,10 @@
+<script server>
+  import { count } from '../data/count.js';
+
+  export const prerender = false;
+  export const revalidate = 3600;
+
+  export default async () => new Response(String(count('response')));
+</script>
+
+<p>Never</p>

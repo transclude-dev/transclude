@@ -1,0 +1,7 @@
+[
+  {"request": "GET /", "status": 200, "body": "expected/one.html"},
+  {"request": "GET /wait?ms=300", "status": 200},
+  {"request": "GET /", "status": 200, "body": "expected/one.html"},
+  {"request": "GET /wait?ms=50", "status": 200},
+  {"request": "GET /", "status": 200, "body": "expected/two.html"}
+]

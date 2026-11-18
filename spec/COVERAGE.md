@@ -414,7 +414,7 @@ Complete. Most keys have their own page, and their rows are there.
 ## /docs/production
 
 Started. Holding a render, tags, the cache store and `precache` are the next
-branch. Two entries are `todo`.
+branch.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
@@ -429,7 +429,7 @@ branch. Two entries are `todo`.
 | `Cache-Control` per kind of response; the 500 page is `no-store` with no ETag | `production/cache-control` | unreviewed |
 | Build output is compressed once; each encoding gets its own ETag | `production/encodings` | - |
 | Public files are served with byte ranges | `production/public-files` | unreviewed |
-| `Content-Type` from one table, `application/octet-stream` for an unknown kind | `production/public-files`, `todo` for `.vtt` and `.m4a` | unreviewed |
+| `Content-Type` from one table, `application/octet-stream` for an unknown kind | `production/public-files` | unreviewed |
 | The build prints the kinds it could not type | Build output, which the runner does not read | - |
 | `nosniff` on every response | `production/public-files`, `endpoints/envelope` | unreviewed |
 | `404.html` and `500.html` are served as built | `production/error-pages` | unreviewed |

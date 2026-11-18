@@ -1,8 +1,8 @@
 [
   {"request": "GET /count.txt", "send": {"headers": {"range": "bytes=2-5"}}, "status": 206, "headers": {"content-range": "bytes 2-5/10", "x-content-type-options": "nosniff"}, "body": "expected/range.txt"},
-  {"request": "GET /captions.vtt", "status": 200, "headers": {"content-type": "text/vtt; charset=utf-8", "x-content-type-options": "nosniff"}, "todo": "src/public-files.js writes its Content-Type after serveStatic has built the Response it returns, so a type Hono does not know goes out as application/octet-stream"},
+  {"request": "GET /captions.vtt", "status": 200, "headers": {"content-type": "text/vtt; charset=utf-8", "x-content-type-options": "nosniff"}},
   {"request": "GET /clip.mp3", "status": 200, "headers": {"content-type": "audio/mpeg", "x-content-type-options": "nosniff"}},
-  {"request": "GET /theme.m4a", "status": 200, "headers": {"content-type": "audio/mp4"}, "todo": "src/public-files.js writes its Content-Type after serveStatic has built the Response it returns, so a type Hono does not know goes out as application/octet-stream"},
+  {"request": "GET /theme.m4a", "status": 200, "headers": {"content-type": "audio/mp4"}},
   {"request": "GET /font.woff2", "status": 200, "headers": {"content-type": "font/woff2"}},
   {"request": "GET /paper.pdf", "status": 200, "headers": {"content-type": "application/pdf"}},
   {"request": "GET /data.xyz", "status": 200, "headers": {"content-type": "application/octet-stream", "x-content-type-options": "nosniff"}}

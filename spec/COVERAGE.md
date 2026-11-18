@@ -397,19 +397,19 @@ Complete. Most keys have their own page, and their rows are there.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| An unknown key throws, naming it and every key | `diagnostics/config-unknown-key` | unreviewed |
+| An unknown key throws, naming it and every key | `diagnostics/config-unknown-key` | reviewed |
 | A key naming a thing takes `null` for none; a feature takes `true` or an object | Each key's own case: `icons/off`, `config/fragment-param-off`, `security/csp-meta`, and the rest | - |
-| `routesDir`, `elementsDir`, `publicDir`, `iconsDir` sit inside `appDir` and follow it | `config/app-dir` | unreviewed |
+| `routesDir`, `elementsDir`, `publicDir`, `iconsDir` sit inside `appDir` and follow it | `config/app-dir` | reviewed |
 | `outDir`, `stylesheet`, `typesFile` are read from the project root | `styles/stylesheet` for the stylesheet. `outDir` and `typesFile` name build output, not an HTTP answer | reviewed |
-| `routesDir` and `publicDir` name other directories | `config/dirs-renamed` | unreviewed |
+| `routesDir` and `publicDir` name other directories | `config/dirs-renamed` | reviewed |
 | `cache`, `metadataBase`, `onError`, `port`, `precache`, `speculate` | The production area | - |
-| `canonical` needs `metadataBase`, and says so | `diagnostics/canonical-needs-metadata-base` | unreviewed |
-| A page or layout writing its own canonical replaces it | `config/canonical-own` | unreviewed |
-| An empty `cookieSecret` is refused at startup | `diagnostics/cookie-secret-empty` | unreviewed |
+| `canonical` needs `metadataBase`, and says so | `diagnostics/canonical-needs-metadata-base` | reviewed |
+| A page or layout writing its own canonical replaces it | `config/canonical-own` | reviewed |
+| An empty `cookieSecret` is refused at startup | `diagnostics/cookie-secret-empty` | reviewed |
 | `csp`, `csrf`, `elementsDir`, `feed`, `fragmentHeader`, `iconsDir`, `lang`, `markdown`, `permissionsPolicy`, `proxy`, `sitemap`, `stylesheet`, `trailingSlash`, `watchElements` | Each key's own area: security, forms, elements, feeds, fragments, icons, languages, markdown, includes, styles, middleware | - |
-| `fragmentParam` names the parameter; `null` turns fragments off | `config/fragment-param`, `config/fragment-param-off` | unreviewed |
+| `fragmentParam` names the parameter; `null` turns fragments off | `config/fragment-param`, `config/fragment-param-off` | reviewed |
 | `typecheck`, `typecheckStrict`, `typesFile` | The dev server and the checker, not an HTTP answer | - |
-| The whole file, every key written out, is accepted | `config/whole-file` | unreviewed |
+| The whole file, every key written out, is accepted | `config/whole-file` | reviewed |
 
 ## /docs/refusals
 

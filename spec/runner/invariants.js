@@ -9,15 +9,18 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import * as determinism from '../invariants/determinism.js';
 import * as fragmentEquivalence from '../invariants/fragment-equivalence.js';
+import * as lightDom from '../invariants/light-dom.js';
+import * as noClientJavaScript from '../invariants/no-client-javascript.js';
 import * as unknownFragment from '../invariants/unknown-fragment.js';
 
-const INVARIANTS = [fragmentEquivalence, unknownFragment, determinism];
+const INVARIANTS = [fragmentEquivalence, unknownFragment, determinism, lightDom, noClientJavaScript];
 
 /**
  * @typedef {{ status: number, headers: Headers, body: string }} Answer
  *
  * @typedef {object} Context
  * @property {string} caseDir the case's own directory, its source
+ * @property {Record<string, any>} config the case's `transclude.config.js`
  * @property {string | null} fragmentParam the query parameter that asks for a
  *   fragment, from the case's config. `null` turns fragments off
  * @property {(Answer & { method: string, url: string, init: RequestInit })[]} exchanges
@@ -36,10 +39,11 @@ const INVARIANTS = [fragmentEquivalence, unknownFragment, determinism];
  * reason goes out as the result's `exempt`. The parent lets that result fail,
  * and fails it once it passes, so a reason nothing needs is not kept.
  *
- * @param {Omit<Context, 'fragmentParam'> & { buildDir: string }} asked
+ * @param {Omit<Context, 'config' | 'fragmentParam'> & { buildDir: string }} asked
  */
 export async function checkInvariants({ buildDir, ...asked }) {
-  const context = { ...asked, fragmentParam: await fragmentParamOf(buildDir) };
+  const config = await configOf(buildDir);
+  const context = { ...asked, config, fragmentParam: fragmentParamOf(config) };
   const exempt = exemptions(asked.caseDir);
   const results = [];
   for (const invariant of INVARIANTS) {
@@ -54,14 +58,24 @@ export async function checkInvariants({ buildDir, ...asked }) {
 }
 
 /**
- * `fragmentParam` as the case's config sets it. `'fragment'` when the config
- * leaves it out, the default `/docs/config` gives.
+ * The case's config, as the build read it. The runner writes an empty one when
+ * the case has none.
  *
  * @param {string} buildDir
  */
-async function fragmentParamOf(buildDir) {
+async function configOf(buildDir) {
   const file = pathToFileURL(path.join(buildDir, 'transclude.config.js')).href;
   const { default: config } = await import(file);
+  return config;
+}
+
+/**
+ * `fragmentParam` as the config sets it. `'fragment'` when the config leaves
+ * it out, the default `/docs/config` gives.
+ *
+ * @param {Record<string, any>} config
+ */
+function fragmentParamOf(config) {
   return config.fragmentParam === undefined ? 'fragment' : config.fragmentParam;
 }
 

@@ -9,7 +9,8 @@
 import fc from 'fast-check';
 import { parse } from 'parse5';
 import { withFragment } from './fragment-equivalence.js';
-import { attribute, fragmentIds } from './source.js';
+import { fragmentIds } from './source.js';
+import { attribute } from './tree.js';
 
 export const name = 'unknown fragment';
 

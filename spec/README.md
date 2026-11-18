@@ -160,6 +160,13 @@ the case's entries are asked, so every case that builds counts:
   inherits, and names fast-check generates.
 - **determinism.** Each GET, sent twice more as it went, answers the same
   status, headers and body.
+- **light DOM by default.** In every HTML answer, a declarative shadow root
+  on a custom element sits only on one whose source says
+  `export const shadow = true`.
+- **no client JavaScript unless asked for.** A case whose source has no
+  script the browser runs, no element that exports more than `properties`,
+  and no `watchElements` gets no such script and no `.js` URL in any HTML
+  answer or `Link` header.
 
 `spec/invariants/` holds one module per invariant, and the module says what it
 checks and what it puts aside. Each one is a result in the run, written

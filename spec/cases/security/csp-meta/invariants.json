@@ -1,0 +1,1 @@
+{ "no client JavaScript unless asked for": "The page writes a <script> through html(), from its loader's data. That asks for JavaScript, and no source scan can see it." }

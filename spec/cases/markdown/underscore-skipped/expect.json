@@ -1,0 +1,5 @@
+[
+  {"request": "GET /blog", "status": 200},
+  {"request": "GET /blog/_posts/first", "status": 404},
+  {"request": "GET /_draft", "status": 404}
+]

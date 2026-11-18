@@ -9,7 +9,7 @@ it fail, and fails it once it passes, so the mark comes off with the fix.
 
 The last column is the snapshot. `unreviewed` means the expected files record
 what the code answered when the case was written, and Joe has not yet read
-them. `reviewed` means he has. A case with no expected file of its own has
+them. `reviewed` means Joe has. A case with no expected file of its own has
 `-`.
 
 ## /docs/fragments
@@ -136,21 +136,21 @@ Complete.
 
 ## /docs/includes
 
-Complete. Two entries are `todo`. The cases that read another site carry an
-`upstream.json`, so they run on Node only.
+Complete. The cases that read another site carry an `upstream.json`, so they
+run on Node only.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
 | `#pricing` copies a fragment of this page; the copy leaves the id behind | `includes/same-page` | reviewed |
 | `/notes#notes` runs that route's loaders and not its layouts' markup | `includes/another-route` | reviewed |
 | A copy from another route keeps its id | `includes/another-route` | reviewed |
-| One route included twice runs its loaders once | `includes/route-twice-loads-once` | unreviewed |
+| One route included twice runs its loaders once | `includes/route-twice-loads-once` | reviewed |
 | Reading spreads: a page including a route that reads a cookie is personal | `diagnostics/include-reads-cookie` | reviewed |
 | A remote include needs `proxy.allow` and renders the section | `includes/remote-section` | reviewed |
 | On success the children are dropped | `includes/remote-section` | reviewed |
 | A source that cannot be read renders the children | `includes/fallback-on-failure` | reviewed |
 | With no children, a failing source stops the render | `diagnostics/include-source-down-no-fallback` | reviewed |
-| A host nobody allowed throws, children or not | `diagnostics/include-host-not-allowed` | unreviewed |
+| A host nobody allowed throws, children or not | `diagnostics/include-host-not-allowed` | reviewed |
 | A prerendered page reads its sources once, at build time | `includes/prerendered-reads-once` | reviewed |
 | `#nope`, `#a` inside `#a`, and an interpolated `src` are compile errors | `diagnostics/include-names-no-fragment`, `include-includes-itself`, `include-src-interpolated` | reviewed |
 | A loop round other routes is caught at render, naming the way round | `diagnostics/include-cycle` | reviewed |
@@ -221,7 +221,7 @@ Complete.
 
 ## /docs/security
 
-Complete. One entry is `todo`.
+Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
@@ -230,7 +230,7 @@ Complete. One entry is `todo`.
 | `html()` writes markup you vouch for; it sanitizes nothing | `security/html-in-place`, `routing/interpolation-escapes` | reviewed |
 | An escaped value cannot open or close anything; a comment ends where the file ends it | `security/html-in-place` | reviewed |
 | `${}` in a `<script>` or a `<style>` in the markup is a compile error | `diagnostics/script-takes-no-expression`, `style-takes-no-expression` | reviewed |
-| The same in a page's or an element's top-level `<style>` | `diagnostics/page-style-takes-no-expression`, `element-style-takes-no-expression` | unreviewed |
+| The same in a page's or an element's top-level `<style>` | `diagnostics/page-style-takes-no-expression`, `element-style-takes-no-expression` | reviewed |
 | A top-level `<script>` is client code, and its `${}` is JavaScript's | `security/client-script-template-literal` | reviewed |
 | `json()`, alone, is what a script may carry; a style reads a custom property | `security/json-in-script`, `diagnostics/script-json-not-alone` | reviewed |
 | Hashes, not a nonce; the policy names what shipped, `html()` included | `security/csp-meta` | reviewed |
@@ -238,7 +238,7 @@ Complete. One entry is `todo`.
 | `frame-ancestors`, `report-uri`, `report-to`, `sandbox` ride in a header, the same on every page | `security/csp-header-directives` | reviewed |
 | A static host serves the meta half and not the header | A property of `dist/static` as files, not of an HTTP answer | - |
 | `directives` replaces the defaults; `'hashes'` places the digests; an empty directive is dropped | `security/csp-custom` | reviewed |
-| `reportOnly` sends the whole policy as a report-only header | `security/csp-report-only` | unreviewed |
+| `reportOnly` sends the whole policy as a report-only header | `security/csp-report-only` | reviewed |
 | `permissionsPolicy: true` turns off eleven features | `security/permissions-true` | reviewed |
 | `features` replaces the list; `[]` is nobody, `['self']` is this page | `security/permissions-features` | reviewed |
 | `permissionsPolicy` is off by default | `security/permissions-default-off` | reviewed |

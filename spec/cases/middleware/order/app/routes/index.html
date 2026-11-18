@@ -1,0 +1,9 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ action }) => ({ got: action?.got ?? 'nothing' });
+
+  export const POST = async () => ({ got: 'posted' });
+</script>
+
+<p id="got" fragment>${got}</p>

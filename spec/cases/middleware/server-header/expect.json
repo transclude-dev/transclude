@@ -1,0 +1,5 @@
+[
+  {"request": "GET /", "status": 200, "headers": {"x-frame-options": "DENY"}},
+  {"request": "GET /live", "status": 200, "headers": {"x-frame-options": "DENY"}},
+  {"request": "GET /robots.txt", "status": 200, "headers": {"x-frame-options": "DENY"}, "body": "expected/robots.txt"}
+]

@@ -1,0 +1,1 @@
+Error: [transclude] "gated" in app/server.js has "/premum", which matches no route, no URL a paths() names, and no public file. An entry that covers nothing fails open: the page it meant to hold back is written and served.

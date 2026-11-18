@@ -501,7 +501,7 @@ Complete. `transclude-check` is a command, not an HTTP answer.
 | --- | --- | --- |
 | A misspelled field, an unknown prop, a prop of the wrong type | The checker | - |
 | `typecheckStrict`, JSDoc, inferred loader types | The checker | - |
-| `data-*`, `aria-*` and `hx-*` pass through, an expression included | `types/pass-through` shows the rendered half. Whether the checker accepts them is the checker's | unreviewed |
+| `data-*`, `aria-*` and `hx-*` pass through, an expression included | `types/pass-through` shows the rendered half. Whether the checker accepts them is the checker's | reviewed |
 | `transclude-env.d.ts` is generated where `typesFile` says | Build output | - |
 | The editor setting, the language server, the extension | The editor | - |
 | The dev server checks in the background, and `typecheck: false` stops it | The dev server | - |
@@ -514,7 +514,7 @@ Complete.
 | --- | --- | --- |
 | `.html` in `routes/` is a page, `.js` an endpoint | `routing/route-table`, `endpoints/json-api` | reviewed |
 | Everything in `elements/` is a custom element, light unless it exports `shadow` | `elements/light-element`, `elements/shadow-element` | reviewed |
-| A `_` prefix keeps a helper out of the route table | `project-layout/underscore-helper`, `markdown/underscore-skipped` | unreviewed |
+| A `_` prefix keeps a helper out of the route table | `project-layout/underscore-helper`, `markdown/underscore-skipped` | reviewed |
 | `_layout.html`, `[name].html`, `[...path].html`, `404.html`, `500.html` | `layouts/wraps-page`, `routing/route-table`, `production/error-pages` | reviewed |
 
 ## /docs/getting-started
@@ -526,7 +526,7 @@ Complete.
 | `npm create @transclude` writes a project | The create area | - |
 | Vite and TypeScript are optional peers, and a built app loads neither | Package metadata, and phase 6 | - |
 | A project needs no `vite.config.js` | Every case: none has one | - |
-| One that adds a Vite plugin is read | `getting-started/vite-plugin` | unreviewed |
+| One that adds a Vite plugin is read | `getting-started/vite-plugin` | reviewed |
 | `index.html` answers `/`; the loader returns what the markup reads | `routing/index-page`, `routing/route-table` | reviewed |
 | The four commands and their port | Commands, not HTTP answers | - |
 | `${}` is escaped; `html()` passes markup through | `routing/interpolation-escapes`, `security/html-in-place` | reviewed |
@@ -544,7 +544,7 @@ contract. What it produces is checked through HTTP.
 | The order of what answers a request | `middleware/order`, `middleware/server-header`, `middleware/public-before-routes` | reviewed |
 | Inside the route: layouts, the action, the loader, render, includes | `layouts/guard-redirect`, `layouts/guard-action`, `fragments/post-unknown-name` | reviewed |
 | The same module four ways | `fragments/marked-element`, `forms/post-redirect-get`, `includes/another-route` | reviewed |
-| The `<script server>` block never appears in the page | `how-it-works/server-script-stays` | unreviewed |
+| The `<script server>` block never appears in the page | `how-it-works/server-script-stays` | reviewed |
 | A page ships JavaScript only for an element with behavior | `elements/javascript-shipped` | reviewed |
 
 ## /docs/recipes
@@ -558,9 +558,9 @@ there.
 | A submission, a rejected one, two buttons | `forms/post-redirect-get`, `forms/intent-field` | reviewed |
 | A JSON endpoint, a cookie, a session, a guard, a header, middleware | `endpoints/json-api`, `cookies/read`, `layouts/guard-redirect`, `middleware/server-header` | reviewed |
 | x402 | A third-party middleware. `middleware/gated` holds the part that is ours | reviewed |
-| A data block is emitted as written, not compiled | `recipes/data-block` | unreviewed |
-| A `${}` in a data block is refused | `diagnostics/data-block-takes-no-expression` | unreviewed |
-| A dialog, an accordion, findable hidden text, with no JavaScript | `recipes/platform-attributes`. The attributes pass through, and what they do is the browser's | unreviewed |
+| A data block is emitted as written, not compiled | `recipes/data-block` | reviewed |
+| A `${}` in a data block is refused | `diagnostics/data-block-takes-no-expression` | reviewed |
+| A dialog, an accordion, findable hidden text, with no JavaScript | `recipes/platform-attributes`. The attributes pass through, and what they do is the browser's | reviewed |
 | A fragment URL, an include, an element, revalidate, tags, a feed, a test | Their own pages' cases | - |
 
 ## /docs/accessibility
@@ -602,7 +602,7 @@ case on its own page.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| A page does not stream; a `Link: rel=preload` header names the stylesheet, the entry and its chunks | `decisions/link-preload` | unreviewed |
+| A page does not stream; a `Link: rel=preload` header names the stylesheet, the entry and its chunks | `decisions/link-preload` | reviewed |
 | The body is buffered for a strong ETag | `production/encodings` | - |
 | An endpoint can answer with a stream | `endpoints/stream` | reviewed |
 | `if` and `each` on one element is refused | `diagnostics/if-and-each-on-one-element` | reviewed |

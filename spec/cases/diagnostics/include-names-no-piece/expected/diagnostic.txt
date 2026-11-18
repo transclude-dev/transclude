@@ -1,0 +1,5 @@
+[plugin transclude] app/routes/index.html:1:1
+CompileError: <transclude src="/notes"> names a document but no piece of it. Add "#id" to say what to include. (line 1)
+> 1 | <transclude src="/notes"></transclude>
+    | ^
+  2 |

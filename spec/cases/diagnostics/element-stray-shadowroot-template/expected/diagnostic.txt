@@ -1,0 +1,5 @@
+[plugin transclude] app/elements/x-card.html:1:1
+CompileError: <x-card> is a light element and has no shadow root. Add `export const shadow = true` to its <script element> if it needs one. (line 1)
+> 1 | <template shadowrootmode="open"><p>Inside</p></template>
+    | ^
+  2 |

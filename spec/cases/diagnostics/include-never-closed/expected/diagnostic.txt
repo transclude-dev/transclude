@@ -1,0 +1,6 @@
+[plugin transclude] app/routes/index.html:1:1
+CompileError: <transclude> is never closed. HTML has no self-closing tag here, so "/>" is read as ">" and the rest of the page is taken as this element's fallback content. Write </transclude>. (line 1)
+> 1 | <transclude src="/notes#list" />
+    | ^
+  2 | <h1>Home</h1>
+  3 |

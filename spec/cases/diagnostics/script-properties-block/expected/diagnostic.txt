@@ -1,0 +1,6 @@
+[plugin transclude] app/elements/x-card.html:1:1
+CompileError: `<script properties>` is now one `<script element>` block. It declares `properties`, `state`, `prototype`, `attributes`, `shadow` and `formAssociated` as named exports of one module. (line 1)
+> 1 | <script properties>
+    | ^
+  2 |   export default { title: '' };
+  3 | </script>

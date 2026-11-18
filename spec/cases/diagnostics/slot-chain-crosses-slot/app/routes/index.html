@@ -1,0 +1,8 @@
+<script server>
+  export default async () => ({ on: true });
+</script>
+
+<x-card>
+  <p slot="a" if="on">On</p>
+  <p slot="b" else>Off</p>
+</x-card>

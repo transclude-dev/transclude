@@ -1,0 +1,2 @@
+[plugin transclude]
+CompileError: <x-card>: `connected` is declared in `properties`, and it is a member the framework calls: it runs on every connect. A prop of that name puts an accessor there instead, so the hook would never run. Pick another name.

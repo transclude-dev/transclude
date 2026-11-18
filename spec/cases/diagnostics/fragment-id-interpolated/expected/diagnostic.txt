@@ -1,0 +1,7 @@
+[plugin transclude] app/routes/index.html:5:1
+CompileError: <p> has an interpolated id, so its name is not knowable at compile time and no URL could ask for it. (line 5)
+  3 | </script>
+  4 | 
+> 5 | <p id="${name}" fragment>Part</p>
+    | ^
+  6 |

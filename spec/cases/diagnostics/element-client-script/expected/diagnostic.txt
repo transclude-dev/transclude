@@ -1,0 +1,2 @@
+[plugin transclude]
+ScriptError: x-card.html <script>: an element's code lives in <script element>. Per-element setup is `connected({ signal })` in `export const prototype`, which runs on every connect and returns its own cleanup.

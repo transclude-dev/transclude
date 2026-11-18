@@ -620,8 +620,58 @@ them is a claim of their own. `/docs/examples` points at apps under
 
 ## /docs/refusals
 
-Started.
+Complete. The page is read out of the compiler, so it lists every refusal there
+is: 49 of them, in the order the page shows. A refusal that is all holes is
+named here by what it refuses.
 
-| Claim | Case, or why none | Snapshot |
+| It refuses | Case | Snapshot |
 | --- | --- | --- |
-| `"fragment" takes no value`, refused with the file, the line and the id | `diagnostics/fragment-takes-no-value` | reviewed |
+| An expression the compiler cannot emit | `diagnostics/expression-not-emittable` | unreviewed |
+| An expression that does not parse | `diagnostics/expression-malformed` | unreviewed |
+| A `<template shadowrootmode>` in an element | `diagnostics/element-stray-shadowroot-template` | unreviewed |
+| A page export the generated module already defines | `diagnostics/page-export-reserved` | unreviewed |
+| A script block that does not parse, with its line | `diagnostics/script-syntax-error` | unreviewed |
+| "…" on <…> has no "if" before it | `diagnostics/else-after-another-element`, `diagnostics/else-without-if` | reviewed |
+| "fragment" takes no value. | `diagnostics/fragment-takes-no-value` | reviewed |
+| `…` belongs to the framework. | `diagnostics/element-lifecycle-name` | unreviewed |
+| `…` is exported twice (line …) | `diagnostics/element-export-twice`. The parser refuses the duplicate first, so the message is its own | unreviewed |
+| `…` is not something an element declares. | `diagnostics/element-unknown-export` | unreviewed |
+| `…` must be `true` or `false`. | `diagnostics/shadow-flag-not-literal` | reviewed |
+| `…` must be a string: the id of one element in the shadow root. | `diagnostics/reference-target-not-string` | unreviewed |
+| `…` on a <script head> cannot interpolate. | `diagnostics/script-head-attribute-interpolated` | unreviewed |
+| `<script …>` is now one `<script element>` block. | `diagnostics/script-properties-block` | unreviewed |
+| `export *` is not supported here. | `diagnostics/export-star` | unreviewed |
+| <… slot="…"> continues an if in the slot "…": a chain is one slot's | `diagnostics/slot-chain-crosses-slot` | unreviewed |
+| <… src="…"> is none of "#id" for a fragment of this page, "/path#id" for another route, or an absolute URL for a document elsewhere. | `diagnostics/include-src-unrecognized` | unreviewed |
+| <… src="…"> names a document but no piece of it. | `diagnostics/include-names-no-piece` | unreviewed |
+| <…> carries "fragment" but has no id. | `diagnostics/fragment-without-id` | unreviewed |
+| <…> carries "fragment" inside a loop, so it has no id of its own and its markup depends on a loop variable the fragment could not be given. | `diagnostics/fragment-in-loop` | unreviewed |
+| <…> carries "fragment", which addresses a fragment of a page over HTTP. | `diagnostics/fragment-in-element`, `diagnostics/fragment-in-layout` | unreviewed |
+| <…> carries both "each" and "…". | `diagnostics/if-and-each-on-one-element` | reviewed |
+| <…> carries both "fragment" and "…". | `diagnostics/fragment-and-if` | unreviewed |
+| <…> forwards references to `…`, and no element in its template has `id="…"`. | `diagnostics/reference-target-bound-id`, `diagnostics/reference-target-missing-id` | reviewed |
+| <…> forwards references to `…`, and that id is inside an `each`, so every item repeats it. | `diagnostics/reference-target-in-each` | reviewed |
+| <…> has an interpolated id, so its name is not knowable at compile time and no URL could ask for it. | `diagnostics/fragment-id-interpolated` | unreviewed |
+| <…> has an interpolated src, so what it includes is not knowable at compile time. | `diagnostics/include-src-interpolated` | reviewed |
+| <…> has no src. | `diagnostics/include-without-src` | unreviewed |
+| <…> includes a fragment of a page, and only a page has them. | `diagnostics/include-in-element` | unreviewed |
+| <…> interpolates an attribute name: "…". | `diagnostics/interpolated-attribute-name` | reviewed |
+| <…> is a light element, so `referenceTarget` has no shadow root to reach into. | `diagnostics/reference-target-on-light` | reviewed |
+| <…> is hoisted into <head> and <…> is not, so this chain would be split in two. | `diagnostics/hoisted-branch-split` | reviewed |
+| <…> is never closed. | `diagnostics/include-never-closed` | unreviewed |
+| <…> is repeated and writes out a view-transition-name, so every copy would carry the same one. | `diagnostics/view-transition-name-repeated` | unreviewed |
+| <…> re-renders `…` by rebuilding structure, which a light element cannot do: it does not own its own children. | `diagnostics/light-element-structural-directive` | reviewed |
+| <…>: `…` is declared in `…`, and it is a member the framework calls: it …. | `diagnostics/element-prop-named-for-hook` | unreviewed |
+| <…>: `…` is declared in both `properties` and `state`. | `diagnostics/prop-and-state-same-name` | reviewed |
+| <script element> is already declared on line …. | `diagnostics/script-element-twice` | unreviewed |
+| <title> cannot carry a directive. | `diagnostics/title-takes-no-directive` | reviewed |
+| <transclude src="#…"> names no fragment of this page. | `diagnostics/include-names-no-fragment` | reviewed |
+| <transclude> includes itself: …. | `diagnostics/include-cycle`, `diagnostics/include-includes-itself` | reviewed |
+| ${} inside <…> is written to the page as code, so a value could end the element or the statement it sits in. | `diagnostics/data-block-takes-no-expression`, `diagnostics/element-style-takes-no-expression`, `diagnostics/page-style-takes-no-expression`, `diagnostics/script-json-not-alone`, `diagnostics/script-takes-no-expression`, `diagnostics/style-takes-no-expression` | reviewed |
+| a <script head src="…"> cannot also have a body. | `diagnostics/script-head-src-and-body` | unreviewed |
+| an element declares itself by name, so there is no default export. | `diagnostics/element-default-export` | unreviewed |
+| an element's code lives in <script element>. | `diagnostics/element-client-script` | unreviewed |
+| an export here declares one name, and this declares `…`. | `diagnostics/export-declares-two` | unreviewed |
+| each="…" is malformed. | `diagnostics/directive-takes-no-interpolation` | reviewed |
+| exports "actions", which nothing reads. | `diagnostics/exports-actions` | unreviewed |
+| two fragments are both named "…". | `diagnostics/fragment-id-twice` | unreviewed |

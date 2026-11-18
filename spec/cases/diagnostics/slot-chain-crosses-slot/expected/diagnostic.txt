@@ -1,0 +1,2 @@
+[plugin transclude]
+CompileError: <p slot="b"> continues an if in the slot "a": a chain is one slot's

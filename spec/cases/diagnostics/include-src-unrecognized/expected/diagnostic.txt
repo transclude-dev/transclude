@@ -1,0 +1,5 @@
+[plugin transclude] app/routes/index.html:1:1
+CompileError: <transclude src="notes#list"> is none of "#id" for a fragment of this page, "/path#id" for another route, or an absolute URL for a document elsewhere. (line 1)
+> 1 | <transclude src="notes#list"></transclude>
+    | ^
+  2 |

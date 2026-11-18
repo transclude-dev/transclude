@@ -1,0 +1,8 @@
+[plugin transclude] app/routes/index.html:6:28
+CompileError: <span> carries "fragment" inside a loop, so it has no id of its own and its markup depends on a loop variable the fragment could not be given. (line 6)
+  4 | 
+  5 | <ul>
+> 6 |   <li each="item of items"><span id="one" fragment>${item}</span></li>
+    |                            ^
+  7 | </ul>
+  8 |

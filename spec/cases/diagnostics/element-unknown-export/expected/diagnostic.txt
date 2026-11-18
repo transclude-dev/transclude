@@ -1,0 +1,2 @@
+[plugin transclude]
+ScriptError: x-card.html <script element>: `tint` is not something an element declares. The block exports `properties`, `state`, `prototype`, `attributes`, `shadow`, `formAssociated`, `referenceTarget`, and nothing else (line 2)

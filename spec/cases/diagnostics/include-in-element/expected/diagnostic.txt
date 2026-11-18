@@ -1,0 +1,5 @@
+[plugin transclude] app/elements/x-card.html:1:1
+CompileError: <transclude> includes a fragment of a page, and only a page has them. Put it in a route rather than in an element or a layout. (line 1)
+> 1 | <transclude src="/notes#list"></transclude>
+    | ^
+  2 |

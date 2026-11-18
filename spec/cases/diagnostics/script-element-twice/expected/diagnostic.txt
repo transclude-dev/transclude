@@ -1,0 +1,8 @@
+[plugin transclude] app/elements/x-card.html:5:1
+CompileError: <script element> is already declared on line 1. An element declares itself once: move these exports into that block. (line 5)
+  3 | </script>
+  4 | 
+> 5 | <script element>
+    | ^
+  6 |   export const state = { b: 0 };
+  7 | </script>

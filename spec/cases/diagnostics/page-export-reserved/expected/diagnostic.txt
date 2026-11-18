@@ -1,0 +1,2 @@
+[plugin transclude]
+ScriptError: index.html <script server>: exports "render", which the generated module already defines. Reserved: css, load, render, renderHead, renderTitle, renderHtmlAttrs, layouts, client, elements, headScript, hasTitle, includes, renderBodyAttrs.

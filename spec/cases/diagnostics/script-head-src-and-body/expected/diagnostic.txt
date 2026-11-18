@@ -1,0 +1,2 @@
+[plugin transclude]
+CompileError: index.html <script head>: a <script head src="/vendor/analytics.js"> cannot also have a body. the browser runs the file and ignores the code

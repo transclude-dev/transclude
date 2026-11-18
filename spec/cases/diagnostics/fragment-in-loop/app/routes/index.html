@@ -1,0 +1,7 @@
+<script server>
+  export default async () => ({ items: ['a'] });
+</script>
+
+<ul>
+  <li each="item of items"><span id="one" fragment>${item}</span></li>
+</ul>

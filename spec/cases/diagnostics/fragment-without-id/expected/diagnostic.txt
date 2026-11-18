@@ -1,0 +1,5 @@
+[plugin transclude] app/routes/index.html:1:1
+CompileError: <ul> carries "fragment" but has no id. The id is the fragment's name. It is what the URL asks for and what a swap targets. (line 1)
+> 1 | <ul fragment><li>One</li></ul>
+    | ^
+  2 |

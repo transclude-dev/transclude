@@ -1,0 +1,7 @@
+[
+  {
+    "build": "warns",
+    "diagnostic": "expected/warnings.txt",
+    "todo": "The build prints each listener warning twice, once for the client build and once for the server build"
+  }
+]

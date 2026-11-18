@@ -1,0 +1,3 @@
+[transclude] key-watch: document.addEventListener("keydown") has no `signal`, so the listener stays after this element leaves the document. Take `{ signal }` in `connected` and pass it (line 6)
+[transclude] key-watch: window.addEventListener("resize") has no `signal`, so the listener stays after this element leaves the document. Take `{ signal }` in `connected` and pass it (line 7)
+[transclude] key-watch: globalThis.addEventListener("focus") has no `signal`, so the listener stays after this element leaves the document. Take `{ signal }` in `connected` and pass it (line 8)

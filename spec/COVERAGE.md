@@ -455,6 +455,29 @@ Complete.
 | No service worker ships | An absence | - |
 | A reporter that throws is caught; without one the error is logged | `production/on-error-throws`, `production/error-pages` | reviewed |
 
+## /docs/runtimes
+
+Complete. Almost every claim here is about a runtime other than Node, and the
+runner is Node. Phase 4 serves every case on all four.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| The same app runs on Node, Bun, Deno and workerd | Phase 4 | - |
+| workerd refuses to compile WebAssembly at runtime | workerd behavior; phase 4 | - |
+| On Node, a stop signal drains before the process leaves | A signal to a process, not an HTTP answer | - |
+| `workerFrom` builds the app on the first request and reads `env.COOKIE_SECRET` | workerd; phase 4 | - |
+| `dist/edge` holds the public files, the assets and a `_headers` file | Build output, not an HTTP answer | - |
+| Cloudflare answers `/about` with `about.html` | Cloudflare's behavior | - |
+| `TRANSCLUDE_ROOT` starts the walk for the config elsewhere | Starting a server; phase 4 | - |
+| `deno compile` and `bun build --compile` binaries | Phase 4, which the `runtimes` CI job already starts | - |
+| Node 22 is the floor | The `node` CI job | - |
+| What differs: bytes, hashing, compression, ranges | Phase 4 compares the answers | - |
+| Bindings arrive on `env`; a loader's context names no runtime | workerd; phase 4. `routing/context-fields` lists the context | - |
+| A page reading a binding or calling `after` needs `prerender = false` | `diagnostics/prerender-after` | unreviewed |
+| `ctx.after` takes a promise the reader does not wait for | `runtimes/after`. On Node nothing in `src/` waits for the work, so no change breaks only this; the case fails when `after` is missing | unreviewed |
+| A function is refused rather than wrapped | `runtimes/after-function-refused` | unreviewed |
+| A rejection goes to `onError`; the response does not change | `runtimes/after-rejects` | unreviewed |
+
 ## /docs/refusals
 
 Started.

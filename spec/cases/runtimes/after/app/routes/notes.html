@@ -1,0 +1,16 @@
+<script server>
+  import { recordView, viewsSoFar } from '../lib/analytics.js';
+
+  export const prerender = false;
+
+  export default async ({ after, url }) => {
+    const views = viewsSoFar();
+
+    // The reader is served without waiting for this.
+    after(recordView(url));
+
+    return { views };
+  };
+</script>
+
+<p>${views} views before this one</p>

@@ -1,0 +1,1 @@
+TypeError: [transclude] ctx.after takes a promise. Call the work and pass what it returns, as in `after(log(url))` rather than `after(() => log(url))`.

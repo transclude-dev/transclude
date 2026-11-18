@@ -1,0 +1,4 @@
+1 page failed to render:
+  /notes
+    called `ctx.after`, and a file has no response for that work to outlive. Give it `export const prerender = false`, or start the work from an endpoint or an action instead
+    at app/routes/notes.html:3

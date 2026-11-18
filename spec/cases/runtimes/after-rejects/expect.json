@@ -1,0 +1,3 @@
+[
+  {"request": "GET /notes", "status": 200, "body": "expected/notes.html", "log": "expected/rejected.log"}
+]

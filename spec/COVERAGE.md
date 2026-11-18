@@ -374,20 +374,20 @@ Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| `app/icons/` compiles to `/icons.svg`, a `<symbol>` per file, named by the file | `icons/sprite` | unreviewed |
-| A subdirectory is a library served under its name; two libraries may share an icon name | `icons/libraries` | unreviewed |
-| A sheet ships every icon in it; nothing prunes it | `icons/sprite` | unreviewed |
+| `app/icons/` compiles to `/icons.svg`, a `<symbol>` per file, named by the file | `icons/sprite` | reviewed |
+| A subdirectory is a library served under its name; two libraries may share an icon name | `icons/libraries` | reviewed |
+| A sheet ships every icon in it; nothing prunes it | `icons/sprite` | reviewed |
 | The build reports the icon count | Build output, which the runner does not read | - |
-| `viewBox` and paint are carried over; `width` and `height` are dropped | `icons/sprite` | unreviewed |
+| `viewBox` and paint are carried over; `width` and `height` are dropped | `icons/sprite` | reviewed |
 | A new project has `svg-icon.html` | The create area | - |
-| The docs `svg-icon`: drawn on the server, light DOM, no JavaScript, hidden unless labeled | `icons/svg-icon` | unreviewed |
+| The docs `svg-icon`: drawn on the server, light DOM, no JavaScript, hidden unless labeled | `icons/svg-icon` | reviewed |
 | `1em` and `currentColor` follow the surrounding text | Browser behavior | - |
 | `iconsDir: null` is no icons | `icons/off` | - |
-| `iconsDir` may name several directories, a path may leave `appDir`, and a library of one name is one sheet | `icons/shared-dirs` | unreviewed |
-| The same icon in two directories stops the build, naming both | `diagnostics/icon-in-two-dirs` | unreviewed |
-| An icon with no `viewBox` is refused by name | `diagnostics/icon-needs-viewbox` | unreviewed |
-| A directory inside a library is refused | `diagnostics/icon-library-nested` | unreviewed |
-| A library and a public file at one URL stop the build | `diagnostics/icon-library-public-collision` | unreviewed |
+| `iconsDir` may name several directories, a path may leave `appDir`, and a library of one name is one sheet | `icons/shared-dirs` | reviewed |
+| The same icon in two directories stops the build, naming both | `diagnostics/icon-in-two-dirs` | reviewed |
+| An icon with no `viewBox` is refused by name | `diagnostics/icon-needs-viewbox` | reviewed |
+| A directory inside a library is refused | `diagnostics/icon-library-nested` | reviewed |
+| A library and a public file at one URL stop the build | `diagnostics/icon-library-public-collision` | reviewed |
 | The dev server stops on the same collision | The runner checks the build only | - |
 | `<use>` draws in its own tree, and `href` is same-origin | Browser behavior | - |
 

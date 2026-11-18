@@ -1,0 +1,8 @@
+[
+  {"request": "GET /", "status": 200, "headers": {"cache-control": "public, max-age=0, must-revalidate"}},
+  {"request": "GET /assets/__global-[hash].css", "status": 200, "headers": {"cache-control": "public, max-age=31536000, immutable"}},
+  {"request": "GET /live", "status": 200, "headers": {"cache-control": "public, max-age=0, must-revalidate"}},
+  {"request": "GET /cookie", "status": 200, "headers": {"cache-control": "private, no-cache"}},
+  {"request": "GET /header", "status": 200, "headers": {"cache-control": "private, no-cache"}},
+  {"request": "GET /boom", "status": 500, "headers": {"cache-control": "no-store", "etag": null}, "body": "expected/500.html"}
+]

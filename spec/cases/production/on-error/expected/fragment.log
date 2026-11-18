@@ -1,0 +1,1 @@
+{"error":"the loader failed","request":true,"url":"http://localhost/people/ada?fragment=part","method":"GET","route":{"id":"people-_name","pattern":"/people/:name","params":{"name":"ada"}},"phase":"fragment"}

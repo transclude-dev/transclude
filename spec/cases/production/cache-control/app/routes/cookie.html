@@ -1,0 +1,7 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ cookies }) => ({ theme: cookies.get('theme') ?? 'light' });
+</script>
+
+<h1>${theme}</h1>

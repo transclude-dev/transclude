@@ -488,10 +488,10 @@ test('a shareable render says public, and a personal one says private', async ()
 
 // ---- the author's own files ------------------------------------------------
 //
-// Against a real listener, not `app.request()`. `serveStatic` writes its headers
-// through the Node response when there is one and takes another path when there
-// is not, so the in-process route shows no ETag at all and would have made these
-// pass while the server sent nothing.
+// Against a real listener, which is what `npm start` is. The same handler
+// through `app.request()` is `public-files-in-process.test.js`, in a file of its
+// own because this one loads `serve`, and `serve` changes what a late header
+// does.
 
 const { publicFiles } = await import('../src/public-files.js');
 

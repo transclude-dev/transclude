@@ -15,6 +15,9 @@ import { serveStatic } from '@hono/node-server/serve-static';
 
 import { typeOf } from './mime.js';
 
+/** Where `onFound` leaves the file it found, on the request's own context. */
+const CHOSEN = 'transclude.publicFile';
+
 /** Same as the build output's. These change when the author changes them. */
 const REVALIDATE = 'public, max-age=0, must-revalidate';
 
@@ -71,21 +74,14 @@ function typeFor(file, encoding) {
  * @returns {import('hono').MiddlewareHandler} Hono middleware
  */
 export function publicFiles(root) {
+  // The file `serveStatic` chose, kept on the context for the headers below.
+  // The context and not a variable here: requests overlap, and one handler
+  // serves them all.
   const inner = serveStatic({
     root,
     precompressed: true,
     onFound: (file, c) => {
-      c.header('ETag', validatorFor(file));
-      c.header('Cache-Control', REVALIDATE);
-
-      // Over the top of the one `serveStatic` already wrote. Its table has holes
-      // where a site keeps its media: no `.m4a`, no `.wav`, no `.mov`, no
-      // `.vtt`, and an unknown extension is written `application/octet-stream`.
-      // With `nosniff` on every response that is not a guess a browser may
-      // correct, so an `<audio>` element is handed bytes it is forbidden to
-      // read. `src/mime.js` is a superset of Hono's table, so answering over it
-      // can only add types, never lose one.
-      c.header('Content-Type', typeFor(file, c.res.headers.get('content-encoding')));
+      c.set(CHOSEN, file);
     },
   });
 
@@ -97,6 +93,27 @@ export function publicFiles(root) {
     // `Range` header.
     const answer = await inner(c, next);
     const found = answer ?? c.res;
+    const file = c.get(CHOSEN);
+
+    // On the Response itself, not through `c.header`. `onFound` runs after
+    // `serveStatic` has built the Response it returns, and a header set on the
+    // context then lands on that Response only where `@hono/node-server`'s
+    // `serve` has replaced the global `Response`. Through `app.request()`,
+    // which an app's own tests use, a `.vtt` went out as
+    // `application/octet-stream` while a real server sent `text/vtt`.
+    if (found && file) {
+      found.headers.set('ETag', validatorFor(file));
+      found.headers.set('Cache-Control', REVALIDATE);
+
+      // Over the top of the one `serveStatic` already wrote. Its table has holes
+      // where a site keeps its media: no `.m4a`, no `.wav`, no `.mov`, no
+      // `.vtt`, and an unknown extension is written `application/octet-stream`.
+      // With `nosniff` on every response that is not a guess a browser may
+      // correct, so an `<audio>` element is handed bytes it is forbidden to
+      // read. `src/mime.js` is a superset of Hono's table, so answering over it
+      // can only add types, never lose one.
+      found.headers.set('Content-Type', typeFor(file, found.headers.get('content-encoding')));
+    }
 
     // 206 is left alone. A range was asked for and answered, and a weak
     // validator is not one `If-Range` may be matched against.

@@ -1,0 +1,7 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ absolute }) => ({ og: absolute('/og.png') });
+</script>
+
+<p>${og}</p>

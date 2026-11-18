@@ -1,0 +1,1 @@
+{"error":"the action failed","request":true,"url":"http://localhost/people/ada","method":"POST","route":{"id":"people-_name","pattern":"/people/:name","params":{"name":"ada"}},"phase":"action"}

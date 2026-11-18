@@ -1,0 +1,10 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ response }) => {
+    response.headers.set('x-shelf', 'top');
+    return {};
+  };
+</script>
+
+<h1>Header</h1>

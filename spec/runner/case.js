@@ -35,6 +35,11 @@ const jar = new Map();
 // was supposed to say.
 let heard = [];
 
+// Every body this case has been sent, in order. A request for a built asset
+// names it with `[hash]`, and the name is read back from these, the way a
+// browser follows a link the page gave it.
+const answers = [];
+
 const result = await run();
 process.send?.(result);
 
@@ -216,10 +221,14 @@ function readsDiffer(expected) {
 }
 
 async function checkRequest(app, entry) {
-  const [method, url] = entry.request.split(' ');
+  const [method, written] = entry.request.split(' ');
+  const url = assetUrl(written);
+  if (url === null) return { request: entry.request, problems: [`no earlier answer in this case names ${written}`] };
+
   heard = [];
   const res = await app.request(`http://localhost${url}`, initFor(method, entry.send));
   const actual = { status: res.status, headers: res.headers, body: await res.text() };
+  answers.push(actual.body);
   keepCookies(res.headers.getSetCookie());
   const log = relative(heard.join('\n'));
 
@@ -245,6 +254,30 @@ async function checkRequest(app, entry) {
   const want = fs.readFileSync(logFile, 'utf8').trim();
   if (!log.includes(want)) problems.push(`log: expected the server to print\n${want}\ngot\n${log.trim() || '(nothing)'}`);
   return { request: entry.request, answered, problems };
+}
+
+/**
+ * A URL with `[hash]` in it, as an earlier answer named it:
+ * `/assets/global-[hash].css` becomes `/assets/global-Cyt6b9Zw.css`. A URL
+ * with no `[hash]` is returned as written, and one no answer names is `null`.
+ *
+ * @param {string} url
+ */
+function assetUrl(url) {
+  if (!url.includes('[hash]')) return url;
+  const [before, after] = url.split('[hash]').map(literally);
+  // Eight characters, the length `compare.js` counts as a hash.
+  const pattern = new RegExp(`${before}[\\w-]{8}${after}`);
+  for (const body of answers) {
+    const found = body.match(pattern);
+    if (found) return found[0];
+  }
+  return null;
+}
+
+/** Text as a regular expression that matches only that text. */
+function literally(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**

@@ -51,8 +51,11 @@ const absolute = (hostname, path) => `${hostname.replace(/\/$/, '')}${path}`;
  * One entry, as an app writes it.
  *
  * @typedef {object} FeedItem
- * @property {string} [title]
- * @property {string} [url]
+ * @property {string} title
+ * @property {string} path joined to `hostname`, so the link is absolute
+ * @property {string} [id] the item's guid, or its Atom id. Its URL when absent
+ * @property {string} [description]
+ * @property {string} [content] full HTML
  * @property {string} [author]
  * @property {string|number|Date} [date]
  * @property {Date|null} [at] the parsed date, added on the way through
@@ -75,6 +78,18 @@ const absolute = (hostname, path) => `${hostname.replace(/\/$/, '')}${path}`;
  */
 async function itemsOf({ items = [], limit = LIMIT }) {
   const list = typeof items === 'function' ? await items() : await items;
+
+  // Every item, not only the ones under the cap: one past it is published the
+  // day a newer item goes away. Without a title and a path an item was written
+  // as `<title>undefined</title>` and a link to `https://acme.comundefined`,
+  // and the feed answered 200.
+  for (const [index, item] of list.entries()) {
+    if (item.title && item.path) continue;
+    throw new Error(
+      `[transclude] feed item ${index + 1} needs a title and a path: a reader shows the ` +
+        `title and follows the path, and an item missing either is a broken entry`,
+    );
+  }
 
   const dated = list.map((item, index) => ({ item, index, at: date(item.date) }));
   dated.sort((a, b) => {

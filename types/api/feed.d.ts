@@ -1,6 +1,18 @@
 export type FeedItem = {
-    title?: string;
-    url?: string;
+    title: string;
+    /**
+     * joined to `hostname`, so the link is absolute
+     */
+    path: string;
+    /**
+     * the item's guid, or its Atom id. Its URL when absent
+     */
+    id?: string;
+    description?: string;
+    /**
+     * full HTML
+     */
+    content?: string;
     author?: string;
     date?: string | number | Date;
     /**

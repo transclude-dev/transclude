@@ -159,6 +159,15 @@ test('no hostname and no title are errors, since neither has a default', async (
   await assert.rejects(() => feed({ hostname: 'https://x.com', items: [] }), /needs a title/);
 });
 
+test('an item with no title or no path is refused, wherever it sits in the list', async () => {
+  await assert.rejects(() => feed({ ...base, items: [{ path: '/x' }] }), /feed item 1 needs a title and a path/);
+  await assert.rejects(() => feed({ ...base, items: [{ title: 'x' }] }), /feed item 1 needs a title and a path/);
+  // Past the cap, so it would not be published today. It would be the day a
+  // newer item goes away.
+  const list = [{ title: 'a', path: '/a', date: '2026-01-02' }, { date: '2026-01-01' }];
+  await assert.rejects(() => feed({ ...base, limit: 1, items: list }), /feed item 2 needs a title and a path/);
+});
+
 test('an atom feed with no author is refused, because the spec requires one', async () => {
   await assert.rejects(
     () => feed({ ...base, format: 'atom', items: posts }),

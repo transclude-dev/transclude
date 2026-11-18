@@ -113,7 +113,8 @@ export default {
 
   <p>
     That mounts <code>/feed.xml</code> as RSS 2.0. Each item needs a
-    <code>title</code> and a <code>path</code>. <code>date</code>,
+    <code>title</code> and a <code>path</code>, and an item missing either
+    fails the build. <code>date</code>,
     <code>description</code>, <code>content</code> and <code>author</code> are
     optional, and <code>content</code> is where full HTML goes.
   </p>

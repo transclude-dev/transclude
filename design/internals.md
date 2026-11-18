@@ -751,6 +751,7 @@ against.
   which is the trap: the build reads the directory, not the index. Dotfiles are
   not skipped wholesale, because `.well-known` is a directory people mean to
   publish, so the filter names the three files nobody ever puts there on purpose.
+  `spec: production/public-junk`.
 - **`app/public/` is copied to `dist/public`, and Vite's own `publicDir` is off.**
   Left on, Vite serves it in dev ahead of Hono and copies it into both the client
   and SSR outputs, and production served none of it. Dev 200, prod 404. Both
@@ -763,7 +764,7 @@ against.
   a video would be read in full to answer a request for its first megabyte.
   Weak on purpose, because a size and a second can collide. `serveStatic` reads
   no request condition, so the 304 is done around it in `public-files.js`, which
-  both Node servers now share.
+  both Node servers now share. `spec: production/public-validator`.
 - **A `serveStatic` wrapper has to return what it was given.** A range is
   answered by *returning* a Response rather than by setting `c.res`, so a wrapper
   that awaits and returns nothing leaves the context unfinalized and every Range
@@ -810,6 +811,7 @@ against.
   public file it has no type for, the way it prints a draft it skipped, since
   the alternative is a file that silently cannot be used. The fix for a wrong
   type is the right type; `nosniff` is not the thing to reconsider.
+  `spec: production/public-type-prototype`.
 - **Public files are served by Hono, build output by the in-memory cache.** These
   are different on purpose. Build output is small, used often and never changes, and
   gets a strong ETag for each encoding. Public files belong to the author, can be
@@ -1248,6 +1250,7 @@ against.
   and the public copy overwrites it; written later and all three miss it, so Node
   serves `/icons.svg` off disk and a worker 404s it with nothing to say why.
   `dist/edge` walks it too, so it is written after the sprite as well.
+  `spec: icons/sprite-in-precache`.
 - **A file the edge serves never passes through `baseApp`.** `dist/server/assets.js`
   put every public file inside the worker, and an app with a large public
   directory went far over Cloudflare's 64 MiB limit: the Bible table's came to
@@ -1325,6 +1328,7 @@ against.
   `inlineSources` matches every `<script>`, so nothing was added for this and
   nothing should be: a policy built from what the page inlines covers a block the
   page inlines. Verified in Chrome with `csp: true`, no violation reported.
+  `spec: security/csp-speculation`.
 - **A library is a directory, so the URLs the sprite claims are not a fixed
   list.** `app/icons/lucide/` is `/lucide.svg`, which is the point: a downloaded
   icon set is put here whole and nothing is renamed. `refuseSpriteClash` takes
@@ -1343,11 +1347,13 @@ against.
   dev asks the public handler first and never reaches the sprite. Same two files,
   different answer per server. `refuseSpriteClash` stops both rather than picking,
   which is why it is called in `bin/build.js` and again in `bin/dev.js`.
+  `spec: diagnostics/icon-sprite-public-collision`.
 - **parse5 closes an SVG element by namespace, not by tag name.** The sprite is
   served as `image/svg+xml`, so a browser parses it as XML, where nothing is void
   and every tag closes. `<image>` or `<use>` serialized the HTML way would take
   the whole document down and every icon with it, not just the one. `test/icons.test.js`
   holds that claim, because it is one parse5 version away from changing.
+  `spec: icons/svg-close`.
 - **An icon with no `viewBox` is refused, not warned.** A symbol scales by its
   viewBox. Without one the icon renders at some other size, which reads as a CSS
   problem and is not one. Same for two files claiming one id: the second would
@@ -1456,6 +1462,7 @@ against.
   in `app/elements/`, find nothing, and every tag would render as an unmatched
   custom element with no styles and no error. Same guard as the old `pages`
   directory name.
+  `spec: diagnostics/config-partials-dir`, `spec: diagnostics/config-components-dir`.
 - **`<html>` is read with a second parse, because the fragment parser drops it.**
   A nested html start tag cannot appear in a body, so `parseFragment` throws it
   away attributes and all, and it never reaches `emitElement`. `splitBlocks`
@@ -1478,7 +1485,7 @@ against.
   that header has no judgment in it and is on for every response including a
   404 and a public file. The other two refuse something an app may actually
   want, one being embedded and one being reachable over HTTP at all, so they
-  stay the author's to set.
+  stay the author's to set. `spec: middleware/security-headers-default`.
 - **Most of what `check:src` reported was the JSDoc being wrong, not the code
   being untypeable.** It was called noise from parse5 node shapes and it was not:
   of 180 diagnostics, 115 were annotations that disagreed with the thing they
@@ -1703,6 +1710,7 @@ against.
   cannot hold that sequence, and `<script>if (a[b[c]]>0)</script>` is markup
   someone will put in a feed item. Writing it as two sections is what a parser
   puts back together as the three original characters.
+  `spec: feeds/feed-cdata-split`.
 - **`prerender` is read off the page, never off its layouts.** `build.js` checks
   `pages[route.id]?.prerender`, so a layout that reads the request makes every
   page under it request-dependent and nothing says so. The prerendered ones are
@@ -1760,7 +1768,7 @@ against.
   test above could not see it, because every one of those files does call
   `includeContext`. Only a request through `createApp` reaches it, which is the
   same lesson as the cookie cache flag. `renderFragment` makes its own
-  `includeMemo` for the reason `renderRoute` does.
+  `includeMemo` for the reason `renderRoute` does. `spec: includes/call-sites`.
 - **An included route reads cookies through the host's, and that is the point.**
   The cache refuses to hold a page whose loader *reads* a cookie, and a route
   include is a second loader running inside the first page's render. Giving it
@@ -1868,12 +1876,13 @@ against.
   rather than reading as an embedded `0.0.0.0`. Two tests were missing in the
   other direction too: nothing asserted that a hat over a *public* address is
   still public, so a rule that matched a prefix and blocked whatever it held
-  would have passed the suite.
+  would have passed the suite. `spec: includes/private-addresses-v6`.
 - **Sanitize, then rewrite, then index.** The base is read before `<base>` is
   stripped, cleaning happens before rewriting so nothing rewrites a URL on an
   element about to be removed, and the id table is built last. Indexing first
   leaves the table naming elements the cleaning took out, so `listFragments`
   advertises a fragment that then fails to resolve.
+  `spec: includes/sanitize-then-index`.
 - **`<base>`, `<link>` and `<style>` are stripped from foreign markup for the
   host page's sake, not the fragment's.** None of them stops at the fragment. A
   `<base>` retargets every relative URL in the document the fragment is inserted
@@ -1884,6 +1893,7 @@ against.
   element; `proxy.styles: 'strip'` drops those for an app that wants its own
   look. The value is checked, since a misspelling would keep every attribute and
   read exactly like the setting working.
+  `spec: diagnostics/proxy-styles-misspelled`.
 - **`src/extract.js` never runs on our own pages.** A region here is compiled:
   `<div id="x" fragment>` becomes its own render function and the same markup
   serves it inline and alone, so nothing in that path parses HTML. `extract.js`
@@ -1904,6 +1914,7 @@ against.
   showed. `kidsOf` returns `[]` for a template on purpose rather than by
   accident. `src/rewrite.js` asks the other question and gets the other answer,
   so the two files keep their own `kidsOf`.
+  `spec: includes/template-not-addressable`.
 - **The cleaning descends into a template, because a declarative shadow root is
   not inert.** `src/rewrite.js` read `childNodes` too, and there it was a hole
   rather than a decision: nothing inside a `<template>` was visited, so a script,
@@ -1953,6 +1964,7 @@ against.
   `xmlSafe` in `src/feed.js` and `src/sitemap.js` strips the C0 range except
   tab, newline and return, which are the three XML keeps. Stripped rather than
   escaped, because none of them stands for a character.
+  `spec: feeds/xml-control-chars`.
 - **A parser reads some elements' content as text, and the walk never cleans
   it.** parse5 keeps the content of `<xmp>`, `<plaintext>`, `<listing>`,
   `<noembed>` and `<noframes>` as raw text, so `sanitize` recursed past a
@@ -1974,7 +1986,7 @@ against.
   through. Both are wrapped now, with phases `sitemap` and `feed` and a null
   `route`, which is why `report` reads `at?.route` rather than assuming a truthy
   `at` carries one. The seam that pages a human covers every failed request
-  again, not most of them.
+  again, not most of them. `spec: production/on-error-sitemap-feed`.
 - **Report-only is a header, never a meta.** A browser ignores
   `content-security-policy-report-only` in a `<meta>`, and the policy went out
   that way: `reportOnly: true` reported nothing for scripts and styles, and

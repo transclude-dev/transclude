@@ -1,0 +1,5 @@
+[
+  {"request": "GET /?fragment=side", "status": 200, "body": "expected/side.html"},
+  {"request": "POST /", "send": {"form": {"a": "1"}}, "status": 200, "body": "expected/after-action.html"},
+  {"request": "POST /?fragment=side", "send": {"form": {"a": "1"}}, "status": 200, "body": "expected/side.html"}
+]

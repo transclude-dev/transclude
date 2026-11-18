@@ -171,8 +171,10 @@ export function refuseSpriteClash(publicDir, libraries) {
     const clash = path.join(publicDir, path.basename(url));
     if (!fs.existsSync(clash)) continue;
 
+    // The default library is named `icons`, and "the icons icons" says nothing.
+    const which = name === DEFAULT_LIBRARY ? 'the icons outside any library' : `the ${name} icons`;
     throw new Error(
-      `[transclude] ${clash} and the ${name} icons both answer for ${url}. ` +
+      `[transclude] ${clash} and ${which} both answer for ${url}. ` +
         `The sprite is built from the icons, so rename the public file or delete it.`,
     );
   }

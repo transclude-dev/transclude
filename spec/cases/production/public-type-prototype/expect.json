@@ -1,0 +1,5 @@
+[
+  {"request": "GET /x.constructor", "status": 200, "headers": {"content-type": "application/octet-stream"}},
+  {"request": "GET /x.hasOwnProperty", "status": 200, "headers": {"content-type": "application/octet-stream"}},
+  {"request": "GET /x.__proto__", "status": 200, "headers": {"content-type": "application/octet-stream"}}
+]

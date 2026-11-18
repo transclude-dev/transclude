@@ -1,0 +1,1 @@
+Error: [transclude] app/public/icons.svg and the icons outside any library both answer for /icons.svg. The sprite is built from the icons, so rename the public file or delete it.

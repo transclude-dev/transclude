@@ -1,0 +1,4 @@
+[
+  {"request": "GET /feed.xml", "status": 200, "body": "expected/feed.xml"},
+  {"request": "GET /sitemap.xml", "status": 200, "body": "expected/sitemap.xml"}
+]

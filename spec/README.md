@@ -79,6 +79,11 @@ A request may name a built asset by its hash placeholder:
 earlier entry in the case was sent, the way a browser follows a link the page
 gave it. An entry fails when no earlier answer names the asset.
 
+A header value of `[etag]` sends the `ETag` of the answer just before it,
+the way a browser revalidates: `"send": { "headers": { "if-none-match":
+"[etag]" } }`. A public file's validator comes from its mtime, which changes
+with every build, so a case cannot write it out.
+
 The entries in one case run in order, in one process. A POST and the GET after
 it see the same app, which is how a case shows that an action ran or did not.
 

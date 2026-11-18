@@ -1,0 +1,17 @@
+<script server>
+  export default ({ action }) => ({ saved: action?.saved ?? false });
+
+  export const POST = async ({ request }) => {
+    await request.formData();
+    return { saved: true };
+  };
+</script>
+
+<h1>Home</h1>
+<p if="saved">Saved.</p>
+
+<section id="side" fragment>
+  <transclude src="/notes#notes">
+    <p>The notes could not be read.</p>
+  </transclude>
+</section>

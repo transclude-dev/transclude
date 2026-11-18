@@ -1,0 +1,9 @@
+<script server>
+  import { posts } from '../../data/posts.js';
+
+  export const prerender = false;
+  export const paths = () => posts().map((post) => ({ slug: post.slug }));
+  export default ({ params }) => ({ slug: params.slug });
+</script>
+
+<h1>${slug}</h1>

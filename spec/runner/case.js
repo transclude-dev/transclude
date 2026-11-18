@@ -40,6 +40,12 @@ let heard = [];
 // browser follows a link the page gave it.
 const answers = [];
 
+// The ETag the last answer carried. A request that sends `[etag]` as a header
+// value sends this one back, the way a browser revalidates what it holds. A
+// validator made from a file's mtime changes with every build, so a case
+// cannot write it out.
+let lastEtag = null;
+
 const result = await run();
 process.send?.(result);
 
@@ -215,6 +221,7 @@ function initFor(method, send = {}) {
   for (const [name, value] of Object.entries(send.headers ?? {})) {
     // `null` takes a header away, so a case can send a form with no origin.
     if (value === null) init.headers.delete(name);
+    else if (value === '[etag]') init.headers.set(name, lastEtag ?? '');
     else init.headers.set(name, value);
   }
   return init;
@@ -255,6 +262,7 @@ async function checkRequest(app, entry) {
   const res = await app.request(`http://localhost${url}`, initFor(method, entry.send));
   const actual = { status: res.status, headers: res.headers, body: await res.text() };
   answers.push(actual.body);
+  lastEtag = res.headers.get('etag');
   keepCookies(res.headers.getSetCookie());
   const log = relative(heard.join('\n'));
 

@@ -1,0 +1,1 @@
+[{"request": "GET /feed.xml", "status": 200, "body": "expected/feed.xml"}]

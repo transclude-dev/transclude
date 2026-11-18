@@ -1,0 +1,6 @@
+<script server>
+  export const prerender = false;
+  export default ({ params }) => ({ path: params.path });
+</script>
+
+<h1>${path}</h1>

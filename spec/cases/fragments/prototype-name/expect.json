@@ -1,0 +1,7 @@
+[
+  { "request": "GET /?fragment=constructor", "status": 404 },
+  { "request": "GET /?fragment=__proto__", "status": 404 },
+  { "request": "GET /?fragment=toString", "status": 404 },
+  { "request": "POST /?fragment=constructor", "send": { "form": {} }, "status": 404 },
+  { "request": "GET /?fragment=count", "status": 200, "body": "expected/count.html" }
+]

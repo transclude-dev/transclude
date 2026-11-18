@@ -1,0 +1,6 @@
+[
+  { "request": "GET /api", "status": 200, "body": "expected/get.txt" },
+  { "request": "HELPERS /api", "send": { "form": {} }, "status": 405, "headers": { "allow": "GET" } },
+  { "request": "LIMIT /api", "send": { "form": {} }, "status": 405, "headers": { "allow": "GET" } },
+  { "request": "DELETE /api", "send": { "form": {} }, "status": 405, "headers": { "allow": "GET" } }
+]

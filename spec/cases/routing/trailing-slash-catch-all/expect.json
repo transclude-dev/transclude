@@ -1,0 +1,4 @@
+[
+  { "request": "GET /docs/intro", "status": 200, "body": "expected/intro.html" },
+  { "request": "GET /docs/intro/", "status": 301, "headers": { "location": "http://localhost/docs/intro" } }
+]

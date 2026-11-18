@@ -1,0 +1,3 @@
+[
+  {"request": "GET /precache.json", "status": 200, "body": "expected/precache.json"}
+]

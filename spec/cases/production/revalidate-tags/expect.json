@@ -1,0 +1,10 @@
+[
+  {"request": "GET /notes", "status": 200, "body": "expected/one.html"},
+  {"request": "GET /other", "status": 200, "body": "expected/two.html"},
+  {"request": "GET /notes", "status": 200, "body": "expected/one.html"},
+  {"request": "POST /api/notes", "send": {"body": "{}", "headers": {"content-type": "application/json"}}, "status": 204},
+  {"request": "GET /notes", "status": 200, "body": "expected/three.html"},
+  {"request": "GET /other", "status": 200, "body": "expected/two.html"},
+  {"request": "POST /notes", "send": {"form": {"a": "1"}}, "status": 303},
+  {"request": "GET /notes", "status": 200, "body": "expected/four.html"}
+]

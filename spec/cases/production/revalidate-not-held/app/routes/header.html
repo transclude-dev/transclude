@@ -1,0 +1,14 @@
+<script server>
+  import { count } from '../data/count.js';
+
+  export const prerender = false;
+  export const revalidate = 3600;
+
+  export default async ({ cookies, response }) => {
+    const renders = count('header');
+    response.headers.set('x-shelf', 'top');
+    return { renders };
+  };
+</script>
+
+<p>${renders}</p>

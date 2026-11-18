@@ -205,9 +205,13 @@ test('a render that finishes after it was replaced leaves the replacement alone'
     return { html: `v${renders}`, cacheable: true };
   };
 
+  // A read asks the store first, and a store may answer later, so each read is
+  // given a turn to reach its render before the clock moves.
   readHtml(cache, '/x', window, render);
+  await new Promise((resolve) => setImmediate(resolve));
   time.tick(31_000);
   readHtml(cache, '/x', window, render);
+  await new Promise((resolve) => setImmediate(resolve));
 
   // The first one comes back late, after the second took the key.
   release();
@@ -354,6 +358,31 @@ test('a store can be swapped for one that is shared', async () => {
   cache.revalidateTag('t');
 
   assert.deepEqual(calls, [['get', '/x'], ['set', '/x'], ['deleteByTag', 't']]);
+});
+
+test('a store whose methods answer with a promise holds a render too', async () => {
+  // The shape of a store over a network. Read without `await`, the promise was
+  // taken for a hit: the first request failed and nothing was ever held.
+  const entries = new Map();
+  const store = {
+    get: async (k) => entries.get(k),
+    set: async (k, entry) => void entries.set(k, entry),
+    delete: async (k) => void entries.delete(k),
+    deleteByTag: async (t) => {
+      for (const [k, entry] of entries) if (entry.tags.includes(t)) entries.delete(k);
+    },
+  };
+
+  let renders = 0;
+  const render = async () => ({ html: `render ${++renders}`, cacheable: true });
+  const cache = createCache(store, clock());
+  const window = { seconds: 60, tags: ['t'] };
+
+  assert.equal(await readHtml(cache, '/x', window, render), 'render 1');
+  assert.equal(await readHtml(cache, '/x', window, render), 'render 1');
+
+  await cache.revalidateTag('t');
+  assert.equal(await readHtml(cache, '/x', window, render), 'render 2');
 });
 
 // ---- what makes a page personal -------------------------------------------

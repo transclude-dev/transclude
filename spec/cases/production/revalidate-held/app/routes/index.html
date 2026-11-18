@@ -1,0 +1,12 @@
+<script server>
+  import { count } from '../data/count.js';
+
+  export const prerender = false;
+  export const revalidate = 3600;
+
+  export default async (ctx) => {
+    return { renders: count() };
+  };
+</script>
+
+<p>${renders}</p>

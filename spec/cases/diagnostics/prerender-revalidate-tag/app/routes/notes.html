@@ -1,0 +1,8 @@
+<script server>
+  export default async ({ revalidateTag }) => {
+    revalidateTag('notes');
+    return {};
+  };
+</script>
+
+<h1>Notes</h1>

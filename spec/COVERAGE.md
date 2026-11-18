@@ -413,8 +413,7 @@ Complete. Most keys have their own page, and their rows are there.
 
 ## /docs/production
 
-Started. Holding a render, tags, the cache store and `precache` are the next
-branch.
+Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
@@ -440,6 +439,20 @@ branch.
 | A page loads a script only if something on it needs one | `elements/javascript-shipped` | reviewed |
 | `ctx.absolute()` uses `metadataBase`, or the request's host without it | `production/absolute`, `production/absolute-no-base` | reviewed |
 | `onError` gets the request, URL, method, route, params and phase; the 500 page ships | `production/on-error` | reviewed |
+| `revalidate` holds a render; inside the window the loader does not run | `production/revalidate-held` | unreviewed |
+| Past the window the held page goes out and a fresh one renders behind it | `production/revalidate-stale` | unreviewed |
+| One render at a time per URL, however many requests arrive together | The runner asks one request at a time. Concurrency is phase 3 | - |
+| The key is the path and the query | `production/revalidate-key` | unreviewed |
+| The rebuild is held with `ctx.after`, `waitUntil` on workerd | Phase 4, every runtime compared | - |
+| A rebuild that throws leaves the held page; the error goes to `onError` | `production/revalidate-rebuild-throws` | unreviewed |
+| `revalidateTag` from an action or an endpoint drops every page with the tag | `production/revalidate-tags` | unreviewed |
+| A prerendered loader calling it stops the build | `diagnostics/prerender-revalidate-tag` | unreviewed |
+| Not held: a cookie read, a header set, a `Response`, a status outside 2xx | `production/revalidate-not-held` | unreviewed |
+| A loader reading `Authorization` off `ctx.request` is invisible to the cache | Advice. The cache sees what `production/revalidate-not-held` shows | - |
+| `cache` takes any store with the four methods | `production/cache-store`, `production/cache-store-async` | unreviewed |
+| `precache: true` writes `/precache.json`: pages and public files with ETags, assets with `revision: null`, a `version` | `production/precache`, `production/precache-off` | unreviewed |
+| `npm run dev` answers `/precache.json` with a 404 | The dev server | - |
+| No service worker ships | An absence | - |
 | A reporter that throws is caught; without one the error is logged | `production/on-error-throws`, `production/error-pages` | reviewed |
 
 ## /docs/refusals

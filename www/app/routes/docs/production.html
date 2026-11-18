@@ -307,7 +307,9 @@ export const POST = async ({ request, revalidateTag }) => {
     server and wrong for several: each holds its own copy, and
     <code>revalidateTag</code> reaches only one of them. Give <code>cache</code>
     in the config anything with the same four methods to put the store
-    somewhere they all share.
+    somewhere they all share. Each may answer with a promise, as a store
+    across a network does. <code>revalidateTag</code> then returns that
+    promise, so await it before answering.
   </p>
 
   <h2>A list of what to cache</h2>

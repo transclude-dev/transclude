@@ -1,0 +1,10 @@
+[
+  {"request": "GET /cookie", "status": 200, "body": "expected/one.html"},
+  {"request": "GET /cookie", "status": 200, "body": "expected/two.html"},
+  {"request": "GET /header", "status": 200, "body": "expected/one.html"},
+  {"request": "GET /header", "status": 200, "body": "expected/two.html"},
+  {"request": "GET /status", "status": 404, "body": "expected/one.html"},
+  {"request": "GET /status", "status": 404, "body": "expected/two.html"},
+  {"request": "GET /response", "status": 200, "body": "expected/one.txt"},
+  {"request": "GET /response", "status": 200, "body": "expected/two.txt"}
+]

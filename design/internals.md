@@ -743,6 +743,14 @@ against.
   request becomes a 500 saying "Context is not finalized". Nothing in the suite
   caught it, so the public-file tests run against a real listener on a port the
   OS picks.
+- **A cache store may answer with a promise.** `/docs/production` offers
+  `cache` as the way several servers share held pages, and a store they share
+  is across a network. `src/cache.js` read `store.get` without `await`, so the
+  promise itself was taken for a hit: the first request answered 500 reading
+  `html` off it, and every one after rendered again with nothing held. Every
+  store call is awaited now. A read reaches its render a turn later than it
+  did, which is why the cache tests that move the clock give each read a turn
+  first. `spec: production/cache-store-async`.
 - **A header set in `onFound` lands only under `serve`.** `serveStatic` builds
   the Response it returns before it calls `onFound`. `@hono/node-server`'s
   `serve` replaces the global `Response`, and under it a header set on the

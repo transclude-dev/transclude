@@ -1,0 +1,4 @@
+1 page failed to render:
+  /notes
+    called `ctx.revalidateTag`, and a build holds no rendered pages to drop. Give it `export const prerender = false`, or move the call to the action or endpoint that changes the data
+    at app/routes/notes.html:3

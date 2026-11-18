@@ -293,7 +293,9 @@ not at all, and say nothing either way.
 The default store is a bounded map in this process. That is right for one server
 and wrong for several: each holds its own copy, and `revalidateTag` reaches one
 of them. `cache` in the config takes anything with the same `get`, `set`,
-`delete` and `deleteByTag`.
+`delete` and `deleteByTag`. Each may answer with a promise, as a store across a
+network does. `revalidateTag` then returns that promise, so await it before
+answering.
 
 ## Runtimes
 

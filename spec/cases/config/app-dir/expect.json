@@ -1,0 +1,5 @@
+[
+  {"request": "GET /", "status": 200, "body": "expected/index.html"},
+  {"request": "GET /robots.txt", "status": 200, "body": "expected/robots.txt"},
+  {"request": "GET /icons.svg", "status": 200}
+]

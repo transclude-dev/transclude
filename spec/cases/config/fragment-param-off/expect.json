@@ -1,0 +1,3 @@
+[
+  {"request": "GET /?fragment=part", "status": 200, "body": "expected/page.html"}
+]

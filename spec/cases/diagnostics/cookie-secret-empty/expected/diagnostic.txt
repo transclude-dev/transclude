@@ -1,0 +1,1 @@
+Error: [transclude] `cookieSecret` is an empty string. Whatever supplies it handed over nothing: on a worker that is usually a `wrangler secret put` that took a blank line. Set a real secret, or `null` for none.

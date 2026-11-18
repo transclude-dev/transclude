@@ -1,0 +1,1 @@
+Error: [transclude] `canonical: true` needs `metadataBase`, which is the origin the URL is built from. A request's own origin is the wrong one twice: behind a proxy it is the internal address, and a prerendered page has no request at all.

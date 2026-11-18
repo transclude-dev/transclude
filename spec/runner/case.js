@@ -57,7 +57,10 @@ async function run() {
   for (const level of ['error', 'warn']) console[level] = (...args) => heard.push(format(...args));
   const { app } = await import('@transclude/core/production');
   const results = [];
-  for (const entry of entries) results.push(marked(entry, await checkEntry(app, entry)));
+  for (const entry of entries) {
+    const result = entry.build === 'warns' ? checkWarning(entry, build) : await checkEntry(app, entry);
+    results.push(marked(entry, result));
+  }
   return { build, results };
 }
 
@@ -116,6 +119,29 @@ function checkDiagnostic(entry, build) {
   const want = fs.readFileSync(expectedFile, 'utf8').trim();
   const problems = [];
   if (!build.stderr.includes(want)) problems.push(`diagnostic: expected the build to print\n${want}\ngot\n${build.stderr.trim()}`);
+  return { request, problems };
+}
+
+/**
+ * A build that succeeds and says something on the way. The warnings are the
+ * lines the framework prints with `[transclude]` in front, and they must be
+ * the expected file, all of them. Exact, so a case can show that a warning
+ * stays quiet.
+ *
+ * @param {{ build: string, diagnostic: string }} entry
+ */
+function checkWarning(entry, build) {
+  const request = 'build';
+  const expectedFile = path.join(caseDir, entry.diagnostic);
+  const warnings = build.stderr
+    .split('\n')
+    .filter((line) => line.startsWith('[transclude] '))
+    .join('\n');
+  if (!fs.existsSync(expectedFile)) return { request, missing: entry.diagnostic, actual: warnings + '\n' };
+
+  const want = fs.readFileSync(expectedFile, 'utf8').trim();
+  const problems = [];
+  if (warnings.trim() !== want) problems.push(`warning: expected the build to print\n${want}\ngot\n${warnings || '(no warning)'}`);
   return { request, problems };
 }
 

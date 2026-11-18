@@ -687,7 +687,7 @@ something the runner does not have.
 Gotchas are named by their bold title, in file order. Line numbers move with
 every edit to the file.
 
-### Behavioral, shown by a case (95)
+### Behavioral, shown by a case (96)
 
 `Tagged` is `yes` once the gotcha ends with its `spec:` tag and the case
 fails with the old bug put back. `Snapshot` is as in the sections above.
@@ -714,6 +714,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | The `No-Vary-Search` guard reads a header instead of writing one, and it has to run at request time. | `fragments/no-vary-search-hides-fragment` | - | reviewed |
 | The swap watcher is opt-in, and used to follow `fragmentParam`. | `fragments/watch-elements` | - | reviewed |
 | A listener on `document` outlives the element that added it. | `diagnostics/warn-document-listener` | yes | reviewed |
+| A warning prints once per version of a file, not once per compile. | `diagnostics/warn-document-listener` | yes | reviewed |
 | An action runs after the region is known to exist. | `fragments/post-unknown-name` | - | reviewed |
 | A layout guard is one of the things that can refuse a request, and it did not. | `layouts/guard-action` | - | reviewed |
 | A page's handlers are verb exports, the same as an endpoint's. | `forms/verbs` | - | reviewed |

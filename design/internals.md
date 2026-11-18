@@ -741,9 +741,18 @@ against.
   answered by *returning* a Response rather than by setting `c.res`, so a wrapper
   that awaits and returns nothing leaves the context unfinalized and every Range
   request becomes a 500 saying "Context is not finalized". Nothing in the suite
-  caught it: `app.request()` takes a different branch inside `serveStatic` and
-  shows no `onFound` headers at all, so the public-file tests run against a real
-  listener on a port the OS picks.
+  caught it, so the public-file tests run against a real listener on a port the
+  OS picks.
+- **A header set in `onFound` lands only under `serve`.** `serveStatic` builds
+  the Response it returns before it calls `onFound`. `@hono/node-server`'s
+  `serve` replaces the global `Response`, and under it a header set on the
+  context afterwards still reaches that Response. Without it, through
+  `app.request()`, it does not. So a real server sent `text/vtt` and an app's
+  own test of the same file saw `application/octet-stream`. `public-files.js`
+  sets the validator, the cache rule and the type on the returned Response
+  itself. `test/public-files-in-process.test.js` asks through `app.request()`
+  and must never load `serve`, or it passes for the wrong reason.
+  `spec: production/public-files`.
 - **One table says what a file is, and there were three.** `static-cache.js` had
   thirteen types, `bin/build.js` had eleven, and public files on Node took
   whatever Hono's own table said, which has no `.m4a`, `.wav`, `.mov` or `.vtt`.

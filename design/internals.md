@@ -1625,6 +1625,12 @@ against.
   `new Date()` would change the bytes on every run for a feed whose contents did
   not change, and every ETag with them. Atom requires both an author and a date,
   so it refuses rather than inventing either.
+- **A feed item with no title or path was published as `undefined`.** The docs
+  said each item needs both, and nothing checked. The item went out as
+  `<title>undefined</title>` with a link to `https://acme.comundefined`, and
+  `/feed.xml` answered 200. `itemsOf` refuses it now, and checks every item, not
+  only those under `limit`: one past the cap is published the day a newer item
+  goes away. `spec: feeds/feed-item-needs-title`.
 - **`]]>` has to be split, and it turns up in ordinary code.** A CDATA section
   cannot hold that sequence, and `<script>if (a[b[c]]>0)</script>` is markup
   someone will put in a feed item. Writing it as two sections is what a parser

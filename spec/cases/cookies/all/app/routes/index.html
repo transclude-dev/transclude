@@ -1,0 +1,12 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ cookies }) => {
+    const all = cookies.all();
+    return { bare: Object.getPrototypeOf(all) === null, names: Object.keys(all).join(' '), b: all.b };
+  };
+</script>
+
+<p id="bare">${bare}</p>
+<p id="names">${names}</p>
+<p id="b">${b}</p>

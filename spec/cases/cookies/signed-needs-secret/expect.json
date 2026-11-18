@@ -1,0 +1,4 @@
+[
+  {"request": "GET /", "status": 500, "log": "expected/get.log"},
+  {"request": "GET /login", "status": 500, "headers": {"set-cookie": null}, "log": "expected/set.log"}
+]

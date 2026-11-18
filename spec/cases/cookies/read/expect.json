@@ -1,0 +1,6 @@
+[
+  {"request": "GET /", "status": 200, "body": "expected/none.html"},
+  {"request": "GET /", "send": {"headers": {"cookie": "theme=dark"}}, "status": 200, "body": "expected/dark.html"},
+  {"request": "GET /login", "status": 200},
+  {"request": "GET /", "status": 200, "body": "expected/signed-in.html"}
+]

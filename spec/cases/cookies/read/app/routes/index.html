@@ -1,0 +1,13 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ cookies }) => {
+    const theme = cookies.get('theme') ?? 'light';
+    const user = await cookies.signed.get('user');
+
+    return { theme, user };
+  };
+</script>
+
+<p id="theme">${theme}</p>
+<p id="user">${user ?? 'nobody'}</p>

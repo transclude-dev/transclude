@@ -1,0 +1,11 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ cookies }) => {
+    const user = await cookies.signed.get('user');
+    return { kind: typeof user, name: user ?? 'guest' };
+  };
+</script>
+
+<p id="kind">${kind}</p>
+<p id="name">${name}</p>

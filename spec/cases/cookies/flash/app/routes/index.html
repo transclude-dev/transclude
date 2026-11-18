@@ -1,0 +1,17 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ cookies }) => {
+    const flash = await cookies.signed.get('flash');
+    if (flash) cookies.delete('flash');
+    return { flash: flash ?? null };
+  };
+
+  export const POST = async ({ cookies, url }) => {
+    await cookies.signed.set('flash', 'Saved', { maxAge: 60 });
+    return Response.redirect(new URL(url), 303);
+  };
+</script>
+
+<p if="flash" id="flash">${flash}</p>
+<h1>Notes</h1>

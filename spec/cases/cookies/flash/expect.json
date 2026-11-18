@@ -1,0 +1,5 @@
+[
+  {"request": "POST /", "send": {"form": {"text": "x"}}, "status": 303, "headers": {"location": "http://localhost/"}},
+  {"request": "GET /", "status": 200, "body": "expected/flashed.html"},
+  {"request": "GET /", "status": 200, "body": "expected/after.html"}
+]

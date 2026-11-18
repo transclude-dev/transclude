@@ -1,0 +1,1 @@
+Error: [transclude] a cookie with `sameSite: 'None'` needs `secure: true`. Every browser drops the pair without it, silently. Set both, or use 'Lax'.

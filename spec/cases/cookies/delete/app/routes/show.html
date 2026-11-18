@@ -1,0 +1,7 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ cookies }) => ({ a: cookies.get('a') ?? 'gone' });
+</script>
+
+<p>${a}</p>

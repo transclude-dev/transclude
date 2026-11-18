@@ -1,0 +1,1 @@
+Error: [transclude] signing a cookie needs a secret. Set `cookieSecret` in transclude.config.js (read it from the environment there, not from a literal)

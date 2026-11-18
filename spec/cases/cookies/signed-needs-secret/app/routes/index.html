@@ -1,0 +1,7 @@
+<script server>
+  export const prerender = false;
+
+  export default async ({ cookies }) => ({ user: await cookies.signed.get('user') });
+</script>
+
+<p>${user}</p>

@@ -1,0 +1,4 @@
+[
+  {"request": "GET /none", "status": 500, "headers": {"set-cookie": null}, "log": "expected/none.log"},
+  {"request": "GET /none-secure", "status": 200, "headers": {"set-cookie": "a=1; Path=/; HttpOnly; Secure; SameSite=None"}}
+]

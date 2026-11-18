@@ -1,2 +1,6 @@
-[plugin transclude]
+[plugin transclude] app/elements/x-card.html:2:1
 ScriptError: x-card.html <script element>: `tint` is not something an element declares. The block exports `properties`, `state`, `prototype`, `attributes`, `shadow`, `formAssociated`, `referenceTarget`, and nothing else (line 2)
+  1 | <script element>
+> 2 |   export const tint = 'red';
+  3 | </script>
+  4 |

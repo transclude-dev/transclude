@@ -607,10 +607,20 @@ class Codegen {
     const attr = node.attrs?.find((a) => a.name === 'fragment');
     if (!attr) return null;
 
-    if (!this.page || this.layout) {
+    // An element is compiled with `page: false`, and a light one with `layout`
+    // set as well, so `page` is asked first.
+    if (!this.page) {
       throw new CompileError(
         `<${node.tagName}> carries "fragment", which addresses a fragment of a page over ` +
           `HTTP. A component re-renders itself and has no URL to be asked for.`,
+        node,
+      );
+    }
+    if (this.layout) {
+      throw new CompileError(
+        `<${node.tagName}> carries "fragment", which addresses a fragment of a page over ` +
+          `HTTP. A layout wraps pages and has no URL of its own to be asked for. Put the ` +
+          `fragment in the page.`,
         node,
       );
     }
@@ -1298,7 +1308,7 @@ function slottedBy(el) {
     const named = child.tagName ? child.attrs?.find((attr) => attr.name === 'slot')?.value : undefined;
     const continues = child.tagName && child.attrs?.some((attr) => attr.name === 'else' || attr.name === 'else-if');
     if (continues && named && named !== chain) {
-      throw new CompileError(`<${child.tagName} slot="${named}"> continues an if in the slot "${chain}": a chain is one slot's`);
+      throw new CompileError(`<${child.tagName} slot="${named}"> continues an if in the slot "${chain}": a chain is one slot's`, child);
     }
     const name = continues ? chain : (named ?? 'default');
     if (child.tagName) chain = name;

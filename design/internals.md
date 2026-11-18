@@ -960,6 +960,11 @@ against.
   overlay and in the terminal, so no reporter had to be written.
   Attached in the plugin rather than in the error, because the compiler is
   handed a source and never a path: the file name lives where the read happened.
+  A `ScriptError`, from a script block, was left out of this and printed a bare
+  `index.html <script server>`. It carries the line of the statement when it
+  knows one, and the plugin gives every compile error its file as `id`, so a
+  refusal with no line still names a path an editor opens.
+  `spec: diagnostics/script-syntax-error`.
 - **The promise nothing pinned was the API itself.** The docs said the config
   keys and the loader context are settled and that tests pin both to the code,
   and both were true. The `exports` map was neither: a subpath could be renamed

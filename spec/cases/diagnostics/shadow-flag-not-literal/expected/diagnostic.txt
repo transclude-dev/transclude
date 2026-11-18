@@ -1,2 +1,7 @@
-[plugin transclude]
+[plugin transclude] app/elements/user-card.html:3:1
 ScriptError: user-card.html <script element>: `shadow` must be `true` or `false`. It decides something about the tag, the same for every element of it, so it cannot be decided at run time (line 3)
+  1 | <script element>
+  2 |   const sealed = true;
+> 3 |   export const shadow = sealed;
+  4 | </script>
+  5 |

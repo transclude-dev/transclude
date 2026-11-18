@@ -1,2 +1,7 @@
-[plugin transclude]
+[plugin transclude] app/routes/index.html:3:1
 ScriptError: index.html <script server>: Unexpected token (line 3)
+  1 | <script server>
+  2 |   export default async () => ({
+> 3 | </script>
+  4 | 
+  5 | <h1>Home</h1>

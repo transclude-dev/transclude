@@ -9,9 +9,16 @@
 import { parse } from 'acorn';
 
 export class ScriptError extends Error {
-  constructor(message) {
+  /**
+   * @param {string} message
+   * @param {number} [line] the line in the file, when the statement is known.
+   *   Carried apart from the message, as `CompileError` carries it, so the
+   *   plugin can say where in which file
+   */
+  constructor(message, line) {
     super(message);
     this.name = 'ScriptError';
+    this.line = line;
   }
 }
 
@@ -159,6 +166,7 @@ export function bindElementModule(block, label) {
         `${label}: an element declares itself by name, so there is no default export. ` +
           `Write \`export const properties = { … }\` ` +
           `(line ${lineOf(statement, code, line)})`,
+        lineOf(statement, code, line),
       );
     }
 
@@ -183,6 +191,7 @@ export function bindElementModule(block, label) {
         `${label}: an export here declares one name, and this declares ` +
           `\`${names.join('`, `')}\`. Each is read on its own, so give each its own ` +
           `\`export const\` (line ${lineOf(statement, code, line)})`,
+        lineOf(statement, code, line),
       );
     }
 
@@ -194,6 +203,7 @@ export function bindElementModule(block, label) {
           `${label}: \`${flag}\` must be \`true\` or \`false\`. It decides something about ` +
             `the tag, the same for every element of it, so it cannot be decided at run time ` +
             `(line ${lineOf(statement, code, line)})`,
+          lineOf(statement, code, line),
         );
       }
       flags[flag] = value;
@@ -210,6 +220,7 @@ export function bindElementModule(block, label) {
           `${label}: \`${REFERENCE_TARGET}\` must be a string: the id of one element in ` +
             `the shadow root. Every element of the tag forwards to the same one, so it ` +
             `cannot be decided at run time (line ${lineOf(statement, code, line)})`,
+          lineOf(statement, code, line),
         );
       }
       referenceTarget = value;
@@ -219,12 +230,9 @@ export function bindElementModule(block, label) {
 
     const declarator = reservedDeclarator(statement);
     if (declarator) {
+      // No check for a second export of the same name: the parser refuses a
+      // duplicate export before this runs. `spec: diagnostics/element-export-twice`.
       const name = declarator.id.name;
-      if (nodes[name]) {
-        throw new ScriptError(
-          `${label}: \`${name}\` is exported twice (line ${lineOf(statement, code, line)})`,
-        );
-      }
       nodes[name] = declarator.init;
       // `export const properties = ` becomes `const __propDefs = `, padded, so
       // the initializer keeps the column it was written at.
@@ -246,6 +254,7 @@ export function bindElementModule(block, label) {
           .map((name) => `\`${name}\``)
           .join(', ')}, and nothing else ` +
         `(line ${lineOf(statement, code, line)})`,
+      lineOf(statement, code, line),
     );
   }
 
@@ -513,7 +522,7 @@ function parseOrThrow(code, label, lineOffset, extra = {}) {
   } catch (err) {
     const line = (err.loc?.line ?? 1) + lineOffset - 1;
     const message = String(err.message).replace(/\s*\(\d+:\d+\)$/, '');
-    throw new ScriptError(`${label}: ${message} (line ${line})`);
+    throw new ScriptError(`${label}: ${message} (line ${line})`, line);
   }
 }
 
@@ -525,6 +534,7 @@ function namedExportsOf(ast, code, lineOffset, label) {
       throw new ScriptError(
         `${label}: \`export *\` is not supported here. Its names cannot be checked ` +
           `against the generated module (line ${lineOf(statement, code, lineOffset)})`,
+        lineOf(statement, code, lineOffset),
       );
     }
     if (statement.type !== 'ExportNamedDeclaration') continue;

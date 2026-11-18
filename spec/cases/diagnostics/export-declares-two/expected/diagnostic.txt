@@ -1,2 +1,6 @@
-[plugin transclude]
+[plugin transclude] app/elements/x-card.html:2:1
 ScriptError: x-card.html <script element>: an export here declares one name, and this declares `properties`, `state`. Each is read on its own, so give each its own `export const` (line 2)
+  1 | <script element>
+> 2 |   export const properties = { a: '' }, state = { b: 0 };
+  3 | </script>
+  4 |

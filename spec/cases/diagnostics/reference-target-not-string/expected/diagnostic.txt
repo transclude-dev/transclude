@@ -1,2 +1,7 @@
-[plugin transclude]
+[plugin transclude] app/elements/x-field.html:4:1
 ScriptError: x-field.html <script element>: `referenceTarget` must be a string: the id of one element in the shadow root. Every element of the tag forwards to the same one, so it cannot be decided at run time (line 4)
+  2 |   const target = 'input';
+  3 |   export const shadow = true;
+> 4 |   export const referenceTarget = target;
+  5 | </script>
+  6 |

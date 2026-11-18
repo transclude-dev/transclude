@@ -351,6 +351,23 @@ Complete.
 | Escape code tokens in the converter with `walkTokens` | Code in the app's converter | - |
 | A name starting with `_` answers no URL, directories included | `markdown/underscore-skipped` | - |
 
+## /docs/languages
+
+Complete.
+
+| Claim | Case, or why none | Snapshot |
+| --- | --- | --- |
+| `lang` in the config lands on `<html>` | `languages/lang-config` | unreviewed |
+| It defaults to `en` | Every case with no config, such as `languages/page-lang` | unreviewed |
+| A generated project writes the key out | The create area | - |
+| A bare `<html>` in a page merges in and wins over the config; `dir` rides along | `languages/page-lang`, `layouts/html-attrs` | unreviewed |
+| Logical CSS properties flip with the text | Browser behavior, not the framework's | - |
+| A locale is a route parameter; `/cy/about` and `/en/about` reach one file | `languages/locale-route` | unreviewed |
+| Both URLs are in the sitemap and prerendered | `languages/locale-route`, once the docs example gained its `paths()` | unreviewed |
+| `Accept-Language` is read in middleware, which redirects from the bare path | `languages/negotiate` | - |
+| Redirect, do not vary | Advice about caches | - |
+| No message catalog, plural engine or negotiation ship; `Intl` does most of it | Absences, and the platform's | - |
+
 ## /docs/refusals
 
 Started.

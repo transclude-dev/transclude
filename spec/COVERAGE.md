@@ -687,7 +687,7 @@ something the runner does not have.
 Gotchas are named by their bold title, in file order. Line numbers move with
 every edit to the file.
 
-### Behavioral, shown by a case (102)
+### Behavioral, shown by a case (119)
 
 `Tagged` is `yes` once the gotcha ends with its `spec:` tag and the case
 fails with the old bug put back. `Snapshot` is as in the sections above.
@@ -725,20 +725,27 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | The order middleware is registered in is the behavior, so it lives in one function. | `middleware/order` | yes | reviewed |
 | `strict: false` and `trimTrailingSlash` exclude each other. | `routing/trailing-slash-catch-all` | yes | reviewed |
 | `publicDir` is relative to `appDir`, like every other directory key. | `config/dirs-renamed` | yes | reviewed |
+| The public copy skips what an operating system left there. | `production/public-junk` | yes | unreviewed |
 | `app/public/` is copied to `dist/public`, and Vite's own `publicDir` is off. | `production/public-files` | yes | reviewed |
+| A public file's validator is its size and mtime, not a hash of it. | `production/public-validator` | yes | unreviewed |
 | A `serveStatic` wrapper has to return what it was given. | `production/public-files` | yes | reviewed |
 | A cache store may answer with a promise. | `production/cache-store-async` | yes | reviewed |
 | A header set in `onFound` lands only under `serve`. | `production/public-files` | yes | reviewed |
+| One table says what a file is, and there were three. | `production/public-type-prototype` | yes | unreviewed |
 | Public files are served by Hono, build output by the in-memory cache. | `production/public-files` | yes | reviewed |
 | A repeated `view-transition-name` is a compile error, because the browser's answer is silence. | `diagnostics/view-transition-name-repeated` | yes | reviewed |
 | A refusal knew where it was and could not say. | `diagnostics/script-syntax-error` | yes | reviewed |
 | Nine refusals said `region`, a word no page of the documentation contains. | `diagnostics/fragment-without-id` | yes | reviewed |
 | Five of the seven mistakes a beginner makes compiled silently. | `diagnostics/warn-server-exports-nothing` | yes | reviewed |
 | The expression error described jsep's grammar, not this one. | `diagnostics/expression-malformed` | yes | reviewed |
+| The sprite is written after the public copy and before anything that reads `dist/public`. | `icons/sprite-in-precache` | yes | unreviewed |
 | `dist/edge` is made before `_headers` is written, not by the links. | `routing/index-page` | yes | reviewed |
 | A prerender runs the page; a prefetch does not. | `production/speculate` | yes | reviewed |
 | The rules are computed before the render pass and carried in the manifest. | `production/speculate` | yes | reviewed |
+| The speculation block is hashed by the CSP that already exists. | `security/csp-speculation` | yes | unreviewed |
 | A directory inside a library is refused, not flattened or skipped. | `diagnostics/icon-library-nested` | yes | reviewed |
+| One thing answers for `/icons.svg`, and the two servers pick opposite winners. | `diagnostics/icon-sprite-public-collision` | yes | unreviewed |
+| parse5 closes an SVG element by namespace, not by tag name. | `icons/svg-close` | yes | unreviewed |
 | An icon with no `viewBox` is refused, not warned. | `diagnostics/icon-needs-viewbox` | yes | reviewed |
 | A library of one name in two icon directories is merged, not refused. | `icons/shared-dirs` | yes | reviewed |
 | A `Response` that answers early still needs the envelope. | `layouts/guard-redirect`, `cookies/flash` | yes | reviewed |
@@ -750,8 +757,10 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | The directory holds routes; a page is one kind of route. | `diagnostics/routes-dir-named-pages` | yes | reviewed |
 | How an element renders is read from the file, before anything is compiled. | `elements/shadow-element` | yes | reviewed |
 | Every reader of `elementsDir` goes through `src/elements.js`. | `diagnostics/element-in-two-dirs` | yes | reviewed |
+| `loadProject` refuses `partialsDir` and `componentsDir`. | `diagnostics/config-partials-dir`, `diagnostics/config-components-dir` | yes | unreviewed |
 | `<html>` is read with a second parse, because the fragment parser drops it. | `layouts/html-in-text-stays-text` | yes | reviewed |
 | `Secure` follows the connection, and `X-Forwarded-Proto` is trusted only to turn it on. | `cookies/write-defaults` | yes | reviewed |
+| `nosniff` is sent always; `X-Frame-Options` and HSTS are not. | `middleware/security-headers-default` | yes | unreviewed |
 | The `\0` prefix was what kept the production bundle from mapping. | `diagnostics/prerender-throws` | yes | reviewed |
 | A preload hint is set on the way out, never on `ctx.response`. | `production/cache-control` | yes | reviewed |
 | A page does not stream, and the synchronous render is why. | `endpoints/stream` | yes | reviewed |
@@ -766,12 +775,14 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | An endpoint's `Response` goes through the envelope too. | `endpoints/envelope` | yes | reviewed |
 | A feed reads no clock. | `feeds/feed-updated` | yes | reviewed |
 | A feed item with no title or path was published as `undefined`. | `feeds/feed-item-needs-title` | yes | reviewed |
+| `]]>` has to be split, and it turns up in ordinary code. | `feeds/feed-cdata-split` | yes | unreviewed |
 | `prerender` is read off the page, never off its layouts. | `diagnostics/prerender-reads-cookie` | yes | reviewed |
 | The CSP is hashes, not a nonce, because a prerendered page is a file. | `security/csp-per-page` | yes | reviewed |
 | A hash never covers a `style` attribute, so `style-src` is not hashed. | `security/csp-meta` | yes | reviewed |
 | `csp.js` uses `crypto.subtle`, not the injected `hash`. | `security/csp-meta` | yes | reviewed |
 | Reading a cookie is what makes a page personal, not writing one. | `production/revalidate-not-held` | yes | reviewed |
 | Three servers render pages, so the include context is built in one place. | `includes/another-route`, `includes/route-twice-loads-once` | yes | reviewed |
+| Building the include context is half of it. Every render call site has to be handed it. | `includes/call-sites` | yes | unreviewed |
 | An included route reads cookies through the host's, and that is the point. | `diagnostics/include-reads-cookie` | yes | reviewed |
 | One route included twice loads once, and the memo dies with the request. | `includes/route-twice-loads-once` | yes | reviewed |
 | The loop guard is a chain, not a counter. | `diagnostics/include-cycle`, `diagnostics/include-chain-too-deep` | yes | reviewed |
@@ -783,11 +794,17 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | `<transclude>` has no dash, and that is only safe because it never reaches the browser. | `diagnostics/include-never-closed` | yes | reviewed |
 | A file in `elements/` with no dash in its name stops the build. | `diagnostics/element-name-needs-dash` | yes | reviewed |
 | The proxy follows redirects itself, and that is the point. | `includes/redirects` | yes | reviewed |
+| One IPv4 address has four spellings in IPv6, and only one was read. | `includes/private-addresses-v6` | yes | unreviewed |
+| Sanitize, then rewrite, then index. | `includes/sanitize-then-index` | yes | unreviewed |
+| `<base>`, `<link>` and `<style>` are stripped from foreign markup for the host page's sake, not the fragment's. | `diagnostics/proxy-styles-misspelled` | yes | unreviewed |
 | The slug table is built for the whole document, once. | `includes/generated-ids` | yes | reviewed |
+| Template content is not addressable, and `childNodes` is why it looks like it is. | `includes/template-not-addressable` | yes | unreviewed |
 | The cleaning descends into a template, because a declarative shadow root is not inert. | `includes/sanitize` | yes | reviewed |
 | SVG animation is stripped, because it writes an attribute after the check has read it. | `includes/sanitize` | yes | reviewed |
 | A scheme is what the browser reads, not what the bytes spell. | `includes/sanitize` | yes | reviewed |
+| XML 1.0 cannot carry a C0 control, so one has to be dropped before it is written. | `feeds/xml-control-chars` | yes | unreviewed |
 | A parser reads some elements' content as text, and the walk never cleans it. | `includes/sanitize` | yes | reviewed |
+| A route that is not in the table still fails like one. | `production/on-error-sitemap-feed` | yes | unreviewed |
 | Report-only is a header, never a meta. | `security/csp-report-only` | yes | reviewed |
 | `${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the one way through. | `diagnostics/page-style-takes-no-expression` | yes | reviewed |
 | A region name is attacker input, so look it up with `Object.hasOwn`. | `fragments/prototype-name` | yes | reviewed |
@@ -797,27 +814,9 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | `gated` reaches the runtime through `routes.json`, not through a second config key. | `middleware/gated` | yes | reviewed |
 | The sitemap merges a path it already has, rather than keeping the first copy of it. | `feeds/sitemap-entries` | yes | reviewed |
 
-### Behavioral, case to write (17)
+### Behavioral, case to write (0)
 
-| Gotcha | What the case shows |
-| --- | --- |
-| The public copy skips what an operating system left there. | `/.DS_Store` in `app/public/` answers 404 |
-| A public file's validator is its size and mtime, not a hash of it. | a public file is `public, max-age=0, must-revalidate`; its ETag value changes with the file's mtime |
-| One table says what a file is, and there were three. | `/x.constructor` goes out as `application/octet-stream` |
-| The sprite is written after the public copy and before anything that reads `dist/public`. | `/precache.json` lists `/icons.svg` |
-| The speculation block is hashed by the CSP that already exists. | the speculation block's hash is in the CSP |
-| One thing answers for `/icons.svg`, and the two servers pick opposite winners. | `app/public/icons.svg` beside `app/icons/` stops the build |
-| parse5 closes an SVG element by namespace, not by tag name. | a sprite icon with `<use>` and `<image>` closes them as XML |
-| `loadProject` refuses `partialsDir` and `componentsDir`. | `partialsDir` or `componentsDir` stops the build |
-| `nosniff` is sent always; `X-Frame-Options` and HSTS are not. | no `X-Frame-Options` and no HSTS by default |
-| `]]>` has to be split, and it turns up in ordinary code. | `]]>` in a feed item is split across two CDATA sections |
-| Building the include context is half of it. Every render call site has to be handed it. | a fragment of a page that holds an include, and the render after an action |
-| One IPv4 address has four spellings in IPv6, and only one was read. | the IPv6 spellings of a private IPv4 address are refused |
-| Sanitize, then rewrite, then index. | the proxy outline lists no id the cleaning removed |
-| `<base>`, `<link>` and `<style>` are stripped from foreign markup for the host page's sake, not the fragment's. | a misspelled `styles` value is refused |
-| Template content is not addressable, and `childNodes` is why it looks like it is. | an id inside a foreign `<template>` answers 404 |
-| XML 1.0 cannot carry a C0 control, so one has to be dropped before it is written. | a C0 control in a feed or sitemap field is dropped |
-| A route that is not in the table still fails like one. | a throw in `paths()` or `items()` gives the 500 page and `onError` with phase `sitemap` or `feed` |
+None. Every behavioral gotcha has a case.
 
 ### Internal (110)
 

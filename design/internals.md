@@ -1885,7 +1885,8 @@ against.
   through. Both are wrapped now, with phases `sitemap` and `feed` and a null
   `route`, which is why `report` reads `at?.route` rather than assuming a truthy
   `at` carries one. The seam that pages a human covers every failed request
-  again, not most of them.- **`${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the
+  again, not most of them.
+- **`${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the
   one way through.** Text in those two is raw text: escaping it would change what
   the browser reads, since `&amp;` is an ampersand in prose and four characters
   in JavaScript. So `emitText` emitted `__str`, which does not escape, and
@@ -1901,6 +1902,12 @@ against.
   is escaped. Write U+2028 and U+2029 as escapes in source, never as literals; a
   raw one inside a regex literal is a line terminator and the file will not
   parse, which happened twice writing this.
+  A top-level `<style>` is a block too, the page's or the element's stylesheet,
+  and it went out as written: `${color}` reached the browser as those
+  characters with the build green. `splitBlocks` now runs it through
+  `assertRawTextSafe` as well. A top-level `<script>` does not: it is client
+  code, bundled, and `${}` there is JavaScript's own template syntax.
+  `spec: diagnostics/page-style-takes-no-expression`.
 - **A region name is attacker input, so look it up with `Object.hasOwn`.**
   `page.regions?.[region]` answered for everything on `Object.prototype`:
   `?fragment=constructor` found `Object`, truthy and callable, so the region was

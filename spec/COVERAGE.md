@@ -221,7 +221,7 @@ Complete.
 
 ## /docs/security
 
-Complete. Two entries are `todo`.
+Complete. One entry is `todo`.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
@@ -230,7 +230,7 @@ Complete. Two entries are `todo`.
 | `html()` writes markup you vouch for; it sanitizes nothing | `security/html-in-place`, `routing/interpolation-escapes` | reviewed |
 | An escaped value cannot open or close anything; a comment ends where the file ends it | `security/html-in-place` | reviewed |
 | `${}` in a `<script>` or a `<style>` in the markup is a compile error | `diagnostics/script-takes-no-expression`, `style-takes-no-expression` | reviewed |
-| The same in a page's top-level `<style>` | `diagnostics/page-style-takes-no-expression`, `todo`: sent as written | - |
+| The same in a page's or an element's top-level `<style>` | `diagnostics/page-style-takes-no-expression`, `element-style-takes-no-expression` | unreviewed |
 | A top-level `<script>` is client code, and its `${}` is JavaScript's | `security/client-script-template-literal` | reviewed |
 | `json()`, alone, is what a script may carry; a style reads a custom property | `security/json-in-script`, `diagnostics/script-json-not-alone` | reviewed |
 | Hashes, not a nonce; the policy names what shipped, `html()` included | `security/csp-meta` | reviewed |

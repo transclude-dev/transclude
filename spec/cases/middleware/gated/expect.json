@@ -1,0 +1,9 @@
+[
+  {"request": "GET /sitemap.xml", "status": 200, "body": "expected/sitemap.xml"},
+  {"request": "GET /", "status": 200},
+  {"request": "GET /premium", "status": 401},
+  {"request": "GET /api", "status": 401},
+  {"request": "GET /api/report", "status": 401},
+  {"request": "GET /premium", "send": {"headers": {"cookie": "member=1"}}, "status": 200, "body": "expected/premium.html"},
+  {"request": "GET /api/report", "send": {"headers": {"cookie": "member=1"}}, "status": 200, "body": "expected/report.html"}
+]

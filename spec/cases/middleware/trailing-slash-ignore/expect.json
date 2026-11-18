@@ -1,0 +1,6 @@
+[
+  {"request": "GET /about", "status": 200, "body": "expected/about.html"},
+  {"request": "GET /about/", "status": 200, "body": "expected/about.html"},
+  {"request": "GET /live", "status": 200, "body": "expected/live.html"},
+  {"request": "GET /live/", "status": 200, "body": "expected/live.html"}
+]

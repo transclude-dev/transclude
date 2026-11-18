@@ -1,0 +1,1 @@
+Error: [transclude] "gated" in app/server.js has "premium". Every entry is a path beginning with "/", and "/*" at the end covers what is under it.

@@ -1,0 +1,5 @@
+[
+  {"request": "GET /about", "status": 200},
+  {"request": "GET /about/", "status": 301, "headers": {"location": "http://localhost/about"}},
+  {"request": "GET /live/", "status": 301, "headers": {"location": "http://localhost/live"}}
+]

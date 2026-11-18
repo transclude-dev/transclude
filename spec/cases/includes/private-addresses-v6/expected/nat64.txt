@@ -1,0 +1,1 @@
+nat64.example resolves to an address that is link-local, and the metadata endpoint, through a NAT64 address

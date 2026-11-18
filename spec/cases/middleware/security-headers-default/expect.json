@@ -1,0 +1,5 @@
+[
+  {"request": "GET /", "status": 200, "headers": {"x-content-type-options": "nosniff", "x-frame-options": null, "strict-transport-security": null}},
+  {"request": "GET /missing", "status": 404, "headers": {"x-content-type-options": "nosniff", "x-frame-options": null, "strict-transport-security": null}},
+  {"request": "GET /robots.txt", "status": 200, "headers": {"x-content-type-options": "nosniff", "x-frame-options": null, "strict-transport-security": null}}
+]

@@ -1,0 +1,4 @@
+[
+  {"request": "GET /icons.svg", "status": 200, "headers": {"content-type": "image/svg+xml"}},
+  {"request": "GET /precache.json", "status": 200, "body": "expected/precache.json"}
+]

@@ -1,0 +1,1 @@
+compat.example resolves to an address that is link-local, and the metadata endpoint, through an IPv4-compatible address

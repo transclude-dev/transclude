@@ -1,0 +1,17 @@
+{
+  "version": "OaXyyr5cUETmdbychPmJ",
+  "precache": [
+    {
+      "url": "/",
+      "revision": "\"uC0YSoGI7GNJ4bgmRvjX\""
+    },
+    {
+      "url": "/icons.svg",
+      "revision": "\"AYO2TwnxlyIeOl3jcZ31\""
+    },
+    {
+      "url": "/robots.txt",
+      "revision": "\"fknf2XMZ9d182uqFGM9D\""
+    }
+  ]
+}

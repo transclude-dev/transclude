@@ -1,0 +1,5 @@
+[
+  {"request": "GET /Thumbs.db", "status": 404},
+  {"request": "GET /desktop.ini", "status": 404},
+  {"request": "GET /.well-known/security.txt", "status": 200, "body": "expected/security.txt"}
+]

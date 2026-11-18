@@ -1,0 +1,7 @@
+[
+  { "request": "GET /_transclude/proxy?url=https://translated.example/guide&id=intro", "status": 403, "body": "expected/translated.txt" },
+  { "request": "GET /_transclude/proxy?url=https://nat64.example/guide&id=intro", "status": 403, "body": "expected/nat64.txt" },
+  { "request": "GET /_transclude/proxy?url=https://compat.example/guide&id=intro", "status": 403, "body": "expected/compat.txt",
+    "upstream": { "https://translated.example/guide": 0, "https://nat64.example/guide": 0, "https://compat.example/guide": 0 } },
+  { "request": "GET /_transclude/proxy?url=https://public.example/guide&id=intro", "status": 200, "body": "expected/public.html" }
+]

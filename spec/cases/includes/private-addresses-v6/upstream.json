@@ -1,0 +1,26 @@
+{
+  "documents": {
+    "https://translated.example/guide": {
+      "status": 200,
+      "body": "upstream/guide.html"
+    },
+    "https://nat64.example/guide": {
+      "status": 200,
+      "body": "upstream/guide.html"
+    },
+    "https://compat.example/guide": {
+      "status": 200,
+      "body": "upstream/guide.html"
+    },
+    "https://public.example/guide": {
+      "status": 200,
+      "body": "upstream/guide.html"
+    }
+  },
+  "addresses": {
+    "translated.example": "::ffff:0:169.254.169.254",
+    "nat64.example": "64:ff9b::169.254.169.254",
+    "compat.example": "::169.254.169.254",
+    "public.example": "::ffff:93.184.215.14"
+  }
+}

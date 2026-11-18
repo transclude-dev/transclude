@@ -1,0 +1,4 @@
+[
+  {"request": "GET /sitemap.xml", "status": 500, "body": "expected/500.html", "log": "expected/sitemap.log"},
+  {"request": "GET /feed.xml", "status": 500, "body": "expected/500.html", "log": "expected/feed.log"}
+]

@@ -212,7 +212,7 @@ Complete.
 | Status and headers on the `Response`; a cookie set through `ctx.cookies` survives it | `endpoints/response-cookies` | reviewed |
 | A webhook verifies its signature against the raw text | Author code. The raw body it needs is `endpoints/request-body` | - |
 | CSRF guards every method but `GET` and `HEAD`; the content-type table | `endpoints/csrf-content-types` | reviewed |
-| A `Response` takes a `ReadableStream` | `endpoints/stream` | unreviewed |
+| A `Response` takes a `ReadableStream` | `endpoints/stream` | reviewed |
 | A stream ends on `abort` or on `cancel()` | Needs a socket that closes: phase 4, runtimes | - |
 | CORS is Hono middleware in `app/server.js` | `endpoints/cors` | reviewed |
 | Anything larger belongs in `app/lib/` or `app/data/` | Advice, not behavior | - |
@@ -254,7 +254,7 @@ Complete.
 | --- | --- | --- |
 | `app` is a Hono instance, so Hono's middleware works | `endpoints/cors`, `security/own-headers` | reviewed |
 | `app/server.js` reaches a rendered page, a prerendered page and a public file | `middleware/server-header` | reviewed |
-| The order: trailing-slash redirect, CSRF, `app/server.js`, public files, routes | `middleware/order`, `middleware/server-header` | unreviewed |
+| The order: trailing-slash redirect, CSRF, `app/server.js`, public files, routes | `middleware/order`, `middleware/server-header` | reviewed |
 | A real file beats a `[...path]` catch-all | `middleware/public-before-routes` | reviewed |
 | Middleware does not run during the build | Not visible over HTTP: the middleware runs again when the prerendered file is served | - |
 | `gated` leaves its paths out of the sitemap, and the middleware still answers them | `middleware/gated` | reviewed |
@@ -486,7 +486,7 @@ Complete. The runner is what this page describes: a built app asked through
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
 | `@transclude/core/production` answers the way the server does | Every case | - |
-| The redirect, CSRF, middleware, cookies, the cache and the route table all run | `middleware/order`, `forms/csrf-default`, `cookies/read`, `production/revalidate-held`, `routing/route-table` | unreviewed |
+| The redirect, CSRF, middleware, cookies, the cache and the route table all run | `middleware/order`, `forms/csrf-default`, `cookies/read`, `production/revalidate-held`, `routing/route-table` | reviewed |
 | It reads a build, so build first and skip without one | Advice about a test file | - |
 | `node --test` has no `.env`, so a signed cookie answers 500 | `cookies/signed-needs-secret` | reviewed |
 | A form post needs an origin, or CSRF refuses it | `forms/csrf-default` | reviewed |
@@ -541,7 +541,7 @@ contract. What it produces is checked through HTTP.
 | The module's exports: `load`, `render`, `regions`, `css`, `client`, `includes` | The `./compiler` export, outside the contract | - |
 | A fragment is the same markup the page renders | `fragments/marked-element`; phase 3 | reviewed |
 | The build prerenders, or names the page and exits | `diagnostics/prerender-reads-cookie`, `prerender-response`, `prerender-status` | reviewed |
-| The order of what answers a request | `middleware/order`, `middleware/server-header`, `middleware/public-before-routes` | unreviewed |
+| The order of what answers a request | `middleware/order`, `middleware/server-header`, `middleware/public-before-routes` | reviewed |
 | Inside the route: layouts, the action, the loader, render, includes | `layouts/guard-redirect`, `layouts/guard-action`, `fragments/post-unknown-name` | reviewed |
 | The same module four ways | `fragments/marked-element`, `forms/post-redirect-get`, `includes/another-route` | reviewed |
 | The `<script server>` block never appears in the page | `how-it-works/server-script-stays` | reviewed |
@@ -604,7 +604,7 @@ case on its own page.
 | --- | --- | --- |
 | A page does not stream; a `Link: rel=preload` header names the stylesheet, the entry and its chunks | `decisions/link-preload` | reviewed |
 | The body is buffered for a strong ETag | `production/encodings` | - |
-| An endpoint can answer with a stream | `endpoints/stream` | unreviewed |
+| An endpoint can answer with a stream | `endpoints/stream` | reviewed |
 | `if` and `each` on one element is refused | `diagnostics/if-and-each-on-one-element` | reviewed |
 | A page ships JavaScript only for an element with behavior | `elements/javascript-shipped` | reviewed |
 | What a patch and a minor may change | Release policy | - |
@@ -718,12 +718,12 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | An action runs after the region is known to exist. | `fragments/post-unknown-name` | yes | reviewed |
 | A layout guard is one of the things that can refuse a request, and it did not. | `layouts/guard-action` | yes | reviewed |
 | A page's handlers are verb exports, the same as an endpoint's. | `forms/verbs` | yes | reviewed |
-| A verb is a name on a list, not a shape. | `endpoints/verb-not-a-handler` | yes | unreviewed |
+| A verb is a name on a list, not a shape. | `endpoints/verb-not-a-handler` | yes | reviewed |
 | `ctx.response` is shared by reference, and has to be. | `layouts/layout-status` | yes | reviewed |
 | A loader returning a `Response` answers the request and skips the render. | `routing/loader-response` | yes | reviewed |
-| `serve.js` registers every route, not just `manifest.dynamic`. | `routing/unlisted-param` | yes | unreviewed |
-| The order middleware is registered in is the behavior, so it lives in one function. | `middleware/order` | yes | unreviewed |
-| `strict: false` and `trimTrailingSlash` exclude each other. | `routing/trailing-slash-catch-all` | yes | unreviewed |
+| `serve.js` registers every route, not just `manifest.dynamic`. | `routing/unlisted-param` | yes | reviewed |
+| The order middleware is registered in is the behavior, so it lives in one function. | `middleware/order` | yes | reviewed |
+| `strict: false` and `trimTrailingSlash` exclude each other. | `routing/trailing-slash-catch-all` | yes | reviewed |
 | `publicDir` is relative to `appDir`, like every other directory key. | `config/dirs-renamed` | - | reviewed |
 | `app/public/` is copied to `dist/public`, and Vite's own `publicDir` is off. | `production/public-files` | - | reviewed |
 | A `serveStatic` wrapper has to return what it was given. | `production/public-files` | - | reviewed |
@@ -747,14 +747,14 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | Only the dev server invents a cookie secret. | `cookies/signed-needs-secret` | yes | reviewed |
 | A header naming a region is a hint; the query parameter is strict. | `fragments/header-unknown-name-ignored` | yes | reviewed |
 | `404.html` and `500.html` are reached for, not routed to. | `production/error-pages` | - | reviewed |
-| The directory holds routes; a page is one kind of route. | `diagnostics/routes-dir-named-pages` | yes | unreviewed |
+| The directory holds routes; a page is one kind of route. | `diagnostics/routes-dir-named-pages` | yes | reviewed |
 | How an element renders is read from the file, before anything is compiled. | `elements/shadow-element` | yes | reviewed |
 | Every reader of `elementsDir` goes through `src/elements.js`. | `diagnostics/element-in-two-dirs` | yes | reviewed |
 | `<html>` is read with a second parse, because the fragment parser drops it. | `layouts/html-in-text-stays-text` | yes | reviewed |
 | `Secure` follows the connection, and `X-Forwarded-Proto` is trusted only to turn it on. | `cookies/write-defaults` | yes | reviewed |
 | The `\0` prefix was what kept the production bundle from mapping. | `diagnostics/prerender-throws` | - | reviewed |
 | A preload hint is set on the way out, never on `ctx.response`. | `production/cache-control` | - | reviewed |
-| A page does not stream, and the synchronous render is why. | `endpoints/stream` | yes | unreviewed |
+| A page does not stream, and the synchronous render is why. | `endpoints/stream` | yes | reviewed |
 | The chunks behind the entry are named up front, and only the build can name them. | `decisions/link-preload` | - | reviewed |
 | The precache list is a build artifact, and cannot be anything else. | `production/precache` | - | reviewed |
 | The framework's own `<meta>` defaults go through the merge too. | `layouts/viewport-replaced` | yes | reviewed |
@@ -790,7 +790,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | A parser reads some elements' content as text, and the walk never cleans it. | `includes/sanitize` | - | reviewed |
 | Report-only is a header, never a meta. | `security/csp-report-only` | - | reviewed |
 | `${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the one way through. | `diagnostics/page-style-takes-no-expression` | yes | reviewed |
-| A region name is attacker input, so look it up with `Object.hasOwn`. | `fragments/prototype-name` | yes | unreviewed |
+| A region name is attacker input, so look it up with `Object.hasOwn`. | `fragments/prototype-name` | yes | reviewed |
 | A literal `${` is written `\${`, and the comment above the scanner said for a long time that it could not be written at all. | `markdown/escape` | yes | reviewed |
 | The escape was applied to text and not to attributes. | `routing/escape-in-attribute` | yes | reviewed |
 | The build cannot see a gate in `app/server.js`, and the failure looks like a success. | `middleware/gated`, `diagnostics/gated-not-a-path`, `diagnostics/gated-covers-nothing` | yes | reviewed |

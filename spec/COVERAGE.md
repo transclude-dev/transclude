@@ -694,10 +694,10 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 
 | Gotcha | Case | Tagged | Snapshot |
 | --- | --- | --- | --- |
-| Fragment mode emits components bare, and the flag has to reach all the way down. | `elements/shadow-inside-light-in-a-fragment` | yes | unreviewed |
+| Fragment mode emits components bare, and the flag has to reach all the way down. | `elements/shadow-inside-light-in-a-fragment` | yes | reviewed |
 | A reference target has two places to be written, and missing one says nothing. | `elements/reference-target` | yes | reviewed |
 | A `<script>` with a non-JavaScript type is markup, not a client block. | `recipes/data-block` | yes | reviewed |
-| A client entry is one module, so a layout's relative import is rewritten. | `layouts/client-import-nested` | yes | unreviewed |
+| A client entry is one module, so a layout's relative import is rewritten. | `layouts/client-import-nested` | yes | reviewed |
 | `draft` is filtered out of `manifest.routes` once, and the manifest is reassigned. | `routing/draft-left-out` | - | reviewed |
 | The build's context refuses rather than omits. | `diagnostics/prerender-after` | - | reviewed |
 | `ctx.after` catches the rejection before `waitUntil` sees it. | `runtimes/after-rejects` | - | reviewed |
@@ -705,15 +705,15 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | A prop or a state field cannot be named for a member the framework calls. | `diagnostics/element-prop-named-for-hook` | yes | reviewed |
 | The reserved names are not module-scope declarations. | `elements/form-associated` | yes | reviewed |
 | A light element writes; only a shadow one rebuilds. | `diagnostics/light-element-structural-directive` | yes | reviewed |
-| The unused-prop check reads code and skips comments, and the `[^:]` in that regex is doing real work. | `diagnostics/warn-unused-prop` | yes | unreviewed |
-| Both halves fence a block. Only the shadow half compiles one. | `elements/light-block-then-binding` | yes | unreviewed |
+| The unused-prop check reads code and skips comments, and the `[^:]` in that regex is doing real work. | `diagnostics/warn-unused-prop` | yes | reviewed |
+| Both halves fence a block. Only the shadow half compiles one. | `elements/light-block-then-binding` | yes | reviewed |
 | The caller sorts a light element's children into its slots. | `elements/light-slots` | yes | reviewed |
-| State is behavior, so it defines the element. | `elements/state-only-defines` | yes | unreviewed |
+| State is behavior, so it defines the element. | `elements/state-only-defines` | yes | reviewed |
 | `data()` is what a template sees, and the server has to build it too. | `elements/state-default` | yes | reviewed |
 | Reacting costs a definition, and only a definition. | `elements/javascript-shipped` | yes | reviewed |
 | The `No-Vary-Search` guard reads a header instead of writing one, and it has to run at request time. | `fragments/no-vary-search-hides-fragment` | - | reviewed |
 | The swap watcher is opt-in, and used to follow `fragmentParam`. | `fragments/watch-elements` | - | reviewed |
-| A listener on `document` outlives the element that added it. | `diagnostics/warn-document-listener` | yes | unreviewed |
+| A listener on `document` outlives the element that added it. | `diagnostics/warn-document-listener` | yes | reviewed |
 | An action runs after the region is known to exist. | `fragments/post-unknown-name` | - | reviewed |
 | A layout guard is one of the things that can refuse a request, and it did not. | `layouts/guard-action` | - | reviewed |
 | A page's handlers are verb exports, the same as an endpoint's. | `forms/verbs` | - | reviewed |
@@ -729,7 +729,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | A repeated `view-transition-name` is a compile error, because the browser's answer is silence. | `diagnostics/view-transition-name-repeated` | yes | reviewed |
 | A refusal knew where it was and could not say. | `diagnostics/script-syntax-error` | yes | reviewed |
 | Nine refusals said `region`, a word no page of the documentation contains. | `diagnostics/fragment-without-id` | yes | reviewed |
-| Five of the seven mistakes a beginner makes compiled silently. | `diagnostics/warn-server-exports-nothing` | yes | unreviewed |
+| Five of the seven mistakes a beginner makes compiled silently. | `diagnostics/warn-server-exports-nothing` | yes | reviewed |
 | The expression error described jsep's grammar, not this one. | `diagnostics/expression-malformed` | yes | reviewed |
 | `dist/edge` is made before `_headers` is written, not by the links. | `routing/index-page` | - | reviewed |
 | A prerender runs the page; a prefetch does not. | `production/speculate` | - | reviewed |
@@ -744,17 +744,17 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | `404.html` and `500.html` are reached for, not routed to. | `production/error-pages` | - | reviewed |
 | How an element renders is read from the file, before anything is compiled. | `elements/shadow-element` | yes | reviewed |
 | Every reader of `elementsDir` goes through `src/elements.js`. | `diagnostics/element-in-two-dirs` | yes | reviewed |
-| `<html>` is read with a second parse, because the fragment parser drops it. | `layouts/html-in-text-stays-text` | yes | unreviewed |
+| `<html>` is read with a second parse, because the fragment parser drops it. | `layouts/html-in-text-stays-text` | yes | reviewed |
 | `Secure` follows the connection, and `X-Forwarded-Proto` is trusted only to turn it on. | `cookies/write-defaults` | - | reviewed |
 | The `\0` prefix was what kept the production bundle from mapping. | `diagnostics/prerender-throws` | - | reviewed |
 | A preload hint is set on the way out, never on `ctx.response`. | `production/cache-control` | - | reviewed |
 | A page does not stream, and the synchronous render is why. | `endpoints/stream` | - | reviewed |
 | The chunks behind the entry are named up front, and only the build can name them. | `decisions/link-preload` | - | reviewed |
 | The precache list is a build artifact, and cannot be anything else. | `production/precache` | - | reviewed |
-| The framework's own `<meta>` defaults go through the merge too. | `layouts/viewport-replaced` | yes | unreviewed |
+| The framework's own `<meta>` defaults go through the merge too. | `layouts/viewport-replaced` | yes | reviewed |
 | A config key lives in two lists, and only one of them is checked against. | `diagnostics/config-unknown-key` | - | reviewed |
 | `canonical: true` is refused in `withDefaults`, not at the render. | `diagnostics/canonical-needs-metadata-base` | - | reviewed |
-| `<head>` merges across the chain, `<meta>` and canonical by key. | `layouts/head-merge-by-key` | yes | unreviewed |
+| `<head>` merges across the chain, `<meta>` and canonical by key. | `layouts/head-merge-by-key` | yes | reviewed |
 | A hoisted tag's directive has to be decided before anything is emitted. | `routing/head-tags` | yes | reviewed |
 | `renderHtmlAttrs` returns an object, not markup. | `layouts/html-attrs` | yes | reviewed |
 | An endpoint's `Response` goes through the envelope too. | `endpoints/envelope` | - | reviewed |
@@ -785,7 +785,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | Report-only is a header, never a meta. | `security/csp-report-only` | - | reviewed |
 | `${}` in a `<script>` or a `<style>` is a compile error, and `json()` is the one way through. | `diagnostics/page-style-takes-no-expression` | yes | reviewed |
 | A literal `${` is written `\${`, and the comment above the scanner said for a long time that it could not be written at all. | `markdown/escape` | yes | reviewed |
-| The escape was applied to text and not to attributes. | `routing/escape-in-attribute` | yes | unreviewed |
+| The escape was applied to text and not to attributes. | `routing/escape-in-attribute` | yes | reviewed |
 | The build cannot see a gate in `app/server.js`, and the failure looks like a success. | `middleware/gated` | - | reviewed |
 | `gated` reaches the runtime through `routes.json`, not through a second config key. | `middleware/gated` | - | reviewed |
 | The sitemap merges a path it already has, rather than keeping the first copy of it. | `feeds/sitemap-entries` | - | reviewed |

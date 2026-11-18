@@ -1,0 +1,5 @@
+[plugin transclude] app/routes/index.html:1:1
+CompileError: <transclude> has no src. It names what to include. (line 1)
+> 1 | <transclude></transclude>
+    | ^
+  2 |

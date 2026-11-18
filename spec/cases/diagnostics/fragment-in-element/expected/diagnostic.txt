@@ -1,0 +1,5 @@
+[plugin transclude] app/elements/x-card.html:1:1
+CompileError: <p> carries "fragment", which addresses a fragment of a page over HTTP. A component re-renders itself and has no URL to be asked for. (line 1)
+> 1 | <p id="part" fragment>Card</p>
+    | ^
+  2 |

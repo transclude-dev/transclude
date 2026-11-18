@@ -1,0 +1,2 @@
+[plugin transclude]
+ScriptError: x-card.html <script element>: an export here declares one name, and this declares `properties`, `state`. Each is read on its own, so give each its own `export const` (line 2)

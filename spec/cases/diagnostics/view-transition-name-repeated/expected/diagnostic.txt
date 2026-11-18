@@ -1,0 +1,7 @@
+[plugin transclude] app/routes/index.html:5:1
+CompileError: <a> is repeated and writes out a view-transition-name, so every copy would carry the same one. A name has to be unique in the document, and a browser that finds two runs no transition at all rather than saying so. Derive it from the loop, as in "view-transition-name: card-${item.id}". (line 5)
+  3 | </script>
+  4 | 
+> 5 | <a each="person of people" style="view-transition-name: person">${person}</a>
+    | ^
+  6 |

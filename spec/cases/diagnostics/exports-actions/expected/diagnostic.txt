@@ -1,0 +1,2 @@
+[plugin transclude]
+ScriptError: index.html <script server>: exports "actions", which nothing reads. Handlers are named for their method now: export const POST = (ctx) => …, and the same for PUT, PATCH and DELETE.

@@ -1,0 +1,2 @@
+[plugin transclude]
+ScriptError: index.html <script server>: `export *` is not supported here. Its names cannot be checked against the generated module (line 2)

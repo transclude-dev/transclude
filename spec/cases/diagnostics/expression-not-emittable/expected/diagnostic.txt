@@ -1,0 +1,7 @@
+[plugin transclude] app/routes/index.html:5:4
+CompileError: bad expression "this.a": `this` is not available in templates. A template expression reads data and calls functions. There is no assignment, no arrow function, no object literal and no `await`. Work like that belongs in `<script server>`, which passes its result in (line 5)
+  3 | </script>
+  4 | 
+> 5 | <p>${this.a}</p>
+    |    ^
+  6 |

@@ -1,0 +1,2 @@
+[plugin transclude]
+ScriptError: x-field.html <script element>: `referenceTarget` must be a string: the id of one element in the shadow root. Every element of the tag forwards to the same one, so it cannot be decided at run time (line 4)

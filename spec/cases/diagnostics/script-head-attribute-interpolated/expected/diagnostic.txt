@@ -1,0 +1,2 @@
+[plugin transclude]
+CompileError: index.html <script head>: `data-version` on a <script head> cannot interpolate. the block is emitted into <head> before any data exists

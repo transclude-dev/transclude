@@ -1,0 +1,6 @@
+[plugin transclude] app/routes/index.html:2:1
+CompileError: two fragments are both named "part". A fragment is addressed by its id, so one of the two would never be reachable. Rename one (line 2)
+  1 | <p id="part" fragment>One</p>
+> 2 | <p id="part" fragment>Two</p>
+    | ^
+  3 |

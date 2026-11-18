@@ -1,0 +1,7 @@
+[plugin transclude] app/routes/index.html:5:1
+CompileError: <p> carries both "fragment" and "if". A fragment is one element with one id, so it cannot be conditional or repeated. Put the "if" on something inside it. (line 5)
+  3 | </script>
+  4 | 
+> 5 | <p id="part" fragment if="on">Part</p>
+    | ^
+  6 |

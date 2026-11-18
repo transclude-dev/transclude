@@ -1,0 +1,2 @@
+[plugin transclude]
+ScriptError: x-card.html <script element>: an element declares itself by name, so there is no default export. Write `export const properties = { … }` (line 2)

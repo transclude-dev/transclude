@@ -1,0 +1,9 @@
+<script server>
+  export default async () => ({ version: '1' });
+</script>
+
+<script head data-version="${version}">
+  window.started = true;
+</script>
+
+<h1>Home</h1>

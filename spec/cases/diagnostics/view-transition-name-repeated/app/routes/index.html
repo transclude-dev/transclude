@@ -1,0 +1,5 @@
+<script server>
+  export default async () => ({ people: ['ada', 'grace'] });
+</script>
+
+<a each="person of people" style="view-transition-name: person">${person}</a>

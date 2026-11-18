@@ -86,6 +86,7 @@ jobs:
       # The same order `bin/release.js` runs, so a tag that was cut properly
       # passes here and a tag pushed by hand is caught.
       - run: npm test
+      - run: npm run spec
 
       # Built before tested, and that order is the gate rather than a nicety:
       # every example's tests ask the built app for URLs and skip when there is

@@ -207,6 +207,7 @@ function verify() {
     // what it reports is a pattern TypeScript cannot model rather than a defect.
     // The part that is a gate is a test, and `npm test` runs it.
     ['the framework', 'npm', ['test']],
+    ['the spec', 'npm', ['run', 'spec']],
 
     // Built before tested, and that order is the gate rather than a nicety:
     // every example's tests ask the built app for URLs and skip when there is

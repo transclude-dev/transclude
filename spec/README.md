@@ -14,6 +14,9 @@ The run prints one block per failing case and a count, and writes the whole
 run to `spec/report/last.json`: each request, the status and headers it
 answered, and every difference. It exits 1 when a case fails.
 
+CI runs it in the `spec` job. The site's deploy waits for that job, and a
+release runs the spec right after `npm test`.
+
 `test/` is the fast loop for the code as it is, and most of it imports from
 `src/`. Nothing here does. A case talks to a built app over `app.request()`,
 the way an installed app is asked.

@@ -27,20 +27,20 @@
   },
   "renderMs": {
     "routing/index-page": {
-      "GET /": 0.25
+      "GET /": 1
     },
     "fragments/marked-element": {
-      "GET /?q=ada": 0.25,
-      "GET /?q=ada&fragment=matches": 0.25
+      "GET /?q=ada": 1,
+      "GET /?q=ada&fragment=matches": 1
     },
     "elements/every-binding": {
-      "GET /": 0.25
+      "GET /": 1
     },
     "layouts/layout-status": {
-      "GET /": 0.25
+      "GET /": 1
     },
     "markdown/page": {
-      "GET /notes": 0.25
+      "GET /notes": 1
     }
   },
   "packedBytes": 312000,

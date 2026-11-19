@@ -289,14 +289,23 @@ test('a component\'s <slot> reaches the browser untouched', () => {
 });
 
 test('styles are scoped to the tag, which needs no class or hash', () => {
-  assert.equal(scopeCss('p { margin: 0 }', 'site-note'), '@scope (site-note) {\n  p { margin: 0 }\n}');
+  assert.equal(
+    scopeCss('p { margin: 0 }', 'site-note'),
+    '@layer transclude {\n  @scope (site-note) {\n    p { margin: 0 }\n  }\n}',
+  );
 });
 
 test('the donut stops an outer partial reaching into a nested one', () => {
   assert.equal(
     scopeCss('a { color: red }', 'site-nav', ['nav-item', 'nav-menu']),
-    '@scope (site-nav) to (site-nav nav-item, site-nav nav-menu) {\n  a { color: red }\n}',
+    '@layer transclude {\n  @scope (site-nav) to (site-nav nav-item, site-nav nav-menu) {\n    a { color: red }\n  }\n}',
   );
+});
+
+test('the scope sits in a layer, so page CSS beats it at any specificity', () => {
+  // Inside `@scope`, `:scope` wins against a page rule of equal specificity by
+  // proximity, and a page could not override an element it did not write.
+  assert.match(scopeCss(':scope { color: red }', 'site-note'), /^@layer transclude \{\n  @scope \(site-note\)/);
 });
 
 test('no styles means no empty @scope block', () => {

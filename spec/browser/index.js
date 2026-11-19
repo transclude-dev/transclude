@@ -90,16 +90,24 @@ function readArgs(args) {
  * @param {string[]} filters
  */
 function buildCases(filters) {
-  const spec = spawnSync(process.execPath, [path.join(specDir, 'runner', 'index.js'), ...filters], { encoding: 'utf8' });
+  // The package's budgets are `npm run spec`'s own job, and the build budget
+  // needs `www` installed, which this job does not do.
+  const args = [path.join(specDir, 'runner', 'index.js'), '--no-package-budgets', ...filters];
+  const spec = spawnSync(process.execPath, args, { encoding: 'utf8' });
   const summary = spec.stdout.trim().split('\n').at(-1) ?? '';
   // A run that matched nothing writes no report, and the last one would be read
   // in its place, with builds from before whatever changed since.
   if (!/ cases pass/.test(summary)) throw new Error(`npm run spec did not run: ${spec.stderr.trim() || summary}`);
+  // A case that fails there is left out here. Its blocks are printed, so the
+  // log says which and why.
+  if (spec.status !== 0) console.log(spec.stdout.trim().split('\n').slice(0, -1).join('\n'));
   console.log(`npm run spec: ${summary}`);
   const report = JSON.parse(fs.readFileSync(path.join(specDir, 'report', 'last.json'), 'utf8'));
 
   const cases = [];
   for (const outcome of report.outcomes) {
+    // The package's budgets sit in the report as an outcome of their own.
+    if (outcome.id === 'budgets') continue;
     if (outcome.error || outcome.build?.status !== 0) continue;
     const caseDir = path.join(specDir, 'cases', outcome.id);
     if (fs.existsSync(path.join(caseDir, 'upstream.json'))) continue;

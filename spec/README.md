@@ -221,7 +221,8 @@ today's coverage, so ordinary drift stays under it and a real loss goes over.
 Each is a result in the run, written `budget: client JavaScript`, and carries
 what it measured, so `spec/report/last.json` shows how close each one is. The
 two package budgets run only when no filter is given, and the `www` one needs
-`npm ci --prefix www`.
+`npm ci --prefix www`. `--no-package-budgets` leaves them out, which is how
+`spec:runtimes` and `spec:browser` run the spec before their own checks.
 
 A change that should cost more raises its limit in the same commit, and the
 commit says why.

@@ -51,3 +51,41 @@ module's own mistake.
 - **Cases added:** `fragments/no-vary-search-shapes`, one entry per row. The
   old module fails six of them, and the rebuilt one as it came back fails
   the fourth.
+
+## `src/negotiate.js`, 2026-11-19
+
+- **Time:** about 2 minutes, then a stop. No case could run in the copy:
+  `spec/invariants/bind-update.js` imports `test/dom.js`, and the copy has no
+  `test/`. With `test/dom.js` put back, the module passed on the first run.
+- **Result:** all 315 cases pass. The old tests that reach the module,
+  `test/serve.test.js` and `test/portable.test.js`, pass too, 84 of 84.
+- **Size:** 175 lines against 95. The new one has no parse cache, which the
+  old one keeps because negotiation was the largest piece of our own code in a
+  profile of the request path.
+
+`production/encodings` is the one case, with four headers: none, `gzip`,
+`br`, and `br` with `If-None-Match`. On 39 other values the two modules agree
+28 times and answer these 11 differently:
+
+| Header | Old | New | What HTTP says |
+| --- | --- | --- | --- |
+| `br;Q=0` | `br` | none | A parameter name is case-insensitive, so this refuses `br` |
+| `identity;Q=0`, to `identityAcceptable` | `true` | `false` | The same |
+| `x-gzip` | none | `gzip` | A recipient should read `x-gzip` as `gzip` |
+| `gzip;q=0.5, identity` | `gzip` | none | Either is allowed. The client prefers no encoding |
+| `identity, br;q=0.5` | `br` | none | The same |
+| `br;q=1.5, gzip` | `br` | `gzip` | A weight above 1 is not a weight |
+| `br;q=0.5x, gzip;q=0.4` | `br` | `gzip` | Nor is `0.5x` |
+| `br;q=.5, gzip;q=0.4` | `br` | `gzip` | Nor is `.5`: the grammar wants `0.5` |
+| `gzip;q=0, gzip` | `gzip` | none | Not said. The old module keeps the last, the new one the first |
+| `gzip, gzip;q=0` | none | `gzip` | The same |
+| `pickEncoding('gzip')`, no list | none | `gzip` | Not HTTP. The new default is `['br', 'gzip']`, the old one `[]` |
+
+The first two rows are a real miss in the old module: a client that refused
+brotli with `Q=0` is sent brotli. The type's own comment says that must never
+happen.
+
+- **What `spec/` missed:** every rule in the type's comment, "q-values, `*`,
+  and `q=0` as a refusal", has no case. And `spec/` imports from `test/`,
+  which `test/spec-boundary.test.js` does not check.
+- **Cases added:** none yet. They wait on which answer each row should have.

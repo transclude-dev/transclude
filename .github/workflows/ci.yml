@@ -263,6 +263,15 @@ jobs:
       - name: workerd
         run: scripts/smoke.sh workerd examples/todomvc 1984 npx wrangler dev --port 1984 --ip 127.0.0.1
 
+      # The steps above prove each runtime starts. This one proves they agree:
+      # every case in `spec/cases`, served on all four and compared with what
+      # Node answered. wrangler is fetched once first, so the cases that start
+      # it side by side do not each download it.
+      - name: Every case, on every runtime
+        run: |
+          npx --yes wrangler --version
+          npm run spec:runtimes
+
   # The TypeScript the checker drives is an API that says it is unstable.
   #
   # `src/typecheck.js` imports `typescript/unstable/sync` and is tested against

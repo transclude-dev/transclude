@@ -1,0 +1,4 @@
+{
+  "deno": "What a reused body does is the runtime's. Deno sends the same body again, where the docs say the second request fails.",
+  "workerd": "What a reused body does is the runtime's. workerd closes the connection."
+}

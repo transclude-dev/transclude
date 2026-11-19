@@ -205,6 +205,38 @@ and runs only in that case, after the invariants:
 A failure names the smallest input fast-check found and the seed that replays
 the run.
 
+## Every runtime
+
+```sh
+npm run spec:runtimes                       # every case, on all four
+npm run spec:runtimes -- fragments          # one area
+npm run spec:runtimes -- --runtimes node,bun
+```
+
+It runs `npm run spec` first, which builds each case. Then each case that
+built is served on Node, Bun, Deno and workerd in turn, from its build
+directory and on one port, and its `expect.json` is replayed over HTTP by the
+same client the in-process run uses. Every runtime must answer what Node
+answered: the same status, the same headers, the same bytes. CI runs it in
+the `runtimes` job.
+
+What is put aside, each in `spec/runtimes/index.js` with its reason:
+
+- `date`, `connection`, `keep-alive`, `transfer-encoding` and
+  `content-length`, which each listener writes for the connection.
+- The spelling of a `content-type`: case, the space after `;`, and a
+  `charset` on `application/json`.
+- A request whose method is not one of the seven every listener hands to the
+  app. Node's parser answers 400 to one, before the app sees it.
+- A case that reads a fake upstream, because the fake lives in a Node process.
+
+A case whose rule is a runtime's to decide holds a `runtimes.json` naming the
+runtime and saying why, and is not served there:
+
+```json
+{ "workerd": "Its data module reads and writes a file with node:fs, and a worker has no disk." }
+```
+
 ## Adding one
 
 1. Make the directory under the area that matches the docs page:

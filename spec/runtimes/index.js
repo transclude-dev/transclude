@@ -34,6 +34,12 @@ const reportFile = path.join(specDir, 'report', 'runtimes.json');
 // instead. The bytes of the body are compared, so the length is too.
 const TRANSPORT = new Set(['connection', 'content-length', 'date', 'keep-alive', 'transfer-encoding']);
 
+// The methods every listener hands to the app. Node's HTTP parser answers 400
+// to a name it does not know, workerd 501, and Bun closes the connection, all
+// before the app sees the request. A case that sends another method is about
+// the app, and the in-process run checks it.
+const METHODS = new Set(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']);
+
 const { filters, jobs, runtimes } = readArgs(process.argv.slice(2));
 const started = performance.now();
 
@@ -44,10 +50,12 @@ const failed = outcomes.filter((outcome) => outcome.problems.length);
 for (const outcome of failed) console.log(describe(outcome));
 
 const skipped = built.skipped.length ? `, ${built.skipped.length} not served (${skippedWhy(built.skipped)})` : '';
+const leftOff = built.cases.filter((one) => Object.keys(one.notOn).length).length;
+const partly = leftOff ? `, ${leftOff} left off a runtime by their runtimes.json` : '';
 const seconds = ((performance.now() - started) / 1000).toFixed(1);
 console.log(
   `${outcomes.length - failed.length} of ${outcomes.length} cases answer the same on ${runtimes.join(', ')}` +
-    `${skipped}, ${Math.min(jobs, outcomes.length)} at a time, in ${seconds} s`,
+    `${partly}${skipped}, ${Math.min(jobs, outcomes.length)} at a time, in ${seconds} s`,
 );
 
 fs.mkdirSync(path.dirname(reportFile), { recursive: true });
@@ -90,26 +98,46 @@ function buildCases(filters) {
   for (const outcome of report.outcomes) {
     const caseDir = path.join(specDir, 'cases', outcome.id);
     const entries = JSON.parse(fs.readFileSync(path.join(caseDir, 'expect.json'), 'utf8'));
-    const requests = entries.filter((entry) => entry.request);
+    const requests = entries.filter((entry) => entry.request && METHODS.has(entry.request.split(' ')[0]));
     if (outcome.error || outcome.build?.status !== 0) skipped.push({ id: outcome.id, why: 'no build' });
     else if (!requests.length) skipped.push({ id: outcome.id, why: 'no request' });
     else if (fs.existsSync(path.join(caseDir, 'upstream.json'))) skipped.push({ id: outcome.id, why: 'fake upstream' });
-    else cases.push({ id: outcome.id, buildDir: path.join(specDir, '.build', outcome.id), requests });
+    else cases.push({ id: outcome.id, buildDir: path.join(specDir, '.build', outcome.id), requests, notOn: notOn(caseDir) });
   }
   return { cases, skipped };
+}
+
+/**
+ * The runtimes a case is not served on, each with the reason, from the case's
+ * `runtimes.json`: `{ "workerd": "its data module reads a file with node:fs" }`.
+ * A case holds one when what it shows is a runtime's to decide, not the
+ * framework's.
+ *
+ * @param {string} caseDir
+ * @returns {Record<string, string>}
+ */
+function notOn(caseDir) {
+  const file = path.join(caseDir, 'runtimes.json');
+  if (!fs.existsSync(file)) return {};
+  const reasons = JSON.parse(fs.readFileSync(file, 'utf8'));
+  for (const name of Object.keys(reasons)) {
+    if (!RUNTIMES[name] || name === 'node') throw new Error(`${file}: "${name}" is not a runtime a case can leave out`);
+  }
+  return reasons;
 }
 
 /**
  * One case on every runtime, one after another on the same port, so an
  * absolute URL in an answer is the same on each.
  *
- * @param {{ id: string, buildDir: string, requests: object[] }} one
+ * @param {{ id: string, buildDir: string, requests: object[], notOn: Record<string, string> }} one
  * @param {number} port
  */
-async function compareCase({ id, buildDir, requests }, port) {
+async function compareCase({ id, buildDir, requests, notOn }, port) {
   const answered = {};
   const problems = [];
   for (const runtime of runtimes) {
+    if (notOn[runtime]) continue;
     try {
       answered[runtime] = await serve(runtime, buildDir, port, () => replay(port, requests));
     } catch (error) {
@@ -160,9 +188,24 @@ function headersOf(answer) {
   const out = {};
   for (const [name, value] of answer.headers) {
     if (TRANSPORT.has(name)) continue;
-    out[name] = name in out ? `${out[name]}\n${value}` : value;
+    const kept = name === 'content-type' ? mediaType(value) : value;
+    out[name] = name in out ? `${out[name]}\n${kept}` : kept;
   }
   return out;
+}
+
+/**
+ * A media type as one spelling. Each runtime's default writes its own:
+ * `text/plain; charset=UTF-8` on Node, `text/plain;charset=UTF-8` elsewhere,
+ * and Bun's `Response.json()` adds `;charset=utf-8` to `application/json`. Case
+ * and the space after `;` mean nothing, and JSON is UTF-8 by definition, so
+ * that parameter means nothing either.
+ *
+ * @param {string} value
+ */
+function mediaType(value) {
+  const spelled = value.toLowerCase().replace(/\s*;\s*/g, ';');
+  return spelled === 'application/json;charset=utf-8' ? 'application/json' : spelled;
 }
 
 /** The report keeps statuses and headers, not bodies. */

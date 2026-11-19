@@ -20,7 +20,7 @@ const [caseDir, buildDir] = process.argv.slice(2);
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 // What a case holds about itself, as opposed to the app it describes.
-const NOT_THE_APP = new Set(['CASE.md', 'expect.json', 'expected', 'invariants.json', 'property.js', 'upstream.json', 'upstream']);
+const NOT_THE_APP = new Set(['CASE.md', 'expect.json', 'expected', 'invariants.json', 'property.js', 'runtimes.json', 'upstream.json', 'upstream']);
 
 // A case that reads another site carries a fake one. Both the build and this
 // process are given it, through `SPEC_UPSTREAM`, before any app code runs.

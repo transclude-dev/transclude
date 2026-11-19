@@ -29,6 +29,7 @@ export const RUNTIMES = {
   deno: () => ['deno', 'run', '-A', bin('serve.deno.js')],
   workerd: (port) => [
     'npx',
+    '--yes',
     'wrangler',
     'dev',
     '--port',

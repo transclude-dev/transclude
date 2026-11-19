@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+
+
+
+<style data-transclude="light-note">
+@scope (light-note) {
+  :scope {
+      display: block;
+      color: rgb(0, 0, 200);
+    }
+}
+</style>
+<style data-transclude-page>
+:root {
+    --rule: rgb(1, 2, 3);
+  }
+  .loud {
+    font-weight: 700;
+  }
+  shadow-note::part(title) {
+    text-decoration: underline;
+  }
+  .themed {
+    color: rgb(0, 128, 0);
+  }
+</style>
+</head>
+<body>
+<light-note><p class="loud">Light.</p></light-note>
+<light-note class="themed"><p class="loud">Light.</p></light-note>
+<shadow-note><template shadowrootmode="open"><style>:host {
+    display: block;
+    color: rgb(0, 0, 200);
+  }
+  p {
+    border-top: 1px solid var(--rule, rgb(0, 0, 0));
+  }</style><h3 part="title">Shadow</h3>
+<p class="loud">Inside.</p></template></shadow-note>
+<shadow-note class="themed"><template shadowrootmode="open"><style>:host {
+    display: block;
+    color: rgb(0, 0, 200);
+  }
+  p {
+    border-top: 1px solid var(--rule, rgb(0, 0, 0));
+  }</style><h3 part="title">Shadow</h3>
+<p class="loud">Inside.</p></template></shadow-note>
+<script type="module" src="/assets/index-CLEdz_K2.js"></script>
+</body>
+</html>

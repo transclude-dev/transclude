@@ -10,6 +10,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+// How long one step may take in the page.
+const STEP_MS = 15_000;
+
 const CANDIDATES = [
   process.env.CHROME,
   'google-chrome',
@@ -115,12 +118,19 @@ export async function openTab({ debugPort }) {
      * @param {string} expression
      */
     async evaluate(expression) {
-      const { result, exceptionDetails } = await send('Runtime.evaluate', {
+      const evaluated = send('Runtime.evaluate', {
         expression,
         awaitPromise: true,
         returnByValue: true,
         replMode: true,
       });
+      // A promise that never settles, such as a wait for something a bug keeps
+      // from happening, would hold the run open for good.
+      let timer;
+      const late = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`no answer in ${STEP_MS / 1000} s: ${expression}`)), STEP_MS);
+      });
+      const { result, exceptionDetails } = await Promise.race([evaluated, late]).finally(() => clearTimeout(timer));
       if (exceptionDetails) throw new Error(exceptionText(exceptionDetails));
       return result.value;
     },

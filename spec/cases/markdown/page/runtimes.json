@@ -1,0 +1,1 @@
+{ "workerd": "The config imports node:path, which workerd has only with the nodejs_compat flag." }

@@ -553,7 +553,10 @@ against.
   `app.js` sets `c.res = undefined` before it answers. `internalError` returns
   a new `Response` instead of `c.text`, because `c.text` builds on the headers a
   render prepared before its body existed. An `HTTPException`, such as CSRF's
-  403, still answers itself, as Hono's own handler let it.
+  403, still answers itself, as Hono's own handler let it. `internalError`
+  writes `nosniff` itself too: a reused `Response` fails inside the `nosniff`
+  middleware, where `c.header` copies a body already read and throws, so that
+  500 went out without it.
   `spec: fragments/no-vary-search-hides-fragment`.
 - **`baseApp` refuses an option it does not know.** `dev.js` passed `publicRoot`
   to a function that takes `publicFiles`, so dev served no public files at all

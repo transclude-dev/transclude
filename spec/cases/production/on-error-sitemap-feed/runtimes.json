@@ -1,0 +1,1 @@
+{ "workerd": "Its data module reads and writes a file with node:fs, and a worker has no disk." }

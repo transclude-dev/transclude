@@ -564,9 +564,13 @@ export function createApp({
     report(err, c, at);
     // No ETag and no Cache-Control: nothing about a failure should be stored or
     // revalidated, and the same bytes would be sent for an unrelated one next time.
-    if (!errorPage) return new Response('Internal error', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    // `nosniff` here as well as in the middleware, because a failure can come from
+    // inside that middleware: Hono's `c.header` copies a body already read, throws,
+    // and the header was never written.
+    const nosniff = { 'X-Content-Type-Options': 'nosniff' };
+    if (!errorPage) return new Response('Internal error', { status: 500, headers: { ...nosniff, 'Content-Type': 'text/plain; charset=utf-8' } });
 
-    const headers = { 'Cache-Control': 'no-store', 'Content-Type': errorPage.type };
+    const headers = { ...nosniff, 'Cache-Control': 'no-store', 'Content-Type': errorPage.type };
     return new Response(/** @type {BodyInit} */ (errorPage.body), { status: 500, headers });
   }
 

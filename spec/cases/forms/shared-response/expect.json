@@ -1,4 +1,4 @@
 [
   { "request": "POST /", "send": { "form": {} }, "status": 400, "body": "expected/first.txt" },
-  { "request": "POST /", "send": { "form": {} }, "body": "expected/second.txt" }
+  { "request": "POST /", "send": { "form": {} }, "headers": { "x-content-type-options": "nosniff" }, "body": "expected/second.txt" }
 ]

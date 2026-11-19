@@ -133,8 +133,8 @@ Complete.
 | A boolean state is a custom state CSS can select | `elements/state-in-browser`, in Chrome | unreviewed |
 | Objects and arrays are written as JSON in the attribute | `elements/shadow-element`, and `routing/attribute-values` | reviewed |
 | `formAssociated` needs no shadow root | `elements/form-associated` | reviewed |
-| Its value is submitted under its `name`; `setValidity`, `:invalid`, a blocked submit | Needs a browser, phase 5 | - |
-| A disabling `<fieldset>` sets the `disabled` custom state | Needs a browser, phase 5 | - |
+| Its value is submitted under its `name`; `setValidity`, `:invalid`, a blocked submit | `elements/form-in-browser`, in Chrome. The message points at the inner button: a question for Joe, under In a browser | unreviewed |
+| A disabling `<fieldset>` sets the `disabled` custom state | `elements/form-in-browser`, in Chrome | unreviewed |
 | `shadow` and `formAssociated` must be literals | `diagnostics/shadow-flag-not-literal` | reviewed |
 
 ## /docs/includes
@@ -576,11 +576,11 @@ framework passes through.
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
 | A page ships no JavaScript | `elements/javascript-shipped` | reviewed |
-| A light element is in the page's DOM, so `<label for>` reaches it | `elements/light-element`; the label itself is phase 5 | reviewed |
+| A light element is in the page's DOM, so `<label for>` reaches it | `elements/light-element`, and `elements/light-focus` in Chrome for the label | unreviewed |
 | A new project's layout has a skip link and `aria-current` | The create area | - |
 | `lang` on `<html>` | `languages/lang-config` | reviewed |
 | A labeled icon is `role="img"`, a decorative one `aria-hidden` | `icons/svg-icon` | reviewed |
-| A light element never replaces a child, so focus stays | Phase 5 | - |
+| A light element never replaces a child, so focus stays | `elements/light-focus`, in Chrome | unreviewed |
 | The framework adds no roles, invents no labels, reorders nothing | Every snapshot of plain markup, such as `recipes/platform-attributes` | - |
 
 ## /docs/browsers
@@ -758,6 +758,16 @@ fail:
 | `elements/in-a-fragment` | A fragment swapped in paints its shadow element on connect | An element arriving bare that does not paint |
 | `elements/reference-target` | A click on the label focuses the input inside | No `shadowrootreferencetarget` on the server's root |
 | `elements/key-keeps-focus` | A reordered row keeps its value, focus and scroll | A keyed `each` that ignores the key |
+| `elements/form-in-browser` | `FormData` reads the value; `setValidity` makes `:invalid` match and blocks a submit; a disabling fieldset is the `disabled` state, both ways | No `setFormValue`; no state added in `formDisabledCallback` |
+| `elements/light-focus` | A label outside reaches an input inside; a re-render keeps that input focused | A light render that moves its children |
+
+**For Joe.** `/docs/elements`, "Saying it is invalid", passes `this` as the
+third argument to `setValidity`, the element the message points at. A light
+element cannot take focus, so on a blocked submit Chrome shows no message and
+logs "An invalid form control with name='tags' is not focusable."
+`elements/form-in-browser` passes the inner `<button>` instead, and Chrome
+shows the message. The example could pass the button, or the text could say
+the anchor has to be something that takes focus.
 
 The other claims marked "Needs a browser" get a `browser.json` each, batch by
 batch.

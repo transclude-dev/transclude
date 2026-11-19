@@ -60,6 +60,7 @@ Complete.
 | Top-level `<title>`, `<meta>`, `<link>` move into `<head>`; a false `<link if>` is not sent | `routing/head-tags` | reviewed |
 | A `<title>` takes no directive | `diagnostics/title-takes-no-directive` | reviewed |
 | `${}` escapes, so `<script>` arrives as text; `html()` needs no import | `routing/interpolation-escapes` | reviewed |
+| Generated hostile values through `${}` in text and in attribute values read back as themselves, and add no element or attribute | `security/escaping-generated`, the `escaping` property below | unreviewed |
 | Attribute values: whole or part, several; `false`, `null`, `undefined` dropped; `true` bare; objects and arrays as JSON; the rest escaped | `routing/attribute-values` | reviewed |
 | `${}` in an attribute name is a compile error | `diagnostics/interpolated-attribute-name` | reviewed |
 | `if`, `else-if`, `else`: the first true branch renders | `routing/if-chain` | reviewed |
@@ -70,6 +71,7 @@ Complete.
 | `each` repeats per item; a second name is the index from zero | `routing/each-index` | reviewed |
 | A loop's name reaches attributes, and inner loops read outer ones | `routing/each-nested` | reviewed |
 | An empty list renders nothing | `routing/each-empty` | reviewed |
+| `each` over 0, 1 and n items, nested, renders each item once, in order, with its index | `routing/each-count-generated`, the `loop count` property below | unreviewed |
 | `key` on a page changes nothing | `routing/key-on-page` | reviewed |
 | `key` keeps input values, focus and scroll across a reorder | Needs a browser, phase 5 | - |
 | `if` and `each` on one element is refused | `diagnostics/if-and-each-on-one-element` | reviewed |
@@ -678,8 +680,8 @@ named here by what it refuses.
 
 ## Invariants
 
-Properties of every app, run over every case once its entries are asked.
-`spec/invariants/` holds one module per invariant. A case that is about the
+Rules that hold for every app, run over every case once its entries are
+asked. `spec/invariants/` holds one module per invariant. A case that is about the
 very thing an invariant forbids is exempt in its `invariants.json`, with the
 reason.
 
@@ -699,6 +701,15 @@ other. `/docs/fragments` says the two always agree. A fix is more than one
 line: the build could refuse or warn, or a page with an action could stay
 dynamic.
 
+Two rules need an app built for them, so each runs in one case, from the
+case's `property.js`. fast-check generates the input, and a failure names the
+smallest one it found.
+
+| Property | Case | What it asks | Broken in `src/` to see it fail |
+| --- | --- | --- | --- |
+| escaping | `security/escaping-generated` | 300 values strung from hostile pieces and any character, through `${}` in text, a `<pre>`, a `<textarea>`, attribute values quoted three ways and an `each`. Each reads back as itself, and the elements and attributes are those of a plain `x` | `escape` that leaves `<`: `</pre>`. `attr` that leaves `"`: `"><b>` adds an element. `attr` that leaves `&`: `&quot` reads back as `"`. It found that a leading newline in a `<pre>` or a `<textarea>` was lost, fixed in this batch |
+| loop count | `routing/each-count-generated` | 100 lists of rows of cells, nested `each`, the empty list and lists of one first. Each row and cell renders once, in order, with its index | A loop that skips the first item: `[[]]`. A loop that stops after three: four cells, three rendered, which no entry in the corpus notices. An index that stays at 0: `[[], []]` |
+
 ## Gotchas
 
 Phase 2 sorts every gotcha in `design/internals.md`. A behavioral one fails at
@@ -710,7 +721,7 @@ something the runner does not have.
 Gotchas are named by their bold title, in file order. Line numbers move with
 every edit to the file.
 
-### Behavioral, shown by a case (119)
+### Behavioral, shown by a case (120)
 
 `Tagged` is `yes` once the gotcha ends with its `spec:` tag and the case
 fails with the old bug put back. `Snapshot` is as in the sections above.
@@ -738,6 +749,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | The swap watcher is opt-in, and used to follow `fragmentParam`. | `fragments/watch-elements`, `routing/index-page` | yes | reviewed |
 | A listener on `document` outlives the element that added it. | `diagnostics/warn-document-listener` | yes | reviewed |
 | A warning prints once per version of a file, not once per compile. | `diagnostics/warn-document-listener` | yes | reviewed |
+| A `<pre>` or a `<textarea>` lost the newline its content began with. | `routing/leading-newline-kept` | yes | unreviewed |
 | An action runs after the region is known to exist. | `fragments/post-unknown-name` | yes | reviewed |
 | A layout guard is one of the things that can refuse a request, and it did not. | `layouts/guard-action` | yes | reviewed |
 | A page's handlers are verb exports, the same as an endpoint's. | `forms/verbs` | yes | reviewed |

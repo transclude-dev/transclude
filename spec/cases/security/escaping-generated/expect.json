@@ -1,0 +1,7 @@
+[
+  {
+    "request": "GET /?value=%22%3E%3Cimg+src%3Dx+onerror%3Dalert%281%29%3E%26amp%3B%27%3C%2Ftextarea%3E&items=%5B%22%3Cb%3E%22%2C%22%26%22%5D",
+    "status": 200,
+    "body": "expected/index.html"
+  }
+]

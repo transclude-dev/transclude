@@ -10,7 +10,7 @@
 import { Scope, collectRefs, emit, parseExpr } from './expr.js';
 import { splitInterpolations } from './interp.js';
 import { parseEach as readEach } from './directives.js';
-import { escapeAttr, escapeText, RAW_TEXT, VOID } from './html.js';
+import { EATS_NEWLINE, escapeAttr, escapeText, RAW_TEXT, VOID } from './html.js';
 
 /** @typedef {import('./html.js').ParsedNode} ParsedNode */
 
@@ -853,7 +853,7 @@ class Codegen {
 
     this.s(target, `<${tag}`);
     this.emitAttrs(el, target, scope);
-    this.s(target, `>`);
+    this.s(target, EATS_NEWLINE.has(tag) ? `>\n` : `>`);
 
     if (VOID.has(tag)) return;
 

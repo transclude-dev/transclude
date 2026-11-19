@@ -40,6 +40,13 @@ export const VOID = new Set([
  */
 export const RAW_TEXT = new Set(['script', 'style']);
 
+/**
+ * Elements whose first newline the parser drops, so one is written after each
+ * start tag for it to drop. Without it, content that begins with a newline,
+ * written or interpolated, loses that newline.
+ */
+export const EATS_NEWLINE = new Set(['pre', 'textarea', 'listing']);
+
 /** parse5 hands back decoded text, so static output has to be re-encoded. */
 export function escapeText(value) {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

@@ -53,6 +53,12 @@ export declare const VOID: Set<string>;
  * JavaScript.
  */
 export declare const RAW_TEXT: Set<string>;
+/**
+ * Elements whose first newline the parser drops, so one is written after each
+ * start tag for it to drop. Without it, content that begins with a newline,
+ * written or interpolated, loses that newline.
+ */
+export declare const EATS_NEWLINE: Set<string>;
 /** parse5 hands back decoded text, so static output has to be re-encoded. */
 export declare function escapeText(value: any): any;
 /**

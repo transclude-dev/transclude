@@ -232,3 +232,37 @@ step later anyway.
   `diagnostics/include-allow-empty`. The old module fails all four, and waits
   forever on the first. The rebuilt one fails the first, waiting on `/both`,
   and the third.
+
+## `src/compiler/directives.js`, 2026-11-19
+
+- **Time:** about 1 minute, in one spec run. No case failed.
+- **Result:** all 324 cases pass, and so do all 1532 old tests.
+- **Size:** 60 lines against 29. The old module is one regular expression.
+  The new one splits the value at the first `of` and checks each name.
+
+The cases use `item of list`, `item, index of list`, a dotted list, and
+`${notes}`, which is refused. On 42 values the two modules agree 36 times,
+including whitespace and newlines, `item,i` with no space, `of of items`, a
+list that holds ` of `, destructuring (refused by both), and empty values.
+They answer these 6 differently:
+
+| `each=` | Old | New |
+| --- | --- | --- |
+| `café of items`, `été, i of items` | "is malformed" | parses |
+| `class of items`, `let of items`, `await of items` | parses | "is malformed" |
+| `item, item of items` | parses | "is malformed" |
+
+Each value was also compiled and served with both modules. With the old
+one, `class of items` renders on the server, because `codegen.js` renames
+every loop variable. The type-check shim does not rename: it writes
+`for (const class of __d.items)`, which TypeScript reads as a syntax error.
+`item, item of items` renders the index where the page wrote `${item}`, and
+nothing says why. The type-check shim agrees with it, because the index's
+`const item: number` shadows the item.
+
+The last row is a real miss in the old module. The second row is a type
+check that fails on a line the author never wrote. The first row refuses a
+name that JavaScript accepts.
+
+- **What `spec/` missed:** a name that is not ASCII, a reserved word, and
+  the same name twice.

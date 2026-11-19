@@ -79,6 +79,29 @@ test('a shape this cannot read counts as hiding, wherever it is', () => {
   assert.equal(hidesParam('params=("utm_source"', 'fragment'), true);
 });
 
+test('a name is decoded the way a cache decodes a query key', () => {
+  // The draft decodes each name (section 5.3), so `fr%61gment` is `fragment`.
+  assert.equal(hidesParam('params=("fr%61gment")', 'fragment'), true);
+  assert.equal(hidesParam('params=("%66ragment" "a")', 'fragment'), true);
+  assert.equal(hidesParam('except=("fr%61gment")', 'fragment'), false);
+  assert.equal(hidesParam('params=("fr%6")', 'fragment'), false);
+});
+
+test('except beside a params that is not bare has no reading, so it hides', () => {
+  assert.equal(hidesParam('params=("utm_source"), except=("fragment")', 'fragment'), true);
+  assert.equal(hidesParam('params=?0, except=("fragment")', 'fragment'), true);
+  assert.equal(hidesParam('params, except=("fragment")', 'fragment'), false);
+});
+
+test('a header that does not parse hides only when it names params or except', () => {
+  // A cache ignores it whole. One naming params was meant to hide something.
+  assert.equal(hidesParam('params=("utm_source"),', 'fragment'), true);
+  assert.equal(hidesParam('params=("utm_source"),,key-order', 'fragment'), true);
+  assert.equal(hidesParam('PARAMS', 'fragment'), false);
+  assert.equal(hidesParam('garbage!!', 'fragment'), false);
+  assert.equal(hidesParam('Except=()', 'fragment'), false);
+});
+
 test('the parameter asked about is the configured one', () => {
   // `fragmentParam` is a config key, so `part` or `piece` is as real as
   // `fragment` and the check cannot hard-code one.

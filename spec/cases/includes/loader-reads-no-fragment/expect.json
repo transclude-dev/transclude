@@ -1,0 +1,4 @@
+[
+  { "request": "GET /", "status": 200, "body": "expected/index.html" },
+  { "request": "GET /notes?fragment=second", "status": 200, "body": "expected/second.html" }
+]

@@ -1,0 +1,8 @@
+<script server>
+  export const prerender = false;
+
+  export default async (ctx) => ({ asked: String(ctx.fragment) });
+</script>
+
+<p id="first" fragment>The loader was asked for ${asked}.</p>
+<p id="second" fragment>The loader was asked for ${asked}.</p>

@@ -31,9 +31,15 @@ const escape = (text) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
-/** `2026-07-31`, which is what a sitemap wants and what a Date will not give. */
+/**
+ * `2026-07-31`, which is what a sitemap wants and what a Date will not give.
+ *
+ * A string, a number or a Date. `new Date(true)` is a moment in 1970, so
+ * anything else is no date.
+ */
 function day(value) {
   if (!value) return null;
+  if (typeof value !== 'string' && typeof value !== 'number' && !(value instanceof Date)) return null;
   const date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
 }
@@ -43,6 +49,32 @@ function day(value) {
 // and left out `/draft/c`. `search` starts at the beginning every time.
 const excluded = (path, rules) =>
   rules.some((rule) => (rule instanceof RegExp ? path.search(rule) !== -1 : rule === path));
+
+/**
+ * `exclude`, checked. Anything but a path or a pattern is refused: `search`
+ * reads `5` as the pattern `/5/`, which leaves out every path with a 5 in it.
+ *
+ * @param {unknown} rules
+ * @returns {Array<string|RegExp>}
+ */
+function checkExclude(rules) {
+  if (!Array.isArray(rules)) {
+    throw new Error(
+      `[transclude] sitemap "exclude" is ${JSON.stringify(rules)}. It is a list of paths, ` +
+        `like '/admin', and patterns, like /^\\/draft\\//.`,
+    );
+  }
+
+  for (const rule of rules) {
+    if (typeof rule === 'string' || rule instanceof RegExp) continue;
+    throw new Error(
+      `[transclude] sitemap "exclude" has ${JSON.stringify(rule)}. Each one is a path, ` +
+        `like '/admin', or a pattern, like /^\\/draft\\//.`,
+    );
+  }
+
+  return rules;
+}
 
 /**
  * Whether a hostname is an origin and nothing more.
@@ -61,6 +93,8 @@ function isOrigin(hostname) {
     return false;
   }
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;
+  // A user and a password would be written into every URL.
+  if (url.username !== '' || url.password !== '') return false;
   return url.pathname === '/' && url.search === '' && url.hash === '';
 }
 
@@ -85,8 +119,10 @@ function readHostname(hostname) {
 function readLimit(limit) {
   if (limit === undefined) return LIMIT;
   if (Number.isInteger(limit) && limit >= 1 && limit <= LIMIT) return limit;
+  // `String` for a number, because JSON writes `NaN` and `Infinity` as `null`.
+  const shown = typeof limit === 'number' ? String(limit) : JSON.stringify(limit);
   throw new Error(
-    `[transclude] sitemap "limit" is ${JSON.stringify(limit)}. It is a whole number ` +
+    `[transclude] sitemap "limit" is ${shown}. It is a whole number ` +
       `from 1 to ${LIMIT}, the URLs one sheet holds.`,
   );
 }
@@ -126,6 +162,40 @@ function checkEntries(list) {
 }
 
 /**
+ * What a parameter route's `paths()` gave, checked. `null` is no URLs, the
+ * way the build reads it.
+ *
+ * @param {{ pattern: string, rel?: string }} route named by its file where the
+ *   manifest has one, and by its pattern where it does not
+ * @param {unknown} list
+ * @returns {Record<string, string>[]}
+ */
+function checkPaths(route, list) {
+  if (list === null || list === undefined) return [];
+  if (Array.isArray(list)) return list;
+  throw new Error(
+    `[transclude] paths() in ${route.rel ?? route.pattern} gave ${typeof list}. It is a list of params, ` +
+      `like [{ slug: 'first' }].`,
+  );
+}
+
+/**
+ * Two mentions of one path as one entry. A field the later one leaves
+ * `undefined` keeps the earlier value: `{ lastmod: undefined }` says nothing
+ * about the date.
+ *
+ * @param {object} first
+ * @param {object} later
+ */
+function merge(first, later) {
+  const fields = { ...first };
+  for (const [key, value] of Object.entries(later)) {
+    if (value !== undefined) fields[key] = value;
+  }
+  return fields;
+}
+
+/**
  * Every URL the sitemap lists, in route order.
  *
  * `paths()` is the page's own, the one the build calls, so the two cannot
@@ -143,6 +213,7 @@ function checkEntries(list) {
  * @returns {Promise<Array<{ path: string, lastmod?: string }>>}
  */
 export async function sitemapEntries(manifest, pages, { entries = [], exclude = [] } = {}) {
+  const rules = checkExclude(exclude);
   const found = [];
 
   for (const route of manifest.routes ?? []) {
@@ -157,7 +228,7 @@ export async function sitemapEntries(manifest, pages, { entries = [], exclude = 
     // listed. Advertising the pattern would advertise `/people/:name`.
     if (typeof page?.paths !== 'function') continue;
 
-    for (const params of (await page.paths()) ?? []) {
+    for (const params of checkPaths(route, await page.paths())) {
       found.push({ path: urlFor(route, params) });
     }
   }
@@ -174,15 +245,15 @@ export async function sitemapEntries(manifest, pages, { entries = [], exclude = 
   // One entry per path, where the path was first named. A later mention of the
   // same path is merged onto it rather than dropped, because the two mentions
   // carry different things: a route contributes the URL, and the `entries` copy
-  // of that URL contributes the date. Later fields win.
+  // of that URL contributes the date. Later fields win, except `undefined`.
   const byPath = new Map();
 
   for (const entry of all) {
-    if (excluded(entry.path, exclude)) continue;
+    if (excluded(entry.path, rules)) continue;
     if (isGated(entry.path, gated)) continue;
 
     const first = byPath.get(entry.path);
-    byPath.set(entry.path, first ? { ...first, ...entry } : entry);
+    byPath.set(entry.path, first ? merge(first, entry) : entry);
   }
 
   return [...byPath.values()];

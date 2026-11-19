@@ -277,3 +277,144 @@ name that JavaScript accepts.
   module fails all three. A mutant that drops one rule fails only its own case.
   The rebuilt module passes all three, and agrees with the patched one on all
   42 values.
+
+## Second round, 2026-11-19
+
+The phase 8 condition is a drill that finds nothing `spec/` missed. The first
+round found something in each module, so all five were drilled again against
+the `spec/` that came out of it. Each copy also left out `spec/DRILLS.md`,
+because it records the first round's decisions. Five agents ran at the same
+time, each for 2 to 4 minutes. Each rebuilt module passes all 327 cases, and
+needed one to three spec runs.
+
+Each rebuilt module was then compared with the one on `main`, value by value,
+and the old `test/` was run against it.
+
+### `src/compiler/directives.js`
+
+102 lines against 56. The two modules agree on 166 of 166 values: the 42
+from the first round, every reserved word as the item and as the index, and
+six more. The old tests pass, 1535 of 1535.
+
+- **What `spec/` missed:** nothing. This is the first clean drill.
+
+### `src/negotiate.js`
+
+118 lines against 126. The two agree on 53 of 55 header values. One old test
+fails, because a doc comment changed the declaration file. With `available`
+left out, the rebuilt `pickEncoding` uses `['br', 'gzip']` and `main` uses
+none, but the one caller always passes it.
+
+| `Accept-Encoding` | `main` | Rebuilt |
+| --- | --- | --- |
+| `gzip, identity`, and `gzip;q=0.5, identity;q=0.5` | gzip | unencoded |
+
+The two weigh gzip and identity the same. RFC 9110 calls that no preference.
+`production/encoding-weights` says "weighs no encoding above every coding",
+which reads either way.
+
+- **What `spec/` missed:** a tie between a coding and an identity the header
+  names.
+- **Decided:** a tie goes to the coding, as `main` has it. The client takes
+  either, and the encoded body is smaller.
+- **The fix:** none in the code. A comment in `pickEncoding` says why, and a
+  test in `test/serve.test.js` holds the tie.
+- **Cases added:** two entries in `production/encoding-weights`. Each fails
+  when the tie goes to identity, and so does the test.
+
+### `src/no-vary-search.js`
+
+400 lines against 254. The rebuilt one parses all of RFC 9651. The two agree
+on 55 of 64 values, and the old tests pass, 1535 of 1535.
+
+| `No-Vary-Search` | `main` | Rebuilt |
+| --- | --- | --- |
+| `garbage!!`, `PARAMS`, `Params`, `Except=()` | passes | refused |
+| `params=("utm"),`, with a comma at the end | passes | refused |
+| `params=("a"), except=("fragment")`, `params=?0, except=("fragment")` | passes | refused |
+| `params=("fr%61gment")` | passes | refused |
+
+The IETF draft decodes each name in `params` and `except` the way a query
+key is decoded (section 5.3), so a cache reads `fr%61gment` as `fragment`.
+It reads a header with both `params` and `except` as no header at all
+(section 5, step 5). A cache ignores a header it cannot parse.
+
+- **What `spec/` missed:** a name written with a percent escape, `except`
+  beside a `params` that is not bare, and a header that does not parse as a
+  whole.
+- **Decided:** refuse the last three rows, and pass the first, as `main`
+  does. A header that does not parse is refused only when it names `params`
+  or `except`.
+- **The fix:** the old module, patched. It decodes each name, refuses
+  `except` beside a `params` list or `?0`, and notes when the dictionary does
+  not parse: an empty member, a key that is not lowercase, or a string or a
+  list that never closes. Three tests in `test/no-vary-search.test.js` hold
+  the rows, and the old module fails all three.
+- **Cases added:** four entries in `fragments/no-vary-search-shapes`. The old
+  module fails the three refusals. One mutant per rule fails only its own
+  entry, and a mutant that refuses every header that does not parse fails
+  `PARAMS`.
+
+### `src/sitemap.js`
+
+369 lines against 282. The two agree on 48 of 63 configs. Four old tests
+fail: the declaration file, the type check of `src/`, the message for a
+missing hostname, and an `entries` function that returns `null`.
+
+| Config | `main` | Rebuilt |
+| --- | --- | --- |
+| `entries: () => null` or `() => undefined` | no entries | throws |
+| `{ path: '/a', lastmod: '2026-01-01' }`, then `{ path: '/a', lastmod: undefined }` | no `lastmod` | `2026-01-01` |
+| `hostname: 'https://u:p@x.com'` | every `loc` holds `u:p@` | refused |
+| `exclude: [5]` | read as the pattern `/5/` | refused |
+| an entry `/p/a%20b` | `/p/a%20b` | `/p/a%2520b` |
+| `lastmod: true` | `1970-01-01` | no `lastmod` |
+| `paths()` gives `{}` | "object is not iterable" | names `paths()` and the route |
+| `limit: NaN` | `"limit" is null` | `"limit" is NaN` |
+| no URLs | an empty line inside `<urlset>` | none |
+
+Three other rows differ only in the words of a message.
+
+- **What `spec/` missed:** each row above. None has a case.
+- **Decided:** keep `main` on the first and fifth rows. Take the rebuilt
+  answer on the rows for `undefined`, the hostname, `exclude`, `lastmod: true`,
+  `paths()` and `NaN`. Leave the messages and the empty line as they are.
+- **The fix:** the old module, patched, and the build. A merge skips a field
+  that is `undefined`. A hostname with a user or a password is refused, and so
+  is an `exclude` item that is not a string or a `RegExp`. A `lastmod` is read
+  only from a string, a number or a Date. The build read `paths()` first and
+  failed with "listed.map is not a function", so the build and the sitemap
+  both name the file now. Tests in `test/sitemap.test.js` hold every row, and
+  the old module fails the six that changed.
+- **Cases added:** `feeds/sitemap-entries-null`,
+  `diagnostics/sitemap-hostname-credentials`, `diagnostics/sitemap-exclude`,
+  `diagnostics/sitemap-paths-not-a-list`, `diagnostics/sitemap-limit-nan`,
+  and three entries in `feeds/sitemap-values`. The old modules fail every case
+  for a row that changed. The rebuilt module fails the two for the rows that
+  kept `main`.
+
+### `src/include.js`
+
+166 lines against 221. The spec passes, and so did five more runs of
+`includes/loop-of-loads`. Two old tests fail. Both expect `resolve` to be
+`null`, and the rebuilt one gives `undefined`. A probe case compared the two
+on a page that includes `/count#c` directly and also through `/mid#m`:
+
+| | `main` | Rebuilt |
+| --- | --- | --- |
+| `/count`'s loaders, for one request | run once | run twice: the memo is keyed by the chain of loads |
+| `ctx.fragment` in the included loader | `null` | `c` |
+
+The docs say "One route included twice runs its loaders once." The rebuilt
+module keys the memo by the chain so that two routes that include each other
+do not wait on each other. `main` does that with the graph of loads instead.
+
+- **What `spec/` missed:** a route included again from inside another
+  include, and what the included loader reads as `ctx.fragment`.
+- **Decided:** keep `main` on both rows. One load serves every fragment of a
+  route the page includes, so its loader reads `ctx.fragment` as `null`.
+- **The fix:** none in the code. A comment in `include.js` says why
+  `ctx.fragment` is `null`, and two tests in `test/route-include.test.js` hold
+  both rows. The rebuilt module fails both.
+- **Cases added:** `includes/nested-route-loads-once` and
+  `includes/loader-reads-no-fragment`. The rebuilt module fails both.

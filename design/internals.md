@@ -568,6 +568,11 @@ against.
   read it before that. They let `params;x` through, which a browser that
   shipped the older draft reads as every parameter, and refused `params=?0`,
   which hides nothing. A regeneration drill found both: `spec/DRILLS.md`.
+  A second drill found three more that a cache reads differently. It decodes
+  each name, so `params=("fr%61gment")` hides `?fragment=`. It ignores a
+  header that does not parse, and one with `except` beside a `params` list.
+  The last two are refused when they name `params` or `except`, and `PARAMS`
+  passes, because it names neither.
   `spec: fragments/no-vary-search-hides-fragment`,
   `fragments/no-vary-search-shapes`.
 - **A throw after the response exists answered with that response's headers.**
@@ -1907,8 +1912,13 @@ against.
   loaded data by path, not a fragment's markup by path and id: keyed by both,
   `/count#count` and `/count#again` each ran the loader, and one page showed
   two different answers from one route. `loadFragment` runs the chain once and
-  `renderLoaded` renders each fragment from it.
-  `spec: includes/route-twice-loads-once`.
+  `renderLoaded` renders each fragment from it. The key is the load alone, not
+  the chain of loads above it: a drill keyed it by the chain, and a route
+  included from the page and again from inside another include ran twice. For
+  the same reason the included loader reads `ctx.fragment` as `null`, since
+  the one load serves every fragment. `spec: includes/route-twice-loads-once`,
+  `spec: includes/nested-route-loads-once`,
+  `spec: includes/loader-reads-no-fragment`.
 - **A route include is rendered, not fetched.** It is the same process. Asking
   ourselves over HTTP would run the whole middleware stack, take a second trip
   through CSRF and the trailing-slash redirect, and need a URL the server can
@@ -2220,7 +2230,10 @@ against.
   which names the same URLs a second time. Keeping the first mention and dropping
   the second added a `lastmod` to nothing: 133 posts, a sitemap without one date
   in it, and no error anywhere. `sitemapEntries` keys a `Map` by path, and a
-  later mention fills its fields in on the first. `spec: feeds/sitemap-entries`.
+  later mention fills its fields in on the first. A field the later mention
+  leaves `undefined` keeps the earlier value. A spread did not, so
+  `{ lastmod: post.updated }` for a post with no date cleared the date a first
+  mention gave. `spec: feeds/sitemap-entries`, `spec: feeds/sitemap-values`.
 - **A sitemap's sheets are files, not `?p=`.** Past `limit`, the index once
   named `/sitemap.xml?p=0` and on, and the build wrote only the index to
   `dist/static`. A static host ignores a query, so every sheet it served was the
@@ -2232,7 +2245,10 @@ against.
   a pattern with the `g` flag starts where the last call stopped, so
   `/^\/draft\//g` left out `/draft/a`, kept `/draft/b`, and left out
   `/draft/c`. Nothing failed, and the sitemap listed half the drafts. `search`
-  starts at the beginning every time. `spec: feeds/sitemap-values`.
+  starts at the beginning every time. It also reads a number as a pattern, so
+  `5` in `exclude` left out every path with a 5 in it. An item that is not a
+  string or a `RegExp` is refused. `spec: feeds/sitemap-values`,
+  `spec: diagnostics/sitemap-exclude`.
 - **`src/gate.js` has no imports on purpose.** The sitemap reads it at runtime on
   every runtime, so it must not drag `prerender.js` and its context builder into
   a worker bundle. `test/portable.test.js` names every module the core reaches,

@@ -110,7 +110,9 @@ export function includeContext({ config, routes = [], pageFor, lookup = null }) 
         params: found.params,
         route: { id: found.route.id, pattern: found.route.pattern, path: url.pathname },
         // The include is not the request. A loader that branches on the region
-        // asked for should see this render for what it is.
+        // asked for should see this render for what it is. And one load serves
+        // every fragment of this route the page includes, so one name would be
+        // wrong for the others.
         fragment: null,
         action: null,
       },

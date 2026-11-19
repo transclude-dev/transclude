@@ -211,6 +211,13 @@ async function urlsFor(route) {
   if (typeof paths !== 'function') return [];
 
   const listed = (await paths()) ?? [];
+  // The same words as the sitemap's, which reads the same export in dev.
+  if (!Array.isArray(listed)) {
+    throw new Error(
+      `[transclude] paths() in ${route.rel ?? route.pattern} gave ${typeof listed}. It is a list of params, ` +
+        `like [{ slug: 'first' }].`,
+    );
+  }
   const named = listed.map((params) => ({ url: urlFor(route, params), params }));
   for (const { url } of named) namedByPaths.push(url);
 

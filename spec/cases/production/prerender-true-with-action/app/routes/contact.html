@@ -1,0 +1,18 @@
+<script server>
+  export const prerender = true;
+
+  export default ({ request }) => ({ made: request ? 'for this request' : 'by the build' });
+
+  export const POST = async ({ request }) => {
+    await request.formData();
+    return Response.redirect(new URL('/contact?sent', request.url), 303);
+  };
+</script>
+
+<h1>Contact</h1>
+<p>Made ${made}.</p>
+
+<form method="post">
+  <textarea name="message"></textarea>
+  <button>Send</button>
+</form>

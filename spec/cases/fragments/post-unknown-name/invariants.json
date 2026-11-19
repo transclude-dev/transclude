@@ -1,3 +1,0 @@
-{
-  "fragment equivalence": "The page is prerendered and has an action. After the POST, the document is still the build's file and the fragment renders live, so the two differ. Open question: /docs/fragments says the two always agree."
-}

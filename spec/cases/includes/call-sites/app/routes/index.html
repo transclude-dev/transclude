@@ -1,4 +1,6 @@
 <script server>
+  export const prerender = false;
+
   export default ({ action }) => ({ saved: action?.saved ?? false });
 
   export const POST = async ({ request }) => {

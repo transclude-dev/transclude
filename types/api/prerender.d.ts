@@ -27,6 +27,22 @@ export declare function prerenderContext({ route, url, params, cookieSecret, met
     metadataBase?: string;
 }): import('./document.js').Ctx;
 /**
+ * Throws when a page has an action and has not said it may be a file.
+ *
+ * An action is there to change what a page shows. A file keeps what it showed at
+ * build time, and a fragment of the same page renders live, so after the first
+ * POST the page and its fragment disagree. Asked before the render, because the
+ * module says it and the render cannot change it.
+ *
+ * `export const prerender = true` is the way past. A contact form whose page
+ * never changes, and whose action sends a message and redirects, is a file on
+ * purpose.
+ *
+ * @param {Record<string, unknown>} page the page's module
+ * @throws when the page answers a verb and leaves `prerender` unset
+ */
+export declare function refuseAction(page: Record<string, unknown>): void;
+/**
  * Throws unless what was rendered can be written to a file.
  *
  * Called after the render rather than during it, because three of the four are

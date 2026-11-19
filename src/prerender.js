@@ -13,7 +13,7 @@
 // No `node:` imports, though nothing needs that of this file yet. It is here
 // because the three modules it calls have the same rule.
 
-import { absoluteFrom, responseOf } from './document.js';
+import { absoluteFrom, ACTION_METHODS, responseOf } from './document.js';
 import { cookiesOf } from './cookies.js';
 
 /**
@@ -66,6 +66,32 @@ export function prerenderContext({ route, url, params, cookieSecret = null, meta
       );
     },
   };
+}
+
+/**
+ * Throws when a page has an action and has not said it may be a file.
+ *
+ * An action is there to change what a page shows. A file keeps what it showed at
+ * build time, and a fragment of the same page renders live, so after the first
+ * POST the page and its fragment disagree. Asked before the render, because the
+ * module says it and the render cannot change it.
+ *
+ * `export const prerender = true` is the way past. A contact form whose page
+ * never changes, and whose action sends a message and redirects, is a file on
+ * purpose.
+ *
+ * @param {Record<string, unknown>} page the page's module
+ * @throws when the page answers a verb and leaves `prerender` unset
+ */
+export function refuseAction(page) {
+  if (page.prerender === true) return;
+  const verbs = ACTION_METHODS.filter((method) => typeof page[method] === 'function');
+  if (!verbs.length) return;
+  throw new Error(
+    `answers ${verbs.join(' and ')}, so what it shows changes, and a file would keep ` +
+      `what it showed at build time. Give it \`export const prerender = false\`, or ` +
+      `\`export const prerender = true\` if the page itself never changes`,
+  );
 }
 
 /**

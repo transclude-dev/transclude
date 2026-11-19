@@ -1,0 +1,4 @@
+[
+  {"request": "GET /", "status": 500, "log": "expected/index.log"},
+  {"request": "GET /both", "status": 500, "log": "expected/both.log"}
+]

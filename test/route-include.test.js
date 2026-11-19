@@ -168,16 +168,130 @@ test('a route nobody serves leaves null, so the element falls back', async () =>
   assert.match(await (await app.request('http://x/')).text(), /fallback/);
 });
 
-test('a region the other route does not have leaves null', async () => {
+test('a region the other route does not have is refused, before its loaders run', async () => {
+  // A route's fragments are fixed when it compiles, so the name is a typo. It
+  // used to fall back, after running the route's loaders for nothing, and a
+  // loader that read a cookie made the page private as it did.
+  let loads = 0;
+  const seen = [];
+  const app = appWith(
+    ROUTES,
+    {
+      index: page({
+        includes: [{ key: '/docs/install#nope', kind: 'route', where: '/docs/install', id: 'nope' }],
+        render: (d) => ({ default: `<main>${d.__included['/docs/install#nope'] ?? 'fallback'}</main>` }),
+      }),
+      docs: page({
+        regions: { setup: () => 'x' },
+        load: async () => {
+          loads++;
+          return {};
+        },
+      }),
+    },
+    { onError: (err) => seen.push(err.message) },
+  );
+
+  const response = await app.request('http://x/');
+  assert.equal(response.status, 500);
+  assert.equal(loads, 0);
+  assert.deepEqual(seen, [
+    '[transclude] <transclude src="/docs/install#nope"> names no fragment of /docs/install. ' +
+      'A fragment is an element with an id and a "fragment" attribute.',
+  ]);
+});
+
+test('a path with a slash at the end reaches the route a request for it would', async () => {
   const app = appWith(ROUTES, {
     index: page({
-      includes: [{ key: '/docs/install#nope', kind: 'route', where: '/docs/install', id: 'nope' }],
-      render: (d) => ({ default: `<main>${d.__included['/docs/install#nope'] ?? 'fallback'}</main>` }),
+      includes: [{ key: '/docs/install/#setup', kind: 'route', where: '/docs/install/', id: 'setup' }],
+      render: (d) => ({ default: `<main>${d.__included['/docs/install/#setup'] ?? 'fallback'}</main>` }),
     }),
-    docs: page({ regions: { setup: () => 'x' } }),
+    docs: page({ regions: { setup: () => '<h2 id="setup">Setup</h2>' } }),
   });
 
-  assert.match(await (await app.request('http://x/')).text(), /fallback/);
+  assert.match(await (await app.request('http://x/')).text(), /<main><h2 id="setup">Setup<\/h2><\/main>/);
+});
+
+// ---- a loop of loads, which used to wait forever -----------------------------
+//
+// Loading a route resolves every include on it, and the memo shares one load
+// per route. A loop that comes back by another fragment found its own promise
+// in the memo, and the request never answered. `spec/DRILLS.md` has the drill.
+
+const YZ = [
+  { id: 'index', pattern: '/', params: [], client: null },
+  { id: 'y', pattern: '/y', params: [], client: null },
+  { id: 'z', pattern: '/z', params: [], client: null },
+];
+
+const include = (key) => {
+  const [where, id] = key.split('#');
+  return { key, kind: 'route', where, id };
+};
+
+/** The status, or `waited` when the request has not answered in two seconds. */
+async function statusOf(app) {
+  let timer;
+  const waited = new Promise((resolve) => {
+    timer = setTimeout(() => resolve('waited'), 2000);
+  });
+  const answered = app.request('http://x/').then((response) => response.status);
+  const status = await Promise.race([answered, waited]);
+  clearTimeout(timer);
+  return status;
+}
+
+test('a loop that comes back by another fragment is refused, and named', async () => {
+  const seen = [];
+  const app = appWith(
+    YZ,
+    {
+      index: page({ includes: [include('/y#a')] }),
+      y: page({ includes: [include('/z#c')], regions: { a: () => 'A', d: () => 'D' } }),
+      z: page({ includes: [include('/y#d')], regions: { c: () => 'C' } }),
+    },
+    { onError: (err) => seen.push(err.message) },
+  );
+
+  assert.equal(await statusOf(app), 500);
+  assert.deepEqual(seen, ['[transclude] <transclude> includes itself: /y includes /z includes /y.']);
+});
+
+test('a loop entered from both ends at once is refused too', async () => {
+  // Neither chain repeats here: the page starts `/y` and `/z` together, and
+  // each finds the other's load in the memo.
+  const seen = [];
+  const app = appWith(
+    YZ,
+    {
+      index: page({ includes: [include('/y#a'), include('/z#c')] }),
+      y: page({ includes: [include('/z#e')], regions: { a: () => 'A', d: () => 'D' } }),
+      z: page({ includes: [include('/y#d')], regions: { c: () => 'C', e: () => 'E' } }),
+    },
+    { onError: (err) => seen.push(err.message) },
+  );
+
+  assert.equal(await statusOf(app), 500);
+  assert.equal(seen.length, 1);
+  assert.match(seen[0], /includes itself: \/[yz] includes \/[yz] includes \/[yz]\./);
+});
+
+test('two routes that include the same third one are no loop', async () => {
+  const app = appWith(
+    [...YZ, { id: 'w', pattern: '/w', params: [], client: null }],
+    {
+      index: page({
+        includes: [include('/y#a'), include('/z#c')],
+        render: (d) => ({ default: `<main>${d.__included['/y#a']}${d.__included['/z#c']}</main>` }),
+      }),
+      y: page({ includes: [include('/w#x')], regions: { a: () => 'A' } }),
+      z: page({ includes: [include('/w#x')], regions: { c: () => 'C' } }),
+      w: page({ regions: { x: () => 'X' } }),
+    },
+  );
+
+  assert.equal(await statusOf(app), 200);
 });
 
 // ---- the loop guard, where the message is visible ---------------------------
@@ -276,6 +390,22 @@ test('the context reaches both kinds, or says which it cannot', async () => {
   const without = includeContext({ config: {}, routes: [], pageFor: () => null });
   assert.equal(without.resolve, null);
   assert.equal(typeof without.route, 'function');
+});
+
+test('an empty allow is no proxy, so the error names the fix', async () => {
+  // A resolver built with no hosts refused every one as "not an allowed host",
+  // which is true and sends the reader to the wrong line.
+  const { includeContext } = await import('../src/include.js');
+  const empty = includeContext({ config: { proxy: { allow: [] } }, routes: [], pageFor: () => null });
+  assert.equal(empty.resolve, null);
+
+  await assert.rejects(
+    () =>
+      resolveIncludes([{ key: 'https://x.example/a#b', kind: 'external', where: 'https://x.example/a', id: 'b' }], ctx, {
+        include: empty,
+      }),
+    /no host is allowed to be read\. Name one in `proxy\.allow`/,
+  );
 });
 
 function codeOf(url) {

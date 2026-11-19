@@ -171,7 +171,8 @@
   <p>
     That route's loaders run and its layouts' markup does not, the same as when a
     fragment is asked for over HTTP. It is rendered in this process, not fetched.
-    One route included twice runs its loaders once.
+    One route included twice runs its loaders once. The path is matched as a
+    request for it would be, so <code>/notes/</code> reaches <code>/notes</code>.
   </p>
 
   <p>
@@ -193,6 +194,7 @@
     The only form that leaves the server, and the only one that needs
     configuring. A page you did not write marks no fragments, so which piece to
     take is worked out from its HTML. That is the second half of this page.
+    An empty <code>allow</code> is the same as no <code>proxy</code>.
   </p>
 
   <h2>Children are the fallback</h2>
@@ -203,8 +205,9 @@
   </p>
 
   <p>
-    That covers a source being down. A source nobody allowed, or an include that
-    goes round in a circle, throws instead: those are mistakes to fix.
+    That covers a source being down. A mistake throws instead, and three count:
+    a source nobody allowed, a fragment the other route does not have, and an
+    include that loops.
   </p>
 
   <h2>Resolved before the page renders</h2>
@@ -226,7 +229,15 @@
   <p>
     All three are compile errors. A page that includes itself round two others is
     caught when it renders, and the error names the way round. So is a chain more
-    than ten deep.
+    than ten deep. A loop may also come back by another fragment of a route:
+    <code>/y#a</code> reaching <code>/z#c</code> reaching <code>/y#d</code>
+    is caught too.
+  </p>
+
+  <p>
+    An include of a fragment another route does not have, like
+    <code>/notes#nope</code>, is refused when it renders. A route's fragments are
+    fixed when it compiles, so the name is a typo.
   </p>
 
   <h2>Reading a document that marks nothing</h2>

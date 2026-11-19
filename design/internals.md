@@ -1909,6 +1909,24 @@ against.
   is not a loop and is caught by depth. Both are needed and neither finds the
   other's case.
   `spec: diagnostics/include-cycle`, `spec: diagnostics/include-chain-too-deep`.
+- **A loop of route loads waits forever unless the load graph is checked.**
+  Loading a route resolves every include on it, and the memo shares one load
+  per route. So `/y#a` reaching `/z#c` reaching `/y#d` asks for `/y` inside its
+  own load, with a `src` the chain has not seen, and the memo hands back the
+  promise still waiting on itself. Nothing threw, and the request never
+  answered: in the spec runner the case process ended with "unsettled
+  top-level await". A check of the chain is not enough, because a page that
+  includes `/y` and `/z` starts both loads at once and neither chain repeats.
+  `src/include.js` records, per request, which load includes which, and
+  refuses the edge that closes a loop before anything waits on it.
+  `spec: includes/loop-of-loads`.
+- **An include of a fragment another route does not have is refused, before its
+  loaders run.** It used to fall back, which hid a typo, and the loaders ran for
+  nothing: one that read a cookie made the page private while it showed the
+  fallback. A route's fragments are fixed when it compiles, because one may not
+  sit under an `if`, so the name cannot be right on another request.
+  `resolveIncludes` rethrows "names no fragment" with the other mistakes.
+  `spec: diagnostics/include-route-has-no-fragment`.
 - **An external include is resolved before the render, because render is
   synchronous.** Every render function down to the last component is
   `__o += …` string building, and a fetch is not that. So the compiler collects

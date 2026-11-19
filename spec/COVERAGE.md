@@ -28,7 +28,7 @@ Complete.
 | Naming a header in `fragmentHeader` adds it to `Vary` | `fragments/header-names-fragment` | reviewed |
 | A cache keys on the query string | Cache behavior, not the framework's | - |
 | A `No-Vary-Search` naming other parameters passes through | `fragments/no-vary-search-named` | reviewed |
-| A `No-Vary-Search` hiding `?fragment=` is refused, naming the value | `fragments/no-vary-search-hides-fragment`, the 500 and the logged message | reviewed |
+| A `No-Vary-Search` hiding `?fragment=` is refused, naming the value | `fragments/no-vary-search-hides-fragment`, the 500 and the logged message | unreviewed |
 | `POST /?fragment=nope` changes nothing and answers 404 | `fragments/post-unknown-name` | reviewed |
 | `ctx.fragment` tells a form post from a fetch | `fragments/action-fragment` | reviewed |
 | `watchElements` puts a script on every page | `fragments/watch-elements` | reviewed |
@@ -194,7 +194,7 @@ Complete.
 | A fragment request gets markup, not the redirect | `fragments/action-fragment` | reviewed |
 | `ctx.action` holds what the handler returned | `forms/post-redirect-get` | reviewed |
 | `ctx.action` is typed as every handler's return type at once | Type checking, the types area | - |
-| A shared module-level `Response` fails after the first request | `forms/shared-response` | reviewed |
+| A shared module-level `Response` fails after the first request | `forms/shared-response` | unreviewed |
 | CSRF is on by default for non-GET requests with a form content type | `forms/csrf-default` | reviewed |
 | `csrf: false` turns it off | `forms/csrf-off` | reviewed |
 | An object allows another origin | `forms/csrf-allow-origin` | reviewed |
@@ -722,7 +722,7 @@ something the runner does not have.
 Gotchas are named by their bold title, in file order. Line numbers move with
 every edit to the file.
 
-### Behavioral, shown by a case (121)
+### Behavioral, shown by a case (122)
 
 `Tagged` is `yes` once the gotcha ends with its `spec:` tag and the case
 fails with the old bug put back. `Snapshot` is as in the sections above.
@@ -748,6 +748,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | `data()` is what a template sees, and the server has to build it too. | `elements/state-default` | yes | reviewed |
 | Reacting costs a definition, and only a definition. | `elements/javascript-shipped` | yes | reviewed |
 | The `No-Vary-Search` guard reads a header instead of writing one, and it has to run at request time. | `fragments/no-vary-search-hides-fragment` | yes | reviewed |
+| A throw after the response exists answered with that response's headers. | `fragments/no-vary-search-hides-fragment` | yes | unreviewed |
 | The swap watcher is opt-in, and used to follow `fragmentParam`. | `fragments/watch-elements`, `routing/index-page` | yes | reviewed |
 | A listener on `document` outlives the element that added it. | `diagnostics/warn-document-listener` | yes | reviewed |
 | A warning prints once per version of a file, not once per compile. | `diagnostics/warn-document-listener` | yes | reviewed |

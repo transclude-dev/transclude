@@ -237,7 +237,7 @@ step later anyway.
 
 - **Time:** about 1 minute, in one spec run. No case failed.
 - **Result:** all 324 cases pass, and so do all 1532 old tests.
-- **Size:** 60 lines against 29. The old module is one regular expression.
+- **Size:** 56 lines against 29. The old module is one regular expression.
   The new one splits the value at the first `of` and checks each name.
 
 The cases use `item of list`, `item, index of list`, a dotted list, and

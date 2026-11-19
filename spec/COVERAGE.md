@@ -60,7 +60,7 @@ Complete.
 | Top-level `<title>`, `<meta>`, `<link>` move into `<head>`; a false `<link if>` is not sent | `routing/head-tags` | reviewed |
 | A `<title>` takes no directive | `diagnostics/title-takes-no-directive` | reviewed |
 | `${}` escapes, so `<script>` arrives as text; `html()` needs no import | `routing/interpolation-escapes` | reviewed |
-| Generated hostile values through `${}` in text and in attribute values read back as themselves, and add no element or attribute | `security/escaping-generated`, the `escaping` property below | unreviewed |
+| Generated hostile values through `${}` in text and in attribute values read back as themselves, and add no element or attribute | `security/escaping-generated`, the `escaping` property below | reviewed |
 | Attribute values: whole or part, several; `false`, `null`, `undefined` dropped; `true` bare; objects and arrays as JSON; the rest escaped | `routing/attribute-values` | reviewed |
 | `${}` in an attribute name is a compile error | `diagnostics/interpolated-attribute-name` | reviewed |
 | `if`, `else-if`, `else`: the first true branch renders | `routing/if-chain` | reviewed |
@@ -71,7 +71,7 @@ Complete.
 | `each` repeats per item; a second name is the index from zero | `routing/each-index` | reviewed |
 | A loop's name reaches attributes, and inner loops read outer ones | `routing/each-nested` | reviewed |
 | An empty list renders nothing | `routing/each-empty` | reviewed |
-| `each` over 0, 1 and n items, nested, renders each item once, in order, with its index | `routing/each-count-generated`, the `loop count` property below | unreviewed |
+| `each` over 0, 1 and n items, nested, renders each item once, in order, with its index | `routing/each-count-generated`, the `loop count` property below | reviewed |
 | `key` on a page changes nothing | `routing/key-on-page` | reviewed |
 | `key` keeps input values, focus and scroll across a reorder | Needs a browser, phase 5 | - |
 | `if` and `each` on one element is refused | `diagnostics/if-and-each-on-one-element` | reviewed |
@@ -113,7 +113,7 @@ Complete.
 | Page CSS reaches a light element; a shadow one only through inherited properties and `::part()` | Needs a browser, phase 5 | - |
 | A light element ships JavaScript only with behavior; a shadow one always | `elements/javascript-shipped` | reviewed |
 | Re-render on an attribute change: light in place, shadow including structure | Needs a browser, phase 5 | - |
-| After `bind` and `update`, the element is what a full render of the new props makes | `elements/every-binding`, and every element case, through the `bind and update` invariant | unreviewed |
+| After `bind` and `update`, the element is what a full render of the new props makes | `elements/every-binding`, and every element case, through the `bind and update` invariant | reviewed |
 | A light element's slots are filled on the server, named and fallback included, and no `<slot>` is sent | `elements/light-slots` | reviewed |
 | `slotchange` and `assignedNodes()` work only in a shadow element | Needs a browser, phase 5 | - |
 | An `if` or `each` over a changing value in a light element is refused, naming `shadow` | `diagnostics/light-element-structural-directive` | reviewed |
@@ -424,8 +424,8 @@ Complete.
 | Every page is a file unless it says `prerender = false` | `production/cache-control`, and every case with a prerendered page | - |
 | A page that reads a cookie, answers with a `Response` or sets a status cannot be prerendered | `diagnostics/prerender-reads-cookie`, `prerender-response`, `prerender-status` | reviewed |
 | A loader that throws fails the build, naming the page, the error and the line | `diagnostics/prerender-throws` | reviewed |
-| A page that exports an action stops the build unless it says `prerender` | `diagnostics/prerender-action` | unreviewed |
-| `prerender = true` lets a page with an action be a file, and the action still runs | `production/prerender-true-with-action` | unreviewed |
+| A page that exports an action stops the build unless it says `prerender` | `diagnostics/prerender-action` | reviewed |
+| `prerender = true` lets a page with an action be a file, and the action still runs | `production/prerender-true-with-action` | reviewed |
 | `speculate: true`: prerendered URLs in `prerender`, server routes in `prefetch`, endpoints in neither | `production/speculate` | reviewed |
 | `eagerness` and `exclude`, matched against the emitted pattern | `production/speculate-options` | reviewed |
 | A browser acts on the rules, or ignores them | Browser behavior | - |
@@ -735,7 +735,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | A client entry is one module, so a layout's relative import is rewritten. | `layouts/client-import-nested` | yes | reviewed |
 | `draft` is filtered out of `manifest.routes` once, and the manifest is reassigned. | `routing/draft-left-out` | yes | reviewed |
 | The build's context refuses rather than omits. | `diagnostics/prerender-after` | yes | reviewed |
-| A page with an action was written to a file, and its fragment was not. | `diagnostics/prerender-action` | yes | unreviewed |
+| A page with an action was written to a file, and its fragment was not. | `diagnostics/prerender-action` | yes | reviewed |
 | `ctx.after` catches the rejection before `waitUntil` sees it. | `runtimes/after-rejects` | yes | reviewed |
 | Every export in `<script element>` declares one name, and `splice` works back to front. | `diagnostics/export-declares-two` | yes | reviewed |
 | A prop or a state field cannot be named for a member the framework calls. | `diagnostics/element-prop-named-for-hook` | yes | reviewed |
@@ -751,7 +751,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | The swap watcher is opt-in, and used to follow `fragmentParam`. | `fragments/watch-elements`, `routing/index-page` | yes | reviewed |
 | A listener on `document` outlives the element that added it. | `diagnostics/warn-document-listener` | yes | reviewed |
 | A warning prints once per version of a file, not once per compile. | `diagnostics/warn-document-listener` | yes | reviewed |
-| A `<pre>` or a `<textarea>` lost the newline its content began with. | `routing/leading-newline-kept` | yes | unreviewed |
+| A `<pre>` or a `<textarea>` lost the newline its content began with. | `routing/leading-newline-kept` | yes | reviewed |
 | An action runs after the region is known to exist. | `fragments/post-unknown-name` | yes | reviewed |
 | A layout guard is one of the things that can refuse a request, and it did not. | `layouts/guard-action` | yes | reviewed |
 | A page's handlers are verb exports, the same as an endpoint's. | `forms/verbs` | yes | reviewed |

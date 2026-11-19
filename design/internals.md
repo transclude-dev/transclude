@@ -1197,6 +1197,17 @@ against.
   `Response.json()` the first time this was tried. Only a string body was
   missing its type, so only that one is filled in. `npm run spec:runtimes`
   found it, and 21 cases fail on Bun without the file.
+- **The Node adapter swapped the global `Response`, and the framework asks
+  `instanceof Response`.** `@hono/node-server` puts a lighter `Response` class on
+  the global when `serve` runs, unless it is told not to. Its instances pass
+  `instanceof` for Node's class, and Node's own do not pass for its class. So a
+  `Response` made before the first request, such as one at module level, or one
+  that `fetch` returned, was not a `Response` to `runAction` or to an endpoint:
+  `forms/shared-response` rendered the page with 200 on Node where every other
+  runtime and `app.request()` answered 400. `serve.js` and `dev.js` pass
+  `overrideGlobalObjects: false`, so the global stays Node's. The lighter class
+  is faster to make, and that was all it was for. `npm run spec:runtimes`
+  found it.
 - **A compiled binary is started outside the project it carries.** `deno
   compile` puts the app under `deno-compile-<name>` in the system temp
   directory, a path that exists only while the binary runs. No working

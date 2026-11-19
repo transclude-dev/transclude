@@ -97,10 +97,11 @@ export function publicFiles(root) {
 
     // On the Response itself, not through `c.header`. `onFound` runs after
     // `serveStatic` has built the Response it returns, and a header set on the
-    // context then lands on that Response only where `@hono/node-server`'s
-    // `serve` has replaced the global `Response`. Through `app.request()`,
-    // which an app's own tests use, a `.vtt` went out as
-    // `application/octet-stream` while a real server sent `text/vtt`.
+    // context then landed on that Response only where `@hono/node-server`'s
+    // `serve` had replaced the global `Response`, which `serve.js` no longer
+    // lets it do. Through `app.request()`, which an app's own tests use, a
+    // `.vtt` went out as `application/octet-stream` while a real server sent
+    // `text/vtt`.
     if (found && file) {
       found.headers.set('ETag', validatorFor(file));
       found.headers.set('Cache-Control', REVALIDATE);

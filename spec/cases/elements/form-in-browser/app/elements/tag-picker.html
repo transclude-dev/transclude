@@ -1,0 +1,21 @@
+<script element>
+  export const properties = {
+    name: '',
+    value: '',
+  };
+
+  export const formAssociated = true;
+
+  export const prototype = {
+    updated() {
+      const empty = !this.value;
+      this.internals.setValidity(
+        empty ? { valueMissing: true } : {},
+        empty ? 'Pick at least one tag.' : '',
+        this.querySelector('button'),
+      );
+    },
+  };
+</script>
+
+<button type="button">${value || 'Pick tags'}</button>

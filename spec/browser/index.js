@@ -91,7 +91,11 @@ function readArgs(args) {
  */
 function buildCases(filters) {
   const spec = spawnSync(process.execPath, [path.join(specDir, 'runner', 'index.js'), ...filters], { encoding: 'utf8' });
-  console.log(`npm run spec: ${spec.stdout.trim().split('\n').at(-1)}`);
+  const summary = spec.stdout.trim().split('\n').at(-1) ?? '';
+  // A run that matched nothing writes no report, and the last one would be read
+  // in its place, with builds from before whatever changed since.
+  if (!/ cases pass/.test(summary)) throw new Error(`npm run spec did not run: ${spec.stderr.trim() || summary}`);
+  console.log(`npm run spec: ${summary}`);
   const report = JSON.parse(fs.readFileSync(path.join(specDir, 'report', 'last.json'), 'utf8'));
 
   const cases = [];

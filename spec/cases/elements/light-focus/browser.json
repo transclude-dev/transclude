@@ -1,0 +1,13 @@
+[
+  {
+    "name": "the label reaches the input, and a re-render keeps the focus",
+    "load": "/",
+    "steps": [
+      { "run": "document.querySelector('label').click(); window.input = document.activeElement" },
+      { "expect": "document.activeElement.id", "equals": "who" },
+      { "run": "window.input.value = 'Ada'; document.querySelector('name-row').setAttribute('hint', 'Your full name')" },
+      { "expect": "document.querySelector('name-row small').textContent", "equals": "Your full name" },
+      { "expect": "[document.activeElement === window.input, window.input.value]", "equals": [true, "Ada"] }
+    ]
+  }
+]

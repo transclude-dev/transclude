@@ -553,6 +553,13 @@ export default {
     element the message points at.
   </p>
 
+  <doc-note label="The message points at something that takes focus" tone="warn">
+    The browser focuses the third argument to show its message. A light element
+    takes no focus unless it has a <code>tabindex</code>. Without one, pass a
+    control inside it, such as its button. Otherwise the submit is blocked, no
+    message appears, and the console says the control is not focusable.
+  </doc-note>
+
   <h3>A disabling container</h3>
 
   <p>

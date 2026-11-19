@@ -64,6 +64,24 @@ create-transclude my-app --template blank --link
 which is what you want while changing the framework: an edit here is an edit
 there.
 
+## The spec
+
+`spec/` is the contract. A case says what Transclude does at its public
+boundary, and `npm run spec` checks every one. A failing case means the code
+is wrong until someone shows the case is. `spec/README.md` says how a case is
+written and how the runners work.
+
+- **Expected output is not edited in passing.** A change to an expected file
+  or a case's `expect.json` is a commit of its own, prefixed `spec:`, and Joe
+  reviews it. `.claude/settings.json` runs `scripts/protect-spec.js` before
+  every write an agent makes, and it refuses one to an existing expected file
+  unless `SPEC_EDIT=1` is set.
+- **One commit, one side.** The `contract` job in CI fails when a commit
+  changes both `src/` and expected output. Run it yourself with
+  `node scripts/spec-commits.js origin/main..HEAD`.
+- **Nothing in `spec/` imports from `src/`.** It reaches the package by name,
+  the way an app does, and `test/spec-boundary.test.js` holds it to that.
+
 ## Tests
 
 The rule the tests are built on: **after `bind` and `update`, the DOM must

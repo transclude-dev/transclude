@@ -778,6 +778,18 @@ fail:
 The other claims marked "Needs a browser" get a `browser.json` each, batch by
 batch.
 
+## The loop
+
+What lets an agent run the spec, read the result and fix what it says:
+
+| Piece | Where | Tried |
+| --- | --- | --- |
+| One command and a report a fix can start from | `npm run spec`, `spec/report/last.json` | every run |
+| A `spec` job that `deploy` needs | `.github/workflows/ci.yml` | every push |
+| A hook that refuses an edit to existing expected output | `scripts/protect-spec.js`, from `.claude/settings.json` | an Edit to `forms/shared-response/expected/second.txt` was refused |
+| A check that fails a commit changing `src/` and expected output | `scripts/spec-commits.js`, the `contract` job | a mixed commit failed it; it also names two earlier commits on `main`, each a fix with a new assertion in `expect.json` |
+| A test that nothing in `spec/` imports from `src/` | `test/spec-boundary.test.js` | an import added to `spec/runner/compare.js` failed it |
+
 ## Gotchas
 
 Phase 2 sorts every gotcha in `design/internals.md`. A behavioral one fails at

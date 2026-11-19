@@ -155,6 +155,8 @@ run on Node only.
 | A copy from another route keeps its id | `includes/another-route` | reviewed |
 | An included route reads its params from the path, `[name]` and `[...path]` | `includes/route-params` | reviewed |
 | One route included twice runs its loaders once | `includes/route-twice-loads-once` | reviewed |
+| A route included again from inside another include still loads once | `includes/nested-route-loads-once` | unreviewed |
+| An included route's loader reads `ctx.fragment` as `null`; a request for the fragment reads its name | `includes/loader-reads-no-fragment` | unreviewed |
 | The path is matched as a request would be: `/notes/#notes` reaches `/notes` | `includes/trailing-slash` | reviewed |
 | Reading spreads: a page including a route that reads a cookie is personal | `diagnostics/include-reads-cookie` | reviewed |
 | A remote include needs `proxy.allow` and renders the section | `includes/remote-section` | reviewed |
@@ -969,7 +971,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | Three servers render pages, so the include context is built in one place. | `includes/another-route`, `includes/route-twice-loads-once` | yes | reviewed |
 | Building the include context is half of it. Every render call site has to be handed it. | `includes/call-sites` | yes | reviewed |
 | An included route reads cookies through the host's, and that is the point. | `diagnostics/include-reads-cookie` | yes | reviewed |
-| One route included twice loads once, and the memo dies with the request. | `includes/route-twice-loads-once` | yes | reviewed |
+| One route included twice loads once, and the memo dies with the request. | `includes/route-twice-loads-once`, `includes/nested-route-loads-once`, `includes/loader-reads-no-fragment` | yes | unreviewed |
 | The loop guard is a chain, not a counter. | `diagnostics/include-cycle`, `diagnostics/include-chain-too-deep` | yes | reviewed |
 | A loop of route loads waits forever unless the load graph is checked. | `includes/loop-of-loads` | yes | reviewed |
 | An include of a fragment another route does not have is refused, before its loaders run. | `diagnostics/include-route-has-no-fragment` | yes | reviewed |

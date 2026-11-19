@@ -1218,6 +1218,18 @@ against.
   module with `etagOf` from `static-cache.js`, the function the Node server
   uses, so the worker hashes nothing at start. The prerendered 404 page carries
   one too, where it used to be `"error"`.
+- **A worker served a public file with less than Node did.** Node's public
+  files go through `serveStatic` and `public-files.js`: a validator made from
+  the size and the modified time, `Last-Modified`, `Cache-Control`, a 304, and
+  byte ranges. The worker's `fileHandler` sent the type and its own hash, and a
+  200 for everything, and the docs called that a fact of platforms, because a
+  worker has no disk. A worker has the bytes, though, and a range is a slice of
+  them. The build now measures each public file as Node will, with
+  `validatorFor` and the file's `mtime`, and writes both into `assets.js`.
+  `fileHandler` answers 304, 206 and 416 by the rules `serveStatic` uses,
+  written out again in `byteRange` because that module reads a disk. Files the
+  edge serves from `dist/edge` still get no ranges, which is the edge's.
+  `npm run spec:runtimes` found 27 answers that differed.
 - **A compiled binary is started outside the project it carries.** `deno
   compile` puts the app under `deno-compile-<name>` in the system temp
   directory, a path that exists only while the binary runs. No working
@@ -1348,7 +1360,8 @@ against.
   or writing it would change `dist/public/_headers` too. And `dist/edge` is
   written before compression, so no `.br` twin counts against the platform's
   file limit. A Range request still gets the whole file with a 200: the edge
-  does not answer ranges either.
+  does not answer ranges. A worker that carries its files in `assets.js`
+  answers them, from memory.
 - **`dist/edge` is made before `_headers` is written, not by the links.**
   `linkTree` makes a directory only for a file it links. An app with no public
   files and no client JavaScript has none, so `dist/edge` did not exist and the

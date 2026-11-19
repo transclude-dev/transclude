@@ -23,6 +23,7 @@ import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
 import { sitemap } from '../src/sitemap.js';
 import { etagOf, loadAssets, loadStatic } from '../src/static-cache.js';
+import { validatorFor } from '../src/public-files.js';
 import { buildSprite, iconDirs, readAllLibraries, refuseSpriteClash, spritePath } from '../src/icons.js';
 import { PRECACHE_PATH, precacheDocument, precacheList } from '../src/precache.js';
 import { speculateSettings, speculationRules } from '../src/speculate.js';
@@ -536,9 +537,11 @@ function encode(map) {
   const out = [];
   for (const [url, entry] of map) {
     const body = entry.body ?? fs.readFileSync(entry.file);
+    const etag = entry.etag ?? etagOf(body);
+    const lastModified = entry.lastModified ? `lastModified: ${JSON.stringify(entry.lastModified)}, ` : '';
     out.push(
       `  ${JSON.stringify(url)}: ` +
-        `{ type: ${JSON.stringify(entry.type)}, etag: ${JSON.stringify(etagOf(body))}, ` +
+        `{ type: ${JSON.stringify(entry.type)}, etag: ${JSON.stringify(etag)}, ${lastModified}` +
         `body: ${JSON.stringify(body.toString('base64'))} },`,
     );
   }
@@ -571,7 +574,11 @@ function assetModule() {
     for (const file of walkAll(publicOut)) {
       if (file.endsWith('.br') || file.endsWith('.gz')) continue;
       const url = '/' + path.relative(publicOut, file).split(path.sep).join('/');
-      publicMap.set(url, { body: fs.readFileSync(file), type: typeOf(file) });
+      // The validator and the date the Node server sends for this same file,
+      // measured here because a worker has no disk to measure.
+      const etag = validatorFor(file);
+      const lastModified = fs.statSync(file).mtime.toUTCString();
+      publicMap.set(url, { body: fs.readFileSync(file), type: typeOf(file), etag, lastModified });
     }
   }
 

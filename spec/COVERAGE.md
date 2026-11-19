@@ -711,6 +711,18 @@ smallest one it found.
 | escaping | `security/escaping-generated` | 300 values strung from hostile pieces and any character, through `${}` in text, a `<pre>`, a `<textarea>`, attribute values quoted three ways and an `each`. Each reads back as itself, and the elements and attributes are those of a plain `x` | `escape` that leaves `<`: `</pre>`. `attr` that leaves `"`: `"><b>` adds an element. `attr` that leaves `&`: `&quot` reads back as `"`. It found that a leading newline in a `<pre>` or a `<textarea>` was lost, fixed in this batch |
 | loop count | `routing/each-count-generated` | 100 lists of rows of cells, nested `each`, the empty list and lists of one first. Each row and cell renders once, in order, with its index | A loop that skips the first item: `[[]]`. A loop that stops after three: four cells, three rendered, which no entry in the corpus notices. An index that stays at 0: `[[], []]` |
 
+## Budgets
+
+`spec/budgets.json`, run by `npm run spec`. Set on an Apple laptop and checked
+against CI's own numbers:
+
+| Budget | Measured when set | Limit | Pushed past on purpose |
+| --- | --- | --- | --- |
+| Client JavaScript | 24 cases ship some, 75 to 13,260 bytes; the rest none | a tenth above each, rounded up to 100; 0 for a case not named | 3,000 bytes added to the runtime fails 22 cases |
+| Render time | a median of 0.03 to 0.05 ms in process | 0.25 ms, for six requests in five cases | 1 ms added to every request fails all six |
+| Packed size | 297,019 bytes | 312,000 | a 27 kB file in `src` fails it |
+| `www` build | 7.4 s here, 13 s on CI | 20 s | 15 s added to the build fails it |
+
 ## Every runtime
 
 `npm run spec:runtimes` replays every case that builds on Node, Bun, Deno and

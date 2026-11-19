@@ -411,3 +411,10 @@ do not wait on each other. `main` does that with the graph of loads instead.
 
 - **What `spec/` missed:** a route included again from inside another
   include, and what the included loader reads as `ctx.fragment`.
+- **Decided:** keep `main` on both rows. One load serves every fragment of a
+  route the page includes, so its loader reads `ctx.fragment` as `null`.
+- **The fix:** none in the code. A comment in `include.js` says why
+  `ctx.fragment` is `null`, and two tests in `test/route-include.test.js` hold
+  both rows. The rebuilt module fails both.
+- **Cases added:** `includes/nested-route-loads-once` and
+  `includes/loader-reads-no-fragment`. The rebuilt module fails both.

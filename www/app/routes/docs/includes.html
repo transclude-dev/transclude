@@ -171,7 +171,9 @@
   <p>
     That route's loaders run and its layouts' markup does not, the same as when a
     fragment is asked for over HTTP. It is rendered in this process, not fetched.
-    One route included twice runs its loaders once. The path is matched as a
+    One route included twice runs its loaders once, even from inside another
+    include. That one load serves every fragment, so its loader reads
+    <code>ctx.fragment</code> as <code>null</code>. The path is matched as a
     request for it would be, so <code>/notes/</code> reaches <code>/notes</code>.
   </p>
 

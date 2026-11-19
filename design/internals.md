@@ -1912,8 +1912,13 @@ against.
   loaded data by path, not a fragment's markup by path and id: keyed by both,
   `/count#count` and `/count#again` each ran the loader, and one page showed
   two different answers from one route. `loadFragment` runs the chain once and
-  `renderLoaded` renders each fragment from it.
-  `spec: includes/route-twice-loads-once`.
+  `renderLoaded` renders each fragment from it. The key is the load alone, not
+  the chain of loads above it: a drill keyed it by the chain, and a route
+  included from the page and again from inside another include ran twice. For
+  the same reason the included loader reads `ctx.fragment` as `null`, since
+  the one load serves every fragment. `spec: includes/route-twice-loads-once`,
+  `spec: includes/nested-route-loads-once`,
+  `spec: includes/loader-reads-no-fragment`.
 - **A route include is rendered, not fetched.** It is the same process. Asking
   ourselves over HTTP would run the whole middleware stack, take a second trip
   through CSRF and the trailing-slash redirect, and need a URL the server can

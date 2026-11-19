@@ -102,6 +102,36 @@ test('one route included twice runs its loaders once', async () => {
   assert.equal(loads, 2, 'the memo outlived the request');
 });
 
+test('a route included again from inside another include still loads once', async () => {
+  // The memo is keyed by the load, not by the chain of loads above it.
+  let loads = 0;
+  const app = appWith(
+    [...ROUTES, { id: 'shelf', pattern: '/shelf', params: [], client: null }],
+    {
+      index: page({ includes: [include('/docs/install#a'), include('/shelf#s')] }),
+      shelf: page({ includes: [include('/docs/install#a')], regions: { s: () => 'S' } }),
+      docs: page({ load: async () => (loads += 1, {}), regions: { a: () => '<p>x</p>' } }),
+    },
+  );
+
+  await app.request('http://x/');
+  assert.equal(loads, 1);
+});
+
+test('an included route reads no fragment name, because one load serves them all', async () => {
+  const asked = [];
+  const app = appWith(ROUTES, {
+    index: page({ includes: [include('/docs/install#a'), include('/docs/install#b')] }),
+    docs: page({
+      load: async (ctx) => (asked.push(ctx.fragment), {}),
+      regions: { a: () => 'A', b: () => 'B' },
+    }),
+  });
+
+  await app.request('http://x/');
+  assert.deepEqual(asked, [null]);
+});
+
 test('a page that includes a route reading a cookie is not cached', async () => {
   // The leak. Without the shared cookies the host looks shareable, and the
   // second visitor is handed the first one's page.

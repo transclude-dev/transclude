@@ -1,0 +1,5 @@
+<script server>
+  export default async ({ layout }) => ({ greeting: `Hello, ${layout.user}` });
+</script>
+
+<p id="greeting" fragment>${greeting}</p>

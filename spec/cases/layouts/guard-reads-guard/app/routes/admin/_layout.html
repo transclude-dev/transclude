@@ -1,0 +1,8 @@
+<script server>
+  export default async ({ layout }) => {
+    if (layout.role !== 'admin') return new Response('admins only', { status: 403 });
+    return {};
+  };
+</script>
+
+<slot></slot>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+
+
+
+<style data-transclude="note-card">
+@layer transclude {
+  @scope (note-card) to (note-card note-tag) {
+    :scope {
+        display: block;
+      }
+  }
+}
+</style>
+<style data-transclude="note-tag">
+@layer transclude {
+  @scope (note-tag) {
+    :scope {
+        font-weight: 700;
+      }
+  }
+}
+</style>
+</head>
+<body>
+<note-card><note-tag><span>Note</span></note-tag>
+Milk</note-card>
+<note-card><note-tag><span>Note</span></note-tag>
+Eggs</note-card>
+
+</body>
+</html>

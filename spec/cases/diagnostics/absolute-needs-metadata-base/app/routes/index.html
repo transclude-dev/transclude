@@ -1,0 +1,6 @@
+<script server>
+  export default async ({ absolute }) => ({ image: absolute('/og.png') });
+</script>
+
+<meta property="og:image" content="${image}">
+<h1>Home</h1>

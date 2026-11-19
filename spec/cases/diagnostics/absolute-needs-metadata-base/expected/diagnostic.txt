@@ -1,0 +1,4 @@
+1 page failed to render:
+  /
+    [transclude] absolute("/og.png") has no origin to resolve against. Set `metadataBase` in the config, which is what a prerendered page uses.
+    at app/routes/index.html:2

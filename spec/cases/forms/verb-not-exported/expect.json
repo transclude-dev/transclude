@@ -1,0 +1,3 @@
+[
+  { "request": "PUT /", "send": { "headers": { "origin": "http://localhost" } }, "status": 405, "headers": { "allow": "GET, POST, DELETE" } }
+]

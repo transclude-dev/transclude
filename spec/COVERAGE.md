@@ -71,8 +71,8 @@ Complete.
 | A directive takes an expression, not `${}` | `diagnostics/directive-takes-no-interpolation` | reviewed |
 | An expression has no assignment, arrow function, object literal or `await` | `diagnostics/directive-no-arrow-function`, the arrow function only | reviewed |
 | `each` repeats per item; a second name is the index from zero | `routing/each-index` | reviewed |
-| A loop name is any identifier, `entrée` included | `routing/each-name-not-ascii` | unreviewed |
-| A reserved word, or one name for the item and the index, is refused | `diagnostics/each-name-reserved`, `diagnostics/each-same-name` | unreviewed |
+| A loop name is any identifier, `entrée` included | `routing/each-name-not-ascii` | reviewed |
+| A reserved word, or one name for the item and the index, is refused | `diagnostics/each-name-reserved`, `diagnostics/each-same-name` | reviewed |
 | A loop's name reaches attributes, and inner loops read outer ones | `routing/each-nested` | reviewed |
 | An empty list renders nothing | `routing/each-empty` | reviewed |
 | `each` over 0, 1 and n items, nested, renders each item once, in order, with its index | `routing/each-count-generated`, the `loop count` property below | reviewed |
@@ -698,7 +698,7 @@ named here by what it refuses.
 | an element declares itself by name, so there is no default export. | `diagnostics/element-default-export` | reviewed |
 | an element's code lives in <script element>. | `diagnostics/element-client-script` | reviewed |
 | an export here declares one name, and this declares `…`. | `diagnostics/export-declares-two` | reviewed |
-| each="…" is malformed. | `diagnostics/directive-takes-no-interpolation`, `diagnostics/each-name-reserved`, `diagnostics/each-same-name` | unreviewed |
+| each="…" is malformed. | `diagnostics/directive-takes-no-interpolation`, `diagnostics/each-name-reserved`, `diagnostics/each-same-name` | reviewed |
 | exports "actions", which nothing reads. | `diagnostics/exports-actions` | reviewed |
 | two fragments are both named "…". | `diagnostics/fragment-id-twice` | reviewed |
 
@@ -869,7 +869,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | Gotcha | Case | Tagged | Snapshot |
 | --- | --- | --- | --- |
 | A keyed `each` that met one key twice left a row behind. | `elements/every-binding`, through the `bind and update` invariant | yes | reviewed |
-| A loop name is checked where it is parsed, because two passes use it. | `diagnostics/each-name-reserved`, `diagnostics/each-same-name`, `routing/each-name-not-ascii` | yes | unreviewed |
+| A loop name is checked where it is parsed, because two passes use it. | `diagnostics/each-name-reserved`, `diagnostics/each-same-name`, `routing/each-name-not-ascii` | yes | reviewed |
 | Fragment mode emits components bare, and the flag has to reach all the way down. | `elements/shadow-inside-light-in-a-fragment` | yes | reviewed |
 | A reference target has two places to be written, and missing one says nothing. | `elements/reference-target` | yes | reviewed |
 | A `<script>` with a non-JavaScript type is markup, not a client block. | `recipes/data-block` | yes | reviewed |

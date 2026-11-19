@@ -6,6 +6,7 @@
 //   npm run spec -- fragments/marked-element
 //   npm run spec -- --jobs 4           at most four cases at once
 //   npm run spec -- --snapshot <id>    write the expected files a case lacks
+//   npm run spec -- --no-package-budgets  leave out the packed size and the www build
 //
 // Prints one block per failing case and a count, and writes the whole run to
 // `spec/report/last.json`. Exits 1 when any case fails.
@@ -22,7 +23,7 @@ const casesDir = path.join(specDir, 'cases');
 const buildRoot = path.join(specDir, '.build');
 const reportFile = path.join(specDir, 'report', 'last.json');
 
-const { filters, jobs, snapshot } = readArgs(process.argv.slice(2));
+const { filters, jobs, snapshot, packageBudgetsWanted } = readArgs(process.argv.slice(2));
 const started = performance.now();
 
 const ids = findCases(casesDir).filter((id) => matches(id, filters));
@@ -36,7 +37,8 @@ if (snapshot) writeMissing(outcomes);
 
 // The package's own budgets, on a full run only. They are about the whole
 // package, and a run of one area should stay a run of seconds.
-if (filters.length === 0) outcomes.push({ id: 'budgets', ms: 0, results: packageBudgets() });
+const wholeRun = filters.length === 0 && packageBudgetsWanted;
+if (wholeRun) outcomes.push({ id: 'budgets', ms: 0, results: packageBudgets() });
 
 const failed = outcomes.filter((outcome) => !passed(outcome));
 for (const outcome of failed) console.log(describe(outcome));
@@ -47,7 +49,7 @@ const todos = todosOf(outcomes);
 const exempt = exemptOf(outcomes);
 const marks = (todos ? `, ${todos} todo` : '') + (exempt ? `, ${exempt} exempt` : '');
 const casesFailed = failed.filter((outcome) => outcome.id !== 'budgets').length;
-const budgetLine = filters.length === 0 ? (failed.some((outcome) => outcome.id === 'budgets') ? ', package budgets over' : ', package budgets kept') : '';
+const budgetLine = wholeRun ? (failed.some((outcome) => outcome.id === 'budgets') ? ', package budgets over' : ', package budgets kept') : '';
 console.log(`${ids.length - casesFailed} of ${ids.length} cases pass${marks}${budgetLine}, ${atOnce} at a time, in ${seconds} s`);
 
 fs.mkdirSync(path.dirname(reportFile), { recursive: true });
@@ -59,12 +61,14 @@ function readArgs(args) {
   const filters = [];
   let jobs = os.availableParallelism();
   let snapshot = false;
+  let packageBudgetsWanted = true;
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--jobs') jobs = Number(args[++i]);
     else if (args[i] === '--snapshot') snapshot = true;
+    else if (args[i] === '--no-package-budgets') packageBudgetsWanted = false;
     else filters.push(args[i]);
   }
-  return { filters, jobs, snapshot };
+  return { filters, jobs, snapshot, packageBudgetsWanted };
 }
 
 /**

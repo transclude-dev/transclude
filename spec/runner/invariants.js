@@ -7,19 +7,22 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import * as bindUpdate from '../invariants/bind-update.js';
 import * as determinism from '../invariants/determinism.js';
 import * as fragmentEquivalence from '../invariants/fragment-equivalence.js';
 import * as lightDom from '../invariants/light-dom.js';
 import * as noClientJavaScript from '../invariants/no-client-javascript.js';
 import * as unknownFragment from '../invariants/unknown-fragment.js';
 
-const INVARIANTS = [fragmentEquivalence, unknownFragment, determinism, lightDom, noClientJavaScript];
+const INVARIANTS = [fragmentEquivalence, unknownFragment, determinism, lightDom, noClientJavaScript, bindUpdate];
 
 /**
  * @typedef {{ status: number, headers: Headers, body: string }} Answer
  *
  * @typedef {object} Context
  * @property {string} caseDir the case's own directory, its source
+ * @property {string} buildDir the case's copy, built, where an invariant may
+ *   write what it needs
  * @property {Record<string, any>} config the case's `transclude.config.js`
  * @property {string | null} fragmentParam the query parameter that asks for a
  *   fragment, from the case's config. `null` turns fragments off
@@ -39,11 +42,11 @@ const INVARIANTS = [fragmentEquivalence, unknownFragment, determinism, lightDom,
  * reason goes out as the result's `exempt`. The parent lets that result fail,
  * and fails it once it passes, so a reason nothing needs is not kept.
  *
- * @param {Omit<Context, 'config' | 'fragmentParam'> & { buildDir: string }} asked
+ * @param {Omit<Context, 'config' | 'fragmentParam'>} asked
  */
 export async function checkInvariants({ buildDir, ...asked }) {
   const config = await configOf(buildDir);
-  const context = { ...asked, config, fragmentParam: fragmentParamOf(config) };
+  const context = { ...asked, buildDir, config, fragmentParam: fragmentParamOf(config) };
   const exempt = exemptions(asked.caseDir);
   const results = [];
   for (const invariant of INVARIANTS) {

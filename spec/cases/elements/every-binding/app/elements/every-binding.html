@@ -1,0 +1,25 @@
+<script element>
+  export const shadow = true;
+
+  export const properties = {
+    title: '',
+    count: 0,
+    open: false,
+    tags: [''],
+    rows: [{ id: 0, label: '', big: false }],
+  };
+</script>
+
+<h2 title="${title}">${title}</h2>
+<p>before ${title} between ${count} after</p>
+<input value="${title}" disabled="${open}" />
+<p if="open">open: ${title}</p>
+<p else>closed</p>
+<ul>
+  <li each="tag, i of tags" data-i="${i}">${tag}</li>
+</ul>
+<dl>
+  <template each="row of rows" key="row.id"><dt if="row.big">${row.label}</dt><dd>${row.label}</dd></template>
+</dl>
+<pre>${title}</pre>
+<textarea>${title}</textarea>

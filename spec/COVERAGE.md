@@ -113,6 +113,7 @@ Complete.
 | Page CSS reaches a light element; a shadow one only through inherited properties and `::part()` | Needs a browser, phase 5 | - |
 | A light element ships JavaScript only with behavior; a shadow one always | `elements/javascript-shipped` | reviewed |
 | Re-render on an attribute change: light in place, shadow including structure | Needs a browser, phase 5 | - |
+| After `bind` and `update`, the element is what a full render of the new props makes | `elements/every-binding`, and every element case, through the `bind and update` invariant | unreviewed |
 | A light element's slots are filled on the server, named and fallback included, and no `<slot>` is sent | `elements/light-slots` | reviewed |
 | `slotchange` and `assignedNodes()` work only in a shadow element | Needs a browser, phase 5 | - |
 | An `if` or `each` over a changing value in a light element is refused, naming `shadow` | `diagnostics/light-element-structural-directive` | reviewed |
@@ -694,6 +695,7 @@ reason.
 | determinism | Each GET twice more, as it went. Status, every header and the body must be the same. Nothing is put aside | A random header on each render fails 59 cases | 4 cases whose loader counts its runs |
 | light DOM by default | Each `<template shadowrootmode>` on a custom element, in every HTML answer. Its host's source must say `export const shadow = true`. A host with no hyphen is hand-written or foreign markup, and is not checked | Every element counted as a shadow element fails 14 cases | none |
 | no client JavaScript unless asked for | Every HTML answer of a case whose source asks for no JavaScript: 181 of the 198 that build. No script the browser runs, and no `.js` in a `src`, an `href` or `Link` | Every page given its client entry fails 113 cases. A light element of plain markup defined in the browser fails 6 | 3 `security/csp-*` cases, whose page writes a `<script>` through `html()` |
+| bind and update | Each element a case defines, compiled through `@transclude/core/compiler`. 100 pairs of props generated from its defaults: render the first, `bind`, `update` to the second, and compare with a full render of the second. An `update` that answers false repaints, and is not compared. 6 elements are compared; 5 always repaint | `setText` that escapes fails 7 cases. `setAttr` that writes `false` fails 1, and `setParts` that keeps the last part fails 1, both `elements/every-binding`. A keyed move in reverse order fails 1 | none |
 
 Fragment equivalence found that a page with an action could be a file while
 its fragment rendered live, in `fragments/action-fragment` and

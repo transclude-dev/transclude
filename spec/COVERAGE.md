@@ -133,7 +133,7 @@ Complete.
 | A boolean state is a custom state CSS can select | `elements/state-in-browser`, in Chrome | unreviewed |
 | Objects and arrays are written as JSON in the attribute | `elements/shadow-element`, and `routing/attribute-values` | reviewed |
 | `formAssociated` needs no shadow root | `elements/form-associated` | reviewed |
-| Its value is submitted under its `name`; `setValidity`, `:invalid`, a blocked submit | `elements/form-in-browser`, in Chrome. The message points at the inner button: a question for Joe, under In a browser | unreviewed |
+| Its value is submitted under its `name`; `setValidity`, `:invalid`, a blocked submit | `elements/form-in-browser`, in Chrome, its message pointing at the inner button, as the note under it says | unreviewed |
 | A disabling `<fieldset>` sets the `disabled` custom state | `elements/form-in-browser`, in Chrome | unreviewed |
 | `shadow` and `formAssociated` must be literals | `diagnostics/shadow-flag-not-literal` | reviewed |
 
@@ -760,14 +760,6 @@ fail:
 | `elements/key-keeps-focus` | A reordered row keeps its value, focus and scroll | A keyed `each` that ignores the key |
 | `elements/form-in-browser` | `FormData` reads the value; `setValidity` makes `:invalid` match and blocks a submit; a disabling fieldset is the `disabled` state, both ways | No `setFormValue`; no state added in `formDisabledCallback` |
 | `elements/light-focus` | A label outside reaches an input inside; a re-render keeps that input focused | A light render that moves its children |
-
-**For Joe.** `/docs/elements`, "Saying it is invalid", passes `this` as the
-third argument to `setValidity`, the element the message points at. A light
-element cannot take focus, so on a blocked submit Chrome shows no message and
-logs "An invalid form control with name='tags' is not focusable."
-`elements/form-in-browser` passes the inner `<button>` instead, and Chrome
-shows the message. The example could pass the button, or the text could say
-the anchor has to be something that takes focus.
 
 The other claims marked "Needs a browser" get a `browser.json` each, batch by
 batch.

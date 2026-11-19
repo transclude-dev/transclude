@@ -23,7 +23,11 @@ export function pickEncoding(header, available = []) {
     if (quality <= 0) continue;
     if (!best || quality > best.quality) best = { encoding, quality };
   }
-  return best?.encoding ?? null;
+  if (!best) return null;
+
+  // A client that weighs no encoding above the best one it named gets none.
+  if (statedIdentity(accepted) > best.quality) return null;
+  return best.encoding;
 }
 
 /**
@@ -68,23 +72,50 @@ function parse(header) {
   return answer;
 }
 
+/**
+ * A weight as RFC 9110 writes it: `0` or `1`, with up to three decimals, and
+ * nothing but zeros after a `1`. `.5`, `1.5` and `0.5x` are not weights.
+ */
+const QVALUE = /^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/;
+
+/** A weight that is not one counts as 0, so a coding written badly is refused. */
+const weightOf = (text) => (QVALUE.test(text) ? Number(text) : 0);
+
+/** Codings ignore case, and RFC 9110 says to read `x-gzip` as `gzip`. */
+function codingOf(name) {
+  const coding = name.trim().toLowerCase();
+  return coding === 'x-gzip' ? 'gzip' : coding;
+}
+
 function read(header) {
   const entries = new Map();
   for (const part of header.split(',')) {
     const [name, ...params] = part.trim().split(';');
-    if (!name) continue;
+    const coding = codingOf(name);
+    if (!coding) continue;
 
     let quality = 1;
     for (const param of params) {
-      const [key, value] = param.split('=').map((s) => s.trim());
-      if (key === 'q') {
-        const q = Number.parseFloat(value);
-        quality = Number.isFinite(q) ? q : 0;
-      }
+      const [key, value = ''] = param.split('=').map((s) => s.trim());
+      // A parameter name ignores case, so `Q=0` refuses as `q=0` does.
+      if (key.toLowerCase() === 'q') quality = weightOf(value);
     }
-    entries.set(name.trim().toLowerCase(), quality);
+
+    // Named twice, the lower weight holds: a refusal anywhere is a refusal.
+    const earlier = entries.get(coding) ?? quality;
+    entries.set(coding, Math.min(earlier, quality));
   }
   return entries.size ? entries : null;
+}
+
+/**
+ * The weight a client gave no encoding, when it gave one. Unlike `qualityOf`,
+ * an identity the header never mentions is 0 here, so it outranks nothing.
+ */
+function statedIdentity(accepted) {
+  if (accepted.has('identity')) return accepted.get('identity');
+  if (accepted.has('*')) return accepted.get('*');
+  return 0;
 }
 
 function qualityOf(accepted, encoding) {

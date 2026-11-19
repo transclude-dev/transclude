@@ -287,8 +287,17 @@ against.
   it did before, and a loader calling one failed with `revalidateTag is not a
   function`, which names neither what the page did nor how to stop. Both are in
   the generated type either way, because the checker cannot know which pages
-  become files. All six refusals live in `src/prerender.js` rather than in
+  become files. All seven refusals live in `src/prerender.js` rather than in
   `bin/build.js`, for the reason below. `spec: diagnostics/prerender-after`.
+- **A page with an action was written to a file, and its fragment was not.**
+  The build prerenders every page that does not say `prerender = false`, and an
+  action did not stop it. After a POST, `GET /` answered the build's file and
+  `GET /?fragment=list` rendered live, so the list was empty in one and full in
+  the other. The fragment equivalence invariant found it in two `fragments/`
+  cases. `refuseAction` in `src/prerender.js` stops the build before the render,
+  because the module says it and no render changes it. `export const prerender
+  = true` is the way past, for a page whose action changes nothing it shows.
+  `spec: diagnostics/prerender-action`.
 - **The cache's own background work forgot `after`, which is the rule `after`
   exists for.** `src/after.js` says it in its first paragraph: workerd may stop
   the isolate when the response is sent, and work nothing holds stops with it.

@@ -423,6 +423,8 @@ Complete.
 | Every page is a file unless it says `prerender = false` | `production/cache-control`, and every case with a prerendered page | - |
 | A page that reads a cookie, answers with a `Response` or sets a status cannot be prerendered | `diagnostics/prerender-reads-cookie`, `prerender-response`, `prerender-status` | reviewed |
 | A loader that throws fails the build, naming the page, the error and the line | `diagnostics/prerender-throws` | reviewed |
+| A page that exports an action stops the build unless it says `prerender` | `diagnostics/prerender-action` | unreviewed |
+| `prerender = true` lets a page with an action be a file, and the action still runs | `production/prerender-true-with-action` | unreviewed |
 | `speculate: true`: prerendered URLs in `prerender`, server routes in `prefetch`, endpoints in neither | `production/speculate` | reviewed |
 | `eagerness` and `exclude`, matched against the emitted pattern | `production/speculate-options` | reviewed |
 | A browser acts on the rules, or ignores them | Browser behavior | - |
@@ -687,19 +689,16 @@ reason.
 
 | Invariant | What it asks | Broken in `src/` to see it fail | Exempt |
 | --- | --- | --- | --- |
-| fragment equivalence | Each page behind a request, then `?fragment=<id>` for each marked id it holds. The fragment must be the page's copy, less its declarative shadow roots | A fragment that keeps its shadow roots fails 2 cases. A fragment that answers the page's whole body fails 6 | `routing/context-fields`, which prints `url` and `fragment`. `fragments/action-fragment` and `fragments/post-unknown-name`: a question for Joe, below |
+| fragment equivalence | Each page behind a request, then `?fragment=<id>` for each marked id it holds. The fragment must be the page's copy, less its declarative shadow roots | A fragment that keeps its shadow roots fails 2 cases. A fragment that answers the page's whole body fails 6 | `routing/context-fields`, which prints `url` and `fragment` |
 | unknown fragment | `?fragment=` with each id the page has unmarked, each name an object inherits, and 20 generated names. Each must be 404 | An unknown name that answers the page fails 127 cases. A lookup with `in` for `Object.hasOwn` fails 126 | none |
 | determinism | Each GET twice more, as it went. Status, every header and the body must be the same. Nothing is put aside | A random header on each render fails 59 cases | 4 cases whose loader counts its runs |
 | light DOM by default | Each `<template shadowrootmode>` on a custom element, in every HTML answer. Its host's source must say `export const shadow = true`. A host with no hyphen is hand-written or foreign markup, and is not checked | Every element counted as a shadow element fails 14 cases | none |
 | no client JavaScript unless asked for | Every HTML answer of a case whose source asks for no JavaScript: 181 of the 198 that build. No script the browser runs, and no `.js` in a `src`, an `href` or `Link` | Every page given its client entry fails 113 cases. A light element of plain markup defined in the browser fails 6 | 3 `security/csp-*` cases, whose page writes a `<script>` through `html()` |
 
-**For Joe.** `fragments/action-fragment` and `fragments/post-unknown-name` have
-a page with an action and no `prerender = false`. The build writes the page
-to a file. After the POST, `GET /` still answers that file, and
-`?fragment=list` renders live, so the list is empty in one and full in the
-other. `/docs/fragments` says the two always agree. A fix is more than one
-line: the build could refuse or warn, or a page with an action could stay
-dynamic.
+Fragment equivalence found that a page with an action could be a file while
+its fragment rendered live, in `fragments/action-fragment` and
+`fragments/post-unknown-name`. The build now refuses that page unless it says
+`prerender`, and both cases say `prerender = false`.
 
 Two rules need an app built for them, so each runs in one case, from the
 case's `property.js`. fast-check generates the input, and a failure names the
@@ -721,7 +720,7 @@ something the runner does not have.
 Gotchas are named by their bold title, in file order. Line numbers move with
 every edit to the file.
 
-### Behavioral, shown by a case (120)
+### Behavioral, shown by a case (121)
 
 `Tagged` is `yes` once the gotcha ends with its `spec:` tag and the case
 fails with the old bug put back. `Snapshot` is as in the sections above.
@@ -734,6 +733,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | A client entry is one module, so a layout's relative import is rewritten. | `layouts/client-import-nested` | yes | reviewed |
 | `draft` is filtered out of `manifest.routes` once, and the manifest is reassigned. | `routing/draft-left-out` | yes | reviewed |
 | The build's context refuses rather than omits. | `diagnostics/prerender-after` | yes | reviewed |
+| A page with an action was written to a file, and its fragment was not. | `diagnostics/prerender-action` | yes | unreviewed |
 | `ctx.after` catches the rejection before `waitUntil` sees it. | `runtimes/after-rejects` | yes | reviewed |
 | Every export in `<script element>` declares one name, and `splice` works back to front. | `diagnostics/export-declares-two` | yes | reviewed |
 | A prop or a state field cannot be named for a member the framework calls. | `diagnostics/element-prop-named-for-hook` | yes | reviewed |

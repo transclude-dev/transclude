@@ -1,0 +1,10 @@
+[
+  { "request": "GET /contact", "status": 200, "body": "expected/contact.html" },
+  {
+    "request": "POST /contact",
+    "send": { "form": { "message": "Hello" } },
+    "status": 303,
+    "headers": { "location": "http://localhost/contact?sent" }
+  },
+  { "request": "GET /contact", "status": 200, "body": "expected/contact.html" }
+]

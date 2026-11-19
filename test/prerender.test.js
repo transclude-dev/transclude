@@ -1,6 +1,6 @@
 // What a page is allowed to be, if it is going to be a file.
 //
-// These six messages are the build's whole vocabulary for "this URL cannot be
+// These seven messages are the build's whole vocabulary for "this URL cannot be
 // written down". Until this file they were checked by hand: `bin/build.js` runs
 // a build the moment it is imported, so no test could reach them, and every one
 // was verified by breaking an example on purpose and reading the output.
@@ -8,7 +8,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { preloadsOf, prerenderContext, refusePrerender } from '../src/prerender.js';
+import { preloadsOf, prerenderContext, refuseAction, refusePrerender } from '../src/prerender.js';
 
 const contextFor = (over = {}) =>
   prerenderContext({ route: { id: 'notes', pattern: '/notes' }, url: '/notes', params: {}, ...over });
@@ -46,6 +46,36 @@ test('both name the way out, because the message is the whole fix', () => {
   for (const call of [() => contextFor().revalidateTag('x'), () => contextFor().after(Promise.resolve())]) {
     assert.throws(call, /export const prerender = false/);
   }
+});
+
+// ---- a page with an action --------------------------------------------------
+
+const handler = () => ({});
+
+test('a page with no action may be a file', () => {
+  assert.doesNotThrow(() => refuseAction({ default: () => ({}) }));
+});
+
+test('an action without prerender stops the build, naming the verbs and both ways out', () => {
+  const call = () => refuseAction({ POST: handler, DELETE: handler });
+  assert.throws(call, /answers POST and DELETE/);
+  assert.throws(call, /export const prerender = false/);
+  assert.throws(call, /export const prerender = true/);
+});
+
+test('each verb counts, not only POST', () => {
+  for (const verb of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+    assert.throws(() => refuseAction({ [verb]: handler }), new RegExp(`answers ${verb},`));
+  }
+});
+
+test('prerender = true is the page saying it is a file on purpose', () => {
+  assert.doesNotThrow(() => refuseAction({ prerender: true, POST: handler }));
+});
+
+test('a verb that is not a function is not an action', () => {
+  // The router registers a method only for a function, so neither does this.
+  assert.doesNotThrow(() => refuseAction({ POST: 'not a handler' }));
 });
 
 // ---- what may be written ---------------------------------------------------

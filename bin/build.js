@@ -16,7 +16,7 @@ import { pathToFileURL } from 'node:url';
 import transclude from '../src/plugin.js';
 import { loadProject } from '../src/project.js';
 import { renderRoute, urlFor } from '../src/document.js';
-import { preloadsOf, prerenderContext, refusePrerender } from '../src/prerender.js';
+import { preloadsOf, prerenderContext, refuseAction, refusePrerender } from '../src/prerender.js';
 import { isGated, readGated, unmatched } from '../src/gate.js';
 import { feed, feedPath } from '../src/feed.js';
 import { includeContext } from '../src/include.js';
@@ -225,6 +225,7 @@ async function urlsFor(route) {
  * `src/prerender.js`, where they can be tested. Nothing imports this file.
  */
 async function render(route, { url, params }) {
+  refuseAction(pages[route.id]);
   const ctx = prerenderContext({
     route,
     url,

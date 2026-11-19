@@ -1,0 +1,20 @@
+<script server>
+  import { notes } from '../data/notes.js';
+
+  export default () => ({ notes: notes.all() });
+
+  export const POST = async ({ request }) => {
+    const form = await request.formData();
+    notes.add(String(form.get('text') ?? ''));
+    return Response.redirect(new URL(request.url), 303);
+  };
+</script>
+
+<form method="post">
+  <input name="text" />
+  <button>Add</button>
+</form>
+
+<ul>
+  <li each="note of notes">${note}</li>
+</ul>

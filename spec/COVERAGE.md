@@ -711,6 +711,30 @@ smallest one it found.
 | escaping | `security/escaping-generated` | 300 values strung from hostile pieces and any character, through `${}` in text, a `<pre>`, a `<textarea>`, attribute values quoted three ways and an `each`. Each reads back as itself, and the elements and attributes are those of a plain `x` | `escape` that leaves `<`: `</pre>`. `attr` that leaves `"`: `"><b>` adds an element. `attr` that leaves `&`: `&quot` reads back as `"`. It found that a leading newline in a `<pre>` or a `<textarea>` was lost, fixed in this batch |
 | loop count | `routing/each-count-generated` | 100 lists of rows of cells, nested `each`, the empty list and lists of one first. Each row and cell renders once, in order, with its index | A loop that skips the first item: `[[]]`. A loop that stops after three: four cells, three rendered, which no entry in the corpus notices. An index that stays at 0: `[[], []]` |
 
+## Every runtime
+
+`npm run spec:runtimes` replays every case that builds on Node, Bun, Deno and
+workerd, over HTTP, and each answer must be Node's. 183 cases are served; the
+93 that do not build, 3 with no request and 17 that read a fake upstream are
+not. `spec/README.md` lists what is put aside.
+
+Four cases are left off one runtime by their `runtimes.json`:
+
+| Case | Runtime | Why |
+| --- | --- | --- |
+| `markdown/page` | workerd | The config imports `node:path` |
+| `production/on-error-sitemap-feed` | workerd | Its data module reads a file with `node:fs` |
+| `production/encodings` | workerd | wrangler compresses on the way out, as Cloudflare does |
+| `forms/shared-response` | Deno, workerd | What a reused body does is the runtime's |
+
+Broken in `src/` to see it fail: an `X-Runtime` header written on Bun alone
+fails all 183 cases.
+
+The first run found six bugs, each fixed on its own branch: a 500 that kept
+the page's headers, Bun's text type lost in a copy, the Node adapter's
+`Response` swap, the worker's own ETag, the worker's public files, and a 500
+without `nosniff`. The gotchas below name each.
+
 ## Gotchas
 
 Phase 2 sorts every gotcha in `design/internals.md`. A behavioral one fails at
@@ -930,11 +954,11 @@ None. Every behavioral gotcha has a case.
 | The first thing `typescript-next` reported was not about TypeScript. | Release, CI or packaging |
 | `npm test` reports `src/runtime/index.js` at 43%, and the number is an artifact. | The repository's own tests |
 | Sixty-one passing checks were the whole of what anybody knew. | A browser: phase 5 |
-| The four-runtime claim ran on one runtime. | Another runtime or a real listener: phase 4 |
-| Bun keeps a text body's type out of its headers. | Bun: `npm run spec:runtimes`, which CI does not run yet |
-| The Node adapter swapped the global `Response`, and the framework asks `instanceof Response`. | A real Node listener: `npm run spec:runtimes`, which CI does not run yet |
-| A worker made its own ETag for the same bytes. | workerd: `npm run spec:runtimes`, which CI does not run yet |
-| A worker served a public file with less than Node did. | workerd: `npm run spec:runtimes`, which CI does not run yet |
+| The four-runtime claim ran on one runtime. | Every runtime: `npm run spec:runtimes`, in the `runtimes` job |
+| Bun keeps a text body's type out of its headers. | Bun: `npm run spec:runtimes`, in the `runtimes` job |
+| The Node adapter swapped the global `Response`, and the framework asks `instanceof Response`. | A real Node listener: `npm run spec:runtimes`, in the `runtimes` job |
+| A worker made its own ETag for the same bytes. | workerd: `npm run spec:runtimes`, in the `runtimes` job |
+| A worker served a public file with less than Node did. | workerd: `npm run spec:runtimes`, in the `runtimes` job |
 | A compiled binary is started outside the project it carries. | Another runtime or a real listener: phase 4 |
 | A dotfile made the build look stale. | A startup log, not an answer to a request |
 | The package shipped no type declarations. | Release, CI or packaging |

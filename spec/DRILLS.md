@@ -206,10 +206,29 @@ the chain by `src`, which is different, and the memo hands back the promise
 that is still waiting. Nothing throws. In the runner the case process ends
 with "unsettled top-level await". On a server the request stays open.
 
-The new module's own risk is in the same check. It compares paths with the
-query cut off, so `/y?x=1#a` reaching `/y?x=2#b` is called a loop, although
-those are two loads.
+The new module's check misses a second shape of the same loop. When a page
+includes `/y` and `/z`, and each includes the other, the two loads start at
+once. Each finds the other's promise in the memo, and neither chain repeats.
+Both modules wait forever on this one. The new check also cuts the query off,
+so it calls `/y?x=1#a` reaching `/y?x=2#b` a loop. Those are two loads, but
+`/y` includes the same things on every request, so the chain repeats one
+step later anyway.
 
 - **What `spec/` missed:** a loop through two routes, a path with a
   trailing slash, an empty `proxy.allow`, and an include of a region a route
   does not have.
+- **Decided:** refuse a loop of loads, entered from one end or from both. Match
+  the path as a request would be. Treat an empty `allow` as no `proxy`. Refuse
+  an include of a fragment the route does not have, before its loaders run.
+- **The fix:** the old module, patched. Each include records an edge from the
+  load it runs inside to the load it asks for, per request, and the edge that
+  would close a loop is refused before anything waits on it. Six tests in
+  `test/route-include.test.js` hold the rows. One of them replaces the old
+  test that said a missing fragment falls back. The old module fails five.
+  The sixth checks that two routes that include the same third one are no
+  loop.
+- **Cases added:** `includes/loop-of-loads`, `includes/trailing-slash`,
+  `diagnostics/include-route-has-no-fragment` and
+  `diagnostics/include-allow-empty`. The old module fails all four, and waits
+  forever on the first. The rebuilt one fails the first, waiting on `/both`,
+  and the third.

@@ -153,6 +153,7 @@ run on Node only.
 | A copy from another route keeps its id | `includes/another-route` | reviewed |
 | An included route reads its params from the path, `[name]` and `[...path]` | `includes/route-params` | unreviewed |
 | One route included twice runs its loaders once | `includes/route-twice-loads-once` | reviewed |
+| The path is matched as a request would be: `/notes/#notes` reaches `/notes` | `includes/trailing-slash` | unreviewed |
 | Reading spreads: a page including a route that reads a cookie is personal | `diagnostics/include-reads-cookie` | reviewed |
 | A remote include needs `proxy.allow` and renders the section | `includes/remote-section` | reviewed |
 | On success the children are dropped | `includes/remote-section` | reviewed |
@@ -160,9 +161,12 @@ run on Node only.
 | With no children, a failing source stops the render | `diagnostics/include-source-down-no-fallback` | reviewed |
 | A host nobody allowed throws, children or not | `diagnostics/include-host-not-allowed` | reviewed |
 | With no `proxy` in the config, an include of another site throws | `diagnostics/include-no-proxy` | unreviewed |
+| An empty `allow` is no `proxy`, and the message says to name a host | `diagnostics/include-allow-empty` | unreviewed |
 | A prerendered page reads its sources once, at build time | `includes/prerendered-reads-once` | reviewed |
 | `#nope`, `#a` inside `#a`, and an interpolated `src` are compile errors | `diagnostics/include-names-no-fragment`, `include-includes-itself`, `include-src-interpolated` | reviewed |
 | A loop round other routes is caught at render, naming the way round | `diagnostics/include-cycle` | reviewed |
+| A loop that comes back by another fragment of a route is caught, also when the page enters it from both ends | `includes/loop-of-loads` | unreviewed |
+| An include of a fragment another route does not have is refused | `diagnostics/include-route-has-no-fragment` | unreviewed |
 | A chain more than ten deep is caught | `diagnostics/include-chain-too-deep` | reviewed |
 | Licensing, credit and attribution | Advice to the author, not behavior | - |
 | No proxy route until a host is named | `includes/proxy-off-by-default` | reviewed |
@@ -855,7 +859,7 @@ something the runner does not have.
 Gotchas are named by their bold title, in file order. Line numbers move with
 every edit to the file.
 
-### Behavioral, shown by a case (126)
+### Behavioral, shown by a case (128)
 
 `Tagged` is `yes` once the gotcha ends with its `spec:` tag and the case
 fails with the old bug put back. `Snapshot` is as in the sections above.
@@ -959,6 +963,8 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | An included route reads cookies through the host's, and that is the point. | `diagnostics/include-reads-cookie` | yes | reviewed |
 | One route included twice loads once, and the memo dies with the request. | `includes/route-twice-loads-once` | yes | reviewed |
 | The loop guard is a chain, not a counter. | `diagnostics/include-cycle`, `diagnostics/include-chain-too-deep` | yes | reviewed |
+| A loop of route loads waits forever unless the load graph is checked. | `includes/loop-of-loads` | yes | unreviewed |
+| An include of a fragment another route does not have is refused, before its loaders run. | `diagnostics/include-route-has-no-fragment` | yes | unreviewed |
 | An external include is resolved before the render, because render is synchronous. | `includes/prerendered-reads-once` | yes | reviewed |
 | Includes of one document share the read in progress, not only the copy. | `includes/remote-section` | yes | reviewed |
 | A source nobody allowed throws; a source that is down falls back. | `diagnostics/include-host-not-allowed` | yes | reviewed |

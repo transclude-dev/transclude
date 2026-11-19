@@ -1,0 +1,3 @@
+1 page failed to render:
+  /
+    [transclude] <transclude src="/notes#nope"> names no fragment of /notes. A fragment is an element with an id and a "fragment" attribute.

@@ -98,3 +98,60 @@ happen.
 - **Cases added:** `production/encoding-weights`, 11 entries. The old module
   fails 9 of them. The module as the drill rebuilt it fails the entry for
   `gzip, gzip;q=0`, the one row where neither module had the answer.
+
+## `src/sitemap.js`, 2026-11-19
+
+- **Time:** about 3 minutes, in two spec runs. No case failed on the way.
+- **Result:** all 316 cases pass. The old `test/sitemap.test.js` passes 15
+  of 16. The one that fails says a `Date` is written as a day.
+- **Size:** 285 lines against 165. The new one checks `entries` and `limit`,
+  and joins the hostname as a string, the way `src/feed.js` does.
+
+The sitemap has eleven cases. They use one hostname with no path, string
+`lastmod` values that are already days, and at most five URLs. On 32 other
+inputs the two modules agree 7 times and answer these 25 differently,
+grouped here by rule:
+
+| Input | Old | New |
+| --- | --- | --- |
+| `lastmod` a `Date`, a number, or `2026-07-31T23:30:00-05:00` | the day in UTC, `2026-08-01` for the last | the full ISO time, or the string as written |
+| `lastmod: 'yesterday'` | dropped | `<lastmod>yesterday</lastmod>` |
+| `lastmod: 0` | dropped | `1970-01-01T00:00:00.000Z` |
+| `priority: null` | `<priority>null</priority>` | dropped |
+| a `paths()` value `a b` or `café` | `/p/a%20b`, `/p/caf%C3%A9` | `/p/a b`, `/p/café` |
+| `paths()` returns `null` | no URLs | throws "not iterable" |
+| `entries` returns `null` | no URLs | throws |
+| an entry with no `path` | `https://x.com/undefined` | throws |
+| an entry with `path: 'press'` | `https://x.com/press` | throws |
+| an entry with `path: 'https://evil.com/x'` | listed on the other host | throws |
+| `exclude: [/^\/a\//g]` on `/a/1`, `/a/2`, `/a/3` | keeps `/a/2` | keeps none |
+| `limit: 0` | throws "Invalid array length" | throws a message that names `limit` |
+| `limit: 100000` or `limit: 1.5` | accepted | throws |
+| `hostname: 'https://x.com/blog'` | `https://x.com/a`, the path dropped | `https://x.com/blog/a` |
+| `hostname: 'x.com'` | throws "Invalid URL" | `<loc>x.com/a</loc>` |
+| `?p=5` under the cap | every URL | no URLs |
+| `?p=0.5` over the cap | a slice that starts half a sheet in | no URLs |
+
+Both modules answer a sheet past the last one, `?p=-1` and `?p=abc` with an
+empty `<urlset>` and status 200.
+
+Three rows are a real miss in the old module. A `g` flag on an `exclude`
+pattern leaves every second match in, because `RegExp.test` keeps its place
+between calls. An entry with no path is listed as `/undefined`. And
+`priority: null` writes `null`. The new module's own misses are the raw
+space and `é` in a `<loc>`, which the protocol says must be escaped, and the
+`null` from `paths()`, which `bin/build.js` reads as an empty list.
+
+The drill found three things outside the module:
+
+- `bin/dev.js` gives the sitemap no `gated` list, so in dev it lists paths
+  that production leaves out.
+- The dev `/sitemap.xml` route has no `try`, so a failing `paths()` goes to
+  Hono's default handler, not to `onError`.
+- Past `limit`, `bin/build.js` writes only the index to
+  `dist/static/sitemap.xml`. The index points at `/sitemap.xml?p=0`, which a
+  static host answers with the same index.
+
+- **What `spec/` missed:** no case has a `lastmod` that is not a day, a
+  parameter value that needs escaping, a bad entry, a `limit` out of range, a
+  `g` flag, or a hostname with a path.

@@ -1,0 +1,36 @@
+[
+  {
+    "name": "its value is a field of the form",
+    "load": "/",
+    "steps": [
+      { "expect": "new FormData(document.querySelector('form')).get('more')", "equals": "math" },
+      { "run": "document.querySelector('[name=tags]').setAttribute('value', 'poetry')" },
+      { "expect": "new FormData(document.querySelector('form')).get('tags')", "equals": "poetry" }
+    ]
+  },
+  {
+    "name": "setValidity makes it invalid and blocks a submit",
+    "load": "/",
+    "steps": [
+      { "run": "window.submitted = 0; document.querySelector('form').addEventListener('submit', (event) => { event.preventDefault(); window.submitted++; })" },
+      { "expect": "document.querySelector('[name=tags]').matches(':invalid')", "equals": true },
+      { "expect": "document.querySelector('[name=tags]').internals.validationMessage", "equals": "Pick at least one tag." },
+      { "run": "document.querySelector('form').requestSubmit()" },
+      { "expect": "window.submitted", "equals": 0 },
+      { "run": "document.querySelector('[name=tags]').setAttribute('value', 'poetry')" },
+      { "expect": "document.querySelector('[name=tags]').matches(':invalid')", "equals": false },
+      { "run": "document.querySelector('form').requestSubmit()" },
+      { "expect": "window.submitted", "equals": 1 }
+    ]
+  },
+  {
+    "name": "a disabling fieldset is a custom state, both ways",
+    "load": "/",
+    "steps": [
+      { "expect": "document.querySelector('[name=held]').matches(':state(disabled)')", "equals": true },
+      { "expect": "document.querySelector('[name=held]').hasAttribute('disabled')", "equals": false },
+      { "run": "document.querySelector('fieldset').disabled = false" },
+      { "expect": "document.querySelector('[name=held]').matches(':state(disabled)')", "equals": false }
+    ]
+  }
+]

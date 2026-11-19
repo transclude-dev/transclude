@@ -1,0 +1,13 @@
+<script element>
+  export const properties = { hint: '' };
+
+  // A member, so the element is defined and reacts to its props.
+  export const prototype = {
+    clear() {
+      this.querySelector('input').value = '';
+    },
+  };
+</script>
+
+<input id="who" name="who" />
+<small>${hint}</small>

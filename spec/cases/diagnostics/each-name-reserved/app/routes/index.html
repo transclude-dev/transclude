@@ -1,0 +1,7 @@
+<script server>
+  export default async () => ({ classes: ['Monday', 'Tuesday'] });
+</script>
+
+<ul>
+  <li each="class of classes">${class}</li>
+</ul>

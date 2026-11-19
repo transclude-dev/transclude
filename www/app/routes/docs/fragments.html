@@ -215,7 +215,9 @@ export default (app) => {
     and it would let a cache answer <code>?fragment=list</code> with the whole
     document. A swap would then write the page into the element it should have
     replaced. The server reads this header on the way out and throws, naming the
-    value it read.
+    value it read. It reads a name as a cache does, so <code>fr%61gment</code> is
+    <code>fragment</code>. A value that names <code>params</code> or
+    <code>except</code> in a shape it cannot read is refused too.
   </doc-note>
 
   <h2>Actions</h2>

@@ -342,6 +342,18 @@ It reads a header with both `params` and `except` as no header at all
 - **What `spec/` missed:** a name written with a percent escape, `except`
   beside a `params` that is not bare, and a header that does not parse as a
   whole.
+- **Decided:** refuse the last three rows, and pass the first, as `main`
+  does. A header that does not parse is refused only when it names `params`
+  or `except`.
+- **The fix:** the old module, patched. It decodes each name, refuses
+  `except` beside a `params` list or `?0`, and notes when the dictionary does
+  not parse: an empty member, a key that is not lowercase, or a string or a
+  list that never closes. Three tests in `test/no-vary-search.test.js` hold
+  the rows, and the old module fails all three.
+- **Cases added:** four entries in `fragments/no-vary-search-shapes`. The old
+  module fails the three refusals. One mutant per rule fails only its own
+  entry, and a mutant that refuses every header that does not parse fails
+  `PARAMS`.
 
 ### `src/sitemap.js`
 

@@ -34,8 +34,11 @@ const UNREADABLE = Symbol('unreadable');
  * walk keeps track of both. A backslash in a quoted string escapes the next
  * character, which is how a string carries a quote.
  *
+ * An empty member is kept, because `a,,b` and `a,` do not parse. `closed` is
+ * false when a string or a list never closes.
+ *
  * @param {string} value
- * @returns {string[]}
+ * @returns {{ members: string[], closed: boolean }}
  */
 function splitMembers(value) {
   const members = [];
@@ -64,8 +67,11 @@ function splitMembers(value) {
   }
 
   members.push(current.trim());
-  return members.filter((member) => member !== '');
+  return { members, closed: !inString && depth === 0 };
 }
+
+/** A key as the grammar writes it: lowercase, starting with a letter or `*`. */
+const KEY = /^[a-z*][a-z0-9_\-.*]*$/;
 
 /**
  * The members by key. A key with no `=` is the boolean `true`, as the grammar
@@ -74,29 +80,37 @@ function splitMembers(value) {
  * The key ends at `=` or at `;`, so a bare key with parameters, `params;x`, is
  * still `params`.
  *
+ * `parses` is false for a header the grammar does not allow: an empty member,
+ * a key such as `PARAMS`, or a string that never closes. A cache ignores such a
+ * header whole, and the members read from it are a best guess.
+ *
  * @param {string} value
- * @returns {Map<string, string|true>}
+ * @returns {{ dictionary: Map<string, string|true>, parses: boolean }}
  */
 function readDictionary(value) {
   const dictionary = new Map();
+  const { members, closed } = splitMembers(value);
 
-  for (const member of splitMembers(value)) {
+  let parses = closed;
+  for (const member of members) {
     const equals = member.indexOf('=');
     const semicolon = member.indexOf(';');
     const bare = equals === -1 || (semicolon !== -1 && semicolon < equals);
 
     if (bare) {
-      const key = semicolon === -1 ? member : member.slice(0, semicolon);
-      dictionary.set(key.trim(), true);
+      const key = (semicolon === -1 ? member : member.slice(0, semicolon)).trim();
+      if (!KEY.test(key)) parses = false;
+      dictionary.set(key, true);
       continue;
     }
 
     const key = member.slice(0, equals).trim();
     const text = member.slice(equals + 1).trim();
+    if (!KEY.test(key)) parses = false;
     dictionary.set(key, text);
   }
 
-  return dictionary;
+  return { dictionary, parses };
 }
 
 /**
@@ -160,11 +174,38 @@ function readStringList(text) {
 
     // Two strings with nothing between them are not a list.
     if (text[i] !== ' ' && text[i] !== ')') return UNREADABLE;
-    strings.push(string);
+    strings.push(decodeKey(string));
   }
 
   // The list was never closed.
   return UNREADABLE;
+}
+
+/**
+ * A name as a cache compares it, decoded the way a query key is: `+` is a
+ * space, and `%61` is `a`. The draft says so (section 5.3), so `"fr%61gment"`
+ * hides `?fragment=` as surely as `"fragment"` does.
+ *
+ * A `%` that does not start two hex digits stays as it is, as in a URL.
+ *
+ * @param {string} name
+ * @returns {string}
+ */
+function decodeKey(name) {
+  const bytes = new TextEncoder().encode(name.replaceAll('+', ' '));
+  const decoded = [];
+
+  for (let i = 0; i < bytes.length; i++) {
+    const hex = String.fromCharCode(bytes[i + 1], bytes[i + 2]);
+    if (bytes[i] === 0x25 && /^[0-9A-Fa-f]{2}$/.test(hex)) {
+      decoded.push(parseInt(hex, 16));
+      i += 2;
+      continue;
+    }
+    decoded.push(bytes[i]);
+  }
+
+  return new TextDecoder().decode(new Uint8Array(decoded));
 }
 
 /**
@@ -215,11 +256,22 @@ function readExcept(member) {
 export function hidesParam(value, param) {
   if (!value || !param) return false;
 
-  const dictionary = readDictionary(value);
+  const { dictionary, parses } = readDictionary(value);
+  const names = dictionary.has('params') || dictionary.has('except');
+
+  // A cache ignores a header that does not parse. One that names `params` or
+  // `except` was meant to hide something, so it is refused as unreadable. One
+  // that names neither, such as `PARAMS`, hides nothing.
+  if (!parses) return names;
+
   const params = readParams(dictionary.get('params'));
   const except = readExcept(dictionary.get('except'));
 
   if (params === UNREADABLE || except === UNREADABLE) return true;
+
+  // `except` is an allowlist on top of "ignore every parameter". Beside a
+  // `params` that is a list or `?0` it has no reading.
+  if (except !== ABSENT && params !== ABSENT && params !== true) return true;
 
   // An allowlist decides on its own: every parameter it leaves out is ignored.
   if (except !== ABSENT) return !except.includes(param);

@@ -568,6 +568,11 @@ against.
   read it before that. They let `params;x` through, which a browser that
   shipped the older draft reads as every parameter, and refused `params=?0`,
   which hides nothing. A regeneration drill found both: `spec/DRILLS.md`.
+  A second drill found three more that a cache reads differently. It decodes
+  each name, so `params=("fr%61gment")` hides `?fragment=`. It ignores a
+  header that does not parse, and one with `except` beside a `params` list.
+  The last two are refused when they name `params` or `except`, and `PARAMS`
+  passes, because it names neither.
   `spec: fragments/no-vary-search-hides-fragment`,
   `fragments/no-vary-search-shapes`.
 - **A throw after the response exists answered with that response's headers.**

@@ -306,7 +306,7 @@ Complete.
 | In an element it is scoped to the tag, and `:scope` is the element | `elements/light-element`, `elements/in-a-fragment` | reviewed |
 | An element in a fragment brings its styles, added to `<head>` once | `styles/fragment-styles-once`, in Chrome, with `watchElements` | unreviewed |
 | A shadow element's `:host` rules live inside its shadow root | `elements/shadow-element`, `elements/in-a-fragment` | reviewed |
-| `:scope` loses to page CSS of equal specificity; page CSS cannot reach `:host` | `styles/boundary-in-browser` shows the opposite of both in Chrome: a question for Joe, under In a browser | unreviewed |
+| Page CSS beats `:scope` at any specificity; page CSS on the host beats `:host`, and reaches nothing inside | `styles/boundary-in-browser`, in Chrome | unreviewed |
 | A view-transition rule is CSS only; both documents carry it | `styles/style-hoisted`: the rule passes through untouched. The transition itself needs a browser | reviewed |
 | A name derived from the data in a `style` attribute | `styles/transition-name` | reviewed |
 
@@ -760,26 +760,8 @@ fail:
 | `elements/key-keeps-focus` | A reordered row keeps its value, focus and scroll | A keyed `each` that ignores the key |
 | `elements/form-in-browser` | `FormData` reads the value; `setValidity` makes `:invalid` match and blocks a submit; a disabling fieldset is the `disabled` state, both ways | No `setFormValue`; no state added in `formDisabledCallback` |
 | `elements/light-focus` | A label outside reaches an input inside; a re-render keeps that input focused | A light render that moves its children |
-| `styles/boundary-in-browser` | A custom property crosses a shadow root, a global class stops at it, `::part()` reaches in; and the element's own rules against the page's | Element styles hoisted without `@scope` |
+| `styles/boundary-in-browser` | A custom property crosses a shadow root, a global class stops at it, `::part()` reaches in; page CSS beats `:scope` and `:host` | Element styles hoisted without `@scope`; without the layer |
 | `styles/fragment-styles-once` | With `watchElements`, an element swapped in twice brings its styles once, and they apply | `adoptStyles` that adds nothing |
-
-**For Joe.** `/docs/styles`, "The element itself", says `:scope` rules "lose
-to page CSS of equal specificity, so a page can override a light element it
-did not write", and that page CSS cannot reach `:host`. Chrome does the
-opposite of both, and `styles/boundary-in-browser` records it:
-
-- A light element's style is hoisted as `@scope (tag) { … }`. When
-  specificity is equal, scoping proximity decides before source order, so the
-  element's `:scope` rule beats a page rule like `.themed`. `adoptStyles` in
-  the runtime says the same intent as the docs: element styles go before the
-  page's "because a page's rules override an element's". `@scope` undid that.
-- A page rule on a shadow element's host beats its `:host` rule, because a
-  normal declaration from the document wins over one from the shadow tree.
-
-For the first, the code could restore the intent, for example by putting
-element styles in a cascade layer, which page CSS beats at any specificity.
-Or the docs could say a page needs more specificity than the element. For the
-second, the docs could say that page CSS reaches the host and nothing inside.
 
 The other claims marked "Needs a browser" get a `browser.json` each, batch by
 batch.
@@ -795,7 +777,7 @@ something the runner does not have.
 Gotchas are named by their bold title, in file order. Line numbers move with
 every edit to the file.
 
-### Behavioral, shown by a case (123)
+### Behavioral, shown by a case (124)
 
 `Tagged` is `yes` once the gotcha ends with its `spec:` tag and the case
 fails with the old bug put back. `Snapshot` is as in the sections above.
@@ -816,6 +798,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | The reserved names are not module-scope declarations. | `elements/form-associated` | yes | reviewed |
 | A light element writes; only a shadow one rebuilds. | `diagnostics/light-element-structural-directive` | yes | reviewed |
 | The unused-prop check reads code and skips comments, and the `[^:]` in that regex is doing real work. | `diagnostics/warn-unused-prop` | yes | reviewed |
+| `@scope` made an element's style win against the page, so it sits in a layer. | `styles/boundary-in-browser`, in Chrome | yes | unreviewed |
 | Both halves fence a block. Only the shadow half compiles one. | `elements/light-block-then-binding` | yes | reviewed |
 | The caller sorts a light element's children into its slots. | `elements/light-slots` | yes | reviewed |
 | State is behavior, so it defines the element. | `elements/state-only-defines` | yes | reviewed |

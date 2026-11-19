@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url><loc>https://acme.com/</loc></url>
+<url><loc>https://acme.com/p/a%20b</loc></url>
+<url><loc>https://acme.com/p/caf%C3%A9</loc></url>
+<url><loc>https://acme.com/offset</loc><lastmod>2026-08-01</lastmod></url>
+<url><loc>https://acme.com/number</loc><lastmod>2026-07-31</lastmod></url>
+<url><loc>https://acme.com/date</loc><lastmod>2026-07-31</lastmod></url>
+<url><loc>https://acme.com/word</loc></url>
+<url><loc>https://acme.com/zero</loc></url>
+<url><loc>https://acme.com/no-priority</loc></url>
+<url><loc>https://acme.com/priority-zero</loc><priority>0</priority></url>
+</urlset>

@@ -268,7 +268,9 @@ against.
   Anything `createApp` mounts from config has to be added there too, or it works
   in the build and 404s in dev, which is the direction nobody checks. `/feed.xml`
   and `/sitemap.xml` were missing for as long as the config keys existed, and the
-  proxy route with them. `/precache.json` is the exception and stays one: it
+  proxy route with them. The sitemap then lacked `gated`, because dev read only
+  the default export of `app/server.js`, so it listed the paths production
+  leaves out. `/precache.json` is the exception and stays one: it
   names hashed filenames only the build knows. Adding a config-driven route means
   touching both files.
 - **Config defaults are applied in `createApp`, not in `loadProject`.** They used
@@ -2191,6 +2193,18 @@ against.
   the second added a `lastmod` to nothing: 133 posts, a sitemap without one date
   in it, and no error anywhere. `sitemapEntries` keys a `Map` by path, and a
   later mention fills its fields in on the first. `spec: feeds/sitemap-entries`.
+- **A sitemap's sheets are files, not `?p=`.** Past `limit`, the index once
+  named `/sitemap.xml?p=0` and on, and the build wrote only the index to
+  `dist/static`. A static host ignores a query, so every sheet it served was the
+  index again: a crawler read a loop and no URL. `sitemapFiles` returns every
+  file by its path, the build writes them all, and the server answers the same
+  paths from the same list. A sheet the list does not name is a 404 in both.
+  `spec: feeds/sitemap-index`.
+- **An `exclude` pattern is read with `search`, not `test`.** `RegExp.test` on
+  a pattern with the `g` flag starts where the last call stopped, so
+  `/^\/draft\//g` left out `/draft/a`, kept `/draft/b`, and left out
+  `/draft/c`. Nothing failed, and the sitemap listed half the drafts. `search`
+  starts at the beginning every time. `spec: feeds/sitemap-values`.
 - **`src/gate.js` has no imports on purpose.** The sitemap reads it at runtime on
   every runtime, so it must not drag `prerender.js` and its context builder into
   a worker bundle. `test/portable.test.js` names every module the core reaches,

@@ -1,6 +1,8 @@
 [
   {"request": "GET /sitemap.xml", "status": 200, "body": "expected/index.xml"},
-  {"request": "GET /sitemap.xml?p=0", "status": 200, "body": "expected/p0.xml"},
-  {"request": "GET /sitemap.xml?p=1", "status": 200, "body": "expected/p1.xml"},
-  {"request": "GET /sitemap.xml?p=2", "status": 200, "body": "expected/p2.xml"}
+  {"request": "GET /sitemap-0.xml", "status": 200, "body": "expected/sitemap-0.xml"},
+  {"request": "GET /sitemap-1.xml", "status": 200, "body": "expected/sitemap-1.xml"},
+  {"request": "GET /sitemap-2.xml", "status": 200, "body": "expected/sitemap-2.xml"},
+  {"request": "GET /sitemap-3.xml", "status": 404},
+  {"request": "GET /sitemap.xml?p=1", "status": 200, "body": "expected/index.xml"}
 ]

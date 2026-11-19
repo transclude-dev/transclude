@@ -1,0 +1,15 @@
+export default {
+  sitemap: {
+    hostname: 'https://acme.com',
+    entries: [
+      { path: '/offset', lastmod: '2026-07-31T23:30:00-05:00' },
+      { path: '/number', lastmod: Date.UTC(2026, 6, 31, 12) },
+      { path: '/date', lastmod: new Date('2026-07-31T12:00:00Z') },
+      { path: '/word', lastmod: 'yesterday' },
+      { path: '/zero', lastmod: 0 },
+      { path: '/no-priority', priority: null },
+      { path: '/priority-zero', priority: 0 },
+    ],
+    exclude: [/^\/a\//g],
+  },
+};

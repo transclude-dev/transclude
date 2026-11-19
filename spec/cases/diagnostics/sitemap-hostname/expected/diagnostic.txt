@@ -1,0 +1,1 @@
+Error: [transclude] sitemap "hostname" is "https://acme.com/blog". It is an origin like 'https://acme.com', with a scheme and no path, because every URL is joined to it.

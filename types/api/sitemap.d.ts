@@ -21,17 +21,19 @@ export declare function sitemapEntries(manifest: Pick<import('./routes.js').Mani
 }>>;
 export type SitemapConfig = {
     /**
-     * every URL is absolute, so this is required
+     * every URL is absolute, so this is required. An
+     * origin, like `https://acme.com`, with no path
      */
     hostname?: string;
     /**
-     * URLs per sheet, past which an index is written
+     * URLs per sheet, past which an index is written. A
+     * whole number from 1 to 50000
      */
     limit?: number;
     /**
      * URLs the
-     * route table cannot know. A function, so an app builds them from its own
-     * data rather than listing them.
+     * route table cannot know, each with a `path` beginning with `/`. A function,
+     * so an app builds them from its own data rather than listing them.
      */
     entries?: object[] | (() => object[] | Promise<object[]>);
     /**
@@ -44,27 +46,45 @@ export type SitemapConfig = {
  * The `sitemap` block of a config.
  *
  * @typedef {object} SitemapConfig
- * @property {string} [hostname] every URL is absolute, so this is required
- * @property {number} [limit] URLs per sheet, past which an index is written
+ * @property {string} [hostname] every URL is absolute, so this is required. An
+ *   origin, like `https://acme.com`, with no path
+ * @property {number} [limit] URLs per sheet, past which an index is written. A
+ *   whole number from 1 to 50000
  * @property {object[]|(() => object[]|Promise<object[]>)} [entries] URLs the
- *   route table cannot know. A function, so an app builds them from its own
- *   data rather than listing them.
+ *   route table cannot know, each with a `path` beginning with `/`. A function,
+ *   so an app builds them from its own data rather than listing them.
  * @property {Array<string|RegExp>} [exclude] a path to leave out, or a pattern
  *   the path has to match. Tested against the path, not the absolute URL.
  */
 /**
- * The document for one request.
+ * Every file the sitemap is, by the path it is served at.
  *
- * Past the cap the bare path answers with an index and `?p=` answers with a
- * slice, because a file over 50000 URLs is not a sitemap a crawler will read.
+ * Under the cap that is `/sitemap.xml` alone. Past it, `/sitemap.xml` is the
+ * index and each sheet is its own file. The build writes every one, and the
+ * server answers the same paths from the same list, so a static host and the
+ * server cannot disagree about which sheets exist.
+ *
+ * Every sheet is built for any one request. The cost is the string work on
+ * the list `paths()` already gave, which is small beside `paths()` itself.
  *
  * @param {Pick<import('./routes.js').Manifest, 'routes'|'gated'>} manifest the
  *   two fields read here. The dev server has no endpoint list to give, and
  *   nothing here would read one.
  * @param {Record<string, import('./document.js').PageModule>} pages
  * @param {SitemapConfig} config the `sitemap` block, which has to name a hostname
- * @param {string|number|null} [page] which sheet, when there are more URLs than
- *   one holds. A string, because it arrives as `?p=`, and `Number` reads it.
- * @returns {Promise<string>} an XML document
+ * @returns {Promise<Map<string, string>>} each path, like `/sitemap-0.xml`, to its XML
  */
-export declare function sitemap(manifest: Pick<import('./routes.js').Manifest, 'routes' | 'gated'>, pages: Record<string, import('./document.js').PageModule>, config: SitemapConfig, page?: string | number | null): Promise<string>;
+export declare function sitemapFiles(manifest: Pick<import('./routes.js').Manifest, 'routes' | 'gated'>, pages: Record<string, import('./document.js').PageModule>, config: SitemapConfig): Promise<Map<string, string>>;
+/**
+ * The document for one request.
+ *
+ * @param {Pick<import('./routes.js').Manifest, 'routes'|'gated'>} manifest the
+ *   two fields read here. The dev server has no endpoint list to give, and
+ *   nothing here would read one.
+ * @param {Record<string, import('./document.js').PageModule>} pages
+ * @param {SitemapConfig} config the `sitemap` block, which has to name a hostname
+ * @param {string} [file] the path asked for, `/sitemap.xml` or a sheet
+ * @returns {Promise<string|null>} an XML document, or null for a sheet that is
+ *   not one of the files, which the server answers with a 404
+ */
+export declare function sitemap(manifest: Pick<import('./routes.js').Manifest, 'routes' | 'gated'>, pages: Record<string, import('./document.js').PageModule>, config: SitemapConfig, file?: string): Promise<string | null>;

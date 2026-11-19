@@ -2,8 +2,10 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
-import { sitemap, sitemapEntries } from '../src/sitemap.js';
+import { sitemap, sitemapEntries, sitemapFiles } from '../src/sitemap.js';
 
 const manifest = {
   routes: [
@@ -143,20 +145,34 @@ test('a URL with characters XML cares about is escaped', async () => {
   assert.doesNotMatch(xml, /q=a&b/);
 });
 
-test('past the cap the bare path is an index and ?p= is a slice', async () => {
+test('past the cap the bare path is an index, and each sheet is a file', async () => {
   const many = Array.from({ length: 5 }, (_, i) => ({ path: `/p${i}` }));
   const config = { hostname: 'https://x.com', entries: many, limit: 2 };
 
-  const idx = await sitemap({ routes: [] }, {}, config);
+  const files = await sitemapFiles({ routes: [] }, {}, config);
+  assert.deepEqual([...files.keys()], ['/sitemap.xml', '/sitemap-0.xml', '/sitemap-1.xml', '/sitemap-2.xml']);
+
+  const idx = files.get('/sitemap.xml');
   assert.match(idx, /<sitemapindex/);
   assert.deepEqual(locs(idx), [
-    'https://x.com/sitemap.xml?p=0',
-    'https://x.com/sitemap.xml?p=1',
-    'https://x.com/sitemap.xml?p=2',
+    'https://x.com/sitemap-0.xml',
+    'https://x.com/sitemap-1.xml',
+    'https://x.com/sitemap-2.xml',
   ]);
 
-  const slice = await sitemap({ routes: [] }, {}, config, '1');
-  assert.deepEqual(locs(slice), ['https://x.com/p2', 'https://x.com/p3']);
+  const sheet = await sitemap({ routes: [] }, {}, config, '/sitemap-1.xml');
+  assert.deepEqual(locs(sheet), ['https://x.com/p2', 'https://x.com/p3']);
+});
+
+test('a sheet the index does not name is null, which the server answers with a 404', async () => {
+  // The same answer a static host gives for a file the build did not write.
+  const many = Array.from({ length: 5 }, (_, i) => ({ path: `/p${i}` }));
+  const over = { hostname: 'https://x.com', entries: many, limit: 2 };
+  assert.equal(await sitemap({ routes: [] }, {}, over, '/sitemap-3.xml'), null);
+
+  // Under the cap there are no sheets at all.
+  const under = { hostname: 'https://x.com', entries: many };
+  assert.equal(await sitemap({ routes: [] }, {}, under, '/sitemap-0.xml'), null);
 });
 
 test('under the cap there is no index, only a urlset', async () => {
@@ -187,4 +203,113 @@ test('a C0 control character in a path is stripped from the sitemap', async () =
     { hostname: 'https://x.example' },
   );
   assert.doesNotMatch(xml, /[\x00-\x08\x0B\x0C\x0E-\x1F]/);
+});
+
+// ---- what the sitemap drill found -------------------------------------------
+//
+// `spec/DRILLS.md` has the drill. Each test is one input the old module and the
+// rebuilt one answered differently, with the answer decided then.
+
+test('a g flag on an exclude pattern leaves out every match, not every other one', async () => {
+  const xml = await sitemap({ routes: ['/a/1', '/a/2', '/a/3', '/b'].map((p) => ({ id: p, pattern: p, params: [] })) }, {}, {
+    hostname: 'https://x.com',
+    exclude: [/^\/a\//g],
+  });
+  assert.deepEqual(locs(xml), ['https://x.com/b']);
+});
+
+test('a lastmod is the day in UTC, and one that is no date or is 0 is dropped', async () => {
+  const xml = await sitemap({ routes: [] }, {}, {
+    hostname: 'https://x.com',
+    entries: [
+      { path: '/offset', lastmod: '2026-07-31T23:30:00-05:00' },
+      { path: '/number', lastmod: Date.UTC(2026, 6, 31, 12) },
+      { path: '/word', lastmod: 'yesterday' },
+      { path: '/zero', lastmod: 0 },
+    ],
+  });
+  assert.match(xml, /offset<\/loc><lastmod>2026-08-01<\/lastmod>/);
+  assert.match(xml, /number<\/loc><lastmod>2026-07-31<\/lastmod>/);
+  assert.equal(xml.match(/<lastmod>/g).length, 2);
+});
+
+test('a priority of null is no priority, and 0 is one', async () => {
+  const xml = await sitemap({ routes: [] }, {}, {
+    hostname: 'https://x.com',
+    entries: [{ path: '/a', priority: null }, { path: '/b', priority: 0 }],
+  });
+  assert.doesNotMatch(xml, /null/);
+  assert.match(xml, /<priority>0<\/priority>/);
+});
+
+test('a URL is percent-encoded as well as escaped', async () => {
+  const xml = await sitemap(
+    { routes: [{ id: 'p', pattern: '/p/:x', params: ['x'] }] },
+    { p: { paths: () => [{ x: 'a b' }, { x: 'café' }] } },
+    { hostname: 'https://x.com' },
+  );
+  assert.deepEqual(locs(xml), ['https://x.com/p/a%20b', 'https://x.com/p/caf%C3%A9']);
+});
+
+test('null from paths() or entries is no URLs, the way the build reads it', async () => {
+  const entries = await sitemapEntries(
+    { routes: [{ id: 'p', pattern: '/p/:x', params: ['x'] }, { id: 'a', pattern: '/a', params: [] }] },
+    { p: { paths: () => null } },
+    { entries: () => null },
+  );
+  assert.deepEqual(entries.map((e) => e.path), ['/a']);
+});
+
+test('an entry whose path is not a path on this site is refused, and named', async () => {
+  const refuse = (entry) =>
+    assert.rejects(() => sitemapEntries({ routes: [] }, {}, { entries: [{ path: '/ok' }, entry] }), (err) => {
+      assert.match(err.message, /sitemap entry 2 has the path/);
+      assert.match(err.message, /beginning with one "\/"/);
+      return true;
+    });
+
+  await refuse({ lastmod: '2026-07-31' });
+  await refuse({ path: 'press' });
+  await refuse({ path: '//evil.com/x' });
+  await refuse({ path: 'https://evil.com/x' });
+  await assert.rejects(
+    () => sitemapEntries({ routes: [] }, {}, { entries: () => ({ path: '/a' }) }),
+    /"entries" gave object/,
+  );
+});
+
+test('a limit that is not a whole number from 1 to 50000 is refused, and named', async () => {
+  for (const limit of [0, -1, 1.5, 50001, '2']) {
+    await assert.rejects(
+      () => sitemap({ routes: [] }, {}, { hostname: 'https://x.com', limit }),
+      new RegExp(`"limit" is ${JSON.stringify(JSON.stringify(limit)).slice(1, -1)}\\. It is a whole number from 1 to 50000`),
+    );
+  }
+  assert.match(await sitemap({ routes: [] }, {}, { hostname: 'https://x.com', limit: 50000 }), /<urlset/);
+});
+
+test('a hostname that is not an origin is refused, and named', async () => {
+  for (const hostname of ['acme.com', 'https://acme.com/blog', 'https://acme.com/?a=1', 'ftp://acme.com']) {
+    await assert.rejects(
+      () => sitemap({ routes: [] }, {}, { hostname }),
+      (err) => err.message.includes(`"hostname" is ${JSON.stringify(hostname)}. It is an origin`),
+    );
+  }
+  assert.match(await sitemap({ routes: [] }, {}, { hostname: 'https://acme.com/' }), /<urlset/);
+  assert.match(await sitemap({ routes: [] }, {}, { hostname: 'http://localhost:3000' }), /<urlset/);
+});
+
+test('the dev server reads gated, serves the sheets, and reports a failure', () => {
+  // A text check, as in `context-shape.test.js`: `bin/dev.js` starts a server
+  // the moment it is imported. The dev sitemap listed gated paths, had no
+  // sheets, and sent a failing `paths()` to Hono's default handler.
+  const source = fs
+    .readFileSync(fileURLToPath(new URL('../bin/dev.js', import.meta.url)), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+  assert.match(source, /readGated\(serverModule\?\.gated\)/);
+  assert.match(source, /sitemap\(\{ routes, gated \}/);
+  assert.match(source, /'\/:sheet\{sitemap-\[0-9\]\+\\\\\.xml\}'/);
+  assert.match(source, /onError\(c, err, \{ route: null, phase: 'sitemap' \}\)/);
 });

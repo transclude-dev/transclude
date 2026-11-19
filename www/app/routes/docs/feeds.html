@@ -96,9 +96,17 @@ export default {
   </p>
 
   <p>
-    Past 50,000 URLs the bare path becomes an index and each
-    <code>?p=</code> is a slice of the list. Lower <code>limit</code> to see it
-    on a small site.
+    The hostname is an origin, like <code>https://acme.com</code>, with no
+    path, and an entry's <code>path</code> begins with <code>/</code>. Every
+    URL is joined to the hostname, so anything else fails the build.
+  </p>
+
+  <p>
+    Past 50,000 URLs, <code>/sitemap.xml</code> becomes an index, and each
+    slice of the list is a file of its own: <code>/sitemap-0.xml</code>,
+    <code>/sitemap-1.xml</code> and on. The build writes every one, so a static
+    host serves the same files. Lower <code>limit</code> to see it on a small
+    site.
   </p>
 
   <h2>Feeds</h2>

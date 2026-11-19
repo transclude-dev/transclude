@@ -142,13 +142,16 @@ export default (app) => {
 
   ${html(s.fetch)}
 
-  <doc-note label="setHTMLUnsafe, not innerHTML">
+  <doc-note label="When setHTMLUnsafe matters">
     <a
       href="https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTMLUnsafe"
       >setHTMLUnsafe()</a
     >
-    builds shadow roots from the markup it is given. A shadow element arriving
-    in a fragment needs it to start up.
+    builds a declarative shadow root from the markup it is given, and
+    <code>innerHTML</code> does not. A shadow element arrives in a fragment
+    bare and paints itself on connect, so either one starts it. A fragment that
+    carries a declarative root needs <code>setHTMLUnsafe()</code>: one written
+    by hand, or one an include brought in.
   </doc-note>
 
   <p>

@@ -144,6 +144,23 @@ test('malformed each is a compile error', () => {
   assert.throws(() => compile('<li each="items">x</li>'), CompileError);
 });
 
+test('an each name may be any JavaScript identifier', () => {
+  assert.equal(render('<li each="café, été of items">${été}${café}</li>', { items: ['a', 'b'] }), '<li>0a</li><li>1b</li>');
+});
+
+test('an each name that is a reserved word is a compile error', () => {
+  // The server would render it, renamed. The type-check shim writes it as written.
+  for (const word of ['class', 'let', 'await', 'eval']) {
+    assert.throws(() => compile(`<li each="${word} of items">x</li>`), CompileError, word);
+    assert.throws(() => compile(`<li each="item, ${word} of items">x</li>`), CompileError, word);
+  }
+});
+
+test('an each that names the item and the index alike is a compile error', () => {
+  // It rendered the index where the page wrote the item.
+  assert.throws(() => compile('<li each="item, item of items">${item}</li>'), CompileError);
+});
+
 // ---- conditionals ---------------------------------------------------------
 
 test('if / else-if / else chain', () => {

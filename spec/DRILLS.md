@@ -266,3 +266,14 @@ name that JavaScript accepts.
 
 - **What `spec/` missed:** a name that is not ASCII, a reserved word, and
   the same name twice.
+- **Decided:** take the new answer on all three rows. Accept a name that is
+  not ASCII. Refuse a reserved word, and refuse the same name twice, with the
+  "is malformed" message an author gets now.
+- **The fix:** the old module, patched. The pattern takes any identifier, and
+  two checks follow it. Three tests in `test/compiler.test.js` hold the rows,
+  and the old module fails all three.
+- **Cases added:** `routing/each-name-not-ascii`,
+  `diagnostics/each-name-reserved` and `diagnostics/each-same-name`. The old
+  module fails all three. A mutant that drops one rule fails only its own case.
+  The rebuilt module passes all three, and agrees with the patched one on all
+  42 values.

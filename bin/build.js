@@ -21,7 +21,7 @@ import { isGated, readGated, unmatched } from '../src/gate.js';
 import { feed, feedPath } from '../src/feed.js';
 import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
-import { sitemap } from '../src/sitemap.js';
+import { sitemapFiles } from '../src/sitemap.js';
 import { etagOf, loadAssets, loadStatic } from '../src/static-cache.js';
 import { validatorFor } from '../src/public-files.js';
 import { buildSprite, iconDirs, readAllLibraries, refuseSpriteClash, spritePath } from '../src/icons.js';
@@ -376,8 +376,12 @@ if (config.sitemap) {
   // needs rather than the URL the build wrote. The sitemap reads neither.
   const forSitemap = /** @type {{ routes: import('../src/routes.js').BuiltRoute[],
     gated: string[] }} */ (/** @type {unknown} */ ({ routes: manifest.routes, gated }));
-  write('sitemap.xml', await sitemap(forSitemap, pages, config.sitemap));
-  prerendered.push('/sitemap.xml');
+  // Every sheet too, past `limit`, because the index names them by path and a
+  // static host has no other way to answer one.
+  for (const [at, xml] of await sitemapFiles(forSitemap, pages, config.sitemap)) {
+    write(at.slice(1), xml);
+    prerendered.push(at);
+  }
 }
 
 if (config.feed) {

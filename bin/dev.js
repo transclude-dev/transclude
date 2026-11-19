@@ -34,6 +34,7 @@ import { includeContext } from '../src/include.js';
 import { nodeLookup } from '../src/lookup.js';
 import { feed, feedPath, feedType } from '../src/feed.js';
 import { sitemap } from '../src/sitemap.js';
+import { readGated } from '../src/gate.js';
 import { documentStore, PROXY_PATH, proxyHandler } from '../src/proxy.js';
 import { afterFor } from '../src/after.js';
 import { loadVite } from '../src/vite.js';
@@ -339,7 +340,7 @@ const onError = (c, err, at = null) => {
         request: c.req.raw,
         url: c.req.url,
         method: c.req.method,
-        route: at ? { id: at.route.id, pattern: at.route.pattern, params: c.req.param() } : null,
+        route: at?.route ? { id: at.route.id, pattern: at.route.pattern, params: c.req.param() } : null,
         phase: at?.phase ?? null,
       });
     } catch (failed) {
@@ -353,8 +354,8 @@ const onError = (c, err, at = null) => {
 const serverFile = path.join(root, config.appDir, SERVER_FILE);
 
 /**
- * The app's own middleware, through Vite so an edit to it is picked up the same
- * way an edit to a page is. Production gets the same module out of the SSR
+ * The app's own `app/server.js`, its middleware and its `gated` list, through
+ * Vite so an edit to it is picked up the same way an edit to a page is. Production gets the same module out of the SSR
  * bundle instead, because that server reads `dist` and nothing else.
  *
  * Invalidated first, and not for tidiness: the watcher below and Vite's own
@@ -362,7 +363,7 @@ const serverFile = path.join(root, config.appDir, SERVER_FILE);
  * Vite's, `ssrLoadModule` hands back the module as it was. Measured: the first
  * edit was ignored and the second appeared to work.
  */
-async function loadMiddleware() {
+async function loadServerModule() {
   if (!fs.existsSync(serverFile)) return null;
 
   const url = `/${config.appDir}/${SERVER_FILE}`;
@@ -372,8 +373,7 @@ async function loadMiddleware() {
   const node = await vite.moduleGraph.getModuleByUrl(url, ssr);
   if (node) vite.moduleGraph.invalidateModule(node);
 
-  const mod = await vite.ssrLoadModule(url);
-  return mod.default ?? null;
+  return vite.ssrLoadModule(url);
 }
 
 async function buildApp() {
@@ -385,13 +385,19 @@ async function buildApp() {
     pageFor: (id) => vite.ssrLoadModule(pageModuleId(id)),
     lookup: nodeLookup(),
   });
+  // The middleware, and `gated` for the sitemap. Production reads the same two
+  // exports out of the SSR bundle. Without `gated` here, the dev sitemap listed
+  // the paths the built one leaves out.
+  const serverModule = await loadServerModule();
+  const gated = readGated(serverModule?.gated);
+
   const app = baseApp({
     csrf: config.csrf,
     permissionsPolicy: config.permissionsPolicy,
     fragmentParam: config.fragmentParam,
     trailingSlash: config.trailingSlash,
     publicFiles,
-    middleware: await loadMiddleware(),
+    middleware: serverModule?.default ?? null,
   });
 
   // A public file at this URL is refused rather than raced, so registering after
@@ -417,17 +423,28 @@ async function buildApp() {
   // correct in the build. That is the worst shape a difference can take: the
   // thing you check by hand is the thing that was never wired.
   if (config.sitemap) {
-    app.get('/sitemap.xml', async (c) => {
-      // Only a parameter route ever reads its module, for `paths`. Loading the
-      // rest would compile the whole site to answer one request.
-      const pages = {};
-      for (const route of routes) {
-        if (route.params.length) pages[route.id] = await pageFor(route.id);
-      }
+    /** @param {import('hono').Context} c @param {string} file */
+    const sendSitemap = async (c, file) => {
+      // Caught, so a failing `paths()` reaches `onError` as it does in
+      // production, rather than Hono's default handler.
+      try {
+        // Only a parameter route ever reads its module, for `paths`. Loading the
+        // rest would compile the whole site to answer one request.
+        const pages = {};
+        for (const route of routes) {
+          if (route.params.length) pages[route.id] = await pageFor(route.id);
+        }
 
-      const xml = await sitemap({ routes }, pages, config.sitemap, c.req.query('p') ?? null);
-      return c.body(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
-    });
+        const xml = await sitemap({ routes, gated }, pages, config.sitemap, file);
+        if (xml === null) return c.notFound();
+        return c.body(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
+      } catch (err) {
+        return onError(c, err, { route: null, phase: 'sitemap' });
+      }
+    };
+
+    app.get('/sitemap.xml', (c) => sendSitemap(c, '/sitemap.xml'));
+    app.get('/:sheet{sitemap-[0-9]+\\.xml}', (c) => sendSitemap(c, `/${c.req.param('sheet')}`));
   }
 
   if (config.feed) {

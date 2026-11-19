@@ -301,20 +301,26 @@ export function createApp({
   // Before the route table, like the public files, so a `[...path]` catch-all
   // cannot answer for it.
   if (config.sitemap) {
-    app.get('/sitemap.xml', async (c) => {
+    /** @param {import('hono').Context} c @param {string} file */
+    const sendSitemap = async (c, file) => {
       // Caught like every other route: `sitemap` calls each dynamic page's
       // `paths()`, which often reads a database, so a failure here is an
       // ordinary request failure and belongs in the same `onError` seam and the
       // same error page rather than in Hono's default handler, which the app
       // never configured and cannot report through.
       try {
-        const page = c.req.query('p');
-        const xml = await sitemap(manifest, pages, config.sitemap, page ?? null);
+        const xml = await sitemap(manifest, pages, config.sitemap, file);
+        if (xml === null) return c.notFound();
         return c.body(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
       } catch (err) {
         return internalError(c, err, { route: null, phase: 'sitemap' });
       }
-    });
+    };
+
+    app.get('/sitemap.xml', (c) => sendSitemap(c, '/sitemap.xml'));
+    // A sheet, past `limit`. A number the index does not name is a 404, the
+    // same answer a static host gives for a file the build did not write.
+    app.get('/:sheet{sitemap-[0-9]+\\.xml}', (c) => sendSitemap(c, `/${c.req.param('sheet')}`));
   }
 
   // A list of what the build produced, for whoever wants to cache it. The

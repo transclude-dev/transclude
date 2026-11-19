@@ -376,6 +376,22 @@ missing hostname, and an `entries` function that returns `null`.
 Three other rows differ only in the words of a message.
 
 - **What `spec/` missed:** each row above. None has a case.
+- **Decided:** keep `main` on the first and fifth rows. Take the rebuilt
+  answer on the rows for `undefined`, the hostname, `exclude`, `lastmod: true`,
+  `paths()` and `NaN`. Leave the messages and the empty line as they are.
+- **The fix:** the old module, patched, and the build. A merge skips a field
+  that is `undefined`. A hostname with a user or a password is refused, and so
+  is an `exclude` item that is not a string or a `RegExp`. A `lastmod` is read
+  only from a string, a number or a Date. The build read `paths()` first and
+  failed with "listed.map is not a function", so the build and the sitemap
+  both name the file now. Tests in `test/sitemap.test.js` hold every row, and
+  the old module fails the six that changed.
+- **Cases added:** `feeds/sitemap-entries-null`,
+  `diagnostics/sitemap-hostname-credentials`, `diagnostics/sitemap-exclude`,
+  `diagnostics/sitemap-paths-not-a-list`, `diagnostics/sitemap-limit-nan`,
+  and three entries in `feeds/sitemap-values`. The old modules fail every case
+  for a row that changed. The rebuilt module fails the two for the rows that
+  kept `main`.
 
 ### `src/include.js`
 

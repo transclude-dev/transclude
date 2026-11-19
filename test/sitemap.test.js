@@ -226,6 +226,8 @@ test('a lastmod is the day in UTC, and one that is no date or is 0 is dropped', 
       { path: '/number', lastmod: Date.UTC(2026, 6, 31, 12) },
       { path: '/word', lastmod: 'yesterday' },
       { path: '/zero', lastmod: 0 },
+      // `new Date(true)` is a moment in 1970.
+      { path: '/true', lastmod: true },
     ],
   });
   assert.match(xml, /offset<\/loc><lastmod>2026-08-01<\/lastmod>/);
@@ -251,6 +253,39 @@ test('a URL is percent-encoded as well as escaped', async () => {
   assert.deepEqual(locs(xml), ['https://x.com/p/a%20b', 'https://x.com/p/caf%C3%A9']);
 });
 
+test('an entry path that is already encoded is not encoded again', async () => {
+  const xml = await sitemap({ routes: [] }, {}, { hostname: 'https://x.com', entries: [{ path: '/p/a%20b' }] });
+  assert.deepEqual(locs(xml), ['https://x.com/p/a%20b']);
+});
+
+test('a later mention that leaves a field undefined keeps the earlier value', async () => {
+  const entries = await sitemapEntries({ routes: [] }, {}, {
+    entries: [
+      { path: '/a', lastmod: '2026-01-01', priority: 0.5 },
+      { path: '/a', lastmod: undefined, priority: null },
+    ],
+  });
+  assert.deepEqual(entries, [{ path: '/a', lastmod: '2026-01-01', priority: null }]);
+});
+
+test('paths() that gives something other than a list is refused, and named', async () => {
+  await assert.rejects(
+    () => sitemapEntries({ routes: [{ id: 'p', pattern: '/p/:x', params: ['x'] }] }, { p: { paths: () => ({}) } }),
+    /paths\(\) in \/p\/:x gave object\. It is a list of params/,
+  );
+});
+
+test('an exclude that is not a path or a pattern is refused, and named', async () => {
+  // `search` would read 5 as the pattern /5/.
+  for (const rule of [5, null, {}]) {
+    await assert.rejects(
+      () => sitemapEntries({ routes: [] }, {}, { exclude: ['/a', rule] }),
+      (err) => err.message.includes(`"exclude" has ${JSON.stringify(rule)}. Each one is a path`),
+    );
+  }
+  await assert.rejects(() => sitemapEntries({ routes: [] }, {}, { exclude: '/admin' }), /"exclude" is "\/admin"\. It is a list/);
+});
+
 test('null from paths() or entries is no URLs, the way the build reads it', async () => {
   const entries = await sitemapEntries(
     { routes: [{ id: 'p', pattern: '/p/:x', params: ['x'] }, { id: 'a', pattern: '/a', params: [] }] },
@@ -258,6 +293,8 @@ test('null from paths() or entries is no URLs, the way the build reads it', asyn
     { entries: () => null },
   );
   assert.deepEqual(entries.map((e) => e.path), ['/a']);
+  const none = await sitemapEntries({ routes: [] }, {}, { entries: () => undefined });
+  assert.deepEqual(none, []);
 });
 
 test('an entry whose path is not a path on this site is refused, and named', async () => {
@@ -285,11 +322,15 @@ test('a limit that is not a whole number from 1 to 50000 is refused, and named',
       new RegExp(`"limit" is ${JSON.stringify(JSON.stringify(limit)).slice(1, -1)}\\. It is a whole number from 1 to 50000`),
     );
   }
+  // JSON writes NaN as null, which named the wrong value.
+  await assert.rejects(() => sitemap({ routes: [] }, {}, { hostname: 'https://x.com', limit: NaN }), /"limit" is NaN\./);
   assert.match(await sitemap({ routes: [] }, {}, { hostname: 'https://x.com', limit: 50000 }), /<urlset/);
 });
 
 test('a hostname that is not an origin is refused, and named', async () => {
-  for (const hostname of ['acme.com', 'https://acme.com/blog', 'https://acme.com/?a=1', 'ftp://acme.com']) {
+  // A user and a password would be written into every URL.
+  const refused = ['acme.com', 'https://acme.com/blog', 'https://acme.com/?a=1', 'ftp://acme.com', 'https://u:p@acme.com', 'https://u@acme.com'];
+  for (const hostname of refused) {
     await assert.rejects(
       () => sitemap({ routes: [] }, {}, { hostname }),
       (err) => err.message.includes(`"hostname" is ${JSON.stringify(hostname)}. It is an origin`),

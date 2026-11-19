@@ -84,7 +84,8 @@ export default {
   <p>
     A route with no <code>paths()</code> is left out, because the pattern itself
     is not a URL. Anything else goes in <code>entries</code>, as an array or a
-    function, and <code>exclude</code> takes a path or a pattern.
+    function, and <code>exclude</code> takes a path or a pattern. Anything else in
+    <code>exclude</code> fails the build.
   </p>
 
   ${html(s.sitemapEntries)}
@@ -97,7 +98,7 @@ export default {
 
   <p>
     The hostname is an origin, like <code>https://acme.com</code>, with no
-    path, and an entry's <code>path</code> begins with <code>/</code>. Every
+    path and no user or password, and an entry's <code>path</code> begins with <code>/</code>. Every
     URL is joined to the hostname, so anything else fails the build.
   </p>
 

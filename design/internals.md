@@ -2225,7 +2225,10 @@ against.
   which names the same URLs a second time. Keeping the first mention and dropping
   the second added a `lastmod` to nothing: 133 posts, a sitemap without one date
   in it, and no error anywhere. `sitemapEntries` keys a `Map` by path, and a
-  later mention fills its fields in on the first. `spec: feeds/sitemap-entries`.
+  later mention fills its fields in on the first. A field the later mention
+  leaves `undefined` keeps the earlier value. A spread did not, so
+  `{ lastmod: post.updated }` for a post with no date cleared the date a first
+  mention gave. `spec: feeds/sitemap-entries`, `spec: feeds/sitemap-values`.
 - **A sitemap's sheets are files, not `?p=`.** Past `limit`, the index once
   named `/sitemap.xml?p=0` and on, and the build wrote only the index to
   `dist/static`. A static host ignores a query, so every sheet it served was the
@@ -2237,7 +2240,10 @@ against.
   a pattern with the `g` flag starts where the last call stopped, so
   `/^\/draft\//g` left out `/draft/a`, kept `/draft/b`, and left out
   `/draft/c`. Nothing failed, and the sitemap listed half the drafts. `search`
-  starts at the beginning every time. `spec: feeds/sitemap-values`.
+  starts at the beginning every time. It also reads a number as a pattern, so
+  `5` in `exclude` left out every path with a 5 in it. An item that is not a
+  string or a `RegExp` is refused. `spec: feeds/sitemap-values`,
+  `spec: diagnostics/sitemap-exclude`.
 - **`src/gate.js` has no imports on purpose.** The sitemap reads it at runtime on
   every runtime, so it must not drag `prerender.js` and its context builder into
   a worker bundle. `test/portable.test.js` names every module the core reaches,

@@ -3,6 +3,8 @@
 // Bun serves whatever a module default-exports with a `fetch`, so there is no
 // listener to write. The app already is one.
 
+// First, so the app's own modules make a `Response` that keeps its type.
+import './bun-response.js';
 import { app, noBuild, port, summary } from '../src/production.js';
 
 if (noBuild) {

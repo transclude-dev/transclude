@@ -1183,6 +1183,20 @@ against.
   broke it would have kept its line in the README and nothing would have failed.
   TodoMVC is the app it serves, because it renders a compiled page and has
   nothing but forms, so one GET and one POST cover both paths through the app.
+- **Bun keeps a text body's type out of its headers.** The Fetch standard
+  writes `text/plain;charset=UTF-8` into `headers` when a string body is given,
+  and Node, Deno and workerd do. Bun decides it at send time. Hono's `res`
+  setter copies a response from its headers and its body stream whenever a
+  middleware already read `c.res`, so on Bun the copy had no type and went out
+  as `application/octet-stream`: every `new Response('ok')` from an endpoint
+  that set a cookie, and every CSRF 403. `bin/bun-response.js`, imported first
+  by `serve.bun.js`, wraps the constructor in a `Proxy` that adds the header.
+  Not a subclass: `Response.json()` and `fetch()` make Bun's own class however
+  the global is replaced, and those would fail `instanceof Response`, which is
+  how an endpoint's answer is told from data. That broke an endpoint answering
+  `Response.json()` the first time this was tried. Only a string body was
+  missing its type, so only that one is filled in. `npm run spec:runtimes`
+  found it, and 21 cases fail on Bun without the file.
 - **A compiled binary is started outside the project it carries.** `deno
   compile` puts the app under `deno-compile-<name>` in the system temp
   directory, a path that exists only while the binary runs. No working

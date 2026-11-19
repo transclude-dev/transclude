@@ -790,6 +790,37 @@ What lets an agent run the spec, read the result and fix what it says:
 | A check that fails a commit changing `src/` and expected output | `scripts/spec-commits.js`, the `contract` job | a mixed commit failed it; it also names two earlier commits on `main`, each a fix with a new assertion in `expect.json` |
 | A test that nothing in `spec/` imports from `src/` | `test/spec-boundary.test.js` | an import added to `spec/runner/compare.js` failed it |
 
+## Mutations
+
+`scripts/mutate.js`, run against every case. A survivor is a change the spec
+does not notice: a missing case, or code nothing reaches.
+
+`src/compiler/directives.js`: 3 of 4 caught. The survivor is the `''` in
+`value ?? ''` in `parseEach`, a fallback nothing reaches: the value is always a
+string.
+
+`src/document.js`: 153 of 185 caught, 32 survived.
+
+Missing cases, to write:
+
+| Line | What survived | The case it asks for |
+| --- | --- | --- |
+| 43 | The message when `absolute()` has no origin | The message itself, in the log |
+| 175, 194 | A head tag's quote-aware scan | A `<meta>` whose single-quoted value holds `>` |
+| 248 | `<` and `>` escaped in a merged attribute | An `<html>` or `<body>` attribute value holding `<` |
+| 308 | The message for a bad attribute name on `<html>` or `<body>` | That message |
+| 416, 437, 438, 441, 442 | The params of a route an include reads | An include of a `[name]` route and of a `[...path]` route, each reading its params |
+| 502, 511 | The messages for an include of another route or site where none may be read | Those messages |
+| 574 | A layout's data reaching `ctx.layout` in a fragment request | A page whose fragment reads `ctx.layout` |
+| 644 | A guard layout's data reaching the next guard | Two guard layouts, the inner reading the outer's |
+| 748 | `Allow` on a 405: `GET` and each verb a page exports | A page sent a verb it does not export |
+| 816 | A light element nested in another bringing its styles | Both styles in `<head>` |
+
+Nothing reaches these, or the change makes no difference: 142 and 146 (names
+of internal keys), 189 (a reset already true after a full scan), 409 (a cache),
+465, 581, 604 and 777 (fallbacks nothing reaches), 769 (a default the config
+always overrides), 841 and 843 (the newline between two tags).
+
 ## Gotchas
 
 Phase 2 sorts every gotcha in `design/internals.md`. A behavioral one fails at

@@ -817,9 +817,10 @@ What lets an agent run the spec, read the result and fix what it says:
 `scripts/mutate.js`, run against every case. A survivor is a change the spec
 does not notice: a missing case, or code nothing reaches.
 
-`src/compiler/directives.js`: 3 of 4 caught. The survivor is the `''` in
+`src/compiler/directives.js`: 8 of 56 caught. One survivor is the `''` in
 `value ?? ''` in `parseEach`, a fallback nothing reaches: the value is always a
-string.
+string. The other 47 are the words in `RESERVED`. A case shows the rule with
+`class`, and a word changed in the list is not noticed unless a case names it.
 
 `src/document.js`: 153 of 185 caught, 32 survived. The nine cases below were
 written for 17 of them, and each fails with its mutation put back. With them,

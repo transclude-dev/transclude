@@ -7,10 +7,16 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { parse as parseScript } from 'acorn';
 import { parseFragment } from 'parse5';
+import { attribute, elementsOf, textOf } from './tree.js';
 
 // What a case holds about itself. Markup in these is expected output, not app.
 const NOT_THE_APP = new Set(['expected', 'upstream']);
+
+// The script types a browser runs. A script of any other type is a data block,
+// such as JSON-LD or speculation rules, and asks for no JavaScript.
+const RUNS = new Set(['', 'module', 'text/javascript', 'application/javascript']);
 
 /**
  * Every literal `id` on an element marked `fragment`, in every page source of
@@ -54,6 +60,71 @@ export function includedIds(caseDir) {
   return ids;
 }
 
+/**
+ * The tags whose element says `export const shadow = true`. An element's file
+ * is named for its tag.
+ *
+ * @param {string} caseDir
+ * @returns {Set<string>}
+ */
+export function shadowTags(caseDir) {
+  const tags = new Set();
+  for (const file of sourceFiles(caseDir)) {
+    const source = fs.readFileSync(file, 'utf8');
+    if (/export const shadow = true\b/.test(source)) tags.add(path.basename(file, '.html'));
+  }
+  return tags;
+}
+
+/**
+ * Where a case asks for client JavaScript, or `null` when it does not. A
+ * script the browser runs asks, and so does an element that exports anything
+ * but `properties`: behavior, members, state and form association each define
+ * it, and `/docs/elements` says a definition is what ships. A light element of
+ * plain markup asks for nothing.
+ *
+ * Erring toward "asks" is safe. It only means the invariant skips a case.
+ *
+ * @param {string} caseDir
+ * @returns {string | null}
+ */
+export function askedForJavaScript(caseDir) {
+  for (const file of sourceFiles(caseDir)) {
+    const where = path.relative(caseDir, file);
+    const tree = parseFragment(fs.readFileSync(file, 'utf8'));
+    for (const script of elementsOf(tree).filter((element) => element.tagName === 'script')) {
+      if (attribute(script, 'server') !== null) continue;
+      if (attribute(script, 'element') !== null) {
+        if (!onlyProperties(textOf(script))) return `${where}: its <script element> exports more than properties`;
+        continue;
+      }
+      const type = (attribute(script, 'type') ?? '').toLowerCase();
+      if (RUNS.has(type)) return `${where}: a <script> the browser runs`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Whether an element's script is `export const properties = …` and nothing
+ * else. Code that does not parse counts as more.
+ *
+ * @param {string} code
+ */
+function onlyProperties(code) {
+  let program;
+  try {
+    program = parseScript(code, { ecmaVersion: 'latest', sourceType: 'module' });
+  } catch {
+    return false;
+  }
+  return program.body.every((statement) => {
+    if (statement.type !== 'ExportNamedDeclaration') return false;
+    if (statement.declaration?.type !== 'VariableDeclaration') return false;
+    return statement.declaration.declarations.every((declarator) => declarator.id.name === 'properties');
+  });
+}
+
 /** @param {string} dir */
 function sourceFiles(dir) {
   const found = [];
@@ -64,32 +135,4 @@ function sourceFiles(dir) {
     else if (entry.name.endsWith('.html') || entry.name.endsWith('.md')) found.push(full);
   }
   return found;
-}
-
-/**
- * Every element under a node, a template's content included. A template in
- * the source can be a slot's filling, which renders as ordinary markup.
- *
- * @param {any} node
- * @returns {any[]}
- */
-function elementsOf(node) {
-  const found = [];
-  for (const child of node.childNodes ?? []) {
-    if (child.tagName) found.push(child);
-    found.push(...elementsOf(child));
-  }
-  if (node.content) found.push(...elementsOf(node.content));
-  return found;
-}
-
-/**
- * An attribute's value, or `null` when the element does not have it.
- *
- * @param {any} element
- * @param {string} name
- */
-export function attribute(element, name) {
-  const found = element.attrs.find((attr) => attr.name === name);
-  return found ? found.value : null;
 }

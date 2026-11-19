@@ -14,7 +14,8 @@
 
 import { parse, serializeOuter } from 'parse5';
 import { lineDiff, normalize } from '../runner/compare.js';
-import { attribute, fragmentIds, includedIds } from './source.js';
+import { fragmentIds, includedIds } from './source.js';
+import { attribute } from './tree.js';
 
 export const name = 'fragment equivalence';
 

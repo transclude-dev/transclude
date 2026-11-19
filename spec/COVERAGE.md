@@ -735,6 +735,20 @@ the page's headers, Bun's text type lost in a copy, the Node adapter's
 `Response` swap, the worker's own ETag, the worker's public files, and a 500
 without `nosniff`. The gotchas below name each.
 
+## In a browser
+
+`npm run spec:browser` opens every case that defines an element in headless
+Chrome, served on Node. Each page its `expect.json` asks for must load with no
+error, and connecting its elements must change nothing in the body. 19 cases,
+one page each.
+
+Broken in `src/runtime/index.js` to see it fail: a light element that writes
+its defaults over the server's values on connect fails 3 cases, and a shadow
+element that adds a node on connect fails 6.
+
+The claims marked "Needs a browser" above get a `browser.json` each, batch by
+batch.
+
 ## Gotchas
 
 Phase 2 sorts every gotcha in `design/internals.md`. A behavioral one fails at

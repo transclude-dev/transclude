@@ -237,6 +237,44 @@ runtime and saying why, and is not served there:
 { "workerd": "Its data module reads and writes a file with node:fs, and a worker has no disk." }
 ```
 
+## In a browser
+
+```sh
+npm run spec:browser                    # every case that needs Chrome
+npm run spec:browser -- elements        # one area
+npm run spec:browser -- --snapshot      # write the DOM files a case lacks
+```
+
+It runs `npm run spec` first, then serves each case that built on Node and
+opens it in headless Chrome, driven over the DevTools protocol with no
+dependency. CI runs it in the `browser` job. Two kinds of check:
+
+- **Connecting changes nothing.** Every case that defines an element: each
+  page its `expect.json` asks for with a 200 loads with no exception, no
+  `console.error` and no failed load, and the body after the elements connect,
+  shadow roots written out, is the body the server sent.
+- **A `browser.json`.** Beside `expect.json`, a list of entries, each in a
+  fresh tab:
+
+```json
+[
+  {
+    "name": "a shadow element re-renders on an attribute change",
+    "load": "/",
+    "steps": [
+      { "run": "document.querySelector('user-card').setAttribute('name', 'Grace')" },
+      { "expect": "document.querySelector('user-card').shadowRoot.querySelector('h3').textContent", "equals": "Grace" },
+      { "dom": "user-card", "file": "expected/renamed.html" }
+    ]
+  }
+]
+```
+
+A `run` is awaited, and then the page settles: two frames and a task, which is
+after a re-render and after a style. An `expect` compares the value as JSON. A
+`dom` serializes the element with its shadow roots and compares it the way a
+body is compared. An exception or a `console.error` fails the entry.
+
 ## Adding one
 
 1. Make the directory under the area that matches the docs page:

@@ -139,6 +139,10 @@ jobs:
       - run: npm run build --prefix examples/showcase
       - run: npm run test:browser --prefix examples/showcase
 
+      # Every case that defines an element, and every case with a
+      # `browser.json`, served on Node and opened in the same Chrome.
+      - run: npm run spec:browser
+
       # How much of the runtime those checks reach, and a floor under it.
       # `docs/decisions.html` calls the shadow half settled and prints a number
       # to say why, and a number nothing keeps true is the failure this

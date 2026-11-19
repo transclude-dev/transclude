@@ -58,6 +58,27 @@ test('a shape this cannot read counts as hiding', () => {
   assert.equal(hidesParam('params=', 'fragment'), true);
 });
 
+test('a shape the grammar allows is read as a cache reads it', () => {
+  // A bare key with parameters is still the bare key, and an older draft that
+  // browsers shipped reads bare `params` as every parameter.
+  assert.equal(hidesParam('params;x', 'fragment'), true);
+  assert.equal(hidesParam('params=?1;x', 'fragment'), true);
+  assert.equal(hidesParam('params=?0', 'fragment'), false);
+  // A list's own parameters say nothing about what it names.
+  assert.equal(hidesParam('params=("utm_source");x', 'fragment'), false);
+  // A repeated key keeps its last value.
+  assert.equal(hidesParam('params=("fragment"), params=("utm_source")', 'fragment'), false);
+  // A comma inside a string is not the end of a member.
+  assert.equal(hidesParam('params=("a,b" "fragment")', 'fragment'), true);
+});
+
+test('a shape this cannot read counts as hiding, wherever it is', () => {
+  assert.equal(hidesParam('except', 'fragment'), true);
+  assert.equal(hidesParam('params=(utm_source)', 'fragment'), true);
+  assert.equal(hidesParam('params=("utm_source")x', 'fragment'), true);
+  assert.equal(hidesParam('params=("utm_source"', 'fragment'), true);
+});
+
 test('the parameter asked about is the configured one', () => {
   // `fragmentParam` is a config key, so `part` or `piece` is as real as
   // `fragment` and the check cannot hard-code one.

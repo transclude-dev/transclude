@@ -1,0 +1,12 @@
+<script element>
+  export const properties = { name: '' };
+
+  // A member, so the element is defined and observes its props.
+  export const prototype = {
+    greet() {
+      return `Hello, ${this.getAttribute('name')}`;
+    },
+  };
+</script>
+
+<span>${name}</span>

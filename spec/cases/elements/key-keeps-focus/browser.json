@@ -1,0 +1,14 @@
+[
+  {
+    "name": "a reordered row keeps its typed value, its focus and its scroll",
+    "load": "/",
+    "steps": [
+      { "run": "const root = document.querySelector('todo-list').shadowRoot; const input = root.querySelectorAll('input')[2]; input.focus(); input.value = 'sourdough'; root.querySelectorAll('.scroller')[2].scrollTop = 50; window.typed = input" },
+      { "run": "document.querySelector('todo-list').setAttribute('items', JSON.stringify([{ id: 3, text: 'bread' }, { id: 1, text: 'milk' }, { id: 2, text: 'eggs' }]))" },
+      { "expect": "document.querySelector('todo-list').shadowRoot.querySelectorAll('input')[0] === window.typed", "equals": true },
+      { "expect": "window.typed.value", "equals": "sourdough" },
+      { "expect": "document.querySelector('todo-list').shadowRoot.activeElement === window.typed", "equals": true },
+      { "expect": "document.querySelector('todo-list').shadowRoot.querySelectorAll('.scroller')[0].scrollTop", "equals": 50 }
+    ]
+  }
+]

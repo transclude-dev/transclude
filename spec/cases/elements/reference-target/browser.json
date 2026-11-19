@@ -1,0 +1,11 @@
+[
+  {
+    "name": "a click on the label focuses the input inside the shadow root",
+    "load": "/",
+    "steps": [
+      { "run": "document.querySelector('label').click()" },
+      { "expect": "document.activeElement?.id", "equals": "name" },
+      { "expect": "document.querySelector('name-field').shadowRoot.activeElement?.id", "equals": "field" }
+    ]
+  }
+]

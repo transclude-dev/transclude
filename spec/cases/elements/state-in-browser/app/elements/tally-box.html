@@ -1,0 +1,19 @@
+<script element>
+  export const properties = { label: 'tally' };
+  export const state = { n: 0, hot: false };
+
+  export const prototype = {
+    bump(by = 1) {
+      this.n += by;
+    },
+  };
+</script>
+
+<style>
+  :scope:state(hot) output {
+    color: rgb(180, 35, 44);
+  }
+</style>
+
+<output>${n}</output>
+<span>${label}</span>

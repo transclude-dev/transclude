@@ -1,0 +1,22 @@
+[
+  {
+    "name": "a light element writes into the node it already has",
+    "load": "/",
+    "steps": [
+      { "run": "window.before = document.querySelector('name-tag span').firstChild" },
+      { "run": "document.querySelector('name-tag').setAttribute('name', 'Grace')" },
+      { "expect": "document.querySelector('name-tag span').textContent", "equals": "Grace" },
+      { "expect": "document.querySelector('name-tag span').firstChild === window.before", "equals": true }
+    ]
+  },
+  {
+    "name": "a shadow element rebuilds its list",
+    "load": "/",
+    "steps": [
+      { "run": "document.querySelector('user-card').setAttribute('tags', JSON.stringify(['math', 'engines', 'poetry']))" },
+      { "run": "document.querySelector('user-card').setAttribute('name', 'Ada, Countess of Lovelace')" },
+      { "expect": "[...document.querySelector('user-card').shadowRoot.querySelectorAll('li')].map((li) => li.textContent)", "equals": ["math", "engines", "poetry"] },
+      { "dom": "user-card", "file": "expected/user-card-after.html" }
+    ]
+  }
+]

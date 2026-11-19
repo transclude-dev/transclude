@@ -1,0 +1,23 @@
+[
+  {
+    "name": "a property per name, a render per set, and a copy per element",
+    "load": "/",
+    "steps": [
+      { "run": "const box = document.querySelector('tally-box'); box.n = 10; box.bump(); await box.updateComplete" },
+      { "expect": "document.querySelector('tally-box').n", "equals": 11 },
+      { "expect": "document.querySelector('tally-box output').textContent", "equals": "11" },
+      { "expect": "document.querySelectorAll('tally-box')[1].querySelector('output').textContent", "equals": "0" }
+    ]
+  },
+  {
+    "name": "a boolean field is a custom state, set with the render",
+    "load": "/",
+    "steps": [
+      { "expect": "(() => { const box = document.querySelector('tally-box'); box.hot = true; return box.matches(':state(hot)'); })()", "equals": false },
+      { "run": "await document.querySelector('tally-box').updateComplete" },
+      { "expect": "document.querySelector('tally-box').matches(':state(hot)')", "equals": true },
+      { "expect": "getComputedStyle(document.querySelector('tally-box output')).color", "equals": "rgb(180, 35, 44)" },
+      { "expect": "getComputedStyle(document.querySelectorAll('tally-box')[1].querySelector('output')).color", "equals": "rgb(0, 0, 0)" }
+    ]
+  }
+]

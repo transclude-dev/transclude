@@ -1,0 +1,23 @@
+<script element>
+  export const properties = { label: '' };
+
+  // Each hook writes to `window.log`, so the order can be read back.
+  export const prototype = {
+    connected({ signal }) {
+      window.log.push('connected');
+      window.signal = signal;
+      signal.addEventListener('abort', () => window.log.push('aborted'));
+      return () => window.log.push('cleanup');
+    },
+
+    disconnected() {
+      window.log.push('disconnected');
+    },
+
+    updated() {
+      window.log.push(`updated ${this.getAttribute('label')}`);
+    },
+  };
+</script>
+
+<span>${label}</span>

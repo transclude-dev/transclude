@@ -1,0 +1,20 @@
+[
+  {
+    "name": "a child added later is projected, and slotchange fires",
+    "load": "/",
+    "steps": [
+      { "run": "window.changes = 0; document.querySelector('shadow-box').shadowRoot.querySelector('slot').addEventListener('slotchange', () => window.changes++)" },
+      { "run": "document.querySelector('shadow-box').append(Object.assign(document.createElement('p'), { textContent: 'second' }))" },
+      { "expect": "window.changes", "equals": 1 },
+      { "expect": "document.querySelector('shadow-box').shadowRoot.querySelector('slot').assignedElements().map((el) => el.textContent)", "equals": ["first", "second"] }
+    ]
+  },
+  {
+    "name": "a light element has no slot left to assign to",
+    "load": "/",
+    "steps": [
+      { "expect": "document.querySelector('light-box slot')", "equals": null },
+      { "expect": "[...document.querySelector('light-box .frame').children].map((el) => el.outerHTML)", "equals": ["<p>first</p>"] }
+    ]
+  }
+]

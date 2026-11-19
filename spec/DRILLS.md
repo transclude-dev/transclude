@@ -176,3 +176,40 @@ The drill found three things outside the module:
   module, fails its case. The old and rebuilt modules cannot be run against
   the cases whole, because neither exports `sitemapFiles`, which the build
   imports.
+
+## `src/include.js`, 2026-11-19
+
+- **Time:** about 3 minutes, in three spec runs. No case failed on the way.
+- **Result:** all 320 cases pass. The old tests that reach the module,
+  `test/include.test.js`, `test/route-include.test.js` and
+  `test/portable.test.js`, pass too, 82 of 82.
+- **Size:** 142 lines against 102. The new one checks a region before it
+  runs the route's loaders, and has a second check for a loop.
+
+The module is glue between `resolveIncludes` in `src/document.js` and a
+route's loaders, and the cases cover it well. A diff by table does not work
+here, because each input needs a compiled app, so five small apps were run
+against both modules. They agree on a query in the path. They answer these
+four differently:
+
+| Input | Old | New |
+| --- | --- | --- |
+| `/` includes `/y#a`, `/y` includes `/z#c`, and `/z` includes `/y#d` | no answer: the request waits on itself | 500, "includes itself: /y#a includes /z#c includes /y#d" |
+| `<transclude src="/notes/#notes">` | the fallback | the region from `/notes` |
+| `proxy: { allow: [] }` and an include of another site | 500, "example.com is not an allowed host" | 500, "no host is allowed to be read. Name one in `proxy.allow`" |
+| `/me#nope`, where `/me` has no `nope` and its loader reads a cookie | the fallback, `Cache-Control: private, no-cache` | the fallback, public |
+
+The first row is a real miss in the old module. Loading a route resolves
+every include on it, not only those in the region asked for. So `/y`
+loading reaches `/y` again under a different `#id`. `resolveIncludes` checks
+the chain by `src`, which is different, and the memo hands back the promise
+that is still waiting. Nothing throws. In the runner the case process ends
+with "unsettled top-level await". On a server the request stays open.
+
+The new module's own risk is in the same check. It compares paths with the
+query cut off, so `/y?x=1#a` reaching `/y?x=2#b` is called a loop, although
+those are two loads.
+
+- **What `spec/` missed:** a loop through two routes, a path with a
+  trailing slash, an empty `proxy.allow`, and an include of a region a route
+  does not have.

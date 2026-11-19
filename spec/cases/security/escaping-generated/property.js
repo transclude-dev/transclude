@@ -6,32 +6,18 @@
 // itself. The same page sent a plain `x` in each value gives the shape to
 // compare with.
 //
-// Two characters are left out of the values: NUL and the carriage return. An
-// HTML parser changes both before any element is read, whatever the server
-// wrote, so they test the parser and not the escape.
+// The values come from `spec/invariants/hostile.js`, which says what it leaves
+// out.
 
 import fc from 'fast-check';
 import { parse } from 'parse5';
 import { lineDiff } from '../../../runner/compare.js';
+import { hostile } from '../../../invariants/hostile.js';
 import { attribute, elementsOf, textOf } from '../../../invariants/tree.js';
 
 export const name = 'escaping';
 
 const RUNS = 300;
-
-// The pieces that break markup when they are not escaped, and some that look
-// escaped already. fast-check strings them together with any other character.
-const PIECES = [
-  '<', '>', '&', '"', "'", '`', '=', '/', ' ', '\n', '\t',
-  '<script>', '</p>', '</pre>', '</textarea>', '<!--', '-->', '<![CDATA[',
-  '&amp;', '&lt;', '&#60;', '&#x3c;', '&quot', '${', '}',
-  ' onclick=alert(1) ', '"><b>', "'><b>", ' ', ' ', 'é', '😀',
-];
-
-const character = fc.string({ unit: 'grapheme', minLength: 1, maxLength: 1 });
-const hostile = fc
-  .string({ unit: fc.oneof(fc.constantFrom(...PIECES), character), maxLength: 12 })
-  .filter((value) => !/[\0\r]/.test(value));
 
 const input = fc.record({ value: hostile, items: fc.array(hostile, { maxLength: 4 }) });
 

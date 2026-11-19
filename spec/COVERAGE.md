@@ -719,7 +719,7 @@ against CI's own numbers:
 | Budget | Measured when set | Limit | Pushed past on purpose |
 | --- | --- | --- | --- |
 | Client JavaScript | 24 cases ship some, 75 to 13,260 bytes; the rest none | a tenth above each, rounded up to 100; 0 for a case not named | 3,000 bytes added to the runtime fails 22 cases |
-| Render time | a median of 0.03 to 0.05 ms in process | 0.25 ms, for six requests in five cases | 1 ms added to every request fails all six |
+| Render time | a median of 0.03 to 0.05 ms here, and up to 0.33 ms on CI | 1 ms, for six requests in five cases. It was 0.25 ms, set from this machine alone, and CI went over it | 1 ms added to every request fails all six |
 | Packed size | 297,019 bytes | 312,000 | a 27 kB file in `src` fails it |
 | `www` build | 7.4 s here, 13 s on CI | 20 s | 15 s added to the build fails it |
 

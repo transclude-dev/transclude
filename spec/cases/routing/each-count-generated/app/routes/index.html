@@ -1,0 +1,14 @@
+<script server>
+  export const prerender = false;
+
+  export default ({ url }) => {
+    const rows = JSON.parse(new URL(url).searchParams.get('rows') ?? '[]');
+    return { rows };
+  };
+</script>
+
+<ol id="rows">
+  <li each="row, r of rows" data-row="${r}">
+    <span each="cell, c of row" data-cell="${c}">${cell}</span>
+  </li>
+</ol>

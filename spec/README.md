@@ -148,8 +148,8 @@ cases run on Node only.
 
 ## Invariants
 
-An invariant is a property of every app. Each case process runs them all once
-the case's entries are asked, so every case that builds counts:
+An invariant holds for every app. Each case process runs them all once the
+case's entries are asked, so every case that builds counts:
 
 - **fragment equivalence.** For each page the case asked about, and each id
   the case marks `fragment`, `?fragment=<id>` answers the page's copy of that
@@ -182,6 +182,23 @@ A case that is about the very thing an invariant forbids holds an
 The run lets that invariant fail there, and fails it once it passes, the way
 it reads a `todo`. The count prints them apart: a `todo` is a gap to close, and
 an exemption stays.
+
+Two rules need an app built for them: a page that renders whatever string it
+is sent, or a list of whatever length. Each such app is a case that holds a
+`property.js`, which exports a `name` and a `check` the way an invariant does,
+and runs only in that case, after the invariants:
+
+- **escaping**, in `security/escaping-generated`. Values fast-check generates
+  from hostile pieces go through `${}` in text, a `<pre>`, a `<textarea>`,
+  attribute values quoted three ways and an `each`. Each must read back as
+  itself, and the page must have the same elements and attributes it has for
+  a plain `x`.
+- **loop count**, in `routing/each-count-generated`. Generated rows of cells,
+  nested `each`. Every row and cell renders once, in order, with its index.
+  Empty lists and lists of one are asked first, every run.
+
+A failure names the smallest input fast-check found and the seed that replays
+the run.
 
 ## Adding one
 

@@ -1,0 +1,21 @@
+<script server>
+  export const prerender = false;
+
+  export default ({ url }) => {
+    const params = new URL(url).searchParams;
+    return { value: params.get('value') ?? '', items: JSON.parse(params.get('items') ?? '[]') };
+  };
+</script>
+
+<p id="text">${value}</p>
+<p id="between">before ${value} after</p>
+<pre id="pre">${value}</pre>
+<textarea id="field">${value}</textarea>
+<input id="whole" value="${value}" />
+<a id="part" href="/" title="before ${value} after">part</a>
+<a id="twice" href="/" title="${value}${value}">twice</a>
+<a id="single" href="/" title='${value}'>single</a>
+<a id="bare" href="/" title=${value}>bare</a>
+<ul id="list">
+  <li each="item of items" title="${item}">${item}</li>
+</ul>

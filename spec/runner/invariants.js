@@ -1,6 +1,6 @@
 // The invariants, run over each case once its own entries have been asked.
 //
-// An invariant is a property of every app, not of one. It reads what the case
+// An invariant holds for every app, not for one. It reads what the case
 // was answered and asks the app more. Each module in `spec/invariants/` exports
 // a `name` and a `check` that returns its problems.
 
@@ -50,6 +50,8 @@ export async function checkInvariants({ buildDir, ...asked }) {
     const problems = await invariant.check(context);
     results.push({ request: `invariant: ${invariant.name}`, problems, exempt: exempt[invariant.name] ?? null });
   }
+  const property = await propertyOf(asked.caseDir);
+  if (property) results.push({ request: `property: ${property.name}`, problems: await property.check(context), exempt: null });
   // A misspelled name would exempt nothing and say nothing.
   const names = new Set(INVARIANTS.map((invariant) => invariant.name));
   const unknown = Object.keys(exempt).filter((key) => !names.has(key));
@@ -77,6 +79,20 @@ async function configOf(buildDir) {
  */
 function fragmentParamOf(config) {
   return config.fragmentParam === undefined ? 'fragment' : config.fragmentParam;
+}
+
+/**
+ * The case's own `property.js`, or `null`. A property needs an app built for
+ * it, such as a page that renders whatever string it is sent, so it lives in
+ * that app's case and runs only there. It exports `name` and `check`, the way
+ * an invariant does.
+ *
+ * @param {string} caseDir
+ */
+async function propertyOf(caseDir) {
+  const file = path.join(caseDir, 'property.js');
+  if (!fs.existsSync(file)) return null;
+  return import(pathToFileURL(file).href);
 }
 
 /** @param {string} caseDir */

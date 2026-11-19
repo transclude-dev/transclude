@@ -547,7 +547,9 @@ vite.watcher.on('all', async (event, file) => {
   }
 });
 
-const hono = getRequestListener((request) => app.fetch(request));
+// The global `Response` stays Node's own, as it does in `serve.js`, so an
+// action's answer made before the first request is still a `Response`.
+const hono = getRequestListener((request) => app.fetch(request), { overrideGlobalObjects: false });
 
 // Vite owns /@id/, /@vite/client and /src/*; Hono gets everything else.
 server.on('request', (req, res) => {

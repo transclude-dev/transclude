@@ -10,7 +10,8 @@ if (noBuild) {
   process.exit(1);
 }
 
-const server = serve({ fetch: app.fetch, port }, ({ port }) => summary(port));
+// Node's own `Response` stays global: see "The Node adapter swapped" in design/internals.md.
+const server = serve({ fetch: app.fetch, port, overrideGlobalObjects: false }, ({ port }) => summary(port));
 
 // A container sends SIGTERM and waits. Node's default is to die on the spot,
 // which cuts a render that was halfway through answering.

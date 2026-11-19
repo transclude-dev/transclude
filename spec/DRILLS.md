@@ -300,9 +300,10 @@ six more. The old tests pass, 1535 of 1535.
 
 ### `src/negotiate.js`
 
-118 lines against 126. The two agree on 51 of 52 headers. Two old tests fail:
-one because a doc comment changed the declaration file, one for nothing
-else.
+118 lines against 126. The two agree on 53 of 55 header values. One old test
+fails, because a doc comment changed the declaration file. With `available`
+left out, the rebuilt `pickEncoding` uses `['br', 'gzip']` and `main` uses
+none, but the one caller always passes it.
 
 | `Accept-Encoding` | `main` | Rebuilt |
 | --- | --- | --- |

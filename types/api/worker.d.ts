@@ -1,12 +1,15 @@
 export type Encoded = {
     body: string;
     type: string;
+    etag: string;
 };
 /**
  * A file the build turned into base64, which is how bytes cross into a worker
- * bundle: there is no disk to read them from and no `Buffer` to hold them.
+ * bundle: there is no disk to read them from and no `Buffer` to hold them. The
+ * build makes the ETag too, with the function the Node server uses, so the two
+ * send the same one for the same bytes.
  *
- * @typedef {{ body: string, type: string }} Encoded
+ * @typedef {{ body: string, type: string, etag: string }} Encoded
  */
 /**
  * The same entry shape the Node server builds from a disk. `encodings` is empty
@@ -27,7 +30,8 @@ export declare function bytesFrom(map: Record<string, Encoded>): import('./stati
  */
 export declare function fileHandler(map: Record<string, Encoded>): import('hono').MiddlewareHandler;
 /**
- * A prerendered error page, which is sent as bytes and never revalidated.
+ * A prerendered error page, with the ETag the build made for it. The 404 page
+ * sends it, as the Node server's does. The 500 page sends none.
  *
  * @param {Encoded|null|undefined} page base64 from the build
  * @returns {import('./static-cache.js').Entry|null} the entry shape `send` expects

@@ -16,24 +16,12 @@ import { createApp } from './app.js';
 const decode = (base64) => Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 
 /**
- * A synchronous ETag for bytes that are fixed at build time. Hashing them with
- * WebCrypto would make building the provider async for nothing. Content length
- * plus an FNV-1a pass is a cache key, not a signature.
- */
-function etagOf(bytes) {
-  let hash = 0x811c9dc5;
-  for (const byte of bytes) {
-    hash ^= byte;
-    hash = Math.imul(hash, 0x01000193) >>> 0;
-  }
-  return `"${bytes.length.toString(36)}-${hash.toString(36)}"`;
-}
-
-/**
  * A file the build turned into base64, which is how bytes cross into a worker
- * bundle: there is no disk to read them from and no `Buffer` to hold them.
+ * bundle: there is no disk to read them from and no `Buffer` to hold them. The
+ * build makes the ETag too, with the function the Node server uses, so the two
+ * send the same one for the same bytes.
  *
- * @typedef {{ body: string, type: string }} Encoded
+ * @typedef {{ body: string, type: string, etag: string }} Encoded
  */
 
 /**
@@ -47,9 +35,8 @@ function etagOf(bytes) {
  */
 export function bytesFrom(map) {
   const built = new Map();
-  for (const [url, { type, body }] of Object.entries(map)) {
-    const bytes = decode(body);
-    built.set(url, { body: bytes, type, etag: etagOf(bytes), encodings: new Map() });
+  for (const [url, { type, body, etag }] of Object.entries(map)) {
+    built.set(url, { body: decode(body), type, etag, encodings: new Map() });
   }
   return {
     get(pathname) {
@@ -82,13 +69,14 @@ export function fileHandler(map) {
 }
 
 /**
- * A prerendered error page, which is sent as bytes and never revalidated.
+ * A prerendered error page, with the ETag the build made for it. The 404 page
+ * sends it, as the Node server's does. The 500 page sends none.
  *
  * @param {Encoded|null|undefined} page base64 from the build
  * @returns {import('./static-cache.js').Entry|null} the entry shape `send` expects
  */
 export const pageEntry = (page) =>
-  page && { body: decode(page.body), type: page.type, etag: '"error"', encodings: new Map() };
+  page && { body: decode(page.body), type: page.type, etag: page.etag, encodings: new Map() };
 
 /**
  * Rendered responses get the real thing, which on this runtime is async.

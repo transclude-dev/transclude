@@ -857,7 +857,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 
 None. Every behavioral gotcha has a case.
 
-### Internal (112)
+### Internal (113)
 
 | Gotcha | What it is about |
 | --- | --- |
@@ -933,6 +933,7 @@ None. Every behavioral gotcha has a case.
 | The four-runtime claim ran on one runtime. | Another runtime or a real listener: phase 4 |
 | Bun keeps a text body's type out of its headers. | Bun: `npm run spec:runtimes`, which CI does not run yet |
 | The Node adapter swapped the global `Response`, and the framework asks `instanceof Response`. | A real Node listener: `npm run spec:runtimes`, which CI does not run yet |
+| A worker made its own ETag for the same bytes. | workerd: `npm run spec:runtimes`, which CI does not run yet |
 | A compiled binary is started outside the project it carries. | Another runtime or a real listener: phase 4 |
 | A dotfile made the build look stale. | A startup log, not an answer to a request |
 | The package shipped no type declarations. | Release, CI or packaging |

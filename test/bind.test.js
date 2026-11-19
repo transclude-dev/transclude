@@ -315,6 +315,20 @@ const CASES = [
     after: { rows: [{ id: 2, label: 'b', big: false }, { id: 1, label: 'a', big: true }] },
   },
   {
+    name: 'a keyed each that held one key twice, shrinking to nothing',
+    // The map of rows had room for one row per key, so the first of the two was
+    // never tracked, and nothing removed it.
+    source: `${props({ rows: [] })}<dl><template each="row of rows" key="row.id"><dd>\${row.id}</dd></template></dl>`,
+    before: { rows: [{ id: 1 }, { id: 1 }] },
+    after: { rows: [] },
+  },
+  {
+    name: 'a keyed each that meets a key twice in an update, then once',
+    source: `${props({ rows: [] })}<dl><template each="row of rows" key="row.id"><dd>\${row.id}</dd></template></dl>`,
+    before: { rows: [{ id: 1 }, { id: 1 }, { id: 2 }] },
+    after: { rows: [{ id: 2 }, { id: 1 }] },
+  },
+  {
     name: 'a template each shrinking to nothing',
     source: `${props({ rows: [] })}<dl><template each="row of rows" key="row"><dt>\${row}</dt><dd>x</dd></template></dl>`,
     before: { rows: ['a', 'b'] },

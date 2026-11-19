@@ -6,10 +6,11 @@
 // `update` answers false, the element repaints instead, and nothing is compared.
 //
 // The props are generated from what the element declares. A string default gets
-// hostile strings, a number numbers, a boolean booleans, an array a list of the
-// first item's kind or of strings, and an object its own keys. Anything else,
-// such as a `Date`, keeps its default. An element that declares no props has
-// nothing to vary, so it is left out.
+// hostile strings, a number numbers, a boolean booleans, and an object its own
+// keys. An array gets a list of the first item's kind, or of strings, and half
+// the lists end with their first item again. Anything else, such as a `Date`,
+// keeps its default. An element that declares no props has nothing to vary, so
+// it is left out.
 //
 // The element is compiled here through `@transclude/core/compiler`, the way the
 // build compiles it, and parsed with `test/dom.js`, which is parse5 with the
@@ -106,7 +107,12 @@ function propsLike(value) {
   if (typeof value === 'string') return hostile;
   if (typeof value === 'boolean') return fc.boolean();
   if (typeof value === 'number') return fc.oneof(fc.integer(), fc.double({ noNaN: true }));
-  if (Array.isArray(value)) return fc.array(value.length ? propsLike(value[0]) : hostile, { maxLength: 5 });
+  if (Array.isArray(value)) {
+    const list = fc.array(value.length ? propsLike(value[0]) : hostile, { maxLength: 5 });
+    // Half the lists repeat their first item, so a keyed `each` meets one key
+    // twice. Left to chance, two equal items came up in about one run in six.
+    return fc.oneof(list, list.map((items) => (items.length ? [...items, items[0]] : items)));
+  }
   if (value !== null && Object.getPrototypeOf(value) === Object.prototype) {
     const keys = Object.entries(value).map(([key, inner]) => [key, propsLike(inner)]);
     return fc.record(Object.fromEntries(keys));

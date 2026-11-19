@@ -155,6 +155,18 @@ against.
   them with mapped offsets. Keep it that way.
 - **Never bind twice.** Moving an element in the DOM reconnects it, and a second
   `bind` splits an already split text node. Guarded by `#bound`.
+- **A keyed `each` that met one key twice left a row behind.** The rows live in
+  a map from key to row, which has room for one. `updateKeyed` knew a repeated
+  key had to build a row of its own, and then stored that row over the first
+  one; `adoptKeyed` did the same on the first bind. The row it replaced was in
+  the document and in nothing else, so no later update ever removed it:
+  `[{ id: 1 }, { id: 1 }]` updated to `[]` kept one `<dd>`. A repeated row now
+  goes into `state.repeated`, and every update removes those and builds them
+  again, which is cheap because a repeated key is a mistake in the data, not a
+  thing to optimize. The `bind and update` invariant found it when fast-check
+  happened to generate two equal ids, about one run in six, so half its
+  generated lists now end with their first item again. `test/bind.test.js` holds
+  two cases. `spec: elements/every-binding`.
 - **`createElement` cannot express a namespace, and the parser will not enter one
   without a real tag.** A re-render parses its new markup inside a scratch
   element of the destination's kind, because a bare `<tr>` in a `<div>` is thrown

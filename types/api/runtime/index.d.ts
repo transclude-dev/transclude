@@ -90,6 +90,12 @@ export type BlockState = {
     html: string | null;
     keyed: Map<unknown, KeyedEntry> | null;
     /**
+     * the rows of a key an earlier item already
+     * holds. The map has room for one row per key, so these are kept apart and
+     * rebuilt on every update
+     */
+    repeated: KeyedEntry[];
+    /**
      * which arm of the chain is in the document
      */
     branch: number;

@@ -315,6 +315,12 @@ which reads either way.
 
 - **What `spec/` missed:** a tie between a coding and an identity the header
   names.
+- **Decided:** a tie goes to the coding, as `main` has it. The client takes
+  either, and the encoded body is smaller.
+- **The fix:** none in the code. A comment in `pickEncoding` says why, and a
+  test in `test/serve.test.js` holds the tie.
+- **Cases added:** two entries in `production/encoding-weights`. Each fails
+  when the tie goes to identity, and so does the test.
 
 ### `src/no-vary-search.js`
 

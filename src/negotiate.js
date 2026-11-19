@@ -25,7 +25,8 @@ export function pickEncoding(header, available = []) {
   }
   if (!best) return null;
 
-  // A client that weighs no encoding above the best one it named gets none.
+  // A client that weighs identity above the best encoding gets none. A tie goes
+  // to the encoding: the client takes either, and the encoded body is smaller.
   if (statedIdentity(accepted) > best.quality) return null;
   return best.encoding;
 }

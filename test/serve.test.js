@@ -176,6 +176,12 @@ test('a client that weighs no encoding highest gets none', () => {
   assert.equal(pickEncoding('gzip;q=0.5, *', ['br', 'gzip']), 'br');
 });
 
+test('a tie between an encoding and identity goes to the encoding', () => {
+  // The client takes either, and the encoded body is smaller.
+  assert.equal(pickEncoding('gzip, identity', ['br', 'gzip']), 'gzip');
+  assert.equal(pickEncoding('gzip;q=0.5, identity;q=0.5', ['br', 'gzip']), 'gzip');
+});
+
 test('a weight that is not one is a refusal', () => {
   assert.equal(pickEncoding('br;q=1.5, gzip', ['br', 'gzip']), 'gzip');
   assert.equal(pickEncoding('br;q=0.5x, gzip;q=0.4', ['br', 'gzip']), 'gzip');

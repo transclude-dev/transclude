@@ -86,6 +86,12 @@
 <li each="\${notes}">…</li>
 <!-- a directive takes an expression, not an interpolation -->
 
+<li each="class of classes">…</li>
+<!-- a reserved word cannot name a loop -->
+
+<li each="tag, tag of tags">…</li>
+<!-- the item and the index need two names -->
+
 <meta if="person" name="author" content="\${person.name}" />
 <p else>Nobody here.</p>
 <!-- one branch is hoisted into <head> and one is not -->
@@ -454,7 +460,10 @@
 
   ${html(s.loop)}
 
-  <p>Add a second name for the index, counting from zero.</p>
+  <p>
+    Add a second name for the index, counting from zero. Any name a
+    <code>const</code> can take is a name here, <code>entrée</code> included.
+  </p>
 
   ${html(s.loopIndex)}
 

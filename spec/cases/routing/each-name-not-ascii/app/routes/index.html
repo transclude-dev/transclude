@@ -1,0 +1,7 @@
+<script server>
+  export default async () => ({ menu: ['soupe', 'tarte'] });
+</script>
+
+<ul>
+  <li each="entrée, numéro of menu">${numéro + 1}. ${entrée}</li>
+</ul>

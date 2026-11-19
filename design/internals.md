@@ -195,6 +195,16 @@ against.
   a browser does with it.
 - **Directive values are expressions, not interpolations.** `each="tag of tags"`
   has no `${}`. Parse it as an expression or the volatile set is wrong.
+- **A loop name is checked where it is parsed, because two passes use it.**
+  `codegen.js` renames every loop name, so `each="class of classes"` rendered.
+  The type-check shim writes the name as it is, and tsc reported
+  `for (const class of …)` as a syntax error on a line the author never wrote.
+  `each="tag, tag of tags"` rendered the index where the page wrote `${tag}`,
+  and the shim agreed, because its `const tag: number` hid the item. The
+  pattern also took ASCII only, so `entrée` was "malformed". `parseEach` now
+  takes any identifier, and refuses a reserved word and the same name twice.
+  `spec: diagnostics/each-name-reserved`, `spec: diagnostics/each-same-name`,
+  `spec: routing/each-name-not-ascii`.
 - **Fragment mode emits components bare, and the flag has to reach all the way
   down.** A fragment is swapped into a live document, and nothing that swaps HTML
   processes declarative shadow DOM, so `shadow()` returns `''` and the element

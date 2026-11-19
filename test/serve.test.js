@@ -157,6 +157,38 @@ test('a wildcard accepts what is available', () => {
   assert.equal(pickEncoding('*;q=0, gzip', ['br', 'gzip']), 'gzip');
 });
 
+test('a parameter name ignores case, so Q=0 refuses too', () => {
+  // The old reader matched `q` only, and sent brotli to a client that refused it.
+  assert.equal(pickEncoding('br;Q=0, gzip', ['br', 'gzip']), 'gzip');
+  assert.equal(pickEncoding('br;Q=0', ['br', 'gzip']), null);
+  assert.equal(identityAcceptable('identity;Q=0'), false);
+});
+
+test('x-gzip is gzip', () => {
+  assert.equal(pickEncoding('x-gzip', ['br', 'gzip']), 'gzip');
+});
+
+test('a client that weighs no encoding highest gets none', () => {
+  assert.equal(pickEncoding('gzip;q=0.5, identity', ['br', 'gzip']), null);
+  assert.equal(pickEncoding('identity, br;q=0.5', ['br', 'gzip']), null);
+  // An identity the header never mentions outranks nothing.
+  assert.equal(pickEncoding('br;q=0.8', ['br', 'gzip']), 'br');
+  assert.equal(pickEncoding('gzip;q=0.5, *', ['br', 'gzip']), 'br');
+});
+
+test('a weight that is not one is a refusal', () => {
+  assert.equal(pickEncoding('br;q=1.5, gzip', ['br', 'gzip']), 'gzip');
+  assert.equal(pickEncoding('br;q=0.5x, gzip;q=0.4', ['br', 'gzip']), 'gzip');
+  assert.equal(pickEncoding('br;q=.5, gzip;q=0.4', ['br', 'gzip']), 'gzip');
+  assert.equal(pickEncoding('br;q=, gzip;q=0.4', ['br', 'gzip']), 'gzip');
+  assert.equal(pickEncoding('gzip;q=0.500', ['br', 'gzip']), 'gzip');
+});
+
+test('a coding named twice keeps the lower weight', () => {
+  assert.equal(pickEncoding('gzip;q=0, gzip', ['br', 'gzip']), null);
+  assert.equal(pickEncoding('gzip, gzip;q=0', ['br', 'gzip']), null);
+});
+
 test('nothing available means nothing chosen', () => {
   assert.equal(pickEncoding('br, gzip', []), null);
 });

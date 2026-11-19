@@ -189,7 +189,7 @@ against.
   one: the first patch tried crashed the whole check page on a node it did not
   have, rather than losing one region. And the namespace table is a `Map`,
   because `createElementNS('constructor', 'x')` is a thing somebody can write.
-  Nothing in Node models any of this. `test/dom.js` has no `namespaceURI` at all,
+  Nothing in Node models any of this. `spec/runner/dom.js` has no `namespaceURI` at all,
   so all 1,287 Node tests passed for as long as it was broken:
   `test/namespaces.test.js` holds the decision, and the browser checks hold what
   a browser does with it.
@@ -2219,7 +2219,7 @@ against.
 The rule the tests are built on: **after `bind` and `update`, the DOM must
 serialize to exactly what a full render of those props produces.** One assertion
 catches index errors, bad splits, escaping drift and missed attributes.
-`test/dom.js` is a parse5-backed DOM to run it in Node.
+`spec/runner/dom.js` is a parse5-backed DOM to run it in Node.
 
 Falsify before trusting. Break a mechanism on purpose and confirm only its own
 tests fail. Several gaps in coverage were found exactly this way.

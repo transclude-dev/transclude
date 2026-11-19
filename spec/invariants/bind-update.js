@@ -13,7 +13,7 @@
 // it is left out.
 //
 // The element is compiled here through `@transclude/core/compiler`, the way the
-// build compiles it, and parsed with `test/dom.js`, which is parse5 with the
+// build compiles it, and parsed with `spec/runner/dom.js`, which is parse5 with the
 // handful of DOM methods the runtime calls. Read `check` first; the rest serves
 // it.
 
@@ -22,7 +22,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import fc from 'fast-check';
 import { compileComponent, readFlags } from '@transclude/core/compiler';
-import { installDocument, parseDom, serialize } from '../../test/dom.js';
+import { installDocument, parseDom, serialize } from '../runner/dom.js';
 import { hostile } from './hostile.js';
 
 export const name = 'bind and update';

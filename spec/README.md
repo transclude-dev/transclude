@@ -171,7 +171,7 @@ case's entries are asked, so every case that builds counts:
   `@transclude/core/compiler`, and fast-check generates pairs of props from
   its defaults. Render the first, `bind`, `update` to the second: the tree must
   serialize the same as a full render of the second. The tree is parse5's,
-  through `test/dom.js`, so nothing here needs a browser.
+  through `spec/runner/dom.js`, so nothing here needs a browser.
 
 `spec/invariants/` holds one module per invariant, and the module says what it
 checks and what it puts aside. Each one is a result in the run, written

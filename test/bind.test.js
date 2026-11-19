@@ -9,7 +9,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compileComponent } from '../src/compiler/index.js';
-import { parseDom, serialize, installDocument } from './dom.js';
+import { parseDom, serialize, installDocument } from '../spec/runner/dom.js';
 
 installDocument();
 

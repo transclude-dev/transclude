@@ -59,7 +59,7 @@ module's own mistake.
   `test/`. With `test/dom.js` put back, the module passed on the first run.
 - **Result:** all 315 cases pass. The old tests that reach the module,
   `test/serve.test.js` and `test/portable.test.js`, pass too, 84 of 84.
-- **Size:** 175 lines against 95. The new one has no parse cache, which the
+- **Size:** 169 lines against 95. The new one has no parse cache, which the
   old one keeps because negotiation was the largest piece of our own code in a
   profile of the request path.
 

@@ -36,6 +36,6 @@ jobs:
       # `advanced-security: false`, because uploading SARIF needs GitHub
       # Advanced Security. Without it the action fails on the upload after the
       # audit has already passed, and the failure says nothing about the code.
-      - uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+      - uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
         with:
           advanced-security: false

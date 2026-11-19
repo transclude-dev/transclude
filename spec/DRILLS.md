@@ -155,3 +155,24 @@ The drill found three things outside the module:
 - **What `spec/` missed:** no case has a `lastmod` that is not a day, a
   parameter value that needs escaping, a bad entry, a `limit` out of range, a
   `g` flag, or a hostname with a path.
+- **Decided:** a `lastmod` is the day in UTC, and one that is no date, or
+  `0`, is dropped. `priority: null` is dropped. A `<loc>` is percent-encoded.
+  `null` from `paths()` or `entries` is no URLs. An entry whose path does not
+  begin with one `/` is refused, and so are a `limit` outside 1 to 50000 and a
+  hostname that is not an origin. A `g` flag excludes every match. Past
+  `limit`, each sheet is a file at `/sitemap-0.xml` and on, and a sheet the
+  index does not name is a 404. The dev server reads `gated` and reports a
+  failure to `onError`.
+- **The fix:** the old module, patched, with `sitemapFiles` for the sheets.
+  The build writes every file it returns, and the server and the dev server
+  answer the same paths. In `test/sitemap.test.js`, eight tests hold the
+  rows, two hold the sheets, and one reads `bin/dev.js`. The old module fails
+  both sheet tests and the five rows where its answer lost. The old
+  `bin/dev.js` fails the last.
+- **Cases added:** `feeds/sitemap-values`, and `diagnostics/sitemap-entry-path`,
+  `diagnostics/sitemap-limit` and `diagnostics/sitemap-hostname`.
+  `feeds/sitemap-index` asks for the sheet files, a sheet past the last, and
+  `?p=`. Each of nine old behaviors, put back one at a time in the fixed
+  module, fails its case. The old and rebuilt modules cannot be run against
+  the cases whole, because neither exports `sitemapFiles`, which the build
+  imports.

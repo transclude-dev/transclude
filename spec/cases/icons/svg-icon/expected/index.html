@@ -10,15 +10,17 @@
 
 
 <style data-transclude="svg-icon">
-@scope (svg-icon) {
-  :scope {
-      display: inline-flex;
-      vertical-align: -0.125em;
-    }
-    svg {
-      width: 1em;
-      height: 1em;
-    }
+@layer transclude {
+  @scope (svg-icon) {
+    :scope {
+        display: inline-flex;
+        vertical-align: -0.125em;
+      }
+      svg {
+        width: 1em;
+        height: 1em;
+      }
+  }
 }
 </style>
 </head>

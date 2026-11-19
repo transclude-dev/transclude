@@ -3,18 +3,42 @@
     "name": "custom properties cross a shadow boundary, selectors stop, ::part() reaches in",
     "load": "/",
     "steps": [
-      { "expect": "getComputedStyle(document.querySelector('light-note p')).fontWeight", "equals": "700" },
-      { "expect": "getComputedStyle(document.querySelector('shadow-note').shadowRoot.querySelector('p')).fontWeight", "equals": "400" },
-      { "expect": "getComputedStyle(document.querySelector('shadow-note').shadowRoot.querySelector('p')).borderTopColor", "equals": "rgb(1, 2, 3)" },
-      { "expect": "getComputedStyle(document.querySelector('shadow-note').shadowRoot.querySelector('h3')).textDecorationLine", "equals": "underline" }
+      {
+        "expect": "getComputedStyle(document.querySelector('light-note p')).fontWeight",
+        "equals": "700"
+      },
+      {
+        "expect": "getComputedStyle(document.querySelector('shadow-note').shadowRoot.querySelector('p')).fontWeight",
+        "equals": "400"
+      },
+      {
+        "expect": "getComputedStyle(document.querySelector('shadow-note').shadowRoot.querySelector('p')).borderTopColor",
+        "equals": "rgb(1, 2, 3)"
+      },
+      {
+        "expect": "getComputedStyle(document.querySelector('shadow-note').shadowRoot.querySelector('h3')).textDecorationLine",
+        "equals": "underline"
+      }
     ]
   },
   {
-    "name": ":scope wins against page CSS of equal specificity, and page CSS on the host beats :host",
+    "name": "page CSS beats :scope at any specificity, and page CSS on the host beats :host",
     "load": "/",
     "steps": [
-      { "expect": "[...document.querySelectorAll('light-note')].map((el) => getComputedStyle(el).color)", "equals": ["rgb(0, 0, 200)", "rgb(0, 0, 200)"] },
-      { "expect": "[...document.querySelectorAll('shadow-note')].map((el) => getComputedStyle(el).color)", "equals": ["rgb(0, 0, 200)", "rgb(0, 128, 0)"] }
+      {
+        "expect": "[...document.querySelectorAll('light-note')].map((el) => getComputedStyle(el).color)",
+        "equals": [
+          "rgb(0, 0, 200)",
+          "rgb(0, 128, 0)"
+        ]
+      },
+      {
+        "expect": "[...document.querySelectorAll('shadow-note')].map((el) => getComputedStyle(el).color)",
+        "equals": [
+          "rgb(0, 0, 200)",
+          "rgb(0, 128, 0)"
+        ]
+      }
     ]
   }
 ]

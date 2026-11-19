@@ -10,16 +10,18 @@
 
 
 <style data-transclude="site-note">
-@scope (site-note) {
-  :scope {
-      display: block;
-      border-left: 3px solid var(--rule);
-      padding: 0.5rem 0.9rem;
-    }
+@layer transclude {
+  @scope (site-note) {
+    :scope {
+        display: block;
+        border-left: 3px solid var(--rule);
+        padding: 0.5rem 0.9rem;
+      }
 
-    :scope[tone='warn'] {
-      border-color: #b4232c;
-    }
+      :scope[tone='warn'] {
+        border-color: #b4232c;
+      }
+  }
 }
 </style>
 </head>
@@ -32,6 +34,6 @@
 </ul>
 <slot></slot></template></user-card>
 </section>
-<script type="module" src="/assets/index-Cc5o8Hqk.js"></script>
+<script type="module" src="/assets/index-BpCqjI3M.js"></script>
 </body>
 </html>

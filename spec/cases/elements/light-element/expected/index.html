@@ -10,16 +10,18 @@
 
 
 <style data-transclude="site-note">
-@scope (site-note) {
-  :scope {
-      display: block;
-      border-left: 3px solid var(--rule);
-      padding: 0.5rem 0.9rem;
-    }
+@layer transclude {
+  @scope (site-note) {
+    :scope {
+        display: block;
+        border-left: 3px solid var(--rule);
+        padding: 0.5rem 0.9rem;
+      }
 
-    :scope[tone='warn'] {
-      border-color: #b4232c;
-    }
+      :scope[tone='warn'] {
+        border-color: #b4232c;
+      }
+  }
 }
 </style>
 </head>

@@ -277,9 +277,10 @@
     </li>
     <li>
       <strong><code>@scope</code> is soft.</strong> A light
-      <a href="/docs/elements">element</a>'s styles lose to page CSS of equal
-      specificity. That is right for content and a hazard for a widget, which is
-      one reason to reach for a shadow root.
+      <a href="/docs/elements">element</a>'s styles sit in a cascade layer, so
+      any page CSS beats them, whatever its specificity. That is right for
+      content and a hazard for a widget, which is one reason to reach for a
+      shadow root.
     </li>
     <li>
       <strong>A light element writes; only a shadow one rebuilds.</strong> Both

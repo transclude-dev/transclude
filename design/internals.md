@@ -441,6 +441,16 @@ against.
   the page's own DOM, and that is the answer for a site that has to go back
   further. `/docs/browsers` says this to a reader, with the dates for the other
   four platform features.
+- **`@scope` made an element's style win against the page, so it sits in a
+  layer.** `/docs/styles` and `adoptStyles` both say a page's rules override an
+  element's, and the element's `<style>` goes before the page's for that. Then
+  the styles moved into `@scope`, and when specificity is equal, scoping
+  proximity decides before source order does: `:scope { color: blue }` beat a
+  page's `.themed { color: green }` on the same element. Nothing outside a
+  browser could see it. `styles/boundary-in-browser` found it in Chrome.
+  `scopeCss` now wraps the scope in `@layer transclude`, and page CSS outside
+  any layer beats a layered rule at any specificity. A layer an app declares
+  after this one also beats it. `spec: styles/boundary-in-browser`.
 - **Both halves fence a block. Only the shadow half compiles one.** `anchored()`
   and `standalone()` in `codegen.js` are two questions, and they were one until
   the answers had to differ. A light element is compiled as a layout, where

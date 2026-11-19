@@ -734,11 +734,17 @@ export default { css, headScript, elements, hasTitle, load, renderTitle, renderH
 }
 
 /**
- * Wraps a light element's styles in `@scope`, rooted at its own tag. A custom
- * element name is already a valid selector, so nothing has to be hashed.
+ * Wraps a light element's styles in `@scope`, rooted at its own tag, inside the
+ * `transclude` cascade layer. A custom element name is already a valid
+ * selector, so nothing has to be hashed.
  *
  * The `to` clause is the donut: styles stop at any light element nested inside,
  * so an outer one cannot reach into one it merely contains.
+ *
+ * The layer is what lets a page override an element it did not write. Inside
+ * `@scope`, `:scope` wins against a page rule of the same specificity, because
+ * scoping proximity decides before source order does. Page CSS outside any
+ * layer beats a layered rule at any specificity, which is what the docs promise.
  *
  * @param {string} css
  * @param {string} tag the element the rules belong to
@@ -748,8 +754,8 @@ export default { css, headScript, elements, hasTitle, load, renderTitle, renderH
 export function scopeCss(css, tag, nested = []) {
   if (!css) return '';
   const limit = nested.length ? ` to (${nested.map((inner) => `${tag} ${inner}`).join(', ')})` : '';
-  const indented = css.split('\n').map((line) => (line ? `  ${line}` : line)).join('\n');
-  return `@scope (${tag})${limit} {\n${indented}\n}`;
+  const indented = css.split('\n').map((line) => (line ? `    ${line}` : line)).join('\n');
+  return `@layer transclude {\n  @scope (${tag})${limit} {\n${indented}\n  }\n}`;
 }
 
 /**

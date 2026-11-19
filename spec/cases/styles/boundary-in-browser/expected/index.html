@@ -10,11 +10,13 @@
 
 
 <style data-transclude="light-note">
-@scope (light-note) {
-  :scope {
-      display: block;
-      color: rgb(0, 0, 200);
-    }
+@layer transclude {
+  @scope (light-note) {
+    :scope {
+        display: block;
+        color: rgb(0, 0, 200);
+      }
+  }
 }
 </style>
 <style data-transclude-page>

@@ -10,4 +10,7 @@
 <url><loc>https://acme.com/zero</loc></url>
 <url><loc>https://acme.com/no-priority</loc></url>
 <url><loc>https://acme.com/priority-zero</loc><priority>0</priority></url>
+<url><loc>https://acme.com/merged</loc><lastmod>2026-07-31</lastmod></url>
+<url><loc>https://acme.com/encoded/a%20b</loc></url>
+<url><loc>https://acme.com/true</loc></url>
 </urlset>

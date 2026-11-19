@@ -1,0 +1,1 @@
+Error: [transclude] paths() in p/[x].html gave object. It is a list of params, like [{ slug: 'first' }].

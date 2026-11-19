@@ -29,10 +29,10 @@ Complete.
 | A cache keys on the query string | Cache behavior, not the framework's | - |
 | A `No-Vary-Search` naming other parameters passes through | `fragments/no-vary-search-named` | reviewed |
 | A `No-Vary-Search` hiding `?fragment=` is refused, naming the value | `fragments/no-vary-search-hides-fragment`, the 500 and the logged message | reviewed |
-| The header is read as a cache reads it: a bare key with parameters, a list's parameters, a repeated key, and shapes that cannot be read | `fragments/no-vary-search-shapes` | unreviewed |
+| The header is read as a cache reads it: a bare key with parameters, a list's parameters, a repeated key, and shapes that cannot be read | `fragments/no-vary-search-shapes` | reviewed |
 | `POST /?fragment=nope` changes nothing and answers 404 | `fragments/post-unknown-name` | reviewed |
 | `ctx.fragment` tells a form post from a fetch | `fragments/action-fragment` | reviewed |
-| A fragment request runs the layouts, and the page reads them as `ctx.layout` | `fragments/layout-data` | unreviewed |
+| A fragment request runs the layouts, and the page reads them as `ctx.layout` | `fragments/layout-data` | reviewed |
 | `watchElements` puts a script on every page | `fragments/watch-elements` | reviewed |
 | `watchElements` is off by default | `routing/index-page`, whose page has no script | reviewed |
 
@@ -91,13 +91,13 @@ Complete.
 | A named slot offers a second place, with fallback content | `layouts/named-slot` | reviewed |
 | A subdirectory layout renders inside the one above | `layouts/nested` | reviewed |
 | Each layout loads its own data; `ctx.layout` is the chain above, merged | `layouts/layout-context` | reviewed |
-| A guard reads the guard above it as `ctx.layout` on an action request | `layouts/guard-reads-guard` | unreviewed |
+| A guard reads the guard above it as `ctx.layout` on an action request | `layouts/guard-reads-guard` | reviewed |
 | A layout returning a `Response` stops there, and nothing below runs | `layouts/guard-redirect` | reviewed |
 | A `POST` under a guard runs the guard first; each loader runs twice on that request | `layouts/guard-action` | reviewed |
 | A page behind a guard cannot be prerendered; the build names it and exits non-zero | `diagnostics/prerender-reads-cookie` | reviewed |
 | Middleware does not run during the build | A build-time fact. What middleware does when serving is the middleware area | - |
 | `<html>` attributes merge by name, innermost winning; escaped, bare is `true`, `false` and `null` drop, `lang` overwritable | `layouts/html-attrs` | reviewed |
-| `<` and `>` in an `<html>` or `<body>` value are escaped; a bad attribute name is refused | `layouts/html-attrs-angle-brackets`, `diagnostics/html-attribute-name` | unreviewed |
+| `<` and `>` in an `<html>` or `<body>` value are escaped; a bad attribute name is refused | `layouts/html-attrs-angle-brackets`, `diagnostics/html-attribute-name` | reviewed |
 | `<body>` works the same | `layouts/body-attrs` | reviewed |
 | Neither tag is written twice; a `class` on two levels is the innermost | `layouts/one-html-one-body` | reviewed |
 | A `<title>` anywhere in the chain becomes the document's | `layouts/title-in-chain` | reviewed |
@@ -153,7 +153,7 @@ run on Node only.
 | `#pricing` copies a fragment of this page; the copy leaves the id behind | `includes/same-page` | reviewed |
 | `/notes#notes` runs that route's loaders and not its layouts' markup | `includes/another-route` | reviewed |
 | A copy from another route keeps its id | `includes/another-route` | reviewed |
-| An included route reads its params from the path, `[name]` and `[...path]` | `includes/route-params` | unreviewed |
+| An included route reads its params from the path, `[name]` and `[...path]` | `includes/route-params` | reviewed |
 | One route included twice runs its loaders once | `includes/route-twice-loads-once` | reviewed |
 | The path is matched as a request would be: `/notes/#notes` reaches `/notes` | `includes/trailing-slash` | reviewed |
 | Reading spreads: a page including a route that reads a cookie is personal | `diagnostics/include-reads-cookie` | reviewed |
@@ -162,7 +162,7 @@ run on Node only.
 | A source that cannot be read renders the children | `includes/fallback-on-failure` | reviewed |
 | With no children, a failing source stops the render | `diagnostics/include-source-down-no-fallback` | reviewed |
 | A host nobody allowed throws, children or not | `diagnostics/include-host-not-allowed` | reviewed |
-| With no `proxy` in the config, an include of another site throws | `diagnostics/include-no-proxy` | unreviewed |
+| With no `proxy` in the config, an include of another site throws | `diagnostics/include-no-proxy` | reviewed |
 | An empty `allow` is no `proxy`, and the message says to name a host | `diagnostics/include-allow-empty` | reviewed |
 | A prerendered page reads its sources once, at build time | `includes/prerendered-reads-once` | reviewed |
 | `#nope`, `#a` inside `#a`, and an interpolated `src` are compile errors | `diagnostics/include-names-no-fragment`, `include-includes-itself`, `include-src-interpolated` | reviewed |
@@ -202,7 +202,7 @@ Complete.
 | A `<form>` can only send GET or POST | HTML, not the framework | - |
 | A hidden `intent` field turns a post into a delete | `forms/intent-field` | reviewed |
 | From script, `DELETE` is sent directly and runs | `forms/verbs` | reviewed |
-| A verb the page does not export answers 405, `Allow` naming `GET` and the exports | `forms/verb-not-exported` | unreviewed |
+| A verb the page does not export answers 405, `Allow` naming `GET` and the exports | `forms/verb-not-exported` | reviewed |
 | Answer a mutation with a 303; a rejected submission re-renders instead | `forms/post-redirect-get` | reviewed |
 | A fragment request gets markup, not the redirect | `fragments/action-fragment` | reviewed |
 | `ctx.action` holds what the handler returned | `forms/post-redirect-get` | reviewed |
@@ -318,7 +318,7 @@ Complete.
 | A `<style>` in a page or a layout is hoisted into `<head>` | `styles/style-hoisted` | reviewed |
 | In an element it is scoped to the tag, and `:scope` is the element | `elements/light-element`, `elements/in-a-fragment` | reviewed |
 | An element in a fragment brings its styles, added to `<head>` once | `styles/fragment-styles-once`, in Chrome, with `watchElements` | reviewed |
-| A light element inside another brings its styles too | `styles/nested-element-styles` | unreviewed |
+| A light element inside another brings its styles too | `styles/nested-element-styles` | reviewed |
 | A shadow element's `:host` rules live inside its shadow root | `elements/shadow-element`, `elements/in-a-fragment` | reviewed |
 | Page CSS beats `:scope` at any specificity; page CSS on the host beats `:host`, and reaches nothing inside | `styles/boundary-in-browser`, in Chrome | reviewed |
 | A view-transition rule is CSS only; both documents carry it | `styles/style-hoisted`: the rule passes through untouched. The transition itself needs a browser | reviewed |
@@ -426,7 +426,7 @@ Complete. Most keys have their own page, and their rows are there.
 | `routesDir` and `publicDir` name other directories | `config/dirs-renamed` | reviewed |
 | `cache`, `metadataBase`, `onError`, `port`, `precache`, `speculate` | The production area | - |
 | `canonical` needs `metadataBase`, and says so | `diagnostics/canonical-needs-metadata-base` | reviewed |
-| `absolute()` on a prerendered page needs `metadataBase`, and says so | `diagnostics/absolute-needs-metadata-base` | unreviewed |
+| `absolute()` on a prerendered page needs `metadataBase`, and says so | `diagnostics/absolute-needs-metadata-base` | reviewed |
 | A page or layout writing its own canonical replaces it | `config/canonical-own` | reviewed |
 | An empty `cookieSecret` is refused at startup | `diagnostics/cookie-secret-empty` | reviewed |
 | `csp`, `csrf`, `elementsDir`, `feed`, `fragmentHeader`, `iconsDir`, `lang`, `markdown`, `permissionsPolicy`, `proxy`, `sitemap`, `stylesheet`, `trailingSlash`, `watchElements` | Each key's own area: security, forms, elements, feeds, fragments, icons, languages, markdown, includes, styles, middleware | - |

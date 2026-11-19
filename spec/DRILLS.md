@@ -183,7 +183,7 @@ The drill found three things outside the module:
 - **Result:** all 320 cases pass. The old tests that reach the module,
   `test/include.test.js`, `test/route-include.test.js` and
   `test/portable.test.js`, pass too, 82 of 82.
-- **Size:** 142 lines against 102. The new one checks a region before it
+- **Size:** 124 lines against 102. The new one checks a region before it
   runs the route's loaders, and has a second check for a loop.
 
 The module is glue between `resolveIncludes` in `src/document.js` and a

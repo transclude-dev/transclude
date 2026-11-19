@@ -3,8 +3,10 @@ A response goes out in the encoding the client weighs highest, read as RFC
 
 - A parameter name ignores case, so `br;Q=0` refuses brotli.
 - `x-gzip` is `gzip`.
-- A client that weighs no encoding above every coding gets the body as it is:
+- A client that weighs identity above every coding gets the body as it is:
   `gzip;q=0.5, identity` and `identity, br;q=0.5`.
+- A tie between a coding and identity goes to the coding, because the client
+  takes either: `gzip, identity` and `gzip;q=0.5, identity;q=0.5` are gzip.
 - An identity the header never names outranks nothing: `br;q=0.8` is brotli.
 - A weight outside the grammar is a refusal: `br;q=.5`, `br;q=1.5` and
   `br;q=0.5x` each leave `gzip`.
@@ -12,5 +14,5 @@ A response goes out in the encoding the client weighs highest, read as RFC
   `gzip;q=0, gzip` each refuse it.
 
 Source: `types/api/negotiate.d.ts`, which says the rules are followed
-properly, and RFC 9110, section 12.5.3. The drill in `spec/DRILLS.md` found
+properly, and RFC 9110, section 12.5.3. The drills in `spec/DRILLS.md` found
 these.

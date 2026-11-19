@@ -452,7 +452,7 @@ Complete.
 | `/people/*` asked for as a URL answers 404 | `routing/route-table` shows a parameter route answering for a name it does not know | - |
 | `Cache-Control` per kind of response; the 500 page is `no-store` with no ETag | `production/cache-control` | reviewed |
 | Build output is compressed once; each encoding gets its own ETag | `production/encodings` | - |
-| The encoding is the one the client weighs highest: `Q=0`, `x-gzip`, a preferred identity, a bad weight, a coding named twice | `production/encoding-weights` | - |
+| The encoding is the one the client weighs highest: `Q=0`, `x-gzip`, a preferred identity, a tie with identity, a bad weight, a coding named twice | `production/encoding-weights` | - |
 | Public files are served with byte ranges | `production/public-files` | reviewed |
 | `Content-Type` from one table, `application/octet-stream` for an unknown kind | `production/public-files` | reviewed |
 | The build prints the kinds it could not type | Build output, which the runner does not read | - |

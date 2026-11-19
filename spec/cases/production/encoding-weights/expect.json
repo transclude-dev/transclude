@@ -4,6 +4,8 @@
   {"request": "GET /", "send": {"headers": {"accept-encoding": "x-gzip"}}, "status": 200, "headers": {"content-encoding": "gzip", "vary": "Accept-Encoding"}},
   {"request": "GET /", "send": {"headers": {"accept-encoding": "gzip;q=0.5, identity"}}, "status": 200, "headers": {"content-encoding": null, "vary": "Accept-Encoding"}},
   {"request": "GET /", "send": {"headers": {"accept-encoding": "identity, br;q=0.5"}}, "status": 200, "headers": {"content-encoding": null, "vary": "Accept-Encoding"}},
+  {"request": "GET /", "send": {"headers": {"accept-encoding": "gzip, identity"}}, "status": 200, "headers": {"content-encoding": "gzip", "vary": "Accept-Encoding"}},
+  {"request": "GET /", "send": {"headers": {"accept-encoding": "gzip;q=0.5, identity;q=0.5"}}, "status": 200, "headers": {"content-encoding": "gzip", "vary": "Accept-Encoding"}},
   {"request": "GET /", "send": {"headers": {"accept-encoding": "br;q=0.8"}}, "status": 200, "headers": {"content-encoding": "br", "vary": "Accept-Encoding"}},
   {"request": "GET /", "send": {"headers": {"accept-encoding": "br;q=.5, gzip;q=0.4"}}, "status": 200, "headers": {"content-encoding": "gzip", "vary": "Accept-Encoding"}},
   {"request": "GET /", "send": {"headers": {"accept-encoding": "br;q=1.5, gzip"}}, "status": 200, "headers": {"content-encoding": "gzip", "vary": "Accept-Encoding"}},

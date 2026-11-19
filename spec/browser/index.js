@@ -255,9 +255,11 @@ async function runStep(tab, caseDir, step) {
       fs.writeFileSync(file, got + '\n');
       return null;
     }
-    const want = normalize(fs.readFileSync(file, 'utf8'));
-    if (want === normalize(got)) return null;
-    return `${step.dom} differs from ${step.file}\n${lineDiff(want, normalize(got))}`;
+    // Trimmed, because a file ends with a newline and an element's inside need not.
+    const want = normalize(fs.readFileSync(file, 'utf8')).trim();
+    const held = normalize(got).trim();
+    if (want === held) return null;
+    return `${step.dom} differs from ${step.file}\n${lineDiff(want, held)}`;
   }
   return `a step needs run, expect or dom: ${JSON.stringify(step)}`;
 }

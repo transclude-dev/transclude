@@ -1,0 +1,11 @@
+<script element>
+  export const shadow = true;
+  export const properties = { items: [] };
+</script>
+
+<ul>
+  <li each="item of items" key="item.id">
+    <input value="${item.text}" />
+    <div class="scroller" style="height: 20px; overflow: auto"><p style="height: 200px">${item.text}</p></div>
+  </li>
+</ul>

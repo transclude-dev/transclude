@@ -1,0 +1,16 @@
+[
+  {
+    "name": "connect, render, leave and come back",
+    "load": "/",
+    "steps": [
+      { "expect": "window.log", "equals": ["connected", "updated one"] },
+      { "run": "document.querySelector('life-log').setAttribute('label', 'two')" },
+      { "expect": "window.log.at(-1)", "equals": "updated two" },
+      { "run": "window.log.length = 0; window.kept = document.querySelector('life-log'); window.kept.remove()" },
+      { "expect": "window.signal.aborted", "equals": true },
+      { "expect": "window.log", "equals": ["aborted", "cleanup", "disconnected"] },
+      { "run": "window.log.length = 0; document.body.append(window.kept)" },
+      { "expect": "[window.log[0], window.signal.aborted]", "equals": ["connected", false] }
+    ]
+  }
+]

@@ -109,7 +109,8 @@ export async function openTab({ debugPort }) {
 
     /**
      * An expression's value, awaited when it is a promise. A throw is an
-     * error with the page's own message.
+     * error with the page's own message. As in the console, so a step can
+     * `await` at its top level.
      *
      * @param {string} expression
      */
@@ -118,6 +119,7 @@ export async function openTab({ debugPort }) {
         expression,
         awaitPromise: true,
         returnByValue: true,
+        replMode: true,
       });
       if (exceptionDetails) throw new Error(exceptionText(exceptionDetails));
       return result.value;

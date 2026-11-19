@@ -22,7 +22,7 @@ Complete.
 | The page and the fragment come from one template, so they agree | The fragment equivalence invariant. Two cases disagree: see Invariants | - |
 | `#list` never reaches the server | Browser behavior, not the framework's | - |
 | `<transclude src="/notes#list">` resolves while the page renders | The includes area | - |
-| `setHTMLUnsafe` builds the shadow roots in a fragment | Needs a browser, phase 5 | - |
+| `setHTMLUnsafe` builds the shadow roots in a fragment | `elements/in-a-fragment`, in Chrome, shows `innerHTML` works as well. A question for Joe, under In a browser | unreviewed |
 | `fragmentHeader: 'HX-Target'` makes `?fragment=` optional | `fragments/header-names-fragment` | reviewed |
 | A header naming no fragment is ignored | `fragments/header-unknown-name-ignored` | reviewed |
 | Naming a header in `fragmentHeader` adds it to `Vary` | `fragments/header-names-fragment` | reviewed |
@@ -73,7 +73,7 @@ Complete.
 | An empty list renders nothing | `routing/each-empty` | reviewed |
 | `each` over 0, 1 and n items, nested, renders each item once, in order, with its index | `routing/each-count-generated`, the `loop count` property below | reviewed |
 | `key` on a page changes nothing | `routing/key-on-page` | reviewed |
-| `key` keeps input values, focus and scroll across a reorder | Needs a browser, phase 5 | - |
+| `key` keeps input values, focus and scroll across a reorder | `elements/key-keeps-focus`, in Chrome | unreviewed |
 | `if` and `each` on one element is refused | `diagnostics/if-and-each-on-one-element` | reviewed |
 | A chain split between `<head>` and `<body>` is refused | `diagnostics/hoisted-branch-split` | reviewed |
 
@@ -112,25 +112,25 @@ Complete.
 | `shadow = true` gives a declarative shadow root and a real `<slot>` | `elements/shadow-element` | reviewed |
 | Page CSS reaches a light element; a shadow one only through inherited properties and `::part()` | Needs a browser, phase 5 | - |
 | A light element ships JavaScript only with behavior; a shadow one always | `elements/javascript-shipped` | reviewed |
-| Re-render on an attribute change: light in place, shadow including structure | Needs a browser, phase 5 | - |
+| Re-render on an attribute change: light in place, shadow including structure | `elements/rerender-on-attribute`, in Chrome | unreviewed |
 | After `bind` and `update`, the element is what a full render of the new props makes | `elements/every-binding`, and every element case, through the `bind and update` invariant | reviewed |
 | A light element's slots are filled on the server, named and fallback included, and no `<slot>` is sent | `elements/light-slots` | reviewed |
-| `slotchange` and `assignedNodes()` work only in a shadow element | Needs a browser, phase 5 | - |
+| `slotchange` and `assignedNodes()` work only in a shadow element | `elements/slots-in-browser`, in Chrome | unreviewed |
 | An `if` or `each` over a changing value in a light element is refused, naming `shadow` | `diagnostics/light-element-structural-directive` | reviewed |
 | A light element of plain markup ships nothing | `elements/javascript-shipped` | reviewed |
 | In a fragment, a light element arrives whole and a shadow one bare | `elements/in-a-fragment` | reviewed |
-| A shadow element in a fragment paints on connect | Needs a browser, phase 5 | - |
+| A shadow element in a fragment paints on connect | `elements/in-a-fragment`, in Chrome | unreviewed |
 | The server writes `referenceTarget` on the declarative shadow root | `elements/reference-target` | reviewed |
-| A label, `aria-labelledby` and the like reach the target | Needs a browser, phase 5 | - |
+| A label, `aria-labelledby` and the like reach the target | `elements/reference-target`, in Chrome: the label. `aria-labelledby` needs the accessibility tree, which the runner does not read | unreviewed |
 | The target id must exist, be written out, sit outside an `each`, and the element must be shadow | `diagnostics/reference-target-missing-id`, `-bound-id`, `-in-each`, `-on-light` | reviewed |
 | Chrome and Edge follow the target, Safari and Firefox do not | Browser support, not the framework's | - |
-| `connected` gets a `signal` that aborts on disconnect | Needs a browser, phase 5 | - |
+| `connected` gets a `signal` that aborts on disconnect | `elements/lifecycle`, in Chrome | unreviewed |
 | A `document` listener with no `signal` is a build warning | Build output, which the runner does not read. The second claim to need it | - |
-| `prototype` members; `connected`, `disconnected`, `updated`; cleanup order | Needs a browser, phase 5 | - |
-| State: each element its own copy, a property per name, a re-render on set, `updateComplete` | Needs a browser, phase 5 | - |
+| `prototype` members; `connected`, `disconnected`, `updated`; cleanup order | `elements/lifecycle`, in Chrome | unreviewed |
+| State: each element its own copy, a property per name, a re-render on set, `updateComplete` | `elements/state-in-browser`, in Chrome | unreviewed |
 | A name in both `properties` and `state` is a compile error | `diagnostics/prop-and-state-same-name` | reviewed |
 | State renders on the server with its default, and nothing is reflected | `elements/state-default` | reviewed |
-| A boolean state is a custom state CSS can select | Needs a browser, phase 5 | - |
+| A boolean state is a custom state CSS can select | `elements/state-in-browser`, in Chrome | unreviewed |
 | Objects and arrays are written as JSON in the attribute | `elements/shadow-element`, and `routing/attribute-values` | reviewed |
 | `formAssociated` needs no shadow root | `elements/form-associated` | reviewed |
 | Its value is submitted under its `name`; `setValidity`, `:invalid`, a blocked submit | Needs a browser, phase 5 | - |
@@ -746,7 +746,28 @@ Broken in `src/runtime/index.js` to see it fail: a light element that writes
 its defaults over the server's values on connect fails 3 cases, and a shadow
 element that adds a node on connect fails 6.
 
-The claims marked "Needs a browser" above get a `browser.json` each, batch by
+Cases with a `browser.json`, each broken in `src/runtime/index.js` to see it
+fail:
+
+| Case | What it asks in Chrome | Broken to see it fail |
+| --- | --- | --- |
+| `elements/rerender-on-attribute` | A light element writes into the text node it has; a shadow one rebuilds its `each` | `setText` that replaces the node; a keyed `each` that builds no new row |
+| `elements/slots-in-browser` | A child added later is projected and fires `slotchange`; a light element has no `<slot>` left | The browser's own, and the server's fill, which the in-process run checks |
+| `elements/lifecycle` | `connected`, `updated`, the signal aborting, the returned cleanup before `disconnected`, a move | `disconnected` before the cleanup; a signal never aborted |
+| `elements/state-in-browser` | A property per name, `updateComplete`, a copy per element, `:state()` set with the render | A custom state never added |
+| `elements/in-a-fragment` | A fragment swapped in paints its shadow element on connect | An element arriving bare that does not paint |
+| `elements/reference-target` | A click on the label focuses the input inside | No `shadowrootreferencetarget` on the server's root |
+| `elements/key-keeps-focus` | A reordered row keeps its value, focus and scroll | A keyed `each` that ignores the key |
+
+**For Joe.** `/docs/fragments`, the note "setHTMLUnsafe, not innerHTML", says
+`setHTMLUnsafe()` builds shadow roots and that a shadow element in a fragment
+needs it to start up. A fragment carries no declarative shadow root: the
+element arrives bare and paints itself on connect, as `/docs/elements` says.
+In Chrome, `innerHTML` paints it the same way, and `elements/in-a-fragment`
+shows both. `setHTMLUnsafe()` still matters for a declarative root written by
+hand or brought in by an include. The note could say that, or go.
+
+The other claims marked "Needs a browser" get a `browser.json` each, batch by
 batch.
 
 ## Gotchas

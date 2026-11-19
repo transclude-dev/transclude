@@ -1,0 +1,18 @@
+[
+  {
+    "name": "a shadow element swapped in with setHTMLUnsafe paints on connect",
+    "load": "/",
+    "steps": [
+      { "run": "const html = await (await fetch('/?fragment=people')).text(); const box = document.createElement('div'); box.id = 'swapped'; document.body.append(box); box.setHTMLUnsafe(html)" },
+      { "dom": "#swapped", "file": "expected/swapped.html" }
+    ]
+  },
+  {
+    "name": "so does one swapped in with innerHTML: the fragment holds no shadow root to build",
+    "load": "/",
+    "steps": [
+      { "run": "const html = await (await fetch('/?fragment=people')).text(); const box = document.createElement('div'); box.id = 'swapped'; document.body.append(box); box.innerHTML = html" },
+      { "dom": "#swapped", "file": "expected/swapped.html" }
+    ]
+  }
+]

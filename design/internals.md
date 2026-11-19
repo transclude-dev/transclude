@@ -530,6 +530,19 @@ against.
   because it writes no header of its own. An unreadable value counts as hiding.
   Wrong that way is an error naming the author's own header; wrong the other way
   is the silent swap. `spec: fragments/no-vary-search-hides-fragment`.
+- **A throw after the response exists answered with that response's headers.**
+  Hono's default error handler builds its 500 with `c.text`, and the `res`
+  setter copies every header of the response it replaces onto the new one. The
+  `No-Vary-Search` refusal throws after `next()`, when the page already exists,
+  so its 500 went out with the page's ETag, `public` caching and a
+  `Content-Length` of 208 on a body of 21 bytes. `app.request()` never minds a
+  wrong length, so the spec passed. Over HTTP, Node waited for the 187 bytes
+  that never came, and `npm run spec:runtimes` found it. `app.onError` in
+  `app.js` sets `c.res = undefined` before it answers. `internalError` returns
+  a new `Response` instead of `c.text`, because `c.text` builds on the headers a
+  render prepared before its body existed. An `HTTPException`, such as CSRF's
+  403, still answers itself, as Hono's own handler let it.
+  `spec: fragments/no-vary-search-hides-fragment`.
 - **`baseApp` refuses an option it does not know.** `dev.js` passed `publicRoot`
   to a function that takes `publicFiles`, so dev served no public files at all
   while production served them. The only sign was a Vite warning about one of the

@@ -1,4 +1,16 @@
 [
-  { "request": "GET /", "status": 500, "body": "expected/index.html", "log": "expected/refused.log" },
-  { "request": "GET /?fragment=list", "status": 500, "body": "expected/list.html", "log": "expected/refused.log" }
+  {
+    "request": "GET /",
+    "status": 500,
+    "headers": { "etag": null, "cache-control": null, "content-length": null },
+    "body": "expected/index.html",
+    "log": "expected/refused.log"
+  },
+  {
+    "request": "GET /?fragment=list",
+    "status": 500,
+    "headers": { "etag": null, "cache-control": null, "content-length": null },
+    "body": "expected/list.html",
+    "log": "expected/refused.log"
+  }
 ]

@@ -9,6 +9,7 @@
 // zlib; a runtime with an asset binding reads that and lets the platform compress.
 // Everything below is the same either way.
 
+import { HTTPException } from 'hono/http-exception';
 import { cacheKey, createCache, windowOf } from './cache.js';
 import { feed, feedPath, feedType } from './feed.js';
 import { documentStore, PROXY_PATH, proxyHandler } from './proxy.js';
@@ -552,17 +553,38 @@ export function createApp({
     }
   }
 
-  /** Every `catch` above. One place decides what a failed request looks like. */
+  /**
+   * Every `catch` above. One place decides what a failed request looks like.
+   *
+   * A new `Response`, not `c.text`. Hono builds `c.text` on the headers the
+   * request set so far, and a render sets its ETag and Cache-Control before its
+   * body exists, so a failure after that went out with them.
+   */
   function internalError(c, err, at = null) {
     report(err, c, at);
     // No ETag and no Cache-Control: nothing about a failure should be stored or
     // revalidated, and the same bytes would be sent for an unrelated one next time.
-    if (!errorPage) return c.text('Internal error', 500);
+    if (!errorPage) return new Response('Internal error', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 
-    c.header('Cache-Control', 'no-store');
-    c.header('Content-Type', errorPage.type);
-    return c.body(errorPage.body, 500);
+    const headers = { 'Cache-Control': 'no-store', 'Content-Type': errorPage.type };
+    return new Response(/** @type {BodyInit} */ (errorPage.body), { status: 500, headers });
   }
+
+  /**
+   * A throw nothing above caught, such as a refusal a middleware makes on the
+   * way out. A response exists by then, and Hono copies its headers onto the one
+   * that replaces it. The 500 carried the page's ETag, `public` caching and its
+   * `Content-Length`, which was longer than the 500's body, and Node held the
+   * connection open for bytes that never came. Dropping the response first is
+   * what makes the 500 its own.
+   */
+  app.onError((err, c) => {
+    c.res = undefined;
+    // An `HTTPException` carries its own answer, such as CSRF's 403. Hono's own
+    // handler sent it, and replacing that handler must not turn it into a 500.
+    if (err instanceof HTTPException) return err.getResponse();
+    return internalError(c, err);
+  });
 
   /**
    * A response rendered for this request. A page rendered once for this request

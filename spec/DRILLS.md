@@ -44,4 +44,10 @@ and third rows refuse a header that hides nothing. The fourth is the new
 module's own mistake.
 
 - **What `spec/` missed:** the shapes of the header that no case covers.
-- **Cases added:** none yet. They wait on which answer each row should have.
+- **Decided:** refuse rows 1 and 5 to 7, and pass rows 2 to 4. Neither module
+  gave all seven answers.
+- **The fix:** the rebuilt module, with its fourth row corrected, replaced the
+  old one. Two tests in `test/no-vary-search.test.js` hold the same rows.
+- **Cases added:** `fragments/no-vary-search-shapes`, one entry per row. The
+  old module fails six of them, and the rebuilt one as it came back fails
+  the fourth.

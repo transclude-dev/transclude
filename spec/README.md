@@ -312,7 +312,15 @@ body is compared. An exception or a `console.error` fails the entry.
    back. Say in the commit how you broke it.
 
 An expected file that exists is the contract. A change to one is its own
-commit, prefixed `spec:`, and Joe reviews it.
+commit, prefixed `spec:`, and Joe reviews it. Two things hold that:
+
+- `scripts/protect-spec.js` runs before every Write and Edit an agent makes,
+  from `.claude/settings.json`. It refuses one to an existing expected file or
+  `expect.json`, and says why, unless `SPEC_EDIT=1` is set. A new case's files
+  do not exist yet and pass.
+- `scripts/spec-commits.js` fails when one commit changes both `src/` and
+  expected output. The `contract` job runs it over a pull request and over a
+  push to `main`.
 
 ## How the runner works
 

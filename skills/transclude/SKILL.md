@@ -315,4 +315,7 @@ directly. It is the object the whole chain holds.
 - [references/server.md](references/server.md) — cookies, middleware, security,
   config, caching, deployment, and where Hono's own docs are
 
+Working on transclude itself: `spec/` in its repository is the contract. A
+failing case means the code is wrong until shown otherwise.
+
 Full documentation: https://transclude.dev/docs

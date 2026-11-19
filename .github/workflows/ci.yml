@@ -119,6 +119,38 @@ jobs:
       - run: npm ci --prefix www
       - run: npm run spec
 
+  # One commit may not change src/ and expected output together. A change to
+  # an expected file is a `spec:` commit of its own, so it can be read on its
+  # own; a commit that moves the code and the answer it is held to at once is
+  # the test moved to meet the code. Over a pull request's commits, and over
+  # what a push to main brings in.
+  contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: No commit changes src/ and expected output together
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          # A new branch, or a run started by hand, has no range to read.
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "no range to check"
+            exit 0
+          fi
+          node scripts/spec-commits.js "$BASE..$HEAD"
+
   # The checks only a browser can answer: a shadow boundary, a form counting a
   # custom element as a field, moveBefore. They live in the showcase at /check
   # and, until this job, ran when somebody remembered to open the page. The

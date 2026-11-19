@@ -93,6 +93,9 @@
  * @property {Comment|null} end the closing one, or null when the walk lost it
  * @property {string|null} html the last markup, where there was nothing to bind
  * @property {Map<unknown, KeyedEntry>|null} keyed
+ * @property {KeyedEntry[]} repeated the rows of a key an earlier item already
+ *   holds. The map has room for one row per key, so these are kept apart and
+ *   rebuilt on every update
  * @property {number} branch which arm of the chain is in the document
  * @property {object|null} bindings
  */
@@ -460,7 +463,7 @@ const bindsFrom = (block, entry) => (block.ranged ? entry.first.nextSibling : en
  */
 export function blockAt(open, block, props, args = []) {
   const end = closingAnchor(open);
-  const state = { start: open, end, html: null, keyed: null, branch: -1, bindings: null };
+  const state = { start: open, end, html: null, keyed: null, repeated: [], branch: -1, bindings: null };
   if (block.keyed) {
     state.keyed = adoptKeyed(state, block, props, args);
     return state;
@@ -492,7 +495,9 @@ function adoptKeyed(state, block, props, args) {
     if (part) entry.bindings = part.bind(bindsFrom(block, entry), props, ...args, item, index);
     else entry.html = block.item(props, ...args, item, index);
 
-    owned.set(block.key(props, ...args, item, index), entry);
+    const key = block.key(props, ...args, item, index);
+    if (owned.has(key)) state.repeated.push(entry);
+    else owned.set(key, entry);
     node = entry.last.nextSibling;
     index++;
   }
@@ -551,6 +556,7 @@ function updateKeyed(state, block, props, args) {
   const previous = state.keyed;
   const part = block.parts?.[0];
   const owned = new Map();
+  const repeated = [];
   const restoreFocus = captureFocus(parent);
 
   /**
@@ -580,7 +586,8 @@ function updateKeyed(state, block, props, args) {
     if (!entry) {
       // Built straight into position, so it needs no move afterwards.
       entry = build(item, index, reference);
-      owned.set(key, entry);
+      if (owned.has(key)) repeated.push(entry);
+      else owned.set(key, entry);
       index++;
       continue;
     }
@@ -611,7 +618,9 @@ function updateKeyed(state, block, props, args) {
   for (const [key, entry] of previous) {
     if (owned.get(key) !== entry) removeRange(entry);
   }
+  for (const entry of state.repeated) removeRange(entry);
   state.keyed = owned;
+  state.repeated = repeated;
   restoreFocus?.();
   return true;
 }

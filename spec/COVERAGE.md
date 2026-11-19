@@ -722,13 +722,14 @@ something the runner does not have.
 Gotchas are named by their bold title, in file order. Line numbers move with
 every edit to the file.
 
-### Behavioral, shown by a case (122)
+### Behavioral, shown by a case (123)
 
 `Tagged` is `yes` once the gotcha ends with its `spec:` tag and the case
 fails with the old bug put back. `Snapshot` is as in the sections above.
 
 | Gotcha | Case | Tagged | Snapshot |
 | --- | --- | --- | --- |
+| A keyed `each` that met one key twice left a row behind. | `elements/every-binding`, through the `bind and update` invariant | yes | reviewed |
 | Fragment mode emits components bare, and the flag has to reach all the way down. | `elements/shadow-inside-light-in-a-fragment` | yes | reviewed |
 | A reference target has two places to be written, and missing one says nothing. | `elements/reference-target` | yes | reviewed |
 | A `<script>` with a non-JavaScript type is markup, not a client block. | `recipes/data-block` | yes | reviewed |

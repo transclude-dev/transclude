@@ -12,6 +12,7 @@ import { format } from 'node:util';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { caseBudgets } from './budgets.js';
 import { createClient } from './client.js';
 import { differences } from './compare.js';
 import { checkInvariants } from './invariants.js';
@@ -63,7 +64,13 @@ async function run() {
   }
   const ask = (method, url, init) => askAgain(app, method, url, init);
   results.push(...(await checkInvariants({ caseDir, buildDir, exchanges, ask })));
+  results.push(...(await caseBudgets({ id: caseId(), buildDir, app })));
   return { build, results };
+}
+
+/** `fragments/marked-element`, as `spec/budgets.json` names a case. */
+function caseId() {
+  return path.relative(path.join(caseDir, '..', '..'), caseDir).split(path.sep).join('/');
 }
 
 /**

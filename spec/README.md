@@ -205,6 +205,27 @@ and runs only in that case, after the invariants:
 A failure names the smallest input fast-check found and the seed that replays
 the run.
 
+## Budgets
+
+`spec/budgets.json` holds limits that are tests. Each sits a little above what
+the code measured when it was set, the way the coverage floor sits under
+today's coverage, so ordinary drift stays under it and a real loss goes over.
+
+| Budget | What is measured | When |
+| --- | --- | --- |
+| `clientBytes` | Every `.js` file a case's build writes to `dist/client`, in bytes as built. A case the file does not name has a budget of 0 | every case |
+| `renderMs` | The median of 101 renders of a named request, after 20 not timed | the cases named |
+| `packedBytes` | What `npm pack` would publish, compressed | a full run |
+| `wwwBuildSeconds` | `npm run build --prefix www`, start to end | a full run |
+
+Each is a result in the run, written `budget: client JavaScript`, and carries
+what it measured, so `spec/report/last.json` shows how close each one is. The
+two package budgets run only when no filter is given, and the `www` one needs
+`npm ci --prefix www`.
+
+A change that should cost more raises its limit in the same commit, and the
+commit says why.
+
 ## Every runtime
 
 ```sh

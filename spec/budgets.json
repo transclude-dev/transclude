@@ -1,0 +1,48 @@
+{
+  "clientBytes": {
+    "decisions/link-preload": 6700,
+    "diagnostics/warn-document-listener": 6600,
+    "elements/every-binding": 14600,
+    "elements/form-associated": 7100,
+    "elements/form-in-browser": 7200,
+    "elements/in-a-fragment": 11900,
+    "elements/javascript-shipped": 9400,
+    "elements/key-keeps-focus": 12200,
+    "elements/lifecycle": 7300,
+    "elements/light-block-then-binding": 7300,
+    "elements/light-focus": 7100,
+    "elements/reference-target": 6400,
+    "elements/rerender-on-attribute": 14600,
+    "elements/shadow-element": 11900,
+    "elements/shadow-inside-light-in-a-fragment": 7200,
+    "elements/slots-in-browser": 9300,
+    "elements/state-default": 7400,
+    "elements/state-in-browser": 7300,
+    "elements/state-only-defines": 7000,
+    "fragments/watch-elements": 600,
+    "layouts/client-import-nested": 300,
+    "security/client-script-template-literal": 100,
+    "styles/boundary-in-browser": 6500,
+    "styles/fragment-styles-once": 8900
+  },
+  "renderMs": {
+    "routing/index-page": {
+      "GET /": 0.25
+    },
+    "fragments/marked-element": {
+      "GET /?q=ada": 0.25,
+      "GET /?q=ada&fragment=matches": 0.25
+    },
+    "elements/every-binding": {
+      "GET /": 0.25
+    },
+    "layouts/layout-status": {
+      "GET /": 0.25
+    },
+    "markdown/page": {
+      "GET /notes": 0.25
+    }
+  },
+  "packedBytes": 312000,
+  "wwwBuildSeconds": 20
+}

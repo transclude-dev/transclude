@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { packageBudgets } from './budgets.js';
 
 const specDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const casesDir = path.join(specDir, 'cases');
@@ -33,6 +34,10 @@ if (ids.length === 0) {
 const outcomes = await pool(ids, jobs, runCase);
 if (snapshot) writeMissing(outcomes);
 
+// The package's own budgets, on a full run only. They are about the whole
+// package, and a run of one area should stay a run of seconds.
+if (filters.length === 0) outcomes.push({ id: 'budgets', ms: 0, results: packageBudgets() });
+
 const failed = outcomes.filter((outcome) => !passed(outcome));
 for (const outcome of failed) console.log(describe(outcome));
 
@@ -41,7 +46,9 @@ const atOnce = Math.min(jobs, ids.length);
 const todos = todosOf(outcomes);
 const exempt = exemptOf(outcomes);
 const marks = (todos ? `, ${todos} todo` : '') + (exempt ? `, ${exempt} exempt` : '');
-console.log(`${ids.length - failed.length} of ${ids.length} cases pass${marks}, ${atOnce} at a time, in ${seconds} s`);
+const casesFailed = failed.filter((outcome) => outcome.id !== 'budgets').length;
+const budgetLine = filters.length === 0 ? (failed.some((outcome) => outcome.id === 'budgets') ? ', package budgets over' : ', package budgets kept') : '';
+console.log(`${ids.length - casesFailed} of ${ids.length} cases pass${marks}${budgetLine}, ${atOnce} at a time, in ${seconds} s`);
 
 fs.mkdirSync(path.dirname(reportFile), { recursive: true });
 fs.writeFileSync(reportFile, JSON.stringify({ seconds: Number(seconds), jobs, outcomes }, null, 2) + '\n');

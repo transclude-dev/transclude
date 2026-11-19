@@ -22,7 +22,7 @@ Complete.
 | The page and the fragment come from one template, so they agree | The fragment equivalence invariant. Two cases disagree: see Invariants | - |
 | `#list` never reaches the server | Browser behavior, not the framework's | - |
 | `<transclude src="/notes#list">` resolves while the page renders | The includes area | - |
-| `setHTMLUnsafe` builds the shadow roots in a fragment | `elements/in-a-fragment`, in Chrome, shows `innerHTML` works as well. A question for Joe, under In a browser | unreviewed |
+| `setHTMLUnsafe` builds a declarative root, `innerHTML` does not; a bare shadow element in a fragment starts with either | `elements/in-a-fragment`, in Chrome, for the bare element. A declarative root in a fragment is the browser's | unreviewed |
 | `fragmentHeader: 'HX-Target'` makes `?fragment=` optional | `fragments/header-names-fragment` | reviewed |
 | A header naming no fragment is ignored | `fragments/header-unknown-name-ignored` | reviewed |
 | Naming a header in `fragmentHeader` adds it to `Vary` | `fragments/header-names-fragment` | reviewed |
@@ -758,14 +758,6 @@ fail:
 | `elements/in-a-fragment` | A fragment swapped in paints its shadow element on connect | An element arriving bare that does not paint |
 | `elements/reference-target` | A click on the label focuses the input inside | No `shadowrootreferencetarget` on the server's root |
 | `elements/key-keeps-focus` | A reordered row keeps its value, focus and scroll | A keyed `each` that ignores the key |
-
-**For Joe.** `/docs/fragments`, the note "setHTMLUnsafe, not innerHTML", says
-`setHTMLUnsafe()` builds shadow roots and that a shadow element in a fragment
-needs it to start up. A fragment carries no declarative shadow root: the
-element arrives bare and paints itself on connect, as `/docs/elements` says.
-In Chrome, `innerHTML` paints it the same way, and `elements/in-a-fragment`
-shows both. `setHTMLUnsafe()` still matters for a declarative root written by
-hand or brought in by an include. The note could say that, or go.
 
 The other claims marked "Needs a browser" get a `browser.json` each, batch by
 batch.

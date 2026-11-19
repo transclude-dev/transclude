@@ -54,6 +54,11 @@ export const RUNTIMES = {
  */
 export async function serve(runtime, buildDir, port, work) {
   if (runtime === 'workerd') writeWorker(buildDir);
+  // The slot's last server may still hold the port. workerd outlives the
+  // wrangler that started it by a moment, and a server that listens is all the
+  // check below asks for, so the next runtime's first request reached the old
+  // one as it closed, and read ECONNRESET.
+  await free(port);
   const [command, ...args] = RUNTIMES[runtime](port);
   const output = [];
   // Its own process group, so stopping wrangler stops the workerd it started.
@@ -88,6 +93,15 @@ async function answering(port, exited, printed) {
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
   throw new Error(`nothing listened in ${START_MS / 1000} s\n${printed()}`);
+}
+
+/** Waits until nothing listens on the port. */
+async function free(port) {
+  const until = Date.now() + START_MS;
+  while (await listening(port)) {
+    if (Date.now() > until) throw new Error(`port ${port} is still held after ${START_MS / 1000} s`);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
 }
 
 /** @param {number} port */

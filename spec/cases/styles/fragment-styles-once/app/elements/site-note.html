@@ -1,0 +1,15 @@
+<script element>
+  export const properties = { tone: 'neutral' };
+</script>
+
+<style>
+  :scope {
+    display: block;
+    border-left: 3px solid rgb(0, 0, 0);
+  }
+  :scope[tone='warn'] {
+    border-color: rgb(180, 35, 44);
+  }
+</style>
+
+<p><slot>Nothing to say.</slot></p>

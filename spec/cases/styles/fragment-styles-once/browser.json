@@ -1,0 +1,13 @@
+[
+  {
+    "name": "an element swapped in twice brings its styles once",
+    "load": "/",
+    "steps": [
+      { "expect": "document.querySelectorAll('style[data-transclude]').length", "equals": 0 },
+      { "run": "const html = await (await fetch('/other?fragment=notes')).text(); const here = document.querySelector('#here'); here.insertAdjacentHTML('beforeend', html); here.insertAdjacentHTML('beforeend', html)" },
+      { "run": "await new Promise((done) => { const look = () => (document.querySelector('style[data-transclude]') ? done() : setTimeout(look, 20)); look(); })" },
+      { "expect": "document.querySelectorAll('style[data-transclude=\"site-note\"]').length", "equals": 1 },
+      { "expect": "[...document.querySelectorAll('site-note')].map((note) => getComputedStyle(note).borderLeftColor)", "equals": ["rgb(180, 35, 44)", "rgb(180, 35, 44)"] }
+    ]
+  }
+]

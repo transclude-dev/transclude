@@ -441,6 +441,7 @@ Complete.
 | `/people/*` asked for as a URL answers 404 | `routing/route-table` shows a parameter route answering for a name it does not know | - |
 | `Cache-Control` per kind of response; the 500 page is `no-store` with no ETag | `production/cache-control` | reviewed |
 | Build output is compressed once; each encoding gets its own ETag | `production/encodings` | - |
+| The encoding is the one the client weighs highest: `Q=0`, `x-gzip`, a preferred identity, a bad weight, a coding named twice | `production/encoding-weights` | - |
 | Public files are served with byte ranges | `production/public-files` | reviewed |
 | `Content-Type` from one table, `application/octet-stream` for an unknown kind | `production/public-files` | reviewed |
 | The build prints the kinds it could not type | Build output, which the runner does not read | - |
@@ -739,13 +740,14 @@ workerd, over HTTP, and each answer must be Node's. 183 cases are served; the
 93 that do not build, 3 with no request and 17 that read a fake upstream are
 not. `spec/README.md` lists what is put aside.
 
-Four cases are left off one runtime by their `runtimes.json`:
+Five cases are left off one runtime by their `runtimes.json`:
 
 | Case | Runtime | Why |
 | --- | --- | --- |
 | `markdown/page` | workerd | The config imports `node:path` |
 | `production/on-error-sitemap-feed` | workerd | Its data module reads a file with `node:fs` |
 | `production/encodings` | workerd | wrangler compresses on the way out, as Cloudflare does |
+| `production/encoding-weights` | workerd | The same |
 | `forms/shared-response` | Deno, workerd | What a reused body does is the runtime's |
 
 Broken in `src/` to see it fail: an `X-Runtime` header written on Bun alone

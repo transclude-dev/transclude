@@ -1,0 +1,1 @@
+{ "workerd": "wrangler compresses an answer on its way out, as Cloudflare does in production, so a compressed body and its ETag are the platform's." }

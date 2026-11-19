@@ -88,4 +88,13 @@ happen.
 - **What `spec/` missed:** every rule in the type's comment, "q-values, `*`,
   and `q=0` as a refusal", has no case. And `spec/` imports from `test/`,
   which `test/spec-boundary.test.js` does not check.
-- **Cases added:** none yet. They wait on which answer each row should have.
+- **Decided:** a parameter name ignores case, `x-gzip` is `gzip`, a client
+  that weighs no encoding highest gets none, a bad weight is a refusal, and a
+  coding named twice keeps the lower weight. The default list stays `[]`.
+- **The fix:** the old module, patched, because it keeps the parse cache.
+  Five tests in `test/serve.test.js` hold the rows, and all five fail on the
+  old module. `test/dom.js` moved to `spec/runner/dom.js`, and
+  `test/spec-boundary.test.js` refuses an import from `test/`.
+- **Cases added:** `production/encoding-weights`, 11 entries. The old module
+  fails 9 of them. The module as the drill rebuilt it fails the entry for
+  `gzip, gzip;q=0`, the one row where neither module had the answer.

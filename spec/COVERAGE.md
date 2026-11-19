@@ -103,9 +103,9 @@ Complete.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| The file name is the tag, rendered into the page's own DOM | `elements/light-element` | reviewed |
+| The file name is the tag, rendered into the page's own DOM | `elements/light-element` | unreviewed |
 | A tag needs a dash; a file without one stops the build | `diagnostics/element-name-needs-dash` | reviewed |
-| The style block goes into `<head>` once; `:scope` is the element | `elements/light-element` | reviewed |
+| The style block goes into `<head>` once; `:scope` is the element | `elements/light-element` | unreviewed |
 | `elementsDir` may name several directories, read as one set | `elements/several-dirs` | reviewed |
 | The same tag in two directories stops the build, naming both | `diagnostics/element-in-two-dirs` | reviewed |
 | The dev server watches every directory | The runner checks the build only | - |
@@ -118,7 +118,7 @@ Complete.
 | `slotchange` and `assignedNodes()` work only in a shadow element | `elements/slots-in-browser`, in Chrome | unreviewed |
 | An `if` or `each` over a changing value in a light element is refused, naming `shadow` | `diagnostics/light-element-structural-directive` | reviewed |
 | A light element of plain markup ships nothing | `elements/javascript-shipped` | reviewed |
-| In a fragment, a light element arrives whole and a shadow one bare | `elements/in-a-fragment` | reviewed |
+| In a fragment, a light element arrives whole and a shadow one bare | `elements/in-a-fragment` | unreviewed |
 | A shadow element in a fragment paints on connect | `elements/in-a-fragment`, in Chrome | unreviewed |
 | The server writes `referenceTarget` on the declarative shadow root | `elements/reference-target` | reviewed |
 | A label, `aria-labelledby` and the like reach the target | `elements/reference-target`, in Chrome: the label. `aria-labelledby` needs the accessibility tree, which the runner does not read | unreviewed |
@@ -129,7 +129,7 @@ Complete.
 | `prototype` members; `connected`, `disconnected`, `updated`; cleanup order | `elements/lifecycle`, in Chrome | unreviewed |
 | State: each element its own copy, a property per name, a re-render on set, `updateComplete` | `elements/state-in-browser`, in Chrome | unreviewed |
 | A name in both `properties` and `state` is a compile error | `diagnostics/prop-and-state-same-name` | reviewed |
-| State renders on the server with its default, and nothing is reflected | `elements/state-default` | reviewed |
+| State renders on the server with its default, and nothing is reflected | `elements/state-default` | unreviewed |
 | A boolean state is a custom state CSS can select | `elements/state-in-browser`, in Chrome | unreviewed |
 | Objects and arrays are written as JSON in the attribute | `elements/shadow-element`, and `routing/attribute-values` | reviewed |
 | `formAssociated` needs no shadow root | `elements/form-associated` | reviewed |
@@ -303,9 +303,9 @@ Complete.
 | `stylesheet: null`, the default, links nothing | Every case with no config, such as `styles/style-hoisted` | reviewed |
 | Custom properties cross a shadow boundary, selectors do not; `::part()` | `styles/boundary-in-browser`, in Chrome | unreviewed |
 | A `<style>` in a page or a layout is hoisted into `<head>` | `styles/style-hoisted` | reviewed |
-| In an element it is scoped to the tag, and `:scope` is the element | `elements/light-element`, `elements/in-a-fragment` | reviewed |
+| In an element it is scoped to the tag, and `:scope` is the element | `elements/light-element`, `elements/in-a-fragment` | unreviewed |
 | An element in a fragment brings its styles, added to `<head>` once | `styles/fragment-styles-once`, in Chrome, with `watchElements` | unreviewed |
-| A shadow element's `:host` rules live inside its shadow root | `elements/shadow-element`, `elements/in-a-fragment` | reviewed |
+| A shadow element's `:host` rules live inside its shadow root | `elements/shadow-element`, `elements/in-a-fragment` | unreviewed |
 | Page CSS beats `:scope` at any specificity; page CSS on the host beats `:host`, and reaches nothing inside | `styles/boundary-in-browser`, in Chrome | unreviewed |
 | A view-transition rule is CSS only; both documents carry it | `styles/style-hoisted`: the rule passes through untouched. The transition itself needs a browser | reviewed |
 | A name derived from the data in a `style` attribute | `styles/transition-name` | reviewed |
@@ -383,7 +383,7 @@ Complete.
 | The build reports the icon count | Build output, which the runner does not read | - |
 | `viewBox` and paint are carried over; `width` and `height` are dropped | `icons/sprite` | reviewed |
 | A new project has `svg-icon.html` | The create area | - |
-| The docs `svg-icon`: drawn on the server, light DOM, no JavaScript, hidden unless labeled | `icons/svg-icon` | reviewed |
+| The docs `svg-icon`: drawn on the server, light DOM, no JavaScript, hidden unless labeled | `icons/svg-icon` | unreviewed |
 | `1em` and `currentColor` follow the surrounding text | Browser behavior | - |
 | `iconsDir: null` is no icons | `icons/off` | - |
 | `iconsDir` may name several directories, a path may leave `appDir`, and a library of one name is one sheet | `icons/shared-dirs` | reviewed |
@@ -518,7 +518,7 @@ Complete.
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
 | `.html` in `routes/` is a page, `.js` an endpoint | `routing/route-table`, `endpoints/json-api` | reviewed |
-| Everything in `elements/` is a custom element, light unless it exports `shadow` | `elements/light-element`, `elements/shadow-element` | reviewed |
+| Everything in `elements/` is a custom element, light unless it exports `shadow` | `elements/light-element`, `elements/shadow-element` | unreviewed |
 | A `_` prefix keeps a helper out of the route table | `project-layout/underscore-helper`, `markdown/underscore-skipped` | reviewed |
 | `_layout.html`, `[name].html`, `[...path].html`, `404.html`, `500.html` | `layouts/wraps-page`, `routing/route-table`, `production/error-pages` | reviewed |
 
@@ -579,7 +579,7 @@ framework passes through.
 | A light element is in the page's DOM, so `<label for>` reaches it | `elements/light-element`, and `elements/light-focus` in Chrome for the label | unreviewed |
 | A new project's layout has a skip link and `aria-current` | The create area | - |
 | `lang` on `<html>` | `languages/lang-config` | reviewed |
-| A labeled icon is `role="img"`, a decorative one `aria-hidden` | `icons/svg-icon` | reviewed |
+| A labeled icon is `role="img"`, a decorative one `aria-hidden` | `icons/svg-icon` | unreviewed |
 | A light element never replaces a child, so focus stays | `elements/light-focus`, in Chrome | unreviewed |
 | The framework adds no roles, invents no labels, reorders nothing | Every snapshot of plain markup, such as `recipes/platform-attributes` | - |
 
@@ -590,7 +590,7 @@ elsewhere.
 
 | Claim | Case, or why none | Snapshot |
 | --- | --- | --- |
-| An element's own styles are wrapped in `@scope` | `elements/in-a-fragment`, `elements/light-element` | reviewed |
+| An element's own styles are wrapped in `@scope` | `elements/in-a-fragment`, `elements/light-element` | unreviewed |
 | What each browser does below each feature | Browser behavior | - |
 | Speculation rules, `referenceTarget` and a CSP are optional | `production/speculate`, `elements/reference-target`, `security/csp-meta` | reviewed |
 | The core imports nothing from `node:` | `test/portable.test.js`; phase 4 | - |
@@ -802,7 +802,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | Both halves fence a block. Only the shadow half compiles one. | `elements/light-block-then-binding` | yes | reviewed |
 | The caller sorts a light element's children into its slots. | `elements/light-slots` | yes | reviewed |
 | State is behavior, so it defines the element. | `elements/state-only-defines` | yes | reviewed |
-| `data()` is what a template sees, and the server has to build it too. | `elements/state-default` | yes | reviewed |
+| `data()` is what a template sees, and the server has to build it too. | `elements/state-default` | yes | unreviewed |
 | Reacting costs a definition, and only a definition. | `elements/javascript-shipped` | yes | reviewed |
 | The `No-Vary-Search` guard reads a header instead of writing one, and it has to run at request time. | `fragments/no-vary-search-hides-fragment` | yes | reviewed |
 | A throw after the response exists answered with that response's headers. | `fragments/no-vary-search-hides-fragment` | yes | unreviewed |

@@ -527,14 +527,19 @@ if (iconsSrc) {
 // edge runtime compresses for you, and shipping three copies of every file into a
 // bundle with a size limit is the wrong trade.
 
-/** A map of files as module source: each URL, its type, and its bytes in base64. */
+/**
+ * A map of files as module source: each URL, its type, its ETag and its bytes in
+ * base64. The ETag is made here, by the function the Node server uses, so a
+ * worker sends the same one and needs no hash of its own at start.
+ */
 function encode(map) {
   const out = [];
   for (const [url, entry] of map) {
     const body = entry.body ?? fs.readFileSync(entry.file);
     out.push(
       `  ${JSON.stringify(url)}: ` +
-        `{ type: ${JSON.stringify(entry.type)}, body: ${JSON.stringify(body.toString('base64'))} },`,
+        `{ type: ${JSON.stringify(entry.type)}, etag: ${JSON.stringify(etagOf(body))}, ` +
+        `body: ${JSON.stringify(body.toString('base64'))} },`,
     );
   }
   return `{\n${out.join('\n')}\n}`;
@@ -544,9 +549,10 @@ function encode(map) {
 function errorPageSource(name) {
   const file = path.join(dist, 'static', name);
   if (!fs.existsSync(file)) return 'null';
+  const body = fs.readFileSync(file);
   return (
-    `{ type: "text/html; charset=utf-8", ` +
-    `body: ${JSON.stringify(fs.readFileSync(file).toString('base64'))} }`
+    `{ type: "text/html; charset=utf-8", etag: ${JSON.stringify(etagOf(body))}, ` +
+    `body: ${JSON.stringify(body.toString('base64'))} }`
   );
 }
 

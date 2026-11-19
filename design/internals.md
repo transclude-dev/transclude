@@ -1208,6 +1208,16 @@ against.
   `overrideGlobalObjects: false`, so the global stays Node's. The lighter class
   is faster to make, and that was all it was for. `npm run spec:runtimes`
   found it.
+- **A worker made its own ETag for the same bytes.** The Node server's is the
+  first 20 characters of a SHA-1 in base64url. The worker hashed with FNV-1a and
+  the length, because WebCrypto is async and the byte store is built in sync,
+  so a page had one validator on Node and another on workerd. Nothing is wrong
+  with either alone, but a cache in front of both, or a move from one to the
+  other, revalidates everything, and `npm run spec:runtimes` counted 143
+  answers that differed. The build now writes each file's ETag into the worker
+  module with `etagOf` from `static-cache.js`, the function the Node server
+  uses, so the worker hashes nothing at start. The prerendered 404 page carries
+  one too, where it used to be `"error"`.
 - **A compiled binary is started outside the project it carries.** `deno
   compile` puts the app under `deno-compile-<name>` in the system temp
   directory, a path that exists only while the binary runs. No working

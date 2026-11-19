@@ -418,3 +418,71 @@ do not wait on each other. `main` does that with the graph of loads instead.
   both rows. The rebuilt module fails both.
 - **Cases added:** `includes/nested-route-loads-once` and
   `includes/loader-reads-no-fragment`. The rebuilt module fails both.
+
+## Third round, 2026-11-19
+
+The four modules that found something in the second round, drilled again
+from `main` after its fixes, in the same way. Each agent was also told to
+write nothing outside its copy. Each rebuilt module passes all 334 cases in
+one to three spec runs, in 2 to 5 minutes.
+
+### `src/negotiate.js`
+
+151 lines against 127. The two agree on 75 of 75 header values. One old test
+fails: a doc comment changed the declaration file. With `available` left
+out, the rebuilt `pickEncoding` again uses `['br', 'gzip']`, and the one
+caller always passes it.
+
+- **What `spec/` missed:** nothing that reaches HTTP. This is a clean drill.
+
+### `src/include.js`
+
+174 lines against 223. The old tests pass, except the type check of `src/`,
+because the rebuilt module adds an option that `RenderOptions` does not
+declare. It keys the memo by path and query, passes `ctx.fragment` as
+`null`, and finds a loop of loads by what each load waits on.
+
+- **What `spec/` missed:** nothing that reaches HTTP. This is a clean drill.
+
+### `src/no-vary-search.js`
+
+404 lines against 306. The rebuilt one parses all of RFC 9651 again. The two
+agree on 93 of 103 values, and the old tests pass, 1545 of 1545.
+
+| `No-Vary-Search` | `main` | Rebuilt |
+| --- | --- | --- |
+| `foo=1.2345, params=("a")`, `params=("é")`, `params=("a");q=1.2345` and five more | passes | refused |
+| `params=("a" "b";x=1)` | refused | passes |
+| `utmparams=bad(` | passes | refused |
+
+Each value in the first row breaks the grammar outside the part `main`
+checks: a decimal with four places, a character that is not ASCII, a byte
+sequence, a date, a display string. A cache ignores each of them, and each
+names `params`. The grammar allows a parameter on an item in a list, so the
+second row hides `a` and `b` only. The rebuilt module finds `params` in
+`utmparams` as text.
+
+- **What `spec/` missed:** a header that fails the grammar inside a member,
+  and a parameter on an item in a list.
+
+### `src/sitemap.js`
+
+419 lines against 353. The two agree on 68 of 79 configs. Six old tests
+fail, on messages, the order of the `Map`, the type check and the
+declaration file. None reaches HTTP.
+
+| Config | `main` | Rebuilt |
+| --- | --- | --- |
+| `paths()` gives `/p/a b`, and an entry names `/p/a%20b` | the same `loc` twice | one `loc` |
+| an entry `/100%` | `/100%` | `/100%25` |
+| `priority: ''` | `<priority></priority>` | none |
+| `changefreq: 0` | none | `<changefreq>0</changefreq>` |
+
+Both modules write `paths()` params `a?b#c` and `50%` into a `loc` as they
+are, `https://x.com/p/a?b#c` and `https://x.com/p/50%`. The first is another
+URL, and the second is not a URL. `urlFor` in `document.js` joins params
+without encoding them.
+
+- **What `spec/` missed:** the same URL from a route and an entry when one
+  is encoded, a `%` that starts no escape, an empty `priority`, and a param
+  that holds `?`, `#` or `%`.

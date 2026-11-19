@@ -9,7 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { coerceProps } from '../src/runtime/index.js';
-import { createRoot } from './dom.js';
+import { createRoot } from '../spec/runner/dom.js';
 
 class FakeHTMLElement {
   #attrs = new Map();

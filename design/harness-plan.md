@@ -209,7 +209,7 @@ write out.
 - **The bind/update rule, everywhere.** After `bind` and `update`, the DOM
   serializes to what a full render of those props produces. Today this runs in
   `test/` against chosen props. Run it over every element case with generated
-  props, using `test/dom.js` or the browser runner from phase 5.
+  props, using `spec/runner/dom.js` or the browser runner from phase 5.
 
 **Done when** each invariant runs over the whole corpus and each one has been
 falsified.

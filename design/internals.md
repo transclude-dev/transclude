@@ -631,6 +631,16 @@ against.
   spelled differently and parse the same. That is deliberate: the runtime ships
   to a browser and must not import from the compiler. `escapeAttr` and
   `escapeText` live in `compiler/html.js`; the runtime's are its own.
+- **A `<pre>` or a `<textarea>` lost the newline its content began with.** A
+  browser drops the first newline after either start tag. `emitElement` wrote
+  the start tag and then the content, so `<pre>\n\ntext</pre>` in the source,
+  whose content begins with a newline, reached the browser as `text`. A `${}`
+  whose value began with a newline lost it the same way. No test saw it, because
+  a test compares the string the server wrote, and the string was right until a
+  parser read it. `EATS_NEWLINE` in `html.js` names the three elements, and a
+  newline follows each start tag of one, for the browser to drop. The `escaping`
+  property in `security/escaping-generated` found it with the value `"\n"`.
+  `spec: routing/leading-newline-kept`.
 - **An action runs after the region is known to exist.** `POST ?fragment=nope`
   used to change data and then 404. Anything that can refuse a request has to
   refuse it before `runAction`, not after. `hasRegion` is that check, in both

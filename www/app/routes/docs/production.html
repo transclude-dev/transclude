@@ -163,10 +163,10 @@ export const POST = async ({ request, revalidateTag }) => {
 
   <p>
     A page that exports an action stops the build the same way. The action is
-    there to change what the page shows, and a file keeps what it showed at
-    build time, while a fragment of the page renders live. A page whose action
-    changes nothing it shows, such as a contact form that sends a message and
-    redirects, can say so with <code>export const prerender = true</code>.
+    there to change what the page shows. A file keeps what it showed at build
+    time, and a fragment of the page renders live. A page whose action changes
+    nothing it shows can say so with <code>export const prerender = true</code>.
+    A contact form that sends a message and redirects is one.
   </p>
 
   <p>

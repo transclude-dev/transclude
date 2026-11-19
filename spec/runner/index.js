@@ -126,10 +126,13 @@ function runCase(id) {
   return new Promise((resolve) => {
     let message = null;
     child.on('message', (received) => (message = received));
-    child.on('exit', () => {
+    // `close`, not `exit`. A child's last message can still be in the channel
+    // when `exit` fires, and the case was then a failure with no output to
+    // read: `diagnostics/gated-covers-nothing` failed that way once on CI.
+    child.on('close', (code, signal) => {
       const ms = Math.round(performance.now() - caseStarted);
       if (message) resolve({ id, ms, ...message });
-      else resolve({ id, ms, results: [], error: `the case process exited without an answer\n${output.trim()}` });
+      else resolve({ id, ms, results: [], error: `the case process exited without an answer (code ${code}, signal ${signal})\n${output.trim()}` });
     });
   });
 }

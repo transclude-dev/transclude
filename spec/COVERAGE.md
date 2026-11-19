@@ -29,6 +29,7 @@ Complete.
 | A cache keys on the query string | Cache behavior, not the framework's | - |
 | A `No-Vary-Search` naming other parameters passes through | `fragments/no-vary-search-named` | reviewed |
 | A `No-Vary-Search` hiding `?fragment=` is refused, naming the value | `fragments/no-vary-search-hides-fragment`, the 500 and the logged message | reviewed |
+| The header is read as a cache reads it: a bare key with parameters, a list's parameters, a repeated key, and shapes that cannot be read | `fragments/no-vary-search-shapes` | unreviewed |
 | `POST /?fragment=nope` changes nothing and answers 404 | `fragments/post-unknown-name` | reviewed |
 | `ctx.fragment` tells a form post from a fetch | `fragments/action-fragment` | reviewed |
 | A fragment request runs the layouts, and the page reads them as `ctx.layout` | `fragments/layout-data` | unreviewed |
@@ -808,7 +809,8 @@ does not notice: a missing case, or code nothing reaches.
 string.
 
 `src/document.js`: 153 of 185 caught, 32 survived. The nine cases below were
-written for 16 of them, and each fails with its mutation put back:
+written for 17 of them, and each fails with its mutation put back. With them,
+170 of 185 are caught.
 
 | Line | What survived | Case |
 | --- | --- | --- |
@@ -817,12 +819,12 @@ written for 16 of them, and each fails with its mutation put back:
 | 308 | The message for a bad attribute name on `<html>` or `<body>` | `diagnostics/html-attribute-name` |
 | 416, 437, 438, 441, 442 | The params of a route an include reads | `includes/route-params` |
 | 511 | The message for an include of another site with no `proxy` | `diagnostics/include-no-proxy` |
-| 574 | A layout's data reaching `ctx.layout` in a fragment request | `fragments/layout-data` |
+| 574 (two) | A layout's data reaching `ctx.layout` in a fragment request | `fragments/layout-data` |
 | 644 | A guard layout's data reaching the next guard | `layouts/guard-reads-guard` |
 | 748 (three) | `Allow` on a 405: `GET` and each verb a page exports | `forms/verb-not-exported` |
 | 816 | A light element nested in another bringing its styles | `styles/nested-element-styles` |
 
-Nothing reaches the other 16, or the change makes no difference:
+Nothing reaches the other 15, or the change makes no difference:
 
 - 142 and 146: names of internal keys.
 - 175 and 194: the head merge's quote-aware scan. The compiler writes every

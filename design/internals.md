@@ -551,7 +551,13 @@ against.
   break production has to break dev first, and this one costs dev nothing
   because it writes no header of its own. An unreadable value counts as hiding.
   Wrong that way is an error naming the author's own header; wrong the other way
-  is the silent swap. `spec: fragments/no-vary-search-hides-fragment`.
+  is the silent swap. The header is a structured-field dictionary, and the
+  reader takes it member by member, as a cache does. Three regular expressions
+  read it before that. They let `params;x` through, which a browser that
+  shipped the older draft reads as every parameter, and refused `params=?0`,
+  which hides nothing. A regeneration drill found both: `spec/DRILLS.md`.
+  `spec: fragments/no-vary-search-hides-fragment`,
+  `fragments/no-vary-search-shapes`.
 - **A throw after the response exists answered with that response's headers.**
   Hono's default error handler builds its 500 with `c.text`, and the `res`
   setter copies every header of the response it replaces onto the new one. The

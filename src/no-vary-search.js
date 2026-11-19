@@ -13,18 +13,189 @@
 // would do it. `except=()` is the one to watch, because it is the shortest thing
 // to write and it ignores everything.
 //
+// The header is a structured-field dictionary, and this reads it member by
+// member, as a cache does.
+//
 // No `node:` imports. This reads a string.
 
-/** `params=(…)` or `except=(…)`, with the quoted names inside. */
-const LIST = /(?:^|,)\s*(params|except)\s*=\s*\(([^)]*)\)/;
+/**
+ * The value of a member that is not there, or not a shape this reads.
+ *
+ * Two names for two outcomes: a missing key says nothing, an unreadable one has
+ * to count as hiding.
+ */
+const ABSENT = Symbol('absent');
+const UNREADABLE = Symbol('unreadable');
 
-/** `params` on its own, which is the structured-fields way to say every one. */
-const EVERY = /(?:^|,)\s*params\s*(?:=\s*\?1\s*)?(?=,|$)/;
+/**
+ * Splits the header at the commas between members.
+ *
+ * A comma inside a quoted string or inside a list belongs to that member, so the
+ * walk keeps track of both. A backslash in a quoted string escapes the next
+ * character, which is how a string carries a quote.
+ *
+ * @param {string} value
+ * @returns {string[]}
+ */
+function splitMembers(value) {
+  const members = [];
+  let current = '';
+  let inString = false;
+  let depth = 0;
 
-/** A key that takes a list, written without one this can read. */
-const UNREADABLE = /(?:^|,)\s*(?:params|except)\s*=/;
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i];
 
-const namesIn = (list) => [...list.matchAll(/"([^"]*)"/g)].map(([, name]) => name);
+    if (inString && char === '\\') {
+      current += char + (value[i + 1] ?? '');
+      i++;
+      continue;
+    }
+    if (char === '"') inString = !inString;
+    if (!inString && char === '(') depth++;
+    if (!inString && char === ')') depth--;
+
+    if (!inString && depth === 0 && char === ',') {
+      members.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+
+  members.push(current.trim());
+  return members.filter((member) => member !== '');
+}
+
+/**
+ * The members by key. A key with no `=` is the boolean `true`, as the grammar
+ * says. A repeated key keeps its last value, as the grammar also says.
+ *
+ * The key ends at `=` or at `;`, so a bare key with parameters, `params;x`, is
+ * still `params`.
+ *
+ * @param {string} value
+ * @returns {Map<string, string|true>}
+ */
+function readDictionary(value) {
+  const dictionary = new Map();
+
+  for (const member of splitMembers(value)) {
+    const equals = member.indexOf('=');
+    const semicolon = member.indexOf(';');
+    const bare = equals === -1 || (semicolon !== -1 && semicolon < equals);
+
+    if (bare) {
+      const key = semicolon === -1 ? member : member.slice(0, semicolon);
+      dictionary.set(key.trim(), true);
+      continue;
+    }
+
+    const key = member.slice(0, equals).trim();
+    const text = member.slice(equals + 1).trim();
+    dictionary.set(key, text);
+  }
+
+  return dictionary;
+}
+
+/**
+ * A boolean item without its parameters: `?1;x` is `?1`. Anything else is
+ * returned as it was.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+function withoutParameters(text) {
+  if (text.startsWith('(')) return text;
+  const semicolon = text.indexOf(';');
+  return semicolon === -1 ? text : text.slice(0, semicolon).trim();
+}
+
+/**
+ * The strings in an inner list, `("utm_source" "gclid")`, or `UNREADABLE`.
+ *
+ * Only quoted strings separated by spaces count. A token or a number is a shape
+ * a cache might read some other way. After the closing parenthesis comes
+ * nothing, or the list's parameters, `;x`, which say nothing here.
+ *
+ * @param {string} text
+ * @returns {string[]|typeof UNREADABLE}
+ */
+function readStringList(text) {
+  if (!text.startsWith('(')) return UNREADABLE;
+
+  const strings = [];
+  let i = 1;
+
+  while (i < text.length) {
+    if (text[i] === ' ') {
+      i++;
+      continue;
+    }
+    if (text[i] === ')') {
+      const rest = text.slice(i + 1);
+      return rest === '' || rest.startsWith(';') ? strings : UNREADABLE;
+    }
+    if (text[i] !== '"') return UNREADABLE;
+
+    let string = '';
+    let closed = false;
+    i++;
+    while (i < text.length) {
+      const char = text[i];
+      if (char === '\\') {
+        string += text[i + 1] ?? '';
+        i += 2;
+        continue;
+      }
+      i++;
+      if (char === '"') {
+        closed = true;
+        break;
+      }
+      string += char;
+    }
+    if (!closed) return UNREADABLE;
+
+    // Two strings with nothing between them are not a list.
+    if (text[i] !== ' ' && text[i] !== ')') return UNREADABLE;
+    strings.push(string);
+  }
+
+  // The list was never closed.
+  return UNREADABLE;
+}
+
+/**
+ * What `params` says: `true` ignores every parameter, `false` ignores none, and
+ * a list ignores the parameters it names.
+ *
+ * @param {string|true|undefined} member
+ * @returns {boolean|string[]|typeof ABSENT|typeof UNREADABLE}
+ */
+function readParams(member) {
+  if (member === undefined) return ABSENT;
+  if (member === true) return true;
+
+  const text = withoutParameters(member);
+  if (text === '?1') return true;
+  if (text === '?0') return false;
+  return readStringList(text);
+}
+
+/**
+ * What `except` says: the parameters that still make a difference. A boolean
+ * here is not a shape `except` takes.
+ *
+ * @param {string|true|undefined} member
+ * @returns {string[]|typeof ABSENT|typeof UNREADABLE}
+ */
+function readExcept(member) {
+  if (member === undefined) return ABSENT;
+  if (member === true) return UNREADABLE;
+  return readStringList(member);
+}
 
 /**
  * Whether a cache reading `value` would treat `param` as making no difference.
@@ -42,18 +213,20 @@ const namesIn = (list) => [...list.matchAll(/"([^"]*)"/g)].map(([, name]) => nam
  * @returns {boolean}
  */
 export function hidesParam(value, param) {
-  if (!value || !value.trim() || !param) return false;
+  if (!value || !param) return false;
 
-  const listed = LIST.exec(value);
-  if (listed) {
-    const [, key, list] = listed;
-    const names = namesIn(list);
-    return key === 'except' ? !names.includes(param) : names.includes(param);
-  }
+  const dictionary = readDictionary(value);
+  const params = readParams(dictionary.get('params'));
+  const except = readExcept(dictionary.get('except'));
 
-  if (EVERY.test(value)) return true;
+  if (params === UNREADABLE || except === UNREADABLE) return true;
 
-  return UNREADABLE.test(value);
+  // An allowlist decides on its own: every parameter it leaves out is ignored.
+  if (except !== ABSENT) return !except.includes(param);
+
+  if (params === true) return true;
+  if (Array.isArray(params)) return params.includes(param);
+  return false;
 }
 
 /**

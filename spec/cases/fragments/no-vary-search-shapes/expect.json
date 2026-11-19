@@ -1,0 +1,9 @@
+[
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "params;x"}}, "status": 500, "body": "expected/refused.html", "log": "expected/bare-with-parameters.log"},
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "params=?0"}}, "status": 200, "headers": {"no-vary-search": "params=?0"}, "body": "expected/list.html"},
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "params=(\"utm_source\");x"}}, "status": 200, "headers": {"no-vary-search": "params=(\"utm_source\");x"}, "body": "expected/list.html"},
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "params=(\"fragment\"), params=(\"utm_source\")"}}, "status": 200, "headers": {"no-vary-search": "params=(\"fragment\"), params=(\"utm_source\")"}, "body": "expected/list.html"},
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "except"}}, "status": 500, "body": "expected/refused.html", "log": "expected/bare-except.log"},
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "params=(utm_source)"}}, "status": 500, "body": "expected/refused.html", "log": "expected/token-list.log"},
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "params=(\"utm_source\")x"}}, "status": 500, "body": "expected/refused.html", "log": "expected/after-the-list.log"}
+]

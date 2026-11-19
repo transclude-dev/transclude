@@ -297,6 +297,21 @@ after a re-render and after a style. An `expect` compares the value as JSON. A
 `dom` serializes the element with its shadow roots and compares it the way a
 body is compared. An exception or a `console.error` fails the entry.
 
+## Mutations
+
+```sh
+node scripts/mutate.js src/document.js                 # against every case
+node scripts/mutate.js src/document.js routing forms   # against two areas
+node scripts/mutate.js src/document.js --only 12-40    # part of the list
+```
+
+It makes one small change to a module at a time, with acorn: a comparison or
+a logical operator flipped, a condition negated, a statement dropped, a string
+changed, a boolean flipped. It runs the spec after each, and a change that
+leaves every case passing survives. A survivor is a missing case or a branch
+nothing reaches. The run goes to `spec/report/mutations.json`, and the module
+is written back after each change and on Ctrl-C.
+
 ## Adding one
 
 1. Make the directory under the area that matches the docs page:

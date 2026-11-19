@@ -34,7 +34,7 @@ const REVALIDATE = 'public, max-age=0, must-revalidate';
  * @param {string} file
  * @returns {string}
  */
-function validatorFor(file) {
+export function validatorFor(file) {
   const { size, mtimeMs } = fs.statSync(file);
   return `W/"${size.toString(36)}-${Math.floor(mtimeMs).toString(36)}"`;
 }

@@ -21,7 +21,10 @@ const decode = (base64) => Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
  * build makes the ETag too, with the function the Node server uses, so the two
  * send the same one for the same bytes.
  *
- * @typedef {{ body: string, type: string, etag: string }} Encoded
+ * A public file carries the date its file was last changed, as the Node server
+ * reads it off the disk.
+ *
+ * @typedef {{ body: string, type: string, etag: string, lastModified?: string }} Encoded
  */
 
 /**
@@ -35,8 +38,8 @@ const decode = (base64) => Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
  */
 export function bytesFrom(map) {
   const built = new Map();
-  for (const [url, { type, body, etag }] of Object.entries(map)) {
-    built.set(url, { body: decode(body), type, etag, encodings: new Map() });
+  for (const [url, { type, body, etag, lastModified }] of Object.entries(map)) {
+    built.set(url, { body: decode(body), type, etag, lastModified, encodings: new Map() });
   }
   return {
     get(pathname) {
@@ -46,9 +49,14 @@ export function bytesFrom(map) {
   };
 }
 
+/** The same as the Node server's for a public file. */
+const REVALIDATE = 'public, max-age=0, must-revalidate';
+
 /**
- * Public files, as a handler rather than a directory. No byte ranges, because
- * those need a filesystem and this runtime has none.
+ * Public files, as a handler rather than a directory. What the Node server
+ * sends for the same file: its type, its validator, `Last-Modified`,
+ * `Cache-Control`, a 304 for a matching `If-None-Match`, and a byte range for a
+ * `Range`. The bytes are in memory, so a range is a slice of them.
  *
  * @param {Record<string, Encoded>} map
  * @returns {import('hono').MiddlewareHandler} a Hono handler
@@ -60,12 +68,65 @@ export function fileHandler(map) {
     if (!hit) return next();
     c.header('Content-Type', hit.type);
     c.header('ETag', hit.etag);
+    if (hit.lastModified) c.header('Last-Modified', hit.lastModified);
+    c.header('Cache-Control', REVALIDATE);
+
+    const range = c.req.header('range');
+    if (range) return sendRange(c, hit.body, range);
+    if (c.req.header('if-none-match') === hit.etag) return c.body(null, 304);
+    if (c.req.method === 'HEAD' || c.req.method === 'OPTIONS') return c.body(null, 200);
     // Hono types a body as `string | ArrayBuffer | ReadableStream`, which is
     // narrower than what a `Response` accepts: a typed array goes through
     // untouched. Sending `hit.body.buffer` instead would be a different promise,
     // because a view does not have to cover its buffer.
     return c.body(/** @type {ArrayBuffer} */ (/** @type {unknown} */ (hit.body)));
   };
+}
+
+/**
+ * One byte range, the way `serveStatic` answers it on Node: 206 with the slice,
+ * or 416 when the range lies outside the file. A `Range` it cannot read means
+ * the whole file, as a 206. One range only, as there.
+ *
+ * @param {import('hono').Context} c
+ * @param {Uint8Array} body
+ * @param {string} range the `Range` header
+ */
+function sendRange(c, body, range) {
+  c.header('Accept-Ranges', 'bytes');
+  const size = body.length;
+  const wanted = byteRange(range, size);
+  if (!wanted) {
+    c.header('Content-Range', `bytes */${size}`);
+    return c.body(null, 416);
+  }
+  c.header('Content-Range', `bytes ${wanted.start}-${wanted.end}/${size}`);
+  const slice = body.subarray(wanted.start, wanted.end + 1);
+  return c.body(/** @type {ArrayBuffer} */ (/** @type {unknown} */ (slice)), 206);
+}
+
+/**
+ * `bytes=10-20`, `bytes=10-` and `bytes=-20`, resolved against the size, or
+ * null when nothing of the file is in it. Hono's rules in `serveStatic`,
+ * written out again because that module reads a disk and this runtime has none.
+ *
+ * @param {string} range
+ * @param {number} size
+ * @returns {{ start: number, end: number } | null}
+ */
+function byteRange(range, size) {
+  if (size === 0) return null;
+  const match = range.match(/^(?:bytes=)?(?!-$)(\d*)-(\d*)$/);
+  const from = match ? match[1] : '0';
+  const to = match ? match[2] : '';
+  if (from === '') {
+    const length = Number(to);
+    return length === 0 ? null : { start: Math.max(size - length, 0), end: size - 1 };
+  }
+  const start = Number(from);
+  const end = to === '' ? size - 1 : Math.min(Number(to), size - 1);
+  if (start >= size || start > end) return null;
+  return { start, end };
 }
 
 /**

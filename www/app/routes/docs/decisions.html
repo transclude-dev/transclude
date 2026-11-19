@@ -265,8 +265,10 @@
 
   <ul>
     <li>
-      <strong>No byte ranges on <code>workerd</code>.</strong> A Range request gets 200 rather
-      than 206. Ranges are what a filesystem buys, and a worker has none.
+      <strong>No byte ranges from <code>dist/edge</code>.</strong> A file the edge
+      serves answers a Range request with 200 rather than 206, because the edge
+      does not answer ranges. A worker that carries its files answers them from
+      memory, as Node does from disk.
     </li>
     <li>
       <strong>A form inside a shadow root is invisible to a document-level

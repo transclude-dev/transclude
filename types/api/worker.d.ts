@@ -2,6 +2,7 @@ export type Encoded = {
     body: string;
     type: string;
     etag: string;
+    lastModified?: string;
 };
 /**
  * A file the build turned into base64, which is how bytes cross into a worker
@@ -9,7 +10,10 @@ export type Encoded = {
  * build makes the ETag too, with the function the Node server uses, so the two
  * send the same one for the same bytes.
  *
- * @typedef {{ body: string, type: string, etag: string }} Encoded
+ * A public file carries the date its file was last changed, as the Node server
+ * reads it off the disk.
+ *
+ * @typedef {{ body: string, type: string, etag: string, lastModified?: string }} Encoded
  */
 /**
  * The same entry shape the Node server builds from a disk. `encodings` is empty
@@ -22,8 +26,10 @@ export type Encoded = {
  */
 export declare function bytesFrom(map: Record<string, Encoded>): import('./static-cache.js').ByteStore;
 /**
- * Public files, as a handler rather than a directory. No byte ranges, because
- * those need a filesystem and this runtime has none.
+ * Public files, as a handler rather than a directory. What the Node server
+ * sends for the same file: its type, its validator, `Last-Modified`,
+ * `Cache-Control`, a 304 for a matching `If-None-Match`, and a byte range for a
+ * `Range`. The bytes are in memory, so a range is a slice of them.
  *
  * @param {Record<string, Encoded>} map
  * @returns {import('hono').MiddlewareHandler} a Hono handler

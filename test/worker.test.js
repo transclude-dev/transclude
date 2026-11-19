@@ -157,3 +157,64 @@ test('a bundle with pages only serves its pages', async () => {
   const file = await worker.fetch(new Request('http://x/robots.txt'), {}, undefined);
   assert.equal(file.status, 404);
 });
+
+// ---- public files ------------------------------------------------------------
+
+// Ten bytes, so each range below can be checked by eye.
+const counted = {
+  '/count.txt': {
+    type: 'text/plain; charset=utf-8',
+    etag: 'W/"a-1"',
+    lastModified: 'Wed, 18 Nov 2026 10:00:00 GMT',
+    body: btoa('0123456789'),
+  },
+};
+
+const fileFrom = (headers = {}, method = 'GET') =>
+  workerOf({ bundle: { ...bundle, publicFiles: counted } }).fetch(
+    new Request('http://x/count.txt', { method, headers }),
+    {},
+    undefined,
+  );
+
+test('a public file carries what Node sends for it: validator, date and caching', async () => {
+  const res = await fileFrom();
+  assert.equal(res.status, 200);
+  assert.equal(await res.text(), '0123456789');
+  assert.equal(res.headers.get('etag'), 'W/"a-1"');
+  assert.equal(res.headers.get('last-modified'), 'Wed, 18 Nov 2026 10:00:00 GMT');
+  assert.equal(res.headers.get('cache-control'), 'public, max-age=0, must-revalidate');
+});
+
+test('a matching If-None-Match is a 304', async () => {
+  const res = await fileFrom({ 'if-none-match': 'W/"a-1"' });
+  assert.equal(res.status, 304);
+});
+
+test('a range is a 206 with the slice, bounded, open-ended or from the end', async () => {
+  for (const [range, body, contentRange] of [
+    ['bytes=2-5', '2345', 'bytes 2-5/10'],
+    ['bytes=7-', '789', 'bytes 7-9/10'],
+    ['bytes=-3', '789', 'bytes 7-9/10'],
+    ['bytes=8-99', '89', 'bytes 8-9/10'],
+  ]) {
+    const res = await fileFrom({ range });
+    assert.equal(res.status, 206, range);
+    assert.equal(await res.text(), body, range);
+    assert.equal(res.headers.get('content-range'), contentRange, range);
+    assert.equal(res.headers.get('accept-ranges'), 'bytes', range);
+  }
+});
+
+test('a range outside the file is a 416 naming the size', async () => {
+  const res = await fileFrom({ range: 'bytes=10-' });
+  assert.equal(res.status, 416);
+  assert.equal(res.headers.get('content-range'), 'bytes */10');
+});
+
+test('a HEAD gets the headers and no body', async () => {
+  const res = await fileFrom({}, 'HEAD');
+  assert.equal(res.status, 200);
+  assert.equal(await res.text(), '');
+  assert.equal(res.headers.get('etag'), 'W/"a-1"');
+});

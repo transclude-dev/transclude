@@ -1,0 +1,6 @@
+<script server>
+  export const prerender = false;
+  export default async ({ params }) => ({ name: params.name });
+</script>
+
+<p id="person" fragment>Person: ${name}</p>

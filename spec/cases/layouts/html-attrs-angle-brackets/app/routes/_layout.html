@@ -1,0 +1,7 @@
+<script server>
+  export default async () => ({ label: '<b>bold</b> & more', range: '1 < 2 > 0' });
+</script>
+
+<html data-label="${label}">
+<body data-range="${range}">
+<slot></slot>

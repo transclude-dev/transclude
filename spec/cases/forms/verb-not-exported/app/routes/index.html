@@ -1,0 +1,8 @@
+<script server>
+  export const prerender = false;
+
+  export const POST = async ({ url }) => Response.redirect(new URL(url), 303);
+  export const DELETE = async ({ url }) => Response.redirect(new URL(url), 303);
+</script>
+
+<h1>Notes</h1>

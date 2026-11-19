@@ -1,0 +1,14 @@
+<script server>
+  import { count } from '../../data/count.js';
+
+  export const prerender = false;
+
+  export default async () => ({ value: count.value });
+
+  export const POST = async ({ url }) => {
+    count.value++;
+    return Response.redirect(new URL(url), 303);
+  };
+</script>
+
+<p>Count: ${value}</p>

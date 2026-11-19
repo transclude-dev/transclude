@@ -31,6 +31,7 @@ Complete.
 | A `No-Vary-Search` hiding `?fragment=` is refused, naming the value | `fragments/no-vary-search-hides-fragment`, the 500 and the logged message | reviewed |
 | `POST /?fragment=nope` changes nothing and answers 404 | `fragments/post-unknown-name` | reviewed |
 | `ctx.fragment` tells a form post from a fetch | `fragments/action-fragment` | reviewed |
+| A fragment request runs the layouts, and the page reads them as `ctx.layout` | `fragments/layout-data` | unreviewed |
 | `watchElements` puts a script on every page | `fragments/watch-elements` | reviewed |
 | `watchElements` is off by default | `routing/index-page`, whose page has no script | reviewed |
 
@@ -87,11 +88,13 @@ Complete.
 | A named slot offers a second place, with fallback content | `layouts/named-slot` | reviewed |
 | A subdirectory layout renders inside the one above | `layouts/nested` | reviewed |
 | Each layout loads its own data; `ctx.layout` is the chain above, merged | `layouts/layout-context` | reviewed |
+| A guard reads the guard above it as `ctx.layout` on an action request | `layouts/guard-reads-guard` | unreviewed |
 | A layout returning a `Response` stops there, and nothing below runs | `layouts/guard-redirect` | reviewed |
 | A `POST` under a guard runs the guard first; each loader runs twice on that request | `layouts/guard-action` | reviewed |
 | A page behind a guard cannot be prerendered; the build names it and exits non-zero | `diagnostics/prerender-reads-cookie` | reviewed |
 | Middleware does not run during the build | A build-time fact. What middleware does when serving is the middleware area | - |
 | `<html>` attributes merge by name, innermost winning; escaped, bare is `true`, `false` and `null` drop, `lang` overwritable | `layouts/html-attrs` | reviewed |
+| `<` and `>` in an `<html>` or `<body>` value are escaped; a bad attribute name is refused | `layouts/html-attrs-angle-brackets`, `diagnostics/html-attribute-name` | unreviewed |
 | `<body>` works the same | `layouts/body-attrs` | reviewed |
 | Neither tag is written twice; a `class` on two levels is the innermost | `layouts/one-html-one-body` | reviewed |
 | A `<title>` anywhere in the chain becomes the document's | `layouts/title-in-chain` | reviewed |
@@ -147,6 +150,7 @@ run on Node only.
 | `#pricing` copies a fragment of this page; the copy leaves the id behind | `includes/same-page` | reviewed |
 | `/notes#notes` runs that route's loaders and not its layouts' markup | `includes/another-route` | reviewed |
 | A copy from another route keeps its id | `includes/another-route` | reviewed |
+| An included route reads its params from the path, `[name]` and `[...path]` | `includes/route-params` | unreviewed |
 | One route included twice runs its loaders once | `includes/route-twice-loads-once` | reviewed |
 | Reading spreads: a page including a route that reads a cookie is personal | `diagnostics/include-reads-cookie` | reviewed |
 | A remote include needs `proxy.allow` and renders the section | `includes/remote-section` | reviewed |
@@ -154,6 +158,7 @@ run on Node only.
 | A source that cannot be read renders the children | `includes/fallback-on-failure` | reviewed |
 | With no children, a failing source stops the render | `diagnostics/include-source-down-no-fallback` | reviewed |
 | A host nobody allowed throws, children or not | `diagnostics/include-host-not-allowed` | reviewed |
+| With no `proxy` in the config, an include of another site throws | `diagnostics/include-no-proxy` | unreviewed |
 | A prerendered page reads its sources once, at build time | `includes/prerendered-reads-once` | reviewed |
 | `#nope`, `#a` inside `#a`, and an interpolated `src` are compile errors | `diagnostics/include-names-no-fragment`, `include-includes-itself`, `include-src-interpolated` | reviewed |
 | A loop round other routes is caught at render, naming the way round | `diagnostics/include-cycle` | reviewed |
@@ -190,6 +195,7 @@ Complete.
 | A `<form>` can only send GET or POST | HTML, not the framework | - |
 | A hidden `intent` field turns a post into a delete | `forms/intent-field` | reviewed |
 | From script, `DELETE` is sent directly and runs | `forms/verbs` | reviewed |
+| A verb the page does not export answers 405, `Allow` naming `GET` and the exports | `forms/verb-not-exported` | unreviewed |
 | Answer a mutation with a 303; a rejected submission re-renders instead | `forms/post-redirect-get` | reviewed |
 | A fragment request gets markup, not the redirect | `fragments/action-fragment` | reviewed |
 | `ctx.action` holds what the handler returned | `forms/post-redirect-get` | reviewed |
@@ -305,6 +311,7 @@ Complete.
 | A `<style>` in a page or a layout is hoisted into `<head>` | `styles/style-hoisted` | reviewed |
 | In an element it is scoped to the tag, and `:scope` is the element | `elements/light-element`, `elements/in-a-fragment` | reviewed |
 | An element in a fragment brings its styles, added to `<head>` once | `styles/fragment-styles-once`, in Chrome, with `watchElements` | reviewed |
+| A light element inside another brings its styles too | `styles/nested-element-styles` | unreviewed |
 | A shadow element's `:host` rules live inside its shadow root | `elements/shadow-element`, `elements/in-a-fragment` | reviewed |
 | Page CSS beats `:scope` at any specificity; page CSS on the host beats `:host`, and reaches nothing inside | `styles/boundary-in-browser`, in Chrome | reviewed |
 | A view-transition rule is CSS only; both documents carry it | `styles/style-hoisted`: the rule passes through untouched. The transition itself needs a browser | reviewed |
@@ -407,6 +414,7 @@ Complete. Most keys have their own page, and their rows are there.
 | `routesDir` and `publicDir` name other directories | `config/dirs-renamed` | reviewed |
 | `cache`, `metadataBase`, `onError`, `port`, `precache`, `speculate` | The production area | - |
 | `canonical` needs `metadataBase`, and says so | `diagnostics/canonical-needs-metadata-base` | reviewed |
+| `absolute()` on a prerendered page needs `metadataBase`, and says so | `diagnostics/absolute-needs-metadata-base` | unreviewed |
 | A page or layout writing its own canonical replaces it | `config/canonical-own` | reviewed |
 | An empty `cookieSecret` is refused at startup | `diagnostics/cookie-secret-empty` | reviewed |
 | `csp`, `csrf`, `elementsDir`, `feed`, `fragmentHeader`, `iconsDir`, `lang`, `markdown`, `permissionsPolicy`, `proxy`, `sitemap`, `stylesheet`, `trailingSlash`, `watchElements` | Each key's own area: security, forms, elements, feeds, fragments, icons, languages, markdown, includes, styles, middleware | - |
@@ -799,27 +807,33 @@ does not notice: a missing case, or code nothing reaches.
 `value ?? ''` in `parseEach`, a fallback nothing reaches: the value is always a
 string.
 
-`src/document.js`: 153 of 185 caught, 32 survived.
+`src/document.js`: 153 of 185 caught, 32 survived. The nine cases below were
+written for 16 of them, and each fails with its mutation put back:
 
-Missing cases, to write:
-
-| Line | What survived | The case it asks for |
+| Line | What survived | Case |
 | --- | --- | --- |
-| 43 | The message when `absolute()` has no origin | The message itself, in the log |
-| 175, 194 | A head tag's quote-aware scan | A `<meta>` whose single-quoted value holds `>` |
-| 248 | `<` and `>` escaped in a merged attribute | An `<html>` or `<body>` attribute value holding `<` |
-| 308 | The message for a bad attribute name on `<html>` or `<body>` | That message |
-| 416, 437, 438, 441, 442 | The params of a route an include reads | An include of a `[name]` route and of a `[...path]` route, each reading its params |
-| 502, 511 | The messages for an include of another route or site where none may be read | Those messages |
-| 574 | A layout's data reaching `ctx.layout` in a fragment request | A page whose fragment reads `ctx.layout` |
-| 644 | A guard layout's data reaching the next guard | Two guard layouts, the inner reading the outer's |
-| 748 | `Allow` on a 405: `GET` and each verb a page exports | A page sent a verb it does not export |
-| 816 | A light element nested in another bringing its styles | Both styles in `<head>` |
+| 43 | The message when `absolute()` has no origin | `diagnostics/absolute-needs-metadata-base` |
+| 248 | `<` and `>` escaped in a merged attribute | `layouts/html-attrs-angle-brackets` |
+| 308 | The message for a bad attribute name on `<html>` or `<body>` | `diagnostics/html-attribute-name` |
+| 416, 437, 438, 441, 442 | The params of a route an include reads | `includes/route-params` |
+| 511 | The message for an include of another site with no `proxy` | `diagnostics/include-no-proxy` |
+| 574 | A layout's data reaching `ctx.layout` in a fragment request | `fragments/layout-data` |
+| 644 | A guard layout's data reaching the next guard | `layouts/guard-reads-guard` |
+| 748 (three) | `Allow` on a 405: `GET` and each verb a page exports | `forms/verb-not-exported` |
+| 816 | A light element nested in another bringing its styles | `styles/nested-element-styles` |
 
-Nothing reaches these, or the change makes no difference: 142 and 146 (names
-of internal keys), 189 (a reset already true after a full scan), 409 (a cache),
-465, 581, 604 and 777 (fallbacks nothing reaches), 769 (a default the config
-always overrides), 841 and 843 (the newline between two tags).
+Nothing reaches the other 16, or the change makes no difference:
+
+- 142 and 146: names of internal keys.
+- 175 and 194: the head merge's quote-aware scan. The compiler writes every
+  head value in double quotes with `<` escaped, so no value holds a single
+  quote that opens one, or a `<meta` or `<link` that the scan could find.
+- 189: a reset that is already true after a full scan.
+- 409: a cache.
+- 465, 581, 604 and 777: fallbacks nothing reaches.
+- 502: `includeContext` always gives a renderer a way to reach a route.
+- 769: a default that the config always replaces.
+- 841 and 843: the newline between two tags.
 
 ## Gotchas
 

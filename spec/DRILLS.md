@@ -464,6 +464,16 @@ second row hides `a` and `b` only. The rebuilt module finds `params` in
 
 - **What `spec/` missed:** a header that fails the grammar inside a member,
   and a parameter on an item in a list.
+- **Decided:** refuse the first row and pass the second, as the rebuilt
+  module does. Keep `main` on the third: `utmparams` is not `params`.
+- **The fix:** the reader in `main` is replaced by a parser of all of
+  RFC 9651, section 4.2, one function per step. A header that does not parse
+  is still split at its commas to ask whether a key is `params` or `except`.
+  Three tests in `test/no-vary-search.test.js` hold the rows. The old module
+  fails the first two, and a mutant that finds `params` as text fails the
+  third.
+- **Cases added:** three entries in `fragments/no-vary-search-shapes`, which
+  fail in the same way.
 
 ### `src/sitemap.js`
 

@@ -13,172 +13,125 @@
 // would do it. `except=()` is the one to watch, because it is the shortest thing
 // to write and it ignores everything.
 //
-// The header is a structured-field dictionary, and this reads it member by
-// member, as a cache does.
+// The header is a structured-field dictionary, RFC 9651, and it is parsed here
+// the way a cache parses it, all of it. Three drills each found a shape a
+// shorter reader got wrong: a member that broke the grammar, a parameter on an
+// item, a decimal with four places. A cache ignores a header that does not
+// parse, so the question "does it parse" needs the whole grammar to answer.
+//
+// The file has two halves. The first says what the members mean. The second is
+// the parser, one function per step of RFC 9651, section 4.2.
 //
 // No `node:` imports. This reads a string.
 
 /**
- * The value of a member that is not there, or not a shape this reads.
+ * Whether a cache reading `value` would treat `param` as making no difference.
  *
- * Two names for two outcomes: a missing key says nothing, an unreadable one has
- * to count as hiding.
+ * `key-order` alone is fine: it reorders and ignores nothing. An empty
+ * `params=()` is fine for the same reason. An empty `except=()` is the opposite,
+ * because an allowlist of nothing allows nothing to matter.
+ *
+ * A value naming `params` or `except` in a shape this cannot read counts as
+ * hiding. Being wrong that way costs an author one error naming their header;
+ * being wrong the other way costs a reader a broken swap and says nothing.
+ *
+ * @param {string|null|undefined} value the `No-Vary-Search` header
+ * @param {string} param the parameter to ask about
+ * @returns {boolean}
  */
-const ABSENT = Symbol('absent');
-const UNREADABLE = Symbol('unreadable');
+export function hidesParam(value, param) {
+  if (!value || !param) return false;
 
-/**
- * Splits the header at the commas between members.
- *
- * A comma inside a quoted string or inside a list belongs to that member, so the
- * walk keeps track of both. A backslash in a quoted string escapes the next
- * character, which is how a string carries a quote.
- *
- * An empty member is kept, because `a,,b` and `a,` do not parse. `closed` is
- * false when a string or a list never closes.
- *
- * @param {string} value
- * @returns {{ members: string[], closed: boolean }}
- */
-function splitMembers(value) {
-  const members = [];
-  let current = '';
-  let inString = false;
-  let depth = 0;
+  const dictionary = parseDictionary(value);
 
-  for (let i = 0; i < value.length; i++) {
-    const char = value[i];
+  // A cache ignores a header that does not parse. One that names `params` or
+  // `except` was meant to hide something, so it is refused as unreadable. One
+  // that names neither, such as `PARAMS`, hides nothing.
+  if (!dictionary) return namesParamsOrExcept(value);
 
-    if (inString && char === '\\') {
-      current += char + (value[i + 1] ?? '');
-      i++;
-      continue;
-    }
-    if (char === '"') inString = !inString;
-    if (!inString && char === '(') depth++;
-    if (!inString && char === ')') depth--;
+  const params = dictionary.get('params');
+  const except = dictionary.get('except');
 
-    if (!inString && depth === 0 && char === ',') {
-      members.push(current.trim());
-      current = '';
-      continue;
-    }
-    current += char;
-  }
-
-  members.push(current.trim());
-  return { members, closed: !inString && depth === 0 };
-}
-
-/** A key as the grammar writes it: lowercase, starting with a letter or `*`. */
-const KEY = /^[a-z*][a-z0-9_\-.*]*$/;
-
-/**
- * The members by key. A key with no `=` is the boolean `true`, as the grammar
- * says. A repeated key keeps its last value, as the grammar also says.
- *
- * The key ends at `=` or at `;`, so a bare key with parameters, `params;x`, is
- * still `params`.
- *
- * `parses` is false for a header the grammar does not allow: an empty member,
- * a key such as `PARAMS`, or a string that never closes. A cache ignores such a
- * header whole, and the members read from it are a best guess.
- *
- * @param {string} value
- * @returns {{ dictionary: Map<string, string|true>, parses: boolean }}
- */
-function readDictionary(value) {
-  const dictionary = new Map();
-  const { members, closed } = splitMembers(value);
-
-  let parses = closed;
-  for (const member of members) {
-    const equals = member.indexOf('=');
-    const semicolon = member.indexOf(';');
-    const bare = equals === -1 || (semicolon !== -1 && semicolon < equals);
-
-    if (bare) {
-      const key = (semicolon === -1 ? member : member.slice(0, semicolon)).trim();
-      if (!KEY.test(key)) parses = false;
-      dictionary.set(key, true);
-      continue;
-    }
-
-    const key = member.slice(0, equals).trim();
-    const text = member.slice(equals + 1).trim();
-    if (!KEY.test(key)) parses = false;
-    dictionary.set(key, text);
-  }
-
-  return { dictionary, parses };
+  if (except) return exceptHides(params, except, param);
+  if (params) return paramsHides(params, param);
+  return false;
 }
 
 /**
- * A boolean item without its parameters: `?1;x` is `?1`. Anything else is
- * returned as it was.
+ * Throws when the header would hide the fragment parameter.
  *
- * @param {string} text
- * @returns {string}
+ * Called on the way out rather than checked at boot, because the header can come
+ * from a loader's `ctx.response` or from the app's own middleware, and neither
+ * runs during a build.
+ *
+ * @param {string|null|undefined} value the `No-Vary-Search` header
+ * @param {string|null|undefined} param the configured `fragmentParam`
+ * @throws when a cache reading the header would ignore `param`
  */
-function withoutParameters(text) {
-  if (text.startsWith('(')) return text;
-  const semicolon = text.indexOf(';');
-  return semicolon === -1 ? text : text.slice(0, semicolon).trim();
+export function refuseHiddenFragment(value, param) {
+  if (!param || !hidesParam(value, param)) return;
+
+  throw new Error(
+    `[transclude] a No-Vary-Search header on this response hides \`?${param}=\`, ` +
+      `which is how a fragment is asked for. A cache reading it would answer ` +
+      `\`?${param}=list\` with the whole document, and a swap would write the page ` +
+      `into the element it should have replaced. Name the parameters you mean: ` +
+      `\`params=("utm_source" "gclid")\`, or \`except=("${param}")\` to keep this ` +
+      `one varying. Header: ${value}`,
+  );
+}
+
+// ---- what the members mean -------------------------------------------------
+
+/**
+ * `params` on its own. Bare `params`, or `?1`, ignores every parameter, `?0`
+ * ignores none, and a list ignores the names in it. Any other shape is one a
+ * cache might read some other way, so it counts as hiding.
+ *
+ * A bare key with parameters, `params;x`, is still the bare key: an older draft
+ * that browsers shipped reads it as every parameter.
+ */
+function paramsHides(params, param) {
+  if (isBoolean(params, true)) return true;
+  if (isBoolean(params, false)) return false;
+
+  const names = stringNames(params);
+  if (!names) return true;
+  return names.includes(param);
 }
 
 /**
- * The strings in an inner list, `("utm_source" "gclid")`, or `UNREADABLE`.
- *
- * Only quoted strings separated by spaces count. A token or a number is a shape
- * a cache might read some other way. After the closing parenthesis comes
- * nothing, or the list's parameters, `;x`, which say nothing here.
- *
- * @param {string} text
- * @returns {string[]|typeof UNREADABLE}
+ * `except` is an allowlist on top of "ignore every parameter": every parameter
+ * it leaves out is ignored. It means that beside bare `params` or with no
+ * `params` at all. Beside a list or `?0` it has no reading, and a cache ignores
+ * the header, so that counts as hiding.
  */
-function readStringList(text) {
-  if (!text.startsWith('(')) return UNREADABLE;
+function exceptHides(params, except, param) {
+  if (params && !isBoolean(params, true)) return true;
 
-  const strings = [];
-  let i = 1;
+  const names = stringNames(except);
+  if (!names) return true;
+  return !names.includes(param);
+}
 
-  while (i < text.length) {
-    if (text[i] === ' ') {
-      i++;
-      continue;
-    }
-    if (text[i] === ')') {
-      const rest = text.slice(i + 1);
-      return rest === '' || rest.startsWith(';') ? strings : UNREADABLE;
-    }
-    if (text[i] !== '"') return UNREADABLE;
+function isBoolean(member, wanted) {
+  return member.type === 'boolean' && member.value === wanted;
+}
 
-    let string = '';
-    let closed = false;
-    i++;
-    while (i < text.length) {
-      const char = text[i];
-      if (char === '\\') {
-        string += text[i + 1] ?? '';
-        i += 2;
-        continue;
-      }
-      i++;
-      if (char === '"') {
-        closed = true;
-        break;
-      }
-      string += char;
-    }
-    if (!closed) return UNREADABLE;
+/**
+ * The names in an inner list of strings, decoded, or null for any other shape.
+ * A token is not a name: `("utm_source")` names one and `(utm_source)` does not.
+ * The parameters on the list and on each item say nothing here.
+ */
+function stringNames(member) {
+  if (member.type !== 'list') return null;
 
-    // Two strings with nothing between them are not a list.
-    if (text[i] !== ' ' && text[i] !== ')') return UNREADABLE;
-    strings.push(decodeKey(string));
+  const names = [];
+  for (const item of member.items) {
+    if (item.type !== 'string') return null;
+    names.push(decodeKey(item.value));
   }
-
-  // The list was never closed.
-  return UNREADABLE;
+  return names;
 }
 
 /**
@@ -209,98 +162,322 @@ function decodeKey(name) {
 }
 
 /**
- * What `params` says: `true` ignores every parameter, `false` ignores none, and
- * a list ignores the parameters it names.
+ * Whether a header that does not parse names `params` or `except` as a key.
  *
- * @param {string|true|undefined} member
- * @returns {boolean|string[]|typeof ABSENT|typeof UNREADABLE}
+ * It does not parse, so this splits it at the commas between members, minding
+ * quotes and parentheses, and reads each key up to `=` or `;`. `utmparams`
+ * is not `params`, and `PARAMS` is not either.
+ *
+ * @param {string} value
  */
-function readParams(member) {
-  if (member === undefined) return ABSENT;
-  if (member === true) return true;
-
-  const text = withoutParameters(member);
-  if (text === '?1') return true;
-  if (text === '?0') return false;
-  return readStringList(text);
-}
-
-/**
- * What `except` says: the parameters that still make a difference. A boolean
- * here is not a shape `except` takes.
- *
- * @param {string|true|undefined} member
- * @returns {string[]|typeof ABSENT|typeof UNREADABLE}
- */
-function readExcept(member) {
-  if (member === undefined) return ABSENT;
-  if (member === true) return UNREADABLE;
-  return readStringList(member);
-}
-
-/**
- * Whether a cache reading `value` would treat `param` as making no difference.
- *
- * `key-order` alone is fine: it reorders and ignores nothing. An empty
- * `params=()` is fine for the same reason. An empty `except=()` is the opposite,
- * because an allowlist of nothing allows nothing to matter.
- *
- * A value naming `params` or `except` in a shape this cannot read counts as
- * hiding. Being wrong that way costs an author one error naming their header;
- * being wrong the other way costs a reader a broken swap and says nothing.
- *
- * @param {string|null|undefined} value the `No-Vary-Search` header
- * @param {string} param the parameter to ask about
- * @returns {boolean}
- */
-export function hidesParam(value, param) {
-  if (!value || !param) return false;
-
-  const { dictionary, parses } = readDictionary(value);
-  const names = dictionary.has('params') || dictionary.has('except');
-
-  // A cache ignores a header that does not parse. One that names `params` or
-  // `except` was meant to hide something, so it is refused as unreadable. One
-  // that names neither, such as `PARAMS`, hides nothing.
-  if (!parses) return names;
-
-  const params = readParams(dictionary.get('params'));
-  const except = readExcept(dictionary.get('except'));
-
-  if (params === UNREADABLE || except === UNREADABLE) return true;
-
-  // `except` is an allowlist on top of "ignore every parameter". Beside a
-  // `params` that is a list or `?0` it has no reading.
-  if (except !== ABSENT && params !== ABSENT && params !== true) return true;
-
-  // An allowlist decides on its own: every parameter it leaves out is ignored.
-  if (except !== ABSENT) return !except.includes(param);
-
-  if (params === true) return true;
-  if (Array.isArray(params)) return params.includes(param);
+function namesParamsOrExcept(value) {
+  for (const member of splitMembers(value)) {
+    const key = member.split(/[=;]/)[0].trim();
+    if (key === 'params' || key === 'except') return true;
+  }
   return false;
 }
 
 /**
- * Throws when the header would hide the fragment parameter.
+ * The header cut at each comma that is outside a quoted string and outside a
+ * list. A backslash in a quoted string escapes the next character.
  *
- * Called on the way out rather than checked at boot, because the header can come
- * from a loader's `ctx.response` or from the app's own middleware, and neither
- * runs during a build.
- *
- * @param {string|null|undefined} value the `No-Vary-Search` header
- * @param {string|null|undefined} param the configured `fragmentParam`
- * @throws when a cache reading the header would ignore `param`
+ * @param {string} value
+ * @returns {string[]}
  */
-export function refuseHiddenFragment(value, param) {
-  if (!param || !hidesParam(value, param)) return;
+function splitMembers(value) {
+  const members = [];
+  let current = '';
+  let inString = false;
+  let depth = 0;
 
-  throw new Error(
-    `[transclude] a No-Vary-Search header on this response hides \`?${param}=\`, ` +
-      `which is how a fragment is asked for. A cache reading it would answer ` +
-      `\`?${param}=list\` with the whole document, and a swap would write the page ` +
-      `into the element it should have replaced. Name the parameters you mean: ` +
-      `\`params=("utm_source" "gclid")\`, or \`except=("${param}")\` to keep this ` +
-      `one varying. Header: ${value}`,
-  );
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i];
+
+    if (inString && char === '\\') {
+      current += char + (value[i + 1] ?? '');
+      i++;
+      continue;
+    }
+    if (char === '"') inString = !inString;
+    if (!inString && char === '(') depth++;
+    if (!inString && char === ')') depth--;
+
+    if (!inString && depth === 0 && char === ',') {
+      members.push(current);
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+
+  members.push(current);
+  return members;
+}
+
+// ---- the parser, RFC 9651, section 4.2 --------------------------------------
+//
+// Each step reads from a cursor and calls `fail` when the text breaks the
+// grammar. `parseDictionary` catches that once and answers null. A member is
+// `{ type, value }` for an item and `{ type: 'list', items }` for an inner
+// list. Parameters are parsed, so that a bad one fails the header, and then
+// dropped, because nothing here reads them.
+
+class ParseFailure extends Error {}
+
+/** @returns {never} */
+function fail() {
+  throw new ParseFailure();
+}
+
+/**
+ * The dictionary as a Map from key to member, or null when it does not parse.
+ * A repeated key keeps its last value, as the RFC says.
+ *
+ * @param {string} text
+ * @returns {Map<string, any>|null}
+ */
+function parseDictionary(text) {
+  // HTTP has already dropped the whitespace around the value. A value set by
+  // hand may still carry some.
+  const cursor = { text: text.trim(), at: 0 };
+  try {
+    return readDictionary(cursor);
+  } catch (error) {
+    if (error instanceof ParseFailure) return null;
+    throw error;
+  }
+}
+
+function readDictionary(cursor) {
+  const dictionary = new Map();
+
+  while (!atEnd(cursor)) {
+    const key = readKey(cursor);
+    dictionary.set(key, readMember(cursor));
+
+    skipWhitespace(cursor);
+    if (atEnd(cursor)) return dictionary;
+    expect(cursor, ',');
+    skipWhitespace(cursor);
+    // A comma at the end is not allowed.
+    if (atEnd(cursor)) fail();
+  }
+  return dictionary;
+}
+
+/** After a key: `=` and a value, or nothing, which is the boolean true. */
+function readMember(cursor) {
+  if (peek(cursor) !== '=') {
+    readParameters(cursor);
+    return { type: 'boolean', value: true };
+  }
+
+  cursor.at++;
+  if (peek(cursor) === '(') return readInnerList(cursor);
+  return readItem(cursor);
+}
+
+function readInnerList(cursor) {
+  expect(cursor, '(');
+  const items = [];
+
+  while (!atEnd(cursor)) {
+    skipSpaces(cursor);
+    if (peek(cursor) === ')') {
+      cursor.at++;
+      readParameters(cursor);
+      return { type: 'list', items };
+    }
+
+    items.push(readItem(cursor));
+    // Two items with nothing between them are not a list.
+    if (peek(cursor) !== ' ' && peek(cursor) !== ')') fail();
+  }
+
+  // The list never closed.
+  return fail();
+}
+
+function readItem(cursor) {
+  const item = readBareItem(cursor);
+  readParameters(cursor);
+  return item;
+}
+
+function readParameters(cursor) {
+  while (peek(cursor) === ';') {
+    cursor.at++;
+    skipSpaces(cursor);
+    readKey(cursor);
+    if (peek(cursor) !== '=') continue;
+    cursor.at++;
+    readBareItem(cursor);
+  }
+}
+
+/** A lowercase letter or `*`, then letters, digits, `_`, `-`, `.` and `*`. */
+function readKey(cursor) {
+  if (!/^[a-z*]$/.test(peek(cursor))) fail();
+
+  const start = cursor.at;
+  while (/^[a-z0-9_\-.*]$/.test(peek(cursor))) cursor.at++;
+  return cursor.text.slice(start, cursor.at);
+}
+
+function readBareItem(cursor) {
+  const first = peek(cursor);
+  if (first === '-' || /^[0-9]$/.test(first)) return readNumber(cursor);
+  if (first === '"') return readString(cursor);
+  if (first === '*' || /^[A-Za-z]$/.test(first)) return readToken(cursor);
+  if (first === ':') return readByteSequence(cursor);
+  if (first === '?') return readBoolean(cursor);
+  if (first === '@') return readDate(cursor);
+  if (first === '%') return readDisplayString(cursor);
+  return fail();
+}
+
+/** An integer of up to 15 digits, or a decimal of up to 12, a dot, then 1 to 3. */
+const INTEGER = /^-?[0-9]{1,15}$/;
+const DECIMAL = /^-?[0-9]{1,12}\.[0-9]{1,3}$/;
+
+function readNumber(cursor) {
+  const start = cursor.at;
+  if (peek(cursor) === '-') cursor.at++;
+  while (/^[0-9.]$/.test(peek(cursor))) cursor.at++;
+
+  const text = cursor.text.slice(start, cursor.at);
+  if (INTEGER.test(text)) return { type: 'integer', value: Number(text) };
+  if (DECIMAL.test(text)) return { type: 'decimal', value: Number(text) };
+  return fail();
+}
+
+/** A quoted string: printable ASCII, with `\"` and `\\` as the only escapes. */
+function readString(cursor) {
+  expect(cursor, '"');
+  let value = '';
+
+  while (!atEnd(cursor)) {
+    const char = take(cursor);
+    if (char === '"') return { type: 'string', value };
+
+    if (char === '\\') {
+      const escaped = take(cursor);
+      if (escaped !== '"' && escaped !== '\\') fail();
+      value += escaped;
+      continue;
+    }
+
+    if (!isPrintableAscii(char)) fail();
+    value += char;
+  }
+
+  // The string never closed.
+  return fail();
+}
+
+/** A token begins with a letter or `*`, then any tchar, `:` or `/`. */
+function readToken(cursor) {
+  const start = cursor.at;
+  cursor.at++;
+  while (/^[!#$%&'*+\-.^_`|~0-9A-Za-z:/]$/.test(peek(cursor))) cursor.at++;
+  return { type: 'token', value: cursor.text.slice(start, cursor.at) };
+}
+
+function readByteSequence(cursor) {
+  expect(cursor, ':');
+  const start = cursor.at;
+  while (/^[A-Za-z0-9+/=]$/.test(peek(cursor))) cursor.at++;
+  const value = cursor.text.slice(start, cursor.at);
+  expect(cursor, ':');
+  return { type: 'bytes', value };
+}
+
+function readBoolean(cursor) {
+  expect(cursor, '?');
+  const char = take(cursor);
+  if (char === '1') return { type: 'boolean', value: true };
+  if (char === '0') return { type: 'boolean', value: false };
+  return fail();
+}
+
+function readDate(cursor) {
+  expect(cursor, '@');
+  const number = readNumber(cursor);
+  if (number.type !== 'integer') fail();
+  return { type: 'date', value: number.value };
+}
+
+/**
+ * `%"…"`: printable ASCII, with `%` and two lowercase hex digits for each
+ * other byte, and the bytes UTF-8.
+ */
+function readDisplayString(cursor) {
+  expect(cursor, '%');
+  expect(cursor, '"');
+  const bytes = [];
+
+  while (!atEnd(cursor)) {
+    const char = take(cursor);
+    if (char === '"') return { type: 'display', value: utf8(bytes) };
+    if (!isPrintableAscii(char)) fail();
+
+    if (char !== '%') {
+      bytes.push(char.charCodeAt(0));
+      continue;
+    }
+
+    const hex = cursor.text.slice(cursor.at, cursor.at + 2);
+    if (!/^[0-9a-f]{2}$/.test(hex)) fail();
+    bytes.push(parseInt(hex, 16));
+    cursor.at += 2;
+  }
+
+  // The string never closed.
+  return fail();
+}
+
+function utf8(bytes) {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(bytes));
+  } catch {
+    return fail();
+  }
+}
+
+// ---- the cursor -------------------------------------------------------------
+
+function atEnd(cursor) {
+  return cursor.at >= cursor.text.length;
+}
+
+/** The next character, or `''` at the end, which matches no class above. */
+function peek(cursor) {
+  return cursor.text[cursor.at] ?? '';
+}
+
+function take(cursor) {
+  const char = peek(cursor);
+  cursor.at++;
+  return char;
+}
+
+function expect(cursor, char) {
+  if (peek(cursor) !== char) fail();
+  cursor.at++;
+}
+
+/** Spaces only: inside an inner list and before a parameter key. */
+function skipSpaces(cursor) {
+  while (peek(cursor) === ' ') cursor.at++;
+}
+
+/** Spaces and tabs: around the commas between members. */
+function skipWhitespace(cursor) {
+  while (peek(cursor) === ' ' || peek(cursor) === '\t') cursor.at++;
+}
+
+/** Space through `~`, the characters a string may hold. */
+function isPrintableAscii(char) {
+  return char >= ' ' && char <= '~';
 }

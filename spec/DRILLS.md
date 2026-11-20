@@ -573,3 +573,37 @@ refuses.
   `feeds/sitemap-empty`, and one entry in `feeds/sitemap-values`. The rebuilt
   module fails the two refusals and the entry. The old module fails the
   refusals, the hostname and the empty sitemap.
+
+## Fifth round, 2026-11-20
+
+The same two modules, drilled again from `main` after the fourth round's
+fixes. Each agent was told to write no scratch file outside its copy, and
+neither did. Each rebuilt module passes all 339 cases in two or three spec
+runs, in 4 to 7 minutes. Beyond the comparison scripts, each was probed with
+values no earlier round tried.
+
+### `src/no-vary-search.js`
+
+The old tests pass, 1557 of 1557, and the two agree on 103 of 103 values in
+the script. Of 28 values in a further probe they agree on 25.
+
+| `No-Vary-Search` | `main` | Rebuilt |
+| --- | --- | --- |
+| `key-order=1, params=("a")` | passes | refused |
+| `foo="x, params", bad(` | passes | refused |
+| a tab before `params` | passes | refused |
+
+Both drafts ignore a header whose `key-order` is not a boolean. `main`
+refuses a header that names `params` and breaks the grammar, but not one
+that names `params` and breaks this rule. The fourth rebuild guessed the same
+and the comparison missed it. The rebuilt module splits a header that does
+not parse at every comma, inside a string too. A `Headers` object strips a
+leading tab, so the third row does not reach the module.
+
+- **What `spec/` missed:** the first two rows.
+- **Decided:** take the rebuilt answer on the first row, and keep `main` on
+  the second.
+- **The fix:** a `key-order` that is not a boolean makes the header one a
+  cache ignores. Two tests hold the rows.
+- **Cases added:** two entries in `fragments/no-vary-search-shapes`. The old
+  module fails the first, and the rebuilt one fails the second.

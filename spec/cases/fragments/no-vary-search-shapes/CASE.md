@@ -27,6 +27,10 @@ The app copies the header from `x-no-vary-search` on the request.
   tells an author to write.
 - `day=@1, params=("utm_source")` passes. RFC 9651 has dates, so the header
   parses and ignores `utm_source` only.
+- `key-order=1, params=("utm_source")` is refused. It parses, but a cache
+  ignores a header whose `key-order` is not a boolean, and it names `params`.
+- `foo="x, params", bad(` passes. It does not parse, and the `params` in it
+  is inside a string, so no member's key is `params`.
 
 Source: `/docs/fragments`, the note "A header that hides the parameter is
 refused", and `types/api/no-vary-search.d.ts`, which says a shape the server

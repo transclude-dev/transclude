@@ -276,6 +276,7 @@ Complete.
 | A real file beats a `[...path]` catch-all | `middleware/public-before-routes` | reviewed |
 | Middleware does not run during the build | Not visible over HTTP: the middleware runs again when the prerendered file is served | - |
 | `gated` leaves its paths out of the sitemap, and the middleware still answers them | `middleware/gated` | reviewed |
+| `gated` leaves out an entry that names a gated URL encoded | `feeds/sitemap-gated-entry` | unreviewed |
 | The build writes no file for a gated path | A property of `dist/static` as files. A gated page served from a file and one rendered per request answer the same bytes | - |
 | `/api/*` matches `/api` and everything under it | `middleware/gated` | reviewed |
 | An entry that is not a path fails the build | `diagnostics/gated-not-a-path` | reviewed |
@@ -355,7 +356,7 @@ Complete.
 | A `limit` outside 1 to 50,000 fails the build | `diagnostics/sitemap-limit` | reviewed |
 | A `limit` of `NaN` is named as `NaN` | `diagnostics/sitemap-limit-nan` | reviewed |
 | The build writes every sheet into `dist/static` | A property of `dist/static` as files. The server answers the same paths from the same list | - |
-| A `lastmod` is the day in UTC; `priority: null` is none; a URL is percent-encoded; `null` from `paths()` is no URLs; a `g` flag excludes every match; a later `undefined` keeps a field; an encoded path is not encoded again; `lastmod: true` is no date; a route URL and its encoded entry are one; a bare `%` is `%25`; an empty priority and `changefreq: 0` are none; a later `null` clears a field | `feeds/sitemap-values`. The docs say none of these. The sitemap drill decided them | reviewed |
+| A `lastmod` is the day in UTC; `priority: null` is none; a URL is percent-encoded; `null` from `paths()` is no URLs; a `g` flag excludes every match; a later `undefined` keeps a field; an encoded path is not encoded again; `lastmod: true` is no date; a route URL and its encoded entry are one; a bare `%` is `%25`; an empty priority and `changefreq: 0` are none; a later `null` clears a field; a lone surrogate is U+FFFD; an escape's hex is in capitals; `[`, `]`, `\|` and `^` are encoded | `feeds/sitemap-values`. The docs say none of these. The sitemap drill decided them | unreviewed |
 | `feed` mounts `/feed.xml` as RSS 2.0 | `feeds/feed-rss` | reviewed |
 | Each item needs a `title` and a `path`; the rest is optional; `content` is full HTML | `feeds/feed-rss`, `feeds/feed-item-needs-title` | reviewed |
 | Newest first, capped at 50, or at `limit` | `feeds/feed-rss`, `feeds/feed-limit`, `feeds/feed-limit-set` | reviewed |
@@ -1011,7 +1012,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | The escape was applied to text and not to attributes. | `routing/escape-in-attribute` | yes | reviewed |
 | The build cannot see a gate in `app/server.js`, and the failure looks like a success. | `middleware/gated`, `diagnostics/gated-not-a-path`, `diagnostics/gated-covers-nothing` | yes | reviewed |
 | `gated` reaches the runtime through `routes.json`, not through a second config key. | `middleware/gated` | yes | reviewed |
-| The sitemap merges a path it already has, rather than keeping the first copy of it. | `feeds/sitemap-entries`, `feeds/sitemap-values`, `feeds/sitemap-param-characters` | yes | reviewed |
+| The sitemap merges a path it already has, rather than keeping the first copy of it. | `feeds/sitemap-entries`, `feeds/sitemap-values`, `feeds/sitemap-param-characters`, `feeds/sitemap-gated-entry` | yes | unreviewed |
 | A sitemap field outside the protocol fails the build, rather than being written as given. | `diagnostics/sitemap-changefreq`, `diagnostics/sitemap-priority` | yes | reviewed |
 | A param is encoded in its URL and decoded in its file name. | `production/prerender-param-characters`, `diagnostics/prerender-param-slash`, `diagnostics/prerender-param-dot`, `feeds/sitemap-param-characters` | yes | reviewed |
 | A sitemap's sheets are files, not `?p=`. | `feeds/sitemap-index` | yes | reviewed |

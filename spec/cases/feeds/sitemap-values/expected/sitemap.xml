@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url><loc>https://acme.com/</loc></url>
 <url><loc>https://acme.com/p/a%20b</loc><priority>0.8</priority></url>
-<url><loc>https://acme.com/p/caf%C3%A9</loc></url>
+<url><loc>https://acme.com/p/caf%C3%A9</loc><priority>0.3</priority></url>
 <url><loc>https://acme.com/offset</loc><lastmod>2026-08-01</lastmod></url>
 <url><loc>https://acme.com/number</loc><lastmod>2026-07-31</lastmod></url>
 <url><loc>https://acme.com/date</loc><lastmod>2026-07-31</lastmod></url>
@@ -17,4 +17,6 @@
 <url><loc>https://acme.com/empty-priority</loc></url>
 <url><loc>https://acme.com/zero-changefreq</loc></url>
 <url><loc>https://acme.com/cleared</loc></url>
+<url><loc>https://acme.com/lone-%EF%BF%BD</loc></url>
+<url><loc>https://acme.com/a%5Bb%5D%7Cc%5E</loc></url>
 </urlset>

@@ -607,3 +607,36 @@ leading tab, so the third row does not reach the module.
   cache ignores. Two tests hold the rows.
 - **Cases added:** two entries in `fragments/no-vary-search-shapes`. The old
   module fails the first, and the rebuilt one fails the second.
+
+### `src/sitemap.js`
+
+One old test fails: `sitemapEntries` leaves out a `priority` of `null`
+rather than returning it, which reaches no `loc`. The two agree on 74 of 79
+configs in the script, and on 10 of 16 in a further probe.
+
+| Config | `main` | Rebuilt |
+| --- | --- | --- |
+| `exclude: ['/p/a%20b']` or `[/%C3%A9/]`, for the params `a b` and `é` | nothing left out | both left out |
+| a param `a/b` on `/p/:x` | `/p/a/b` | `/p/a%2Fb` |
+| `limit: null` | refused | 50000 |
+| `exclude: ['admin']` | matches nothing | refused |
+| a control character in an entry path | `%01` | dropped |
+| a lone surrogate in an entry path | U+FFFD | throws |
+| `entries: {}` | one message | another |
+
+`main` tested a rule on each mention as written, before the merge. So
+`exclude: ['/p/a b']` left out the route's mention and kept an entry for
+`/p/a%20b`, and the URL was listed. The rebuilt module tests the merge key.
+
+- **What `spec/` missed:** every row but the fifth and sixth, which are
+  `main`'s answers kept and now held by a test.
+- **Decided:** take the rebuilt answer on the first, third and fourth rows,
+  and `null` is none for `exclude` too. Keep `main` on the fifth, sixth and
+  seventh. The second row is the `urlFor` question, decided on its own branch.
+- **The fix:** a rule is tested on the encoded path, and a string rule is
+  encoded the same way. An `exclude` path begins with `/`. Four tests hold
+  the rows.
+- **Cases added:** `feeds/sitemap-exclude-encoded`,
+  `diagnostics/sitemap-exclude-no-slash` and
+  `diagnostics/sitemap-entries-not-a-list`. The old module fails the first
+  two, and the rebuilt one fails the third.

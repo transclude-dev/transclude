@@ -1,0 +1,1 @@
+Error: [transclude] sitemap "entries" gave object. It is a list like [{ path: '/press' }], or a function that returns one.

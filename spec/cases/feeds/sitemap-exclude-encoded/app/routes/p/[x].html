@@ -1,0 +1,7 @@
+<script server>
+  export const paths = () => [{ x: 'a b' }, { x: '\u00e9' }, { x: 'c' }];
+
+  export default async ({ params }) => ({ x: params.x });
+</script>
+
+<h1>${x}</h1>

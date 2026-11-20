@@ -346,6 +346,9 @@ Complete.
 | A `changefreq` outside the protocol, or a `priority` outside 0 to 1, fails the build | `diagnostics/sitemap-changefreq`, `diagnostics/sitemap-priority` | reviewed |
 | A sitemap with no URLs is an empty `urlset`, with no blank line | `feeds/sitemap-empty` | reviewed |
 | An `exclude` item that is not a path or a pattern fails the build | `diagnostics/sitemap-exclude` | reviewed |
+| An `exclude` path that does not begin with `/` fails the build | `diagnostics/sitemap-exclude-no-slash` | unreviewed |
+| `exclude` is tested on the encoded path, so either spelling of a URL is left out; `limit: null` is the default | `feeds/sitemap-exclude-encoded` | unreviewed |
+| `entries` that is not a list fails the build, naming what it gave | `diagnostics/sitemap-entries-not-a-list` | unreviewed |
 | A `paths()` that gives something other than a list fails the build, naming the file | `diagnostics/sitemap-paths-not-a-list` | reviewed |
 | `null` from an `entries` function is no entries | `feeds/sitemap-entries-null` | reviewed |
 | A `paths()` param's `%`, `?` and `#` are encoded in the `loc` | `feeds/sitemap-param-characters` | reviewed |
@@ -1009,7 +1012,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | The sitemap merges a path it already has, rather than keeping the first copy of it. | `feeds/sitemap-entries`, `feeds/sitemap-values`, `feeds/sitemap-param-characters` | yes | reviewed |
 | A sitemap field outside the protocol fails the build, rather than being written as given. | `diagnostics/sitemap-changefreq`, `diagnostics/sitemap-priority` | yes | reviewed |
 | A sitemap's sheets are files, not `?p=`. | `feeds/sitemap-index` | yes | reviewed |
-| An `exclude` pattern is read with `search`, not `test`. | `feeds/sitemap-values`, `diagnostics/sitemap-exclude` | yes | reviewed |
+| An `exclude` pattern is read with `search`, not `test`. | `feeds/sitemap-values`, `diagnostics/sitemap-exclude`, `feeds/sitemap-exclude-encoded` | yes | unreviewed |
 
 ### Behavioral, case to write (0)
 

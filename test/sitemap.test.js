@@ -450,3 +450,22 @@ test('a control character in an entry path is escaped, and a lone surrogate is U
   const listed = await sitemapEntries({ routes: [] }, {}, { entries: [{ path: '/a\x01b' }, { path: '/c\uD800' }] });
   assert.deepEqual(listed.map((e) => e.path), ['/a%01b', '/c%EF%BF%BD']);
 });
+
+test('an escape in lowercase hex is the same URL as one in capitals', async () => {
+  const manifest = { routes: [{ id: 'p', pattern: '/p/:x', params: ['x'] }] };
+  const pages = { p: { paths: () => [{ x: 'caf\u00e9' }] } };
+  const listed = await sitemapEntries(manifest, pages, { entries: [{ path: '/p/caf%c3%a9', priority: 0.3 }] });
+  assert.deepEqual(listed, [{ path: '/p/caf%C3%A9', priority: 0.3 }]);
+});
+
+test('[, ], | and ^ are encoded, because RFC 3986 allows none of them', async () => {
+  const listed = await sitemapEntries({ routes: [] }, {}, { entries: [{ path: '/a[b]|c^' }] });
+  assert.deepEqual(listed.map((e) => e.path), ['/a%5Bb%5D%7Cc%5E']);
+});
+
+test('an entry meets the gate decoded, so an encoded spelling is left out too', async () => {
+  const listed = await sitemapEntries({ routes: [], gated: ['/p/a b', '/p/50%'] }, {}, {
+    entries: [{ path: '/p/a%20b' }, { path: '/p/50%25' }, { path: '/p/50%' }, { path: '/open' }],
+  });
+  assert.deepEqual(listed.map((e) => e.path), ['/open']);
+});

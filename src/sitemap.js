@@ -180,6 +180,40 @@ function checkPaths(route, list) {
 }
 
 /**
+ * A param value as it goes into a URL. `%`, `?` and `#` are part of the value,
+ * not of the URL, so `50%` is `50%25` and `a?b#c` is `a%3Fb%23c`. Left as they
+ * were, the first is no URL and the second is another one. The rest is encoded
+ * when the path is joined to the hostname.
+ *
+ * @param {Record<string, unknown>} params
+ * @returns {Record<string, string>}
+ */
+function paramsForUrl(params) {
+  const encoded = {};
+  for (const [name, value] of Object.entries(params)) {
+    encoded[name] = String(value ?? '')
+      .replaceAll('%', '%25')
+      .replaceAll('?', '%3F')
+      .replaceAll('#', '%23');
+  }
+  return encoded;
+}
+
+/**
+ * A path as the `loc` writes it, which is also the key two mentions of one URL
+ * share: `/p/a b` from a route and `/p/a%20b` from an entry are one URL, and
+ * were listed twice. A `%` that starts no escape is a `%`, so `/100%` is
+ * `/100%25`.
+ *
+ * @param {string} path
+ * @returns {string}
+ */
+function encodedPath(path) {
+  const url = new URL(path.replace(/%(?![0-9A-Fa-f]{2})/g, '%25'), 'http://x');
+  return url.pathname + url.search + url.hash;
+}
+
+/**
  * Two mentions of one path as one entry. A field the later one leaves
  * `undefined` keeps the earlier value: `{ lastmod: undefined }` says nothing
  * about the date.
@@ -229,7 +263,7 @@ export async function sitemapEntries(manifest, pages, { entries = [], exclude = 
     if (typeof page?.paths !== 'function') continue;
 
     for (const params of checkPaths(route, await page.paths())) {
-      found.push({ path: urlFor(route, params) });
+      found.push({ path: urlFor(route, paramsForUrl(params)) });
     }
   }
 
@@ -252,8 +286,9 @@ export async function sitemapEntries(manifest, pages, { entries = [], exclude = 
     if (excluded(entry.path, rules)) continue;
     if (isGated(entry.path, gated)) continue;
 
-    const first = byPath.get(entry.path);
-    byPath.set(entry.path, first ? merge(first, entry) : entry);
+    const path = encodedPath(entry.path);
+    const first = byPath.get(path);
+    byPath.set(path, { ...(first ? merge(first, entry) : entry), path });
   }
 
   return [...byPath.values()];
@@ -266,7 +301,8 @@ function urlset(entries, hostname) {
       const when = day(lastmod);
       if (when) parts.push(`<lastmod>${when}</lastmod>`);
       if (changefreq) parts.push(`<changefreq>${escape(changefreq)}</changefreq>`);
-      if (priority !== undefined && priority !== null) parts.push(`<priority>${escape(priority)}</priority>`);
+      // `0` is a priority. `null` and `''` are none: an empty element is not one.
+      if (priority !== undefined && priority !== null && priority !== '') parts.push(`<priority>${escape(priority)}</priority>`);
       return `<url>${parts.join('')}</url>`;
     })
     .join('\n');

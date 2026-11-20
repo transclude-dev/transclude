@@ -258,6 +258,38 @@ test('an entry path that is already encoded is not encoded again', async () => {
   assert.deepEqual(locs(xml), ['https://x.com/p/a%20b']);
 });
 
+test('a route URL and an entry that names it encoded are one URL', async () => {
+  const xml = await sitemap(
+    { routes: [{ id: 'p', pattern: '/p/:x', params: ['x'] }] },
+    { p: { paths: () => [{ x: 'a b' }] } },
+    { hostname: 'https://x.com', entries: [{ path: '/p/a%20b', priority: 0.8 }] },
+  );
+  assert.deepEqual(locs(xml), ['https://x.com/p/a%20b']);
+  assert.match(xml, /<priority>0\.8<\/priority>/);
+});
+
+test('a % that starts no escape is written as %25', async () => {
+  const xml = await sitemap({ routes: [] }, {}, { hostname: 'https://x.com', entries: [{ path: '/100%' }] });
+  assert.deepEqual(locs(xml), ['https://x.com/100%25']);
+});
+
+test('a param holding %, ? or # is encoded, not read as part of the URL', async () => {
+  const xml = await sitemap(
+    { routes: [{ id: 'p', pattern: '/p/:x', params: ['x'] }, { id: 'd', pattern: '/d/:path{.+}', params: ['path'] }] },
+    { p: { paths: () => [{ x: '50%' }, { x: 'a?b#c' }] }, d: { paths: () => [{ path: 'x/y?z' }] } },
+    { hostname: 'https://x.com' },
+  );
+  assert.deepEqual(locs(xml), ['https://x.com/p/50%25', 'https://x.com/p/a%3Fb%23c', 'https://x.com/d/x/y%3Fz']);
+});
+
+test('an empty priority and a changefreq of 0 are written as none', async () => {
+  const xml = await sitemap({ routes: [] }, {}, {
+    hostname: 'https://x.com',
+    entries: [{ path: '/a', priority: '', changefreq: 0 }],
+  });
+  assert.doesNotMatch(xml, /<priority>|<changefreq>/);
+});
+
 test('a later mention that leaves a field undefined keeps the earlier value', async () => {
   const entries = await sitemapEntries({ routes: [] }, {}, {
     entries: [

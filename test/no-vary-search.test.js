@@ -102,6 +102,27 @@ test('a header that does not parse hides only when it names params or except', (
   assert.equal(hidesParam('Except=()', 'fragment'), false);
 });
 
+test('a member that breaks the grammar anywhere makes the header one a cache ignores', () => {
+  // Each names params, so each is refused. Before the whole grammar was parsed,
+  // each passed, because only the commas and the keys were checked.
+  assert.equal(hidesParam('foo=1.2345, params=("utm_source")', 'fragment'), true);
+  assert.equal(hidesParam('params=("caf\u00e9")', 'fragment'), true);
+  assert.equal(hidesParam('params=("utm_source");q=1.2345', 'fragment'), true);
+  assert.equal(hidesParam('foo=%"%ff", params=("utm_source")', 'fragment'), true);
+  assert.equal(hidesParam('foo=1234567890123456, params=("utm_source")', 'fragment'), true);
+  // The same members in a header that names neither key hide nothing.
+  assert.equal(hidesParam('foo=1.2345, key-order', 'fragment'), false);
+});
+
+test('a parameter on an item in a list says nothing about the item', () => {
+  assert.equal(hidesParam('params=("utm_source" "gclid";x=1)', 'fragment'), false);
+  assert.equal(hidesParam('params=("utm_source" "fragment";x=1)', 'fragment'), true);
+});
+
+test('a key that holds the word params is not params', () => {
+  assert.equal(hidesParam('utmparams=bad(', 'fragment'), false);
+});
+
 test('the parameter asked about is the configured one', () => {
   // `fragmentParam` is a config key, so `part` or `piece` is as real as
   // `fragment` and the check cannot hard-code one.

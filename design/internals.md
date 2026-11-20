@@ -573,6 +573,11 @@ against.
   header that does not parse, and one with `except` beside a `params` list.
   The last two are refused when they name `params` or `except`, and `PARAMS`
   passes, because it names neither.
+  A third drill found that "does not parse" needs the whole grammar: the
+  reader checked commas and keys, so `foo=1.2345, params=("utm_source")`
+  passed, and a cache ignores it. It also refused a parameter on an item in a
+  list, which the grammar allows. `no-vary-search.js` now parses all of
+  RFC 9651, section 4.2.
   `spec: fragments/no-vary-search-hides-fragment`,
   `fragments/no-vary-search-shapes`.
 - **A throw after the response exists answered with that response's headers.**
@@ -2233,7 +2238,12 @@ against.
   later mention fills its fields in on the first. A field the later mention
   leaves `undefined` keeps the earlier value. A spread did not, so
   `{ lastmod: post.updated }` for a post with no date cleared the date a first
-  mention gave. `spec: feeds/sitemap-entries`, `spec: feeds/sitemap-values`.
+  mention gave. The key is the path as the `loc` writes it, encoded: keyed as
+  written, `/p/a b` from `paths()` and `/p/a%20b` from `entries` were listed
+  twice. A param's `%`, `?` and `#` are encoded before the path is built, since
+  `urlFor` joins params as they are and `/p/a?b` is another URL.
+  `spec: feeds/sitemap-entries`, `spec: feeds/sitemap-values`,
+  `spec: feeds/sitemap-param-characters`.
 - **A sitemap's sheets are files, not `?p=`.** Past `limit`, the index once
   named `/sitemap.xml?p=0` and on, and the build wrote only the index to
   `dist/static`. A static host ignores a query, so every sheet it served was the

@@ -738,3 +738,10 @@ for `exclude`. It kept an escape's hex as written, and the URL parser leaves
   one fails the second.
 - **Under the new rule:** not clean. The old suite catches the lone
   surrogate.
+
+## Phase 8 is done, 2026-11-20
+
+Four modules came back clean: `src/compiler/directives.js` in the second
+round, `src/negotiate.js` and `src/include.js` in the third, and
+`src/no-vary-search.js` in the sixth. Joe agreed that this meets the
+condition in `design/harness-plan.md`.

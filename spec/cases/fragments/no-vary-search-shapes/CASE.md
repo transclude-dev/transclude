@@ -22,6 +22,11 @@ The app copies the header from `x-no-vary-search` on the request.
 - `params=("utm_source" "gclid";x=1)` passes. A parameter on an item in a list
   says nothing about the item.
 - `utmparams=bad(` passes. It does not parse, and its key is not `params`.
+- `except=("fragment")` passes. The current draft reads `except` on its own
+  as an allowlist, and this one keeps `fragment`. It is the value the refusal
+  tells an author to write.
+- `day=@1, params=("utm_source")` passes. RFC 9651 has dates, so the header
+  parses and ignores `utm_source` only.
 
 Source: `/docs/fragments`, the note "A header that hides the parameter is
 refused", and `types/api/no-vary-search.d.ts`, which says a shape the server

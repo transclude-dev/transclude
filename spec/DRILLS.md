@@ -507,3 +507,38 @@ without encoding them.
   the rebuilt one fails the param test and the `changefreq` test.
 - **Cases added:** `feeds/sitemap-param-characters`, and four entries in
   `feeds/sitemap-values`. They fail in the same way.
+
+## Fourth round, 2026-11-19
+
+The two modules that found something in the third round, drilled again from
+`main` after its fixes, in the same way. Each rebuilt module passes all 335
+cases in two or three spec runs, in 4 to 6 minutes. The no-vary-search agent
+wrote one probe script outside its copy and deleted it.
+
+### `src/no-vary-search.js`
+
+386 lines against 496. Three old tests fail, all on one value.
+
+| `No-Vary-Search` | `main` | Rebuilt |
+| --- | --- | --- |
+| `except=("fragment")`, and the same beside `key-order` | passes | refused |
+| `x=@1, params=("a")` | passes | refused |
+
+The rebuilt module reads the older draft, where `except` is valid only beside
+bare `params`, so it finds `except` on its own in a shape it cannot read. The
+current draft, section 5.1, step 8, reads it as an allowlist. The refusal
+message tells an author to write this value. The rebuilt module also parses
+RFC 8941, which has no dates.
+
+The current draft changed two more readings. `params` must be a list, so bare
+`params` and `params=?1` are ignored, and a header with both `params` and
+`except` is ignored. `main` gives the same answers under both drafts, but its
+comments named the older one only.
+
+- **What `spec/` missed:** `except` on its own, and a date.
+- **Decided:** keep `main`. A value passes only when neither draft hides the
+  parameter.
+- **The fix:** comments only. The module says which draft reads what, and a
+  test holds the date and the display string.
+- **Cases added:** two entries in `fragments/no-vary-search-shapes`. The
+  rebuilt module fails both.

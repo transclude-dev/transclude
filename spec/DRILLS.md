@@ -640,3 +640,31 @@ configs in the script, and on 10 of 16 in a further probe.
   `diagnostics/sitemap-exclude-no-slash` and
   `diagnostics/sitemap-entries-not-a-list`. The old module fails the first
   two, and the rebuilt one fails the third.
+
+### `urlFor`
+
+The third round found that `urlFor` joined params as they were, and the
+fifth found the sitemap and the build disagreed on a param `a/b`. A probe of
+the build found four faults:
+
+- The build wrote `a?b` at `p/a?b/index.html` and listed `/p/a?b` as
+  prerendered, so the speculation rules named `/p/a` with a query.
+- A request for `/p/50%25` or `/p/a%3Fb` missed its file and was rendered
+  again, because Hono leaves `%25` and `%3F` encoded in `c.req.path`.
+- A param `a/b` wrote `p/a/b/index.html`, the file of the nested URL.
+- A param `..` wrote `p/../index.html`, over the home page.
+
+- **Decided:** encode each param in the URL, write the file at the decoded
+  path, and refuse a `/` in a param that is not a rest param.
+- **The fix:** `urlFor` encodes each param, and a rest param keeps its
+  slashes. `pathFor` is the path decoded, for the file name and the gate.
+  The prerendered handler decodes each segment of a request path before it
+  looks a page up. `refuseParams` fails the build on a `/` in a param that
+  is not a rest param, and on an empty segment, `.` or `..`. The sitemap's
+  own encoding of `%`, `?` and `#` is gone, because `urlFor` does it. Six
+  tests in `test/prerender.test.js` hold it.
+- **Cases added:** `production/prerender-param-characters`,
+  `diagnostics/prerender-param-slash` and `diagnostics/prerender-param-dot`,
+  and `a/b` in `feeds/sitemap-param-characters`. The old code fails all
+  four. With the request path looked up as Hono gives it, the first fails on
+  `50%` and `a?b`.

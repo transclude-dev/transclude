@@ -1,0 +1,7 @@
+<script server>
+  export const paths = () => [{ x: 'a b' }, { x: '50%' }, { x: 'a?b' }, { x: 'caf\u00e9' }];
+
+  export default async ({ params, request }) => ({ x: params.x, from: request ? 'server' : 'file' });
+</script>
+
+<h1>${x}, from the ${from}</h1>

@@ -1,6 +1,6 @@
 <script server>
   export const prerender = false;
-  export const paths = () => [{ x: '50%' }, { x: 'a?b#c' }];
+  export const paths = () => [{ x: '50%' }, { x: 'a?b#c' }, { x: 'a/b' }];
 
   export default async ({ params }) => ({ x: params.x });
 </script>

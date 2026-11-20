@@ -1,7 +1,5 @@
 // Where the app lives. Every path the framework needs is here.
 
-import { byDate } from './app/data/posts.js';
-
 export default {
   appDir: 'app',
 
@@ -41,11 +39,9 @@ export default {
   speculate: true,
 
   // GET /sitemap.xml, from the route table. Every page here is a concrete route,
-  // so nothing has to be listed by hand. The posts are named a second time,
-  // because their URLs come from `paths()` and a route table holds no dates.
+  // so nothing has to be listed by hand.
   sitemap: {
     hostname: 'https://transclude.dev',
-    entries: () => byDate().map((post) => ({ path: `/blog/${post.slug}`, lastmod: post.date })),
   },
 
   // A list of what the build produced, at /precache.json. The framework ships
@@ -53,29 +49,11 @@ export default {
   // the half an app cannot write for itself.
   precache: true,
 
-  // GET /feed.xml. The route table cannot answer this one: a feed is a list of
-  // writing in the order it was written, and only the posts know that.
-  feed: {
-    hostname: 'https://transclude.dev',
-    title: 'transclude',
-    description: 'Posts about the web platform, and about building on it.',
-    author: { name: 'Joe Dakroub' },
-    items: () =>
-      byDate().map((post) => ({
-        title: post.title,
-        path: `/blog/${post.slug}`,
-        date: post.date,
-        description: post.summary,
-      })),
-  },
-
   // The origin `ctx.absolute()` resolves against. The request's own is wrong
   // behind a proxy, and there is no request at all while prerendering.
   metadataBase: 'https://transclude.dev',
 
-  // `<link rel="canonical">` on every page. The docs layout used to write this
-  // one line for the pages under it, which left the landing page and the blog
-  // without one.
+  // `<link rel="canonical">` on every page, the landing page included.
   canonical: true,
 
   // Fonts and favicon. Copied, not compiled.

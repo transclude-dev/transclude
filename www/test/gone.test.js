@@ -1,8 +1,7 @@
 // The URLs this site used to have, and what it tells a crawler about them now.
 //
 // A 404 is what a URL that never existed gets. These existed, and Search Console
-// keeps a 404 on its list for months, so each one answers for itself: the issue
-// moved, the form and its confirmation step are gone.
+// keeps a 404 on its list for months, so each one says it is gone.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,15 +19,8 @@ const { app } = built ? await import('@transclude/core/production') : { app: nul
 const get = (url, host = 'transclude.dev') =>
   app.request(`https://${host}${url}`, { redirect: 'manual' });
 
-describe('issue one of the newsletter moves to the post it became', async () => {
-  const res = await get('/newsletter/001');
-
-  assert.equal(res.status, 301);
-  assert.equal(res.headers.get('location'), '/blog/svg-already-does-transclusion');
-});
-
-describe('the signup form and its confirmation step are gone', async () => {
-  for (const url of ['/subscribe', '/confirm']) {
+describe('the newsletter, its signup form, the blog and its feed are gone', async () => {
+  for (const url of ['/newsletter/001', '/subscribe', '/confirm', '/blog', '/blog/a-stream-ends-two-ways', '/feed.xml']) {
     assert.equal((await get(url)).status, 410, `${url} is gone`);
   }
 });

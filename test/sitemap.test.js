@@ -112,7 +112,7 @@ test('optional fields are emitted only when given', async () => {
   const xml = await sitemap({ routes: [] }, {}, {
     hostname: 'https://x.com',
     entries: [
-      { path: '/a', lastmod: '2026-07-31', changefreq: 'daily', priority: '0.8' },
+      { path: '/a', lastmod: '2026-07-31', changefreq: 'daily', priority: 0.8 },
       { path: '/b' },
     ],
   });
@@ -187,7 +187,7 @@ test('under the cap there is no index, only a urlset', async () => {
 });
 
 test('no hostname is an error, because every loc is absolute', async () => {
-  await assert.rejects(() => sitemap(manifest, pages, {}), /needs a hostname/);
+  await assert.rejects(() => sitemap(manifest, pages, {}), /"hostname" is undefined\. It is an origin/);
 });
 
 test('entries are reusable on their own, for a feed or anything else', async () => {
@@ -385,4 +385,39 @@ test('the dev server reads gated, serves the sheets, and reports a failure', () 
   assert.match(source, /sitemap\(\{ routes, gated \}/);
   assert.match(source, /'\/:sheet\{sitemap-\[0-9\]\+\\\\\.xml\}'/);
   assert.match(source, /onError\(c, err, \{ route: null, phase: 'sitemap' \}\)/);
+});
+
+test('a changefreq outside the protocol is refused, and named', async () => {
+  // Written as given, `often` made a sitemap the schema refuses.
+  for (const changefreq of ['often', 'Weekly', 5]) {
+    await assert.rejects(
+      () => sitemapEntries({ routes: [] }, {}, { entries: [{ path: '/a' }, { path: '/b', changefreq }] }),
+      (err) => err.message.includes(`sitemap entry 2 has the changefreq ${JSON.stringify(changefreq)}. It is one of always,`),
+    );
+  }
+});
+
+test('a priority that is not a number from 0 to 1 is refused, and named', async () => {
+  for (const [priority, shown] of [[7, '7'], [-0.1, '-0.1'], [NaN, 'NaN'], ['0.5', '"0.5"']]) {
+    await assert.rejects(
+      () => sitemapEntries({ routes: [] }, {}, { entries: [{ path: '/a', priority }] }),
+      (err) => err.message.includes(`sitemap entry 1 has the priority ${shown}. It is a number from 0 to 1`),
+    );
+  }
+});
+
+test('a later null clears a field an earlier mention gave', async () => {
+  const xml = await sitemap({ routes: [] }, {}, {
+    hostname: 'https://x.com',
+    entries: [
+      { path: '/a', lastmod: '2026-07-31', priority: 0.5 },
+      { path: '/a', lastmod: null, priority: null },
+    ],
+  });
+  assert.doesNotMatch(xml, /<lastmod>|<priority>/);
+});
+
+test('a sitemap with no URLs has no blank line in it', async () => {
+  const xml = await sitemap({ routes: [] }, {}, { hostname: 'https://x.com' });
+  assert.match(xml, /0\.9">\n<\/urlset>\n$/);
 });

@@ -98,6 +98,17 @@ export default {
   </p>
 
   <p>
+    An entry may also carry <code>lastmod</code>, <code>changefreq</code> and
+    <code>priority</code>. A <code>lastmod</code> is a date, a number of
+    milliseconds or a string a date reads, and it is written as the day in UTC.
+    One that is no date is left out. A <code>changefreq</code> is one of
+    <code>always</code>, <code>hourly</code>, <code>daily</code>,
+    <code>weekly</code>, <code>monthly</code>, <code>yearly</code> and
+    <code>never</code>, and a <code>priority</code> is a number from 0 to 1.
+    Anything else in those two fails the build.
+  </p>
+
+  <p>
     The hostname is an origin, like <code>https://acme.com</code>, with no
     path and no user or password, and an entry's <code>path</code> begins with <code>/</code>. Every
     URL is joined to the hostname, so anything else fails the build.

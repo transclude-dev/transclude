@@ -2246,9 +2246,20 @@ against.
   mention gave. The key is the path as the `loc` writes it, encoded: keyed as
   written, `/p/a b` from `paths()` and `/p/a%20b` from `entries` were listed
   twice. A param's `%`, `?` and `#` are encoded before the path is built, since
-  `urlFor` joins params as they are and `/p/a?b` is another URL.
+  `urlFor` joins params as they are and `/p/a?b` is another URL. A later
+  `null` is a value, so it clears the field: a fourth drill kept the earlier
+  one.
   `spec: feeds/sitemap-entries`, `spec: feeds/sitemap-values`,
   `spec: feeds/sitemap-param-characters`.
+- **A sitemap field outside the protocol fails the build, rather than being
+  written as given.** `changefreq: 'often'` and `priority: 7` went out as they
+  were, in a sitemap the schema refuses, and a crawler drops such a field
+  without a word. A fourth drill left them out with no error, which hides the
+  same mistake. `checkEntries` refuses a `changefreq` that is not one of the
+  seven words, and a `priority` that is not a number from 0 to 1, the string
+  `'0.5'` too. A falsy `changefreq` and a `priority` of `null` or `''` are
+  none, as before.
+  `spec: diagnostics/sitemap-changefreq`, `diagnostics/sitemap-priority`.
 - **A sitemap's sheets are files, not `?p=`.** Past `limit`, the index once
   named `/sitemap.xml?p=0` and on, and the build wrote only the index to
   `dist/static`. A static host ignores a query, so every sheet it served was the

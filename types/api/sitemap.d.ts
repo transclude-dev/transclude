@@ -19,6 +19,25 @@ export declare function sitemapEntries(manifest: Pick<import('./routes.js').Mani
     path: string;
     lastmod?: string;
 }>>;
+export type SitemapEntry = {
+    /**
+     * a path on this site, beginning with one `/`
+     */
+    path: string;
+    /**
+     * written as the day in UTC. A
+     * value that is no date is left out
+     */
+    lastmod?: Date | string | number | null;
+    /**
+     * any other value fails the build
+     */
+    changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never' | null;
+    /**
+     * from 0 to 1. Any other value fails the build
+     */
+    priority?: number | null;
+};
 export type SitemapConfig = {
     /**
      * every URL is absolute, so this is required. An
@@ -31,17 +50,27 @@ export type SitemapConfig = {
      */
     limit?: number;
     /**
-     * URLs the
-     * route table cannot know, each with a `path` beginning with `/`. A function,
-     * so an app builds them from its own data rather than listing them.
+     * URLs the route table cannot know. A function, so an app builds them from
+     * its own data rather than listing them.
      */
-    entries?: object[] | (() => object[] | Promise<object[]>);
+    entries?: SitemapEntry[] | (() => SitemapEntry[] | Promise<SitemapEntry[]>);
     /**
      * a path to leave out, or a pattern
      * the path has to match. Tested against the path, not the absolute URL.
      */
     exclude?: Array<string | RegExp>;
 };
+/**
+ * One URL in `entries`.
+ *
+ * @typedef {object} SitemapEntry
+ * @property {string} path a path on this site, beginning with one `/`
+ * @property {Date|string|number|null} [lastmod] written as the day in UTC. A
+ *   value that is no date is left out
+ * @property {'always'|'hourly'|'daily'|'weekly'|'monthly'|'yearly'|'never'|null} [changefreq]
+ *   any other value fails the build
+ * @property {number|null} [priority] from 0 to 1. Any other value fails the build
+ */
 /**
  * The `sitemap` block of a config.
  *
@@ -50,9 +79,9 @@ export type SitemapConfig = {
  *   origin, like `https://acme.com`, with no path
  * @property {number} [limit] URLs per sheet, past which an index is written. A
  *   whole number from 1 to 50000
- * @property {object[]|(() => object[]|Promise<object[]>)} [entries] URLs the
- *   route table cannot know, each with a `path` beginning with `/`. A function,
- *   so an app builds them from its own data rather than listing them.
+ * @property {SitemapEntry[]|(() => SitemapEntry[]|Promise<SitemapEntry[]>)} [entries]
+ *   URLs the route table cannot know. A function, so an app builds them from
+ *   its own data rather than listing them.
  * @property {Array<string|RegExp>} [exclude] a path to leave out, or a pattern
  *   the path has to match. Tested against the path, not the absolute URL.
  */

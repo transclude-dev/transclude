@@ -15,8 +15,8 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import transclude from '../src/plugin.js';
 import { loadProject } from '../src/project.js';
-import { renderRoute, urlFor } from '../src/document.js';
-import { preloadsOf, prerenderContext, refuseAction, refusePrerender } from '../src/prerender.js';
+import { pathFor, renderRoute, urlFor } from '../src/document.js';
+import { preloadsOf, prerenderContext, refuseAction, refuseParams, refusePrerender } from '../src/prerender.js';
 import { isGated, readGated, unmatched } from '../src/gate.js';
 import { feed, feedPath } from '../src/feed.js';
 import { includeContext } from '../src/include.js';
@@ -204,7 +204,7 @@ const namedByPaths = [];
 async function urlsFor(route) {
   if (pages[route.id]?.prerender === false) return [];
   if (!route.params.length) {
-    return isGated(route.pattern, gated) ? [] : [{ url: route.pattern, params: {} }];
+    return isGated(route.pattern, gated) ? [] : [{ url: route.pattern, path: route.pattern, params: {} }];
   }
 
   const paths = pages[route.id]?.paths;
@@ -218,12 +218,17 @@ async function urlsFor(route) {
         `like [{ slug: 'first' }].`,
     );
   }
-  const named = listed.map((params) => ({ url: urlFor(route, params), params }));
-  for (const { url } of named) namedByPaths.push(url);
+  // `url` is encoded, for the list of prerendered URLs and `ctx.url`. `path` is
+  // not: the file is written there, and a gate is matched against it.
+  const named = listed.map((params) => {
+    refuseParams(route, params);
+    return { url: urlFor(route, params), path: pathFor(route, params), params };
+  });
+  for (const { path } of named) namedByPaths.push(path);
 
   // Matched per URL, not per route: `/notes/[id]` can be open while
   // `/notes/secret` is not, and the pattern is the same for both.
-  return named.filter(({ url }) => !isGated(url, gated));
+  return named.filter(({ path }) => !isGated(path, gated));
 }
 
 /**
@@ -232,11 +237,12 @@ async function urlsFor(route) {
  * What it is allowed to be, and the `ctx` it is given, are both in
  * `src/prerender.js`, where they can be tested. Nothing imports this file.
  */
-async function render(route, { url, params }) {
+async function render(route, { url, path, params }) {
   refuseAction(pages[route.id]);
   const ctx = prerenderContext({
     route,
     url,
+    path,
     params,
     cookieSecret: config.cookieSecret,
     metadataBase: config.metadataBase,
@@ -317,7 +323,7 @@ for (const route of manifest.routes) {
 if (manifest.notFound) {
   targets.push({
     route: { ...manifest.notFound, pattern: '' },
-    target: { url: '/404', params: {} },
+    target: { url: '/404', path: '/404', params: {} },
     file: '404.html',
     label: '404.html  (not-found page)',
   });
@@ -326,7 +332,7 @@ if (manifest.notFound) {
 if (manifest.error) {
   targets.push({
     route: { ...manifest.error, pattern: '' },
-    target: { url: '/500', params: {} },
+    target: { url: '/500', path: '/500', params: {} },
     file: '500.html',
     label: '500.html  (error page)',
   });
@@ -362,7 +368,7 @@ const CONCURRENCY = Number(process.env.TRANSCLUDE_BUILD_CONCURRENCY ?? 8);
 
 const outcomes = await pool(targets, CONCURRENCY, async ({ route, target, file, label }) => {
   const rel =
-    file ?? (target.url === '/' ? 'index.html' : `${target.url.replace(/^\//, '')}/index.html`);
+    file ?? (target.path === '/' ? 'index.html' : `${target.path.replace(/^\//, '')}/index.html`);
   try {
     write(rel, await render(route, target));
     return { url: label ?? target.url, ok: true };

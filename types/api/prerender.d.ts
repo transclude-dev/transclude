@@ -9,19 +9,22 @@
  *
  * @param {object} options
  * @param {{ id: string, pattern?: string }} options.route
- * @param {string} options.url the path being written
+ * @param {string} options.url the URL being written, encoded
+ * @param {string} [options.path] the same path decoded, which is what
+ *   `ctx.route.path` is at request time
  * @param {Record<string, string>} options.params
  * @param {string|null} [options.cookieSecret]
  * @param {string} [options.metadataBase]
  * @returns {import('./document.js').Ctx} the same shape a request gets, minus
  *   what a file cannot have
  */
-export declare function prerenderContext({ route, url, params, cookieSecret, metadataBase }: {
+export declare function prerenderContext({ route, url, path, params, cookieSecret, metadataBase }: {
     route: {
         id: string;
         pattern?: string;
     };
     url: string;
+    path?: string;
     params: Record<string, string>;
     cookieSecret?: string | null;
     metadataBase?: string;
@@ -80,3 +83,18 @@ export declare function preloadsOf(chunks: Array<{
     isEntry?: boolean;
     imports?: string[];
 }>): Map<string, string[]>;
+/**
+ * Refuses a param from `paths()` that names no file of its own.
+ *
+ * The build writes each URL at its decoded path. A `/` in a param that is not a
+ * rest param made `a/b` the file of the nested URL `/p/a/b`, and an empty
+ * segment, `.` or `..` is a file somewhere else: `..` wrote over the home page.
+ *
+ * @param {{ pattern: string, params: string[], rel?: string }} route
+ * @param {Record<string, unknown>} params
+ */
+export declare function refuseParams(route: {
+    pattern: string;
+    params: string[];
+    rel?: string;
+}, params: Record<string, unknown>): void;

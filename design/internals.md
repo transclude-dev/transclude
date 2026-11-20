@@ -2248,8 +2248,8 @@ against.
   `{ lastmod: post.updated }` for a post with no date cleared the date a first
   mention gave. The key is the path as the `loc` writes it, encoded: keyed as
   written, `/p/a b` from `paths()` and `/p/a%20b` from `entries` were listed
-  twice. A param's `%`, `?` and `#` are encoded before the path is built, since
-  `urlFor` joins params as they are and `/p/a?b` is another URL. A later
+  twice. `urlFor` encodes each param, so `/p/a?b` is no longer another URL.
+  A later
   `null` is a value, so it clears the field: a fourth drill kept the earlier
   one.
   `spec: feeds/sitemap-entries`, `spec: feeds/sitemap-values`,
@@ -2263,6 +2263,22 @@ against.
   `'0.5'` too. A falsy `changefreq` and a `priority` of `null` or `''` are
   none, as before.
   `spec: diagnostics/sitemap-changefreq`, `diagnostics/sitemap-priority`.
+- **A param is encoded in its URL and decoded in its file name.** `urlFor`
+  joined params as they were, and two readers disagreed about the result. The
+  build wrote `a?b` to `p/a?b/index.html` and listed `/p/a?b` as prerendered,
+  which a browser reads as `/p/a` with a query. A request for `/p/a%3Fb` or
+  `/p/50%25` missed the file, because Hono leaves `%3F` and `%25` encoded in
+  `c.req.path`, and the server rendered the page again. A param `a/b` wrote
+  the file of the nested URL `/p/a/b`, and `..` wrote over the home page. Now
+  `urlFor` encodes each param, and a rest param keeps its slashes. `pathFor`
+  gives the same path decoded: the build writes the file there and matches a
+  gate against it, as before. The prerendered handler decodes each segment of
+  the request path before it looks a page up. `refuseParams` fails the build
+  on a `/` in a param that is not a rest param, and on an empty segment, `.`
+  or `..`.
+  `spec: production/prerender-param-characters`,
+  `diagnostics/prerender-param-slash`, `diagnostics/prerender-param-dot`,
+  `feeds/sitemap-param-characters`.
 - **A sitemap's sheets are files, not `?p=`.** Past `limit`, the index once
   named `/sitemap.xml?p=0` and on, and the build wrote only the index to
   `dist/static`. A static host ignores a query, so every sheet it served was the

@@ -453,7 +453,8 @@ export function createApp({
 
   // Prerendered pages. /about and /about/ are the same page.
   app.get('*', async (c, next) => {
-    const page = statics.get(c.req.path);
+    const key = fileKey(c.req.path);
+    const page = key === null ? null : statics.get(key);
     if (!page) return next();
 
     // Taken from the file's own bytes once, and kept on the entry: the hashes
@@ -679,4 +680,32 @@ export function createApp({
   }
 
   return app;
+}
+
+/**
+ * The key a prerendered page is kept under, for a request path, or null when
+ * no file can have that name.
+ *
+ * The build writes a page at its decoded path, as a static host reads it.
+ * Hono decodes most of a path and leaves `%25`, `%2F`, `%3F` and `%23` as they
+ * are, so `/p/50%25` is the page for the param `50%` only once each segment is
+ * decoded. A segment that decodes to a `/` is no file's name, and one that does
+ * not decode is not either.
+ *
+ * @param {string} pathname
+ * @returns {string|null}
+ */
+function fileKey(pathname) {
+  const segments = [];
+  for (const segment of pathname.split('/')) {
+    let decoded;
+    try {
+      decoded = decodeURIComponent(segment);
+    } catch {
+      return null;
+    }
+    if (decoded.includes('/')) return null;
+    segments.push(decoded);
+  }
+  return segments.join('/');
 }

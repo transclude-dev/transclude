@@ -19,6 +19,12 @@
 // item, a decimal with four places. A cache ignores a header that does not
 // parse, so the question "does it parse" needs the whole grammar to answer.
 //
+// Two drafts are in use. Browsers shipped an older one, where bare `params`
+// ignores every parameter and `except` goes beside it. The current one,
+// section 5.1, takes only a list for `params`, reads `except` on its own as
+// the allowlist, and ignores a header that has both. A value passes only when
+// neither draft hides the parameter.
+//
 // The file has two halves. The first says what the members mean. The second is
 // the parser, one function per step of RFC 9651, section 4.2.
 //
@@ -84,9 +90,11 @@ export function refuseHiddenFragment(value, param) {
 // ---- what the members mean -------------------------------------------------
 
 /**
- * `params` on its own. Bare `params`, or `?1`, ignores every parameter, `?0`
- * ignores none, and a list ignores the names in it. Any other shape is one a
- * cache might read some other way, so it counts as hiding.
+ * `params` on its own. A list ignores the names in it, in both drafts. Bare
+ * `params`, or `?1`, ignores every parameter in the older draft, so it hides.
+ * `?0` ignores none in the older draft, and the current one ignores a `params`
+ * that is not a list, so it passes. Any other shape is one a cache might read
+ * some other way, so it counts as hiding.
  *
  * A bare key with parameters, `params;x`, is still the bare key: an older draft
  * that browsers shipped reads it as every parameter.
@@ -102,9 +110,14 @@ function paramsHides(params, param) {
 
 /**
  * `except` is an allowlist on top of "ignore every parameter": every parameter
- * it leaves out is ignored. It means that beside bare `params` or with no
- * `params` at all. Beside a list or `?0` it has no reading, and a cache ignores
- * the header, so that counts as hiding.
+ * it leaves out is ignored. The current draft reads it so on its own, and the
+ * older draft beside bare `params`. A name in the list varies in both, and in
+ * the other draft the header is ignored, so a listed name passes. The drill
+ * that rebuilt this module refused `except=("fragment")`, which is the value
+ * the refusal tells an author to write.
+ *
+ * Beside a list or `?0` neither draft reads it: the older one fails it and the
+ * current one ignores both keys. A shape that cannot be read counts as hiding.
  */
 function exceptHides(params, except, param) {
   if (params && !isBoolean(params, true)) return true;

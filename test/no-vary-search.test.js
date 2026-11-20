@@ -102,6 +102,13 @@ test('a header that does not parse hides only when it names params or except', (
   assert.equal(hidesParam('Except=()', 'fragment'), false);
 });
 
+test('a date and a display string parse, because the grammar is RFC 9651', () => {
+  // RFC 8941 has neither, and a reader of it refuses these headers for naming
+  // params in a shape it cannot read.
+  assert.equal(hidesParam('day=@1, params=("utm_source")', 'fragment'), false);
+  assert.equal(hidesParam('note=%"caf%c3%a9", params=("utm_source")', 'fragment'), false);
+});
+
 test('a member that breaks the grammar anywhere makes the header one a cache ignores', () => {
   // Each names params, so each is refused. Before the whole grammar was parsed,
   // each passed, because only the commas and the keys were checked.

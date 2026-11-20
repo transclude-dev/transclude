@@ -578,6 +578,11 @@ against.
   passed, and a cache ignores it. It also refused a parameter on an item in a
   list, which the grammar allows. `no-vary-search.js` now parses all of
   RFC 9651, section 4.2.
+  A fourth drill read the older draft and refused `except=("fragment")`, the
+  value the refusal itself tells an author to write. Two drafts are in use, so
+  a value passes only when neither hides the parameter, and the comments in
+  the module say which draft reads what. It also parsed RFC 8941 and refused
+  a date.
   `spec: fragments/no-vary-search-hides-fragment`,
   `fragments/no-vary-search-shapes`.
 - **A throw after the response exists answered with that response's headers.**

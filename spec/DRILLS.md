@@ -512,7 +512,7 @@ without encoding them.
 
 The two modules that found something in the third round, drilled again from
 `main` after its fixes, in the same way. Each rebuilt module passes all 335
-cases in two or three spec runs, in 4 to 6 minutes. The no-vary-search agent
+cases in two or three spec runs, in 3 to 6 minutes. The no-vary-search agent
 wrote one probe script outside its copy and deleted it.
 
 ### `src/no-vary-search.js`
@@ -542,3 +542,34 @@ comments named the older one only.
   test holds the date and the display string.
 - **Cases added:** two entries in `fragments/no-vary-search-shapes`. The
   rebuilt module fails both.
+
+### `src/sitemap.js`
+
+487 lines against 389. The two agree on 68 of 79 configs. Four old tests
+fail: the order of the `Map`, two messages, and the merge of a later `null`.
+
+| Config | `main` | Rebuilt |
+| --- | --- | --- |
+| a later mention with `priority: null` or `lastmod: null` | clears the field | keeps the earlier value |
+| `changefreq: 'often'`, `priority: 7`, `priority: '0.5'` | written as given | left out |
+| no URLs | a blank line in the `urlset` | none |
+| no `hostname` | "sitemap needs a hostname" | the message a wrong hostname gets |
+
+Neither the docs nor the types said anything about `changefreq` and
+`priority`. `main` wrote `<priority>7</priority>`, which the sitemap schema
+refuses.
+
+- **What `spec/` missed:** a later `null`, a `changefreq` or a `priority`
+  outside the protocol, a sitemap with no URLs, and no hostname.
+- **Decided:** keep `main` on a later `null`. Refuse a `changefreq` or a
+  `priority` outside the protocol, the string `'0.5'` too. Take the rebuilt
+  answer on the last two rows. Document both fields in `/docs/feeds` and in
+  `types/api/sitemap.d.ts`, which now declares `SitemapEntry`.
+- **The fix:** `checkEntries` refuses the two fields by the entry's number.
+  Each `<url>` line ends itself, so no URLs is no blank line. No hostname
+  gets the shared message. Four tests in `test/sitemap.test.js` hold the rows.
+- **Cases added:** `diagnostics/sitemap-changefreq`,
+  `diagnostics/sitemap-priority`, `diagnostics/sitemap-hostname-missing`,
+  `feeds/sitemap-empty`, and one entry in `feeds/sitemap-values`. The rebuilt
+  module fails the two refusals and the entry. The old module fails the
+  refusals, the hostname and the empty sitemap.

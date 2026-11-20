@@ -17,6 +17,8 @@ export default {
       { path: '/100%' },
       { path: '/empty-priority', priority: '' },
       { path: '/zero-changefreq', changefreq: 0 },
+      { path: '/cleared', lastmod: '2026-07-31', priority: 0.5 },
+      { path: '/cleared', lastmod: null, priority: null },
     ],
     exclude: [/^\/a\//g],
   },

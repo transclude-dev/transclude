@@ -668,3 +668,37 @@ the build found four faults:
   and `a/b` in `feeds/sitemap-param-characters`. The old code fails all
   four. With the request path looked up as Hono gives it, the first fails on
   `50%` and `a?b`.
+
+## Sixth round, 2026-11-20
+
+The same two modules, drilled again from `main` after the fifth round's
+fixes and the `urlFor` change. Each rebuilt module passes all 345 cases in two
+to four spec runs, in 3 to 6 minutes, and neither agent wrote outside its copy.
+
+After this round the rule for a clean drill changed (decided 2026-11-20). A
+drill is clean when the spec, the old suite and `scripts/drill-probe.js` all
+pass against the rebuilt module. The script holds every value the rounds so
+far probed by hand. A new finding still becomes a case, and joins the script,
+but it does not reset the count.
+
+### `src/no-vary-search.js`
+
+The old tests pass, 1569 of 1569. The two agree on all 103 values in the
+script, on 27 of the 28 fifth-round values, the leading tab aside, and on 33
+of 36 new ones.
+
+| `No-Vary-Search` | `main` | Rebuilt |
+| --- | --- | --- |
+| `params x`, `params x=1, bad(` | passes | refused |
+| `bad(, except` | passes | refused |
+
+Neither parses. `main` read a key up to `=` or `;`, so `params x` was the key
+`params x`. It also counted parentheses when it split, and a list that never
+closes hid every member after it.
+
+- **What `spec/` missed:** both rows.
+- **Decided:** take the rebuilt answer on both.
+- **The fix:** a key is what the grammar spells as one, and only a comma
+  outside a string splits a member. A test holds both rows.
+- **Cases added:** two entries in `fragments/no-vary-search-shapes`. The old
+  module fails both.

@@ -29,7 +29,7 @@ Complete.
 | A cache keys on the query string | Cache behavior, not the framework's | - |
 | A `No-Vary-Search` naming other parameters passes through | `fragments/no-vary-search-named` | reviewed |
 | A `No-Vary-Search` hiding `?fragment=` is refused, naming the value | `fragments/no-vary-search-hides-fragment`, the 500 and the logged message | reviewed |
-| The header is read as a cache reads it: a bare key with parameters, a list's parameters, a repeated key, a percent escape, `except` beside a list, a header that does not parse anywhere in it, a parameter on an item, `except` on its own, a date, a `key-order` that is not a boolean, a comma inside a string, and shapes that cannot be read | `fragments/no-vary-search-shapes` | reviewed |
+| The header is read as a cache reads it: a bare key with parameters, a list's parameters, a repeated key, a percent escape, `except` beside a list, a header that does not parse anywhere in it, a parameter on an item, `except` on its own, a date, a `key-order` that is not a boolean, a comma inside a string, a key followed by a space, a list that never closes, and shapes that cannot be read | `fragments/no-vary-search-shapes` | unreviewed |
 | `POST /?fragment=nope` changes nothing and answers 404 | `fragments/post-unknown-name` | reviewed |
 | `ctx.fragment` tells a form post from a fetch | `fragments/action-fragment` | reviewed |
 | A fragment request runs the layouts, and the page reads them as `ctx.layout` | `fragments/layout-data` | reviewed |

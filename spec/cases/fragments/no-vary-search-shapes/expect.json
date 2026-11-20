@@ -16,5 +16,7 @@
   {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "except=(\"fragment\")"}}, "status": 200, "headers": {"no-vary-search": "except=(\"fragment\")"}, "body": "expected/list.html"},
   {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "day=@1, params=(\"utm_source\")"}}, "status": 200, "headers": {"no-vary-search": "day=@1, params=(\"utm_source\")"}, "body": "expected/list.html"},
   {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "key-order=1, params=(\"utm_source\")"}}, "status": 500, "body": "expected/refused.html", "log": "expected/key-order-not-boolean.log"},
-  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "foo=\"x, params\", bad("}}, "status": 200, "headers": {"no-vary-search": "foo=\"x, params\", bad("}, "body": "expected/list.html"}
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "foo=\"x, params\", bad("}}, "status": 200, "headers": {"no-vary-search": "foo=\"x, params\", bad("}, "body": "expected/list.html"},
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "params x"}}, "status": 500, "body": "expected/refused.html", "log": "expected/key-then-space.log"},
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "bad(, except"}}, "status": 500, "body": "expected/refused.html", "log": "expected/after-an-open-list.log"}
 ]

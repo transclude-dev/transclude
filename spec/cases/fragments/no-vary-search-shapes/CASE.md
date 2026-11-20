@@ -31,6 +31,9 @@ The app copies the header from `x-no-vary-search` on the request.
   ignores a header whose `key-order` is not a boolean, and it names `params`.
 - `foo="x, params", bad(` passes. It does not parse, and the `params` in it
   is inside a string, so no member's key is `params`.
+- `params x` and `bad(, except` are refused. Neither parses. A key is what the
+  grammar spells as one, so the first names `params`, and a list that never
+  closes does not hide the `except` after it.
 
 Source: `/docs/fragments`, the note "A header that hides the parameter is
 refused", and `types/api/no-vary-search.d.ts`, which says a shape the server

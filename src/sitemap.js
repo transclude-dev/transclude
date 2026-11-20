@@ -44,20 +44,27 @@ function day(value) {
   return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
 }
 
+// `path` is encoded, the key two mentions of one URL share, so a rule leaves
+// out the URL whichever way a mention spelled it. A string is encoded the same
+// way, and a pattern sees `é` as `%C3%A9`.
+//
 // `search` and not `test`. A pattern with the `g` flag keeps its place between
 // calls to `test`, so `/^\/draft\//g` left out `/draft/a`, kept `/draft/b`
 // and left out `/draft/c`. `search` starts at the beginning every time.
 const excluded = (path, rules) =>
-  rules.some((rule) => (rule instanceof RegExp ? path.search(rule) !== -1 : rule === path));
+  rules.some((rule) => (rule instanceof RegExp ? path.search(rule) !== -1 : encodedPath(rule) === path));
 
 /**
- * `exclude`, checked. Anything but a path or a pattern is refused: `search`
- * reads `5` as the pattern `/5/`, which leaves out every path with a 5 in it.
+ * `exclude`, checked. `null` is none. Anything but a path or a pattern is
+ * refused: `search` reads `5` as the pattern `/5/`, which leaves out every
+ * path with a 5 in it. A path that does not begin with `/` is refused too,
+ * because no path in the sitemap is one it could match.
  *
  * @param {unknown} rules
  * @returns {Array<string|RegExp>}
  */
 function checkExclude(rules) {
+  if (rules === null) return [];
   if (!Array.isArray(rules)) {
     throw new Error(
       `[transclude] sitemap "exclude" is ${JSON.stringify(rules)}. It is a list of paths, ` +
@@ -66,7 +73,8 @@ function checkExclude(rules) {
   }
 
   for (const rule of rules) {
-    if (typeof rule === 'string' || rule instanceof RegExp) continue;
+    if (typeof rule === 'string' && rule.startsWith('/')) continue;
+    if (rule instanceof RegExp) continue;
     throw new Error(
       `[transclude] sitemap "exclude" has ${JSON.stringify(rule)}. Each one is a path, ` +
         `like '/admin', or a pattern, like /^\\/draft\\//.`,
@@ -117,7 +125,8 @@ function readHostname(hostname) {
  * @param {SitemapConfig['limit']} limit
  */
 function readLimit(limit) {
-  if (limit === undefined) return LIMIT;
+  // `null` is none, as it is for `entries`, `exclude` and `paths()`.
+  if (limit === undefined || limit === null) return LIMIT;
   if (Number.isInteger(limit) && limit >= 1 && limit <= LIMIT) return limit;
   // `String` for a number, because JSON writes `NaN` and `Infinity` as `null`.
   const shown = typeof limit === 'number' ? String(limit) : JSON.stringify(limit);
@@ -328,10 +337,10 @@ export async function sitemapEntries(manifest, pages, { entries = [], exclude = 
   const byPath = new Map();
 
   for (const entry of all) {
-    if (excluded(entry.path, rules)) continue;
     if (isGated(entry.path, gated)) continue;
 
     const path = encodedPath(entry.path);
+    if (excluded(path, rules)) continue;
     const first = byPath.get(path);
     byPath.set(path, { ...(first ? merge(first, entry) : entry), path });
   }
@@ -385,13 +394,14 @@ function index(sheets, hostname) {
  * @typedef {object} SitemapConfig
  * @property {string} [hostname] every URL is absolute, so this is required. An
  *   origin, like `https://acme.com`, with no path
- * @property {number} [limit] URLs per sheet, past which an index is written. A
+ * @property {number|null} [limit] URLs per sheet, past which an index is written. A
  *   whole number from 1 to 50000
  * @property {SitemapEntry[]|(() => SitemapEntry[]|Promise<SitemapEntry[]>)} [entries]
  *   URLs the route table cannot know. A function, so an app builds them from
  *   its own data rather than listing them.
- * @property {Array<string|RegExp>} [exclude] a path to leave out, or a pattern
- *   the path has to match. Tested against the path, not the absolute URL.
+ * @property {Array<string|RegExp>|null} [exclude] a path to leave out, beginning
+ *   with `/`, or a pattern the path has to match. Tested against the path as
+ *   the `loc` writes it, encoded, and not against the absolute URL.
  */
 
 /**

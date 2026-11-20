@@ -84,8 +84,11 @@ export default {
   <p>
     A route with no <code>paths()</code> is left out, because the pattern itself
     is not a URL. Anything else goes in <code>entries</code>, as an array or a
-    function, and <code>exclude</code> takes a path or a pattern. Anything else in
-    <code>exclude</code> fails the build.
+    function, and <code>exclude</code> takes a path or a pattern. Each is tested
+    against the path as the sitemap writes it, encoded. So <code>/p/a b</code>
+    and <code>/p/a%20b</code> leave out the same URL, and a pattern finds
+    <code>é</code> as <code>%C3%A9</code>. A path begins with <code>/</code>.
+    Anything else in <code>exclude</code> fails the build.
   </p>
 
   ${html(s.sitemapEntries)}

@@ -2276,8 +2276,12 @@ against.
   `/draft/c`. Nothing failed, and the sitemap listed half the drafts. `search`
   starts at the beginning every time. It also reads a number as a pattern, so
   `5` in `exclude` left out every path with a 5 in it. An item that is not a
-  string or a `RegExp` is refused. `spec: feeds/sitemap-values`,
-  `spec: diagnostics/sitemap-exclude`.
+  string or a `RegExp` is refused. A rule was tested on each mention as it was
+  written, before the merge, so `exclude: ['/p/a b']` left out the route's
+  mention and kept the entry for `/p/a%20b`, and the URL was listed. A fifth
+  drill found it. A rule is now tested on the encoded path, the merge key.
+  `spec: feeds/sitemap-values`, `spec: diagnostics/sitemap-exclude`,
+  `spec: feeds/sitemap-exclude-encoded`.
 - **`src/gate.js` has no imports on purpose.** The sitemap reads it at runtime on
   every runtime, so it must not drag `prerender.js` and its context builder into
   a worker bundle. `test/portable.test.js` names every module the core reaches,

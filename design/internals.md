@@ -2238,7 +2238,12 @@ against.
   later mention fills its fields in on the first. A field the later mention
   leaves `undefined` keeps the earlier value. A spread did not, so
   `{ lastmod: post.updated }` for a post with no date cleared the date a first
-  mention gave. `spec: feeds/sitemap-entries`, `spec: feeds/sitemap-values`.
+  mention gave. The key is the path as the `loc` writes it, encoded: keyed as
+  written, `/p/a b` from `paths()` and `/p/a%20b` from `entries` were listed
+  twice. A param's `%`, `?` and `#` are encoded before the path is built, since
+  `urlFor` joins params as they are and `/p/a?b` is another URL.
+  `spec: feeds/sitemap-entries`, `spec: feeds/sitemap-values`,
+  `spec: feeds/sitemap-param-characters`.
 - **A sitemap's sheets are files, not `?p=`.** Past `limit`, the index once
   named `/sitemap.xml?p=0` and on, and the build wrote only the index to
   `dist/static`. A static host ignores a query, so every sheet it served was the

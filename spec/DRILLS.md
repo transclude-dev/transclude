@@ -496,3 +496,14 @@ without encoding them.
 - **What `spec/` missed:** the same URL from a route and an entry when one
   is encoded, a `%` that starts no escape, an empty `priority`, and a param
   that holds `?`, `#` or `%`.
+- **Decided:** take the rebuilt answer on the first three rows, and keep
+  `main` on `changefreq: 0`. Encode a param's `%`, `?` and `#` in the sitemap,
+  and look at what the build does with such a param on its own.
+- **The fix:** the old module, patched. Two mentions of one URL share a key,
+  the path as the `loc` writes it. A `%` that starts no escape is `%25`. An
+  empty `priority` is none. A param's `%`, `?` and `#` are encoded before
+  `urlFor` joins it, so `exclude` sees `50%25` for a param `50%`. Four tests
+  in `test/sitemap.test.js` hold the rows. The old module fails all four, and
+  the rebuilt one fails the param test and the `changefreq` test.
+- **Cases added:** `feeds/sitemap-param-characters`, and four entries in
+  `feeds/sitemap-values`. They fail in the same way.

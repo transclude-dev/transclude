@@ -93,7 +93,8 @@ export default {
   <p>
     An entry may name a URL a route already produced. The sitemap lists that URL
     once and takes the fields of both, which is how a page built from
-    <code>paths()</code> carries a <code>lastmod</code>.
+    <code>paths()</code> carries a <code>lastmod</code>. The two are compared
+    encoded, so <code>/p/a%20b</code> names the URL of <code>/p/a b</code>.
   </p>
 
   <p>

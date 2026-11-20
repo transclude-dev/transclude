@@ -9,5 +9,8 @@
   {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "params=(\"fr%61gment\")"}}, "status": 500, "body": "expected/refused.html", "log": "expected/percent-escape.log"},
   {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "params=(\"utm_source\"), except=(\"fragment\")"}}, "status": 500, "body": "expected/refused.html", "log": "expected/except-beside-list.log"},
   {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "params=(\"utm_source\"),"}}, "status": 500, "body": "expected/refused.html", "log": "expected/trailing-comma.log"},
-  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "PARAMS"}}, "status": 200, "headers": {"no-vary-search": "PARAMS"}, "body": "expected/list.html"}
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "PARAMS"}}, "status": 200, "headers": {"no-vary-search": "PARAMS"}, "body": "expected/list.html"},
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "key-order=1.2345, params=(\"utm_source\")"}}, "status": 500, "body": "expected/refused.html", "log": "expected/member-breaks-grammar.log"},
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "params=(\"utm_source\" \"gclid\";x=1)"}}, "status": 200, "headers": {"no-vary-search": "params=(\"utm_source\" \"gclid\";x=1)"}, "body": "expected/list.html"},
+  {"request": "GET /?fragment=list", "send": {"headers": {"x-no-vary-search": "utmparams=bad("}}, "status": 200, "headers": {"no-vary-search": "utmparams=bad("}, "body": "expected/list.html"}
 ]

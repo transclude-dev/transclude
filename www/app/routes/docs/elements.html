@@ -165,7 +165,7 @@ export default {
 <title>Elements · transclude</title>
 <meta
   name="description"
-  content="One .html file becomes a custom element. Light DOM by default, shadow root opt-in."
+  content="One .html file becomes a custom element. It uses light DOM by default, and a shadow root is optional."
 />
 
 <doc-page
@@ -173,46 +173,47 @@ export default {
   lede="An .html file in app/elements/ becomes a custom element. It renders into the page's own DOM unless it asks for a shadow root."
 >
   <p>
-    The file name is the tag name, and it needs a dash, because that is what
-    makes it a valid
+    The file name is the tag name. It must contain a dash, because a valid
     <a
       href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements"
       >custom element</a
     >
-    name. A file without one stops the build, and the message names the file.
+    name needs one. A file name with no dash stops the build, and the error
+    names the file.
   </p>
 
   ${html(s.light)} ${html(s.use)}
 
   <p>
-    The style block is hoisted into <code>&lt;head&gt;</code> once, however many
-    times the element appears. <code>:scope</code> is the element itself.
+    The style block goes into <code>&lt;head&gt;</code> one time, even when the
+    element appears many times. <code>:scope</code> is the element itself.
   </p>
 
-  <h2>Elements more than one app uses</h2>
+  <h2>Elements that several apps share</h2>
 
   <p>
-    <code>elementsDir</code> may name several directories, so a package of
-    shared elements is read with the app's own. Each is a path from
-    <code>appDir</code>, and a path may leave it.
+    <code>elementsDir</code> can list several directories. So the build reads a
+    package of shared elements together with the app's own elements. Each entry
+    is a path from <code>appDir</code>, and a path can go outside it.
   </p>
 
   ${html(s.shared)}
 
   <p>
-    A tag is one file. The same tag in two of the directories stops the build
-    and names both files, rather than letting one quietly win. The dev server
-    watches every directory, including one outside the project.
+    Each tag comes from one file. If two of the directories contain the same
+    tag, the build stops and names both files. It does not silently pick one.
+    The dev server watches every directory, including one outside the project.
   </p>
 
-  <h2>Setting a shadow root</h2>
+  <h2>Adding a shadow root</h2>
 
   <p>
-    Export <code>shadow</code> and the element gets a
+    Export <code>shadow</code>, and the element gets a
     <a
       href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM"
       >shadow root</a
-    >, a working <code>&lt;slot&gt;</code>, and the ability to rebuild its own
+    >
+    and a working <code>&lt;slot&gt;</code>. It can also rebuild its own
     structure.
   </p>
 
@@ -229,7 +230,7 @@ export default {
       </thead>
       <tbody>
         <tr>
-          <td>Page CSS reaches it</td>
+          <td>Page CSS applies to it</td>
           <td>Yes</td>
           <td>Inherited properties and <code>::part()</code></td>
         </tr>
@@ -239,13 +240,13 @@ export default {
           <td>With <code>referenceTarget</code></td>
         </tr>
         <tr>
-          <td>Ships JavaScript</td>
+          <td>Sends JavaScript</td>
           <td>Only with behavior</td>
           <td>Yes</td>
         </tr>
         <tr>
           <td>Re-renders on attribute change</td>
-          <td>Text and attributes, written in place</td>
+          <td>Text and attributes, updated in place</td>
           <td>Anything, including structure</td>
         </tr>
         <tr>
@@ -256,7 +257,7 @@ export default {
         <tr>
           <td><code>&lt;slot&gt;</code></td>
           <td>Filled on the server. No <code>&lt;slot&gt;</code> is sent</td>
-          <td>A real slot, projected by the browser</td>
+          <td>A real slot, filled by the browser</td>
         </tr>
         <tr>
           <td><code>slotchange</code></td>
@@ -265,7 +266,7 @@ export default {
         </tr>
         <tr>
           <td><code>assignedNodes()</code></td>
-          <td>Nothing to call it on</td>
+          <td>No slot to call it on</td>
           <td>Works</td>
         </tr>
         <tr>
@@ -278,64 +279,65 @@ export default {
   </div>
 
   <p>
-    Stay light unless you need one. A light element is cheaper, and your CSS
-    reaches it. It renders the same way whether the browser asked for a whole
-    page or one fragment of it. Reach for a shadow root when the element has to seal
-    its styles and DOM off from the page, or re-render on its own.
+    Use a light element unless you need a shadow root. A light element costs
+    less, and your CSS applies to it. It renders the same way for a whole page
+    and for one fragment of it. Use a shadow root when the element must keep its
+    styles and DOM separate from the page. Also use one when it must re-render
+    on its own.
   </p>
 
   <h3>What each can re-render</h3>
 
   <p>
-    Both react to a prop change. A light element writes the text and attributes
-    already in the page, so its nodes keep their identity. It never replaces its
-    children: they include the markup the caller slotted in, and the page's own
-    script may be holding references to them.
+    Both kinds react when a prop changes. A light element updates the text and
+    attributes already in the page, so its nodes stay the same nodes. It never
+    replaces its children. The children include the markup the caller put in the
+    slot, and the page's own script can hold references to them.
   </p>
 
   <p>
-    Rebuilding structure needs the boundary. An <code>if</code> or an
-    <code>each</code> over a value that changes is refused in a light element,
-    and the error names <code>shadow</code>.
+    Only a shadow root lets an element rebuild its structure. In a light element,
+    the build refuses an <code>if</code> or an <code>each</code> over a value
+    that changes. The error names <code>shadow</code>.
   </p>
 
-  <doc-note label="Reacting costs a definition">
-    An element observes its props only once it is defined, and it is defined
-    only with behavior, members, or form association. A light element of plain
-    markup still ships nothing at all.
+  <doc-note label="Reacting needs a definition">
+    An element watches its props only after it is defined. It is defined only
+    when it has behavior, members, or form association. A light element of plain
+    markup still sends nothing to the browser.
   </doc-note>
 
   <h3>What <code>&lt;slot&gt;</code> means in each</h3>
 
   <p>
-    In a light element the server fills the slot and sends the result. No
-    <code>&lt;slot&gt;</code> reaches the browser: the markup was placed once.
-    Fallback content works, and so do named slots. A child with
-    <code>slot="aside"</code> fills <code>&lt;slot name="aside"&gt;</code>, as
-    the browser assigns one in a shadow root. A
-    <code>&lt;template slot="aside"&gt;</code> fills it with its content. The
-    rest fill the default slot.
+    In a light element, the server fills the slot and sends the result. No
+    <code>&lt;slot&gt;</code> gets to the browser, because the server placed the
+    markup one time. Fallback content works, and named slots work too. A child
+    with <code>slot="aside"</code> fills <code>&lt;slot name="aside"&gt;</code>,
+    the same way the browser does it in a shadow root. A
+    <code>&lt;template slot="aside"&gt;</code> fills it with the template's
+    content. The other children fill the default slot.
   </p>
 
   <p>
-    In a shadow element the slot is real. The children stay in the light DOM, and
-    the browser projects them through it. That is what makes
-    <code>slotchange</code> and <code>assignedNodes()</code> mean something, and
-    what lets content added later find its place.
+    In a shadow element, the slot is real. The children stay in the light DOM,
+    and the browser shows them through the slot. So <code>slotchange</code> and
+    <code>assignedNodes()</code> work. Content that you add later also goes into
+    its slot.
   </p>
 
   <doc-note label="A shadow root in a fragment paints on connect" tone="warn">
-    A declarative shadow root is built when a browser parses a document. Nothing
-    that swaps HTML parses one, so a shadow element arrives bare in a fragment and
-    paints itself on connect. A light element arrives whole.
+    A browser builds a declarative shadow root when it parses a document. Tools
+    that swap in HTML do not build one. So a shadow element in a fragment arrives
+    empty and paints itself when it connects. A light element arrives complete.
   </doc-note>
 
   <h3 id="pointing-a-label-inside">Pointing a label inside</h3>
 
   <p>
-    A shadow root stops a <code>&lt;label for&gt;</code> at the host. Export
-    <code>referenceTarget</code> with the id of one element in the template, and
-    a reference to the host goes to that element instead.
+    A shadow root stops a <code>&lt;label for&gt;</code> at the host element. To
+    fix this, export <code>referenceTarget</code> with the id of one element in
+    the template. A reference to the host then goes to that element.
   </p>
 
   ${html(s.target)}
@@ -343,42 +345,45 @@ export default {
   ${html(s.targetUse)}
 
   <p>
-    A click on the label focuses the input, and a screen reader reads "Name" as
-    its name. The same goes for <code>aria-labelledby</code>,
-    <code>aria-describedby</code> and the other attributes that name an element
-    by id. The server writes the target on the declarative shadow root, and an
-    element that arrives in a fragment passes it to <code>attachShadow</code>.
+    A click on the label focuses the input. A screen reader reads "Name" as the
+    input's name. The same is true for <code>aria-labelledby</code>,
+    <code>aria-describedby</code> and the other attributes that point to an
+    element by id. The server writes the target on the declarative shadow root.
+    An element that arrives in a fragment passes the target to
+    <code>attachShadow</code>.
   </p>
 
-  <doc-note label="The id is checked when it compiles" tone="warn">
+  <doc-note label="The build checks the id" tone="warn">
     The target is a literal, the same for every element of the tag. The build
     stops when no element in the template has that id. It also stops when the
-    id is bound with <code>\${}</code> or sits inside an <code>each</code>. A light
-    element cannot have a target: it has no boundary, so a label already reaches
-    an id inside it.
+    id uses <code>\${}</code> or is inside an <code>each</code>. A light element
+    cannot have a target. It has no boundary, so a label already reaches an id
+    inside it.
   </doc-note>
 
   <doc-note label="Chromium only, for now">
-    Chrome and Edge follow the target. Safari and Firefox have it behind a
-    flag, and they ignore it: the label is not connected, as with no target.
+    Chrome and Edge follow the target. Safari and Firefox have it behind a flag,
+    and they ignore it. The label is then not connected, the same as with no
+    target.
   </doc-note>
 
   <h2>Giving it behavior</h2>
 
   <p>
-    <code>connected</code> runs once per connect, and <code>this</code> is the
-    element. It is handed an
+    <code>connected</code> runs each time the element connects, and
+    <code>this</code> is the element. It receives an
     <a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal"
       >AbortSignal</a
     >
-    that fires when the element leaves the document. Pass it to
-    <code>addEventListener</code> and the listener is removed for you.
+    that fires when the element leaves the document. Pass the signal to
+    <code>addEventListener</code>, and the listener is removed for you.
   </p>
 
   <p>
-    A listener on the element itself needs nothing, since it goes when the
-    element does. One on <code>document</code> or <code>window</code> outlives
-    it, so leaving out <code>signal</code> there is a build warning.
+    A listener on the element itself needs no signal, because it goes away with
+    the element. A listener on <code>document</code> or <code>window</code> stays
+    after the element is gone. So the build warns when you leave out
+    <code>signal</code> there.
   </p>
 
   ${html(s.behavior)}
@@ -386,11 +391,11 @@ export default {
   <h3>A public API</h3>
 
   <p>
-    <code>export const prototype</code> puts members on the class, shared by
-    every element of the tag. Three of the names belong to the framework.
-    <code>connected({ signal })</code> runs on every connect and
-    <code>disconnected()</code> on every disconnect, so the two pair off.
-    <code>updated()</code> runs after every render.
+    <code>export const prototype</code> puts members on the class. Every element
+    of the tag shares them. The framework uses three of the names.
+    <code>connected({ signal })</code> runs on every connect, and
+    <code>disconnected()</code> runs on every disconnect, so the two come in
+    pairs. <code>updated()</code> runs after every render.
   </p>
 
   ${html(s.prototype)}
@@ -398,11 +403,11 @@ export default {
   <h3>Undoing something</h3>
 
   <p>
-    Most cleanup needs nothing written. A listener given <code>signal</code> is
-    removed when the element leaves, and that covers nearly every element.
+    Most cleanup needs no code. A listener that gets <code>signal</code> is
+    removed when the element leaves. That covers nearly every element.
   </p>
 
-  <p>For the rest, pick by where the thing being undone is.</p>
+  <p>For other cleanup, choose by where the thing you undo is.</p>
 
   <table>
     <thead>
@@ -414,7 +419,7 @@ export default {
     <tbody>
       <tr>
         <td>A listener</td>
-        <td><code>{ signal }</code>, and write nothing</td>
+        <td><code>{ signal }</code>, and no other code</td>
       </tr>
       <tr>
         <td>A local in <code>connected</code></td>
@@ -430,103 +435,103 @@ export default {
   ${html(s.undo)}
 
   <p>
-    The returned function runs first and <code>disconnected()</code> after it, so
-    the element's own hook sees the connection already undone.
+    The returned function runs first, then <code>disconnected()</code>. So when
+    the element's own hook runs, the connection is already undone.
   </p>
 
   <doc-note label="The element is this" tone="warn">
-    Nothing is injected into scope. A member reaches its own element with
-    <code>this</code>, its shadow root with <code>this.shadowRoot</code> and its
+    The framework adds nothing to scope. A member gets its own element with
+    <code>this</code>, its shadow root with <code>this.shadowRoot</code>, and its
     <code>ElementInternals</code> with <code>this.internals</code>. Only
-    <code>signal</code> is passed in, because it belongs to one connection
-    rather than to the element.
+    <code>signal</code> is passed in, because it belongs to one connection, not
+    to the element.
   </doc-note>
 
   <h2>State</h2>
 
   <p>
-    A prop comes from the outside and lives in an attribute. State is the
-    element's own, and nothing outside sets it.
-    <code>export const state</code> declares it, and each element gets its own
-    copy.
+    A prop comes from outside the element and is stored in an attribute. State
+    belongs to the element, and nothing outside sets it.
+    <code>export const state</code> declares it. Each element gets its own copy.
   </p>
 
   ${html(s.state)}
 
   <p>
-    Every name becomes a property on the element. Setting one schedules a
-    re-render, the same as changing an attribute does, and
-    <code>updateComplete</code> resolves once it has been written.
+    Each name becomes a property on the element. Setting one schedules a
+    re-render, the same as an attribute change. <code>updateComplete</code>
+    resolves after the render is written.
   </p>
 
   ${html(s.stateUse)}
 
   <p>
-    The template reads props and state from one namespace, so
-    <code>${'$'}{n}</code> above does not say which it is. Declaring the same
-    name in both blocks is a compile error.
+    The template reads props and state from one namespace. So
+    <code>${'$'}{n}</code> above does not show which one it is. Declaring the
+    same name in both blocks is a compile error.
   </p>
 
   <p>
-    State renders on the server too, so the first paint carries the default the
+    The server renders state too. So the first paint shows the default that the
     block declares.
   </p>
 
-  <h3>Styling on state</h3>
+  <h3>Styling by state</h3>
 
   <p>
-    A boolean state field is a custom state, so CSS can select it. There is no
-    attribute to write and no class to add on the way past. State stays out of
-    the document, and a stylesheet still reacts to it.
+    A boolean state field is also a custom state, so CSS can select it. You do
+    not write an attribute or add a class. The state stays out of the document,
+    but a stylesheet still reacts to it.
   </p>
 
   ${html(s.customState)}
 
   <p>
-    Booleans only. A custom state is a name, not a value, so a number or a
-    string has nothing to select on. The state lands with the render rather than
-    with the assignment, so it changes in the same frame as the markup it
-    styles.
+    This works for booleans only. A custom state is a name, not a value. So CSS
+    has nothing to select on for a number or a string. The custom state changes
+    when the element renders, not when you assign the field. So it changes in the
+    same frame as the markup it styles.
   </p>
 
-  <doc-note label="Nothing is reflected on the server">
-    A state field starts at the default its block declares, so the first paint
-    is that default either way. Anything else is something the reader did, which
-    means the element has upgraded by the time a custom state differs.
+  <doc-note label="The server sets no custom state">
+    A state field starts at the default its block declares. So the first paint
+    shows that default either way. Any other value comes from something the
+    reader did. So when a custom state differs, the element has already
+    upgraded.
   </doc-note>
 
   <doc-note label="State is not an attribute">
-    Nothing outside can set it: not the page's markup, not a parent, not a URL.
-    Anything a caller needs to say belongs in
+    Nothing outside the element can set it. The page's markup cannot, a parent
+    cannot, and a URL cannot. Put anything a caller must pass in
     <code>export const properties</code>.
   </doc-note>
 
   <h2>Objects and arrays</h2>
 
-  <p>Anything that is not a string is written as JSON in the attribute.</p>
+  <p>Write any value that is not a string as JSON in the attribute.</p>
 
   ${html(s.json)}
 
   <doc-note label="Keep it small" tone="warn">
-    The JSON sits in the HTML and is read back on every attribute change. For
-    anything large, pass an id and load the rest in the page's loader.
+    The JSON is part of the HTML. The element reads it again on every attribute
+    change. For large data, pass an id and load the rest in the page's loader.
   </doc-note>
 
   <h2>An element a form can submit</h2>
 
   <p>
-    Export <code>formAssociated</code> and the browser treats it as a
+    Export <code>formAssociated</code>, and the browser treats the element as a
     <a
       href="https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements#form-associated_custom_elements"
       >form-associated custom element</a
-    >. It needs no shadow root.
+    >. It does not need a shadow root.
   </p>
 
   ${html(s.form)}
 
   <p>
-    Drop it into a form and it behaves like an input. Its value is submitted
-    under its <code>name</code>, and
+    Put it in a form, and it acts like an input. The form submits its value
+    under its <code>name</code>.
     <a href="https://developer.mozilla.org/en-US/docs/Web/API/FormData"
       >FormData</a
     >
@@ -535,50 +540,50 @@ export default {
 
   ${html(s.formUse)}
 
-  <h3>Saying it is invalid</h3>
+  <h3>Marking it invalid</h3>
 
   <p>
-    A field that cannot say it is wrong is not really a field.
-    <code>this.internals</code> is the handle the platform hands out, so
-    <code>setValidity</code> works the way it does on an input.
-    <code>:invalid</code> matches, a submit is blocked, and the browser shows its
-    own message.
+    <code>this.internals</code> is the <code>ElementInternals</code> object the
+    browser provides. So <code>setValidity</code> works the same way as on an
+    input.
+    <code>:invalid</code> matches, the browser blocks the submit, and it shows
+    its own message.
   </p>
 
   ${html(s.validity)}
 
   <p>
-    Call it whenever the value changes, and pass no arguments to clear it. The
-    second argument is the message the browser reads out, and the third is the
+    Call it each time the value changes. Pass no arguments to clear it. The
+    second argument is the message the browser shows. The third argument is the
     element the message points at.
   </p>
 
   <doc-note label="The message points at something that takes focus" tone="warn">
     The browser focuses the third argument to show its message. A light element
     takes no focus unless it has a <code>tabindex</code>. Without one, pass a
-    control inside it, such as its button. Otherwise the submit is blocked, no
-    message appears, and the console says the control is not focusable.
+    control inside it, such as its button. If you do not, the browser blocks the
+    submit and shows no message. The console says the control is not focusable.
   </doc-note>
 
   <h3>A disabling container</h3>
 
   <p>
-    A <code>&lt;fieldset disabled&gt;</code> disables every control inside it,
-    and a form-associated element gets that as the <code>disabled</code> custom
-    state. Style it with <code>:host(:state(disabled))</code>. The state tracks
-    the container both ways, so a fieldset that re-enables clears it.
+    A <code>&lt;fieldset disabled&gt;</code> disables every control inside it. A
+    form-associated element inside it gets the <code>disabled</code> custom
+    state. Style it with <code>:host(:state(disabled))</code>. The state follows
+    the fieldset both ways, so it clears when the fieldset is enabled again.
   </p>
 
   <p>
-    Not the <code>disabled</code> attribute. An element with its own
-    <code>disabled</code> attribute is disabled by the browser's own reckoning.
-    The browser then stops telling the element when the fieldset lets go, so a
-    control disabled that way would never come back.
+    The framework does not use the <code>disabled</code> attribute for this. If
+    an element has its own <code>disabled</code> attribute, the browser treats it
+    as disabled. The browser then stops telling the element when the fieldset is
+    enabled again. So a control disabled that way would stay disabled.
   </p>
 
   <doc-note label="A flag is a literal" tone="warn">
-    Write <code>export const shadow = true</code> directly, and the same for
-    <code>formAssociated</code>. Each becomes a static field on the class, the
-    same for every element of the tag, so neither can be computed.
+    Write <code>export const shadow = true</code> directly. Do the same for
+    <code>formAssociated</code>. Each one becomes a static field on the class,
+    the same for every element of the tag. So you cannot compute either value.
   </doc-note>
 </doc-page>

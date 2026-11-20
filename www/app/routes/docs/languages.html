@@ -79,47 +79,49 @@ export default (app) => {
 <title>Languages · transclude</title>
 <meta
   name="description"
-  content="The lang and dir on every page, a locale in the route, and what this framework leaves to you."
+  content="The lang and dir of every page, a locale in the URL, and the parts that you build yourself."
 />
 
 <doc-page
   heading="Languages"
-  lede="One key says what language your pages are written in. Anything past that is routing and data, which this framework already has."
+  lede="One config key sets the language of your pages. For more than that, use routes and data. The framework already has both."
 >
   <h2>The language of every page</h2>
 
-  <p><code>lang</code> is what lands on <code>&lt;html&gt;</code>.</p>
+  <p>The <code>lang</code> key sets the <code>lang</code> attribute on <code>&lt;html&gt;</code>.</p>
 
   ${html(s.config)}
 
   <p>
-    It defaults to <code>en</code>. That default is a guess about your app, so a
-    generated project writes the key out where you can see it and change it.
+    The default is <code>en</code>. That default is a guess about your app. So a
+    generated project writes the key in the config, where you can see it and
+    change it.
   </p>
 
   <p>
-    A screen reader picks a voice from this, and a browser picks a dictionary and
-    a set of quotation marks. A wrong value is worse than a missing one.
+    A screen reader uses this value to choose a voice. A browser uses it to
+    choose a dictionary and a style of quotation marks. A wrong value is worse
+    than no value.
   </p>
 
   <h2>One page in another language</h2>
 
   <p>
-    A page sets its own attributes with a bare <code>&lt;html&gt;</code> tag. The
-    renderer merges it into the document rather than printing it, and it wins
-    over the config.
+    A page sets its own attributes with a self-closing <code>&lt;html&gt;</code>
+    tag. The renderer does not print this tag. It merges the attributes into the
+    document, and they win over the config.
   </p>
 
   ${html(s.page)}
 
-  <p>Direction rides along with it.</p>
+  <p>Set the text direction in the same tag.</p>
 
   ${html(s.rtl)}
 
-  <doc-note label="Write the CSS both directions read">
-    <code>padding-inline-start</code> flips with the text.
-    <code>padding-left</code> does not, so a right-to-left page gets its gutter on
-    the wrong side. The same holds for <code>margin</code>,
+  <doc-note label="Write CSS that works in both directions">
+    <code>padding-inline-start</code> changes sides with the text direction.
+    <code>padding-left</code> does not. So a right-to-left page gets its gutter on
+    the wrong side. The same is true for <code>margin</code>,
     <code>border</code> and <code>text-align</code>.
   </doc-note>
 
@@ -128,20 +130,20 @@ export default (app) => {
   <h2>A locale in the URL</h2>
 
   <p>
-    A locale is a route parameter. The directory tree is already the route table,
-    so nothing new is needed to give each language its own URL.
+    A locale is a route parameter. The directory tree is already the route table.
+    So each language gets its own URL with no new feature.
   </p>
 
   ${html(tree)}
 
   <p>
-    <code>/cy/about</code> and <code>/en/about</code> reach the same file, and the
-    loader reads which one was asked for.
+    <code>/cy/about</code> and <code>/en/about</code> go to the same file. The
+    loader reads which locale the request asked for.
   </p>
 
   ${html(s.loader)}
 
-  <p>Your strings are a module the loader imports.</p>
+  <p>Put your strings in a module that the loader imports.</p>
 
   ${html(s.copy)}
 
@@ -154,38 +156,39 @@ export default (app) => {
   <h2>Sending a reader to their own language</h2>
 
   <p>
-    <code>Accept-Language</code> is a request header, so reading it is middleware.
-    Redirect from the bare path and let each locale keep its own URL.
+    <code>Accept-Language</code> is a request header, so read it in middleware.
+    Redirect from <code>/</code>, and let each locale keep its own URL.
   </p>
 
   ${html(s.negotiate)}
 
   <doc-note label="Redirect, do not vary" tone="warn">
-    Serving different languages at one URL needs <code>Vary</code>, and a cache
-    that ignores it hands one reader another reader's language. A redirect to a
-    URL per locale is one page per URL, which is what every cache and every link
-    already understands.
+    If you serve different languages at one URL, you need a <code>Vary</code>
+    header. A cache that ignores it can give one reader another reader's
+    language. A redirect gives each locale its own URL, so each URL has one page.
+    Every cache and every link already works with that.
   </doc-note>
 
-  <h2>What this framework does not ship</h2>
+  <h2>What this framework does not include</h2>
 
   <p>
-    There is no message catalog, no plural rule engine and no locale negotiation
-    beyond what you write above.
+    There is no message catalog and no plural rule engine. There is no locale
+    negotiation other than the code that you write, as above.
   </p>
 
   <p>
-    This is the same answer <code>cache</code> and <code>markdown</code> get. Which
-    catalog format, which fallback chain and which plural library are decisions
-    about your app. A framework that picked one would be picking for every app.
+    The <code>cache</code> and <code>markdown</code> config keys follow the same
+    rule. The catalog format, the fallback chain and the plural library are
+    decisions about your app. If a framework picked one, it would pick for every
+    app.
   </p>
 
   <p>
-    The platform ships most of it.
+    The platform already includes most of it.
     <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl"
       >Intl</a
     >
-    formats dates, numbers, lists and plurals, and it runs on all four runtimes.
-    A loader calls it and the page gets text.
+    formats dates, numbers, lists and plurals. It runs on all four runtimes. A
+    loader calls it, and the page gets the formatted text.
   </p>
 </doc-page>

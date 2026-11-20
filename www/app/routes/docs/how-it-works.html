@@ -61,18 +61,18 @@ export const prerender = false;`,
 <title>How it works · transclude</title>
 <meta
   name="description"
-  content="What a .html file compiles to, and what answers a request for it."
+  content="What a .html file compiles to, and the steps that handle a request for it."
 />
 
 <doc-page
   heading="How it works"
-  lede="A page is one file. This is what the file becomes, and what answers a request for it."
+  lede="A page is one file. This page shows what the file compiles to, and the steps that handle a request for it."
 >
   <h2>The file</h2>
 
   <p>
-    <code>app/routes/notes.html</code> answers <code>/notes</code>. It holds the
-    markup and the code that loads its data.
+    <code>app/routes/notes.html</code> handles <code>/notes</code>. It contains
+    the markup and the code that loads its data.
   </p>
 
   ${html(s.page)}
@@ -80,9 +80,9 @@ export const prerender = false;`,
   <h2>What it compiles to</h2>
 
   <p>
-    One module, with a fixed set of exports. Every later stage reads one of
-    them. This is the real output for the file above, compiled while this page
-    was built.
+    The file compiles to one module with a fixed set of exports. Each later stage
+    reads one of these exports. Below is the real output for the file above. The
+    build compiled it when it built this page.
   </p>
 
   ${html(module)}
@@ -92,7 +92,7 @@ export const prerender = false;`,
       <thead>
         <tr>
           <th>Export</th>
-          <th>Came from</th>
+          <th>Comes from</th>
         </tr>
       </thead>
       <tbody>
@@ -102,19 +102,19 @@ export const prerender = false;`,
         </tr>
         <tr>
           <td><code>POST</code></td>
-          <td>The verb export, passed through as it was written.</td>
+          <td>The verb export, copied as it was written.</td>
         </tr>
         <tr>
           <td><code>render</code></td>
-          <td>The markup. Directives became <code>if</code> and <code>for</code>.</td>
+          <td>The markup. Directives become <code>if</code> and <code>for</code>.</td>
         </tr>
         <tr>
           <td><code>regions</code></td>
-          <td>One entry per element marked <code>fragment</code>.</td>
+          <td>One entry for each element marked <code>fragment</code>.</td>
         </tr>
         <tr>
           <td><code>renderTitle</code>, <code>hasTitle</code></td>
-          <td>The <code>&lt;title&gt;</code>, lifted out of the body.</td>
+          <td>The <code>&lt;title&gt;</code>, moved out of the body.</td>
         </tr>
         <tr>
           <td><code>css</code></td>
@@ -122,11 +122,11 @@ export const prerender = false;`,
         </tr>
         <tr>
           <td><code>client</code></td>
-          <td>Which elements the browser has to define, and whether any script ships.</td>
+          <td>Which elements the browser must define, and whether the page sends any script.</td>
         </tr>
         <tr>
           <td><code>includes</code></td>
-          <td>What a <code>&lt;transclude src&gt;</code> has to resolve first.</td>
+          <td>What a <code>&lt;transclude src&gt;</code> must resolve first.</td>
         </tr>
       </tbody>
     </table>
@@ -135,39 +135,40 @@ export const prerender = false;`,
   <h2>The fragment is the same markup</h2>
 
   <p>
-    <code>regions.list</code> is emitted from the <code>&lt;ul&gt;</code>, on the
-    same walk that emitted <code>render</code>. Nine lines of it appear in both,
-    character for character.
+    The compiler makes <code>regions.list</code> from the <code>&lt;ul&gt;</code>.
+    It does this in the same pass that makes <code>render</code>. Nine lines are
+    the same in both, character for character.
   </p>
 
   ${html(regions)}
 
   <doc-note label="This is what a fragment is">
-    <a href="/docs/fragments">Fragments</a> covers the URL.
+    <a href="/docs/fragments">Fragments</a> explains the URL.
     <code>GET /notes?fragment=list</code> calls this function instead of
-    <code>render</code>, with the data the same loader returned.
+    <code>render</code>. It passes the data that the same loader returned.
   </doc-note>
 
   <h2>What the build decides</h2>
 
   <p>
-    The build runs each loader once. A page that reads nothing about the request
-    is rendered to a file. A page that reads a cookie, sets a header or answers
-    with a <code>Response</code> cannot be one file for every visitor. The build
-    names that page, says which of those it did, and exits non-zero.
+    The build runs each loader once. If a page reads nothing about the request,
+    the build renders it to a file. Some pages read a cookie, set a header or
+    return a <code>Response</code>. Such a page cannot be one file for every
+    visitor. The build names that page and says which of those things it did.
+    Then the build exits with a non-zero code.
   </p>
 
   ${html(s.fate)}
 
   <p>
-    <a href="/docs/production">The production build</a> has the rest.
+    See <a href="/docs/production">the production build</a> for the rest.
   </p>
 
-  <h2>What answers a request</h2>
+  <h2>What handles a request</h2>
 
   <p>
-    Everything above the route table runs for every request, including one that
-    ends at a file. The order is fixed.
+    Every step before the route runs for every request. This includes a request
+    that ends at a file. The order is fixed.
   </p>
 
   <div class="scroller">
@@ -193,22 +194,22 @@ export const prerender = false;`,
         <tr>
           <td>3</td>
           <td><code>nosniff</code></td>
-          <td>On every response, a public file included.</td>
+          <td>On every response, including a public file.</td>
         </tr>
         <tr>
           <td>4</td>
           <td><a href="/docs/middleware">Your middleware</a></td>
-          <td><code>app/server.js</code>, before anything that serves bytes.</td>
+          <td><code>app/server.js</code>, before any step that sends bytes.</td>
         </tr>
         <tr>
           <td>5</td>
           <td>Public files</td>
-          <td>A real file beats a <code>[...path]</code> catch-all.</td>
+          <td>A real file wins over a <code>[...path]</code> catch-all.</td>
         </tr>
         <tr>
           <td>6</td>
           <td>The route</td>
-          <td>The directory tree, matched.</td>
+          <td>The router matches the directory tree.</td>
         </tr>
       </tbody>
     </table>
@@ -218,19 +219,22 @@ export const prerender = false;`,
 
   <ol>
     <li>
-      The <a href="/docs/layouts">layout chain</a>, outermost first. Any one can
-      return a <code>Response</code> and stop everything below it.
+      The <a href="/docs/layouts">layout chain</a>, outermost first. Any layout
+      can return a <code>Response</code> and stop every step below it.
     </li>
-    <li>The action, for a non-GET. The fragment name is checked before this.</li>
+    <li>
+      The action, for a request that is not GET. The fragment name is checked
+      before this step.
+    </li>
     <li>The page loader.</li>
     <li>
       <code>render</code> for a document, <code>regions[name]</code> for a
       fragment.
     </li>
-    <li>Includes, the head, and the policy built from what the page inlined.</li>
+    <li>Includes, the head, and the policy built from the page's inline scripts.</li>
   </ol>
 
-  <h2>The same module, four ways</h2>
+  <h2>The same module, used in four ways</h2>
 
   <div class="scroller">
     <table>
@@ -269,26 +273,26 @@ export const prerender = false;`,
     </table>
   </div>
 
-  <doc-note label="A POST answers twice over">
-    The loader runs again after the action, so the page renders from what the
-    action just did. That is two loader runs on a request that changes
-    something, and it is on purpose.
+  <doc-note label="A POST runs the loader again">
+    The loader runs again after the action. So the page renders the result of
+    the action. A request that changes something runs the loader twice, and this
+    is on purpose.
   </doc-note>
 
-  <h2>What reaches the browser</h2>
+  <h2>What the browser gets</h2>
 
   <p>
-    The <code>client</code> export above is empty, so this page ships no
-    JavaScript. A page ships some when it renders an
-    <a href="/docs/elements">element</a> with behavior, and only for those
-    elements. The <code>&lt;script server&gt;</code> block is compiled into the
-    route and never appears in the page.
+    The <code>client</code> export above is empty, so this page sends no
+    JavaScript. A page sends JavaScript only when it renders an
+    <a href="/docs/elements">element</a> with behavior. Then it sends JavaScript
+    only for those elements. The <code>&lt;script server&gt;</code> block is
+    compiled into the route, and it never appears in the page.
   </p>
 
-  <doc-note label="The same thing, with the code in it">
-    <a href="/explorer">The explorer</a> traces this file the same way and opens
-    the module behind every stage. Each of those is a page of its own.
-    <a href="/source/src/document.js">src/document.js</a> is a URL, so a line in
-    the compiler is something you can link to.
+  <doc-note label="The same steps, with the code">
+    <a href="/explorer">The explorer</a> follows this file through the same
+    steps. It shows the module behind every stage, and each stage has its own
+    page. <a href="/source/src/document.js">src/document.js</a> is a URL, so you
+    can link to a line in the compiler.
   </doc-note>
 </doc-page>

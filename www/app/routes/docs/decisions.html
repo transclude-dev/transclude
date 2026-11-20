@@ -34,44 +34,44 @@
 
 <doc-page
   heading="Decisions and limits"
-  lede="The rules the compiler enforces rather than leaves to you, and the things it does not do. Both are worth reading before you find them."
+  lede="This page lists the rules the compiler enforces for you, and the things the framework does not do. Read them before you run into them."
 >
   <h2>What the compiler decides</h2>
 
   <p>
-    <strong>The file stays valid HTML.</strong> Directives are attributes, so a
-    real parser gives a correct tree and Prettier, Emmet and your linter keep
-    working. That is the difference between this and a template language that
-    happens to look like HTML.
+    <strong>The file stays valid HTML.</strong> Directives are attributes. So a
+    real parser builds a correct tree, and Prettier, Emmet and your linter keep
+    working. A template language that only looks like HTML cannot do that.
   </p>
 
   <p>
     <strong>Everything is escaped.</strong> <code>\${x}</code> always escapes.
-    <code>\${html(x)}</code> is the only way out, and it is a marker object
-    rather than a naming convention, so it cannot happen by accident. Attribute
-    values escape by attribute rules, which are not the same rules.
+    <code>\${html(x)}</code> is the only way to skip escaping. It is a marker
+    object, not a naming convention, so you cannot use it by accident. Attribute
+    values escape by attribute rules, which are different.
   </p>
 
   <p>
     <strong><code>false</code>, <code>null</code> and <code>undefined</code> drop
-    an attribute</strong> rather than becoming a string, so nothing renders
-    <code>class="false"</code>. <code>true</code> writes the name bare. An object
-    or an array serializes as JSON. That is what lets the browser read a prop
-    back off the element and render from the same data the server had.
+    an attribute</strong> instead of becoming a string. So nothing renders
+    <code>class="false"</code>. <code>true</code> writes the name with no value.
+    An object or an array serializes as JSON. So the browser can read a prop back
+    from the element and render from the same data the server had.
   </p>
 
   ${html(s.drop)}
 
   <p>
-    <strong><code>else</code> binds across whitespace and comments.</strong> An
-    <code>else</code> with no <code>if</code> is a compile error with a line
-    number, rather than an element that quietly never appears.
+    <strong><code>else</code> links to its <code>if</code> across whitespace and
+    comments.</strong> An <code>else</code> with no <code>if</code> is a compile
+    error with a line number. It does not become an element that silently never
+    appears.
   </p>
 
   <p>
     <strong><code>if</code> and <code>each</code> on one element is refused.</strong>
-    Vue 2 and Vue 3 disagreed about which runs first, and everyone lost. Wrapping
-    one in a <code>&lt;template&gt;</code> says which you meant.
+    Vue 2 and Vue 3 ran them in different orders, and that confused people. Wrap
+    one of them in a <code>&lt;template&gt;</code> to say which runs first.
   </p>
 
   ${html(s.both)}
@@ -79,34 +79,35 @@
   <p>
     <strong>Conditions are expressions, not strings.</strong> <code>if="0"</code>
     is false. The grammar is small on purpose: no assignment, no arrow functions,
-    no object literals. That keeps a template declarative rather than a second
-    place to write code. It is also what makes it possible to collect the names a
-    template reads, which is where the type checking comes from.
+    no object literals. So a template stays declarative, and it does not become a
+    second place to write code. The small grammar also lets the compiler collect
+    the names a template reads. The type checking uses that list.
   </p>
 
   <p>
-    <strong>A <code>&lt;template&gt;</code> carrying a directive is consumed. One
-    without any is emitted as it is</strong>, so it survives to the browser for
+    <strong>A <code>&lt;template&gt;</code> with a directive is consumed. One with
+    no directive is output unchanged</strong>, so it reaches the browser for
     <code>content.cloneNode(true)</code>.
   </p>
 
   ${html(s.template)}
 
   <p>
-    <strong>Comments are stripped</strong> from the output, and still count as
-    insignificant when linking an <code>else</code> to its <code>if</code>.
+    <strong>Comments are stripped</strong> from the output. The compiler also
+    skips them when it links an <code>else</code> to its <code>if</code>.
   </p>
 
   <p>
-    <strong>A nested loop name shadows, with a warning.</strong> The inner one
-    wins, and the compiler says the outer one became unreachable.
+    <strong>A nested loop name hides the outer one, with a warning.</strong> The
+    inner name wins, and the compiler warns that the outer one is now
+    unreachable.
   </p>
 
   <h2>What will not change</h2>
 
   <p>
-    These are what the framework is. Changing one would be a different project,
-    not a version.
+    These rules define the framework. A change to one would make a different
+    project, not a new version.
   </p>
 
   <ul>
@@ -115,83 +116,83 @@
       table.
     </li>
     <li>
-      <code>&lt;script server&gt;</code> holds the loader, and verb exports
-      answer the other methods.
+      <code>&lt;script server&gt;</code> contains the loader, and verb exports
+      answer the other HTTP methods.
     </li>
     <li>
-      <code>fragment</code> gives an element a URL, and the same compiled markup
+      <code>fragment</code> gives an element a URL. The same compiled markup
       serves it inline and alone.
     </li>
-    <li>An element in <code>elements/</code> is light DOM unless it asks not to be.</li>
+    <li>An element in <code>elements/</code> uses light DOM unless it asks for a shadow root.</li>
     <li>
       A page ships JavaScript only for an element with behavior, so a page of
       plain markup ships none.
     </li>
     <li>
-      A shadow element renders the same whether the server sent it or the
-      browser made it. <code>export const shadow = true</code> is a boundary,
+      A shadow element renders the same way, whether the server sent it or the
+      browser made it. <code>export const shadow = true</code> adds a boundary,
       not a second implementation.
     </li>
   </ul>
 
   <p>
-    One thing does keep changing, and it is meant to:
-    <a href="/docs/refusals">what the compiler refuses</a>. The list grows when a
-    mistake turns out to be silent. A refusal rejects only code that was already
-    not doing what it looked like it did. That is why growing the list is a
-    minor rather than a major.
+    One thing does keep changing, on purpose:
+    <a href="/docs/refusals">the list of things the compiler refuses</a>. The
+    list grows when a mistake turns out to be silent. A refusal rejects only code
+    that already did not do what it seemed to do. So a longer list is a minor
+    version, not a major one.
   </p>
 
   <doc-note label="What a release may do">
-    A patch fixes. A minor may add a refusal, and that is the only shape a break
-    takes without a major. Every release that adds one names it at the top of
-    its notes, with the change to make. A major renames or removes, and the
-    intent is that none comes.
+    A patch fixes bugs. A minor may add a refusal, and that is the only kind of
+    break allowed without a major. Every release that adds a refusal names it at
+    the top of its notes, with the change to make. A major renames or removes
+    things, and the goal is to never need one.
   </doc-note>
 
   <doc-note label="The shadow half is checked in a browser">
-    It is the harder half to keep correct. A shadow root,
-    <code>setHTMLUnsafe</code> and a template the parser turned into a boundary
-    all need a real browser. The checks in the showcase are that.
-    <code>npm run test:coverage</code> reads V8's own numbers back: 98.5% of
+    The shadow half is the harder half to keep correct. A shadow root,
+    <code>setHTMLUnsafe</code> and a template that the parser turned into a
+    boundary all need a real browser. The checks in the showcase run in one.
+    <code>npm run test:coverage</code> reads back V8's own numbers: 98.5% of
     <code>src/runtime/index.js</code>, over 63 checks.
     <p>
-      Both branches are covered, which is what the measuring is for. A root the
-      parser built and the browser adopted is one. A root an element made with
-      <code>document.createElement</code> attaches and paints for itself is the
-      other.
+      The measurement exists to show that both branches are covered. In one
+      branch, the parser builds the root and the browser adopts it. In the other,
+      an element made with <code>document.createElement</code> attaches its own
+      root and paints it.
     </p>
   </doc-note>
 
   <p>
-    The context a loader is handed and the config keys are settled ahead of
-    <code>1.0</code>. A field or key may still be added. None will be renamed
-    or removed without a major, and a test pins each documented table to the
-    code.
+    The context that a loader receives and the config keys were settled before
+    <code>1.0</code>. A new field or key may still be added. None will be renamed
+    or removed without a major. A test pins each documented table to the code.
   </p>
 
   <p>
-    A subpath in <code>exports</code> and a name behind it are two promises.
-    The paths are settled; the names an app may import are the shorter list, and
-    <code>VERSIONING.md</code> writes it out. A subpath like
-    <code>/runtime</code> is the framework talking to itself. Its path stays,
-    and the names behind it move: they are what the compiler emits calls to.
+    A subpath in <code>exports</code> and a name behind it are two separate
+    promises. The paths are settled. The names an app may import are a shorter
+    list, and <code>VERSIONING.md</code> lists them. A subpath like
+    <code>/runtime</code> is for the framework's own use. Its path stays, but the
+    names behind it can change, because the compiler emits calls to them.
   </p>
 
   <doc-note label="What a version number means here">
-    A patch fixes something. A minor may add a refusal, which is the shape a
-    break takes. A major renames or removes, and nothing else does.
+    A patch fixes something. A minor may add a refusal, which is the one kind of
+    break it allows. A major renames or removes things, and no other release
+    does.
     <p>
-      The whole policy is
+      The full policy is
       <a href="https://github.com/transclude-dev/transclude/blob/main/VERSIONING.md"
         ><code>VERSIONING.md</code></a
       >
-      in the repository. It says what is covered, what is not, and the test that
-      pins each promise to the code. It is the only copy: a promise kept in two
-      places gets made twice and differently.
+      in the repository. It says what is covered, what is not, and which test
+      pins each promise to the code. It is the only copy, because two copies of a
+      promise soon say different things.
     </p>
     <p>
-      What changed in a release is the message on its tag, on
+      The notes for a release are the message on its tag, on
       <a href="https://github.com/transclude-dev/transclude/releases"
         >the releases page</a
       >. There is no changelog file, for the same reason. A release that adds a
@@ -202,37 +203,37 @@
   <h2>What it does not do</h2>
 
   <p>
-    Not a roadmap. Each of these is either a decision or a cost that has not been
-    worth paying.
+    This is not a roadmap. Each item below is either a decision or a cost that
+    was not worth paying.
   </p>
 
   <h3>By decision</h3>
 
   <ul>
     <li>
-      <strong>No client-side router and nothing that swaps.</strong> Every link
-      is a document request unless you bring something.
-      <a href="/docs/fragments">Fragments</a> give it a URL; htmx, Turbo or a short
-      <code>fetch</code> does the swapping.
+      <strong>No client-side router and nothing that swaps markup.</strong> Every
+      link is a document request unless you add a library.
+      <a href="/docs/fragments">Fragments</a> give a part of a page its own URL.
+      htmx, Turbo or a short <code>fetch</code> does the swapping.
     </li>
     <li>
-      <strong>A type error does not stop a page rendering.</strong> The dev
-      server reports one and serves the page anyway.
-      <code>transclude-check</code> is what fails, and it is the step CI runs.
+      <strong>A type error does not stop a page from rendering.</strong> The dev
+      server reports the error and serves the page anyway.
+      <code>transclude-check</code> is the step that fails, and CI runs it.
     </li>
     <li>
-      <strong>No session store and no database opinion.</strong>
+      <strong>No session store and no database choice.</strong>
       <a href="/docs/cookies">Signed cookies</a> are the building block. A store needs
-      a choice this does not make.
+      a choice that this framework does not make.
     </li>
     <li>
-      <strong>A page does not stream.</strong> Its body is buffered so it can
-      be hashed, which is what buys the strong ETag, and a synchronous render is
-      what lets an <a href="/docs/includes">include</a> resolve before the page
-      renders. A <code>Link: rel=preload</code> header goes out first, naming
-      the stylesheet, the client entry and the chunks it imports, so a proxy
-      can turn it into a 103 while the page is still being made. An
-      <a href="/docs/endpoints">endpoint</a> is not a page: it returns a
+      <strong>A page does not stream.</strong> The server buffers its body so it
+      can hash it, and the hash gives the strong ETag. A synchronous render also
+      lets an <a href="/docs/includes">include</a> resolve before the page
+      renders. A <code>Link: rel=preload</code> header goes out first. It names
+      the stylesheet, the client entry and the chunks it imports. So a proxy can
+      turn it into a 103 while the server still makes the page. An
+      <a href="/docs/endpoints">endpoint</a> is not a page. It returns a
       <code>Response</code> you build, so it can answer with a
       <code>ReadableStream</code> and stay open.
     </li>
@@ -242,21 +243,20 @@
     </li>
     <li>
       <strong><code>&lt;transclude&gt;</code> does not import an SVG file.</strong>
-      It names a piece of a document, and a whole file is not one. Its
-      <code>src</code> is read at compile time, so it cannot be interpolated,
-      and an icon name usually is. Pointing at a shared symbol is also a
-      different claim from the one an
-      <a href="/docs/includes">include</a> makes, which is that the markup is
-      here. <a href="/docs/icons">Icons</a> answer that with
-      <code>&lt;use&gt;</code> instead.
+      It names a piece of a document, and a whole file is not a piece. The
+      compiler reads its <code>src</code> at compile time, so you cannot
+      interpolate it. But an icon name is usually a variable. Also, an
+      <a href="/docs/includes">include</a> says that the markup is here, in this
+      page. A reference to a shared symbol says something different.
+      <a href="/docs/icons">Icons</a> use <code>&lt;use&gt;</code> for that
+      instead.
     </li>
     <li>
-      <strong>No element ships with the framework.</strong> Elements come from
-      your <code>elements/</code> directory, and that is the only place they come
-      from. A built-in would make the answer to "where is this element" two
-      answers, and an icon element is the kind of file people edit. So
-      <code>svg-icon.html</code> is <em>scaffolded</em> instead: a new project
-      has it, and it belongs to that project. See
+      <strong>No element ships with the framework.</strong> Elements come only
+      from your <code>elements/</code> directory. A built-in element would give
+      two answers to "where is this element?" Also, people often edit an icon
+      element. So <code>svg-icon.html</code> is <em>scaffolded</em> instead: a
+      new project has it, and it belongs to that project. See
       <a href="/docs/icons">icons</a>.
     </li>
   </ul>
@@ -265,28 +265,28 @@
 
   <ul>
     <li>
-      <strong>No byte ranges from <code>dist/edge</code>.</strong> A file the edge
-      serves answers a Range request with 200 rather than 206, because the edge
-      does not answer ranges. A worker that carries its files answers them from
+      <strong>No byte ranges from <code>dist/edge</code>.</strong> A file that the
+      edge serves answers a Range request with 200, not 206, because the edge
+      does not answer ranges. A worker that bundles its files answers ranges from
       memory, as Node does from disk.
     </li>
     <li>
-      <strong>A form inside a shadow root is invisible to a document-level
-      listener</strong>, because <code>submit</code> does not cross the boundary.
+      <strong>A document-level listener cannot see a form inside a shadow
+      root</strong>, because <code>submit</code> does not cross the boundary.
       Listen on <code>shadow</code>.
     </li>
     <li>
       <strong><code>@scope</code> is soft.</strong> A light
-      <a href="/docs/elements">element</a>'s styles sit in a cascade layer, so
+      <a href="/docs/elements">element</a>'s styles sit in a cascade layer. So
       any page CSS beats them, whatever its specificity. That is right for
-      content and a hazard for a widget, which is one reason to reach for a
-      shadow root.
+      content, but it is a risk for a widget. It is one reason to use a shadow
+      root.
     </li>
     <li>
-      <strong>A light element writes; only a shadow one rebuilds.</strong> Both
-      react to a prop change, but a light one does not own its children, so an
-      <code>if</code> or an <code>each</code> over a changing value needs the
-      boundary.
+      <strong>A light element writes text and attributes; only a shadow element
+      rebuilds.</strong> Both react to a prop change. But a light element does not
+      own its children. So an <code>if</code> or an <code>each</code> over a
+      changing value needs the shadow boundary.
     </li>
   </ul>
 
@@ -295,9 +295,10 @@
   <ul>
     <li>
       <strong>The unused-prop check matches names by word.</strong> It reads the
-      code in <code>&lt;style&gt;</code> and <code>&lt;script element&gt;</code>
-      and skips the comments, so a prop written about is still reported. A prop
-      whose name turns up in either for another reason is assumed used.
+      code in <code>&lt;style&gt;</code> and <code>&lt;script element&gt;</code>,
+      and it skips the comments. So a prop that only a comment names is still
+      reported. If a prop's name appears in either block for another reason, the
+      check assumes the prop is used.
     </li>
   </ul>
 </doc-page>

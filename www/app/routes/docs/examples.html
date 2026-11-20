@@ -30,11 +30,11 @@ npm run dungeon    # http://localhost:1973`,
 
 <doc-page
   heading="Examples"
-  lede="Whole apps, not snippets. Each one is a directory in the repository that depends on the package by name, the same way your project does."
+  lede="Whole apps, not snippets. Each one is a directory in the repository. It depends on the package by name, the same way your project does."
 >
   <p>
-    Every one of these is running. Open it, then read the directory it came
-    from. Each runs as a Cloudflare Worker, from the same source you would clone.
+    Every one of these apps is live. Open one, then read its directory. Each
+    runs as a Cloudflare Worker, from the same source that you can clone.
   </p>
 
   <div class="scroller">
@@ -42,8 +42,8 @@ npm run dungeon    # http://localhost:1973`,
       <thead>
         <tr>
           <th>Example</th>
-          <th>What it proves</th>
-          <th>Running</th>
+          <th>What it shows</th>
+          <th>Live app</th>
         </tr>
       </thead>
       <tbody>
@@ -54,27 +54,27 @@ npm run dungeon    # http://localhost:1973`,
         </tr>
         <tr>
           <td><a href="#lite-brite">Lite-Brite</a></td>
-          <td>A drawing the browser holds, and CSS that reads it</td>
+          <td>A drawing that the browser stores, and CSS that reads it</td>
           <td><a href="https://lite-brite.transclude.dev">lite-brite</a></td>
         </tr>
         <tr>
           <td><a href="#dungeon">Dungeon</a></td>
-          <td>A save file that is the URL, and a server that keeps nothing</td>
+          <td>The URL is the save file, and the server stores nothing</td>
           <td><a href="https://dungeon.transclude.dev">dungeon</a></td>
         </tr>
         <tr>
           <td><a href="#search">Search</a></td>
-          <td>A fragment that is a substring of the document it came from</td>
+          <td>A fragment that is an exact part of its full page</td>
           <td><a href="https://search.transclude.dev">search</a></td>
         </tr>
         <tr>
           <td><a href="#blog">Blog</a></td>
-          <td>Every page written to a file, with no server left running</td>
+          <td>Every page written to a file, with no server running</td>
           <td><a href="https://blog.transclude.dev">blog</a></td>
         </tr>
         <tr>
           <td><a href="#htmx">htmx</a></td>
-          <td>A swap library and this framework, each doing its own half</td>
+          <td>A swap library and this framework, each doing its own part</td>
           <td><a href="https://htmx.transclude.dev">htmx</a></td>
         </tr>
         <tr>
@@ -94,7 +94,7 @@ npm run dungeon    # http://localhost:1973`,
         </tr>
         <tr>
           <td><a href="#markdown">Markdown</a></td>
-          <td>A .md file that is a page, with a loader and an element in it</td>
+          <td>A .md file that is a page, with a loader and an element</td>
           <td><a href="https://markdown.transclude.dev">markdown</a></td>
         </tr>
         <tr>
@@ -104,7 +104,7 @@ npm run dungeon    # http://localhost:1973`,
         </tr>
         <tr>
           <td><a href="#showcase">Showcase</a></td>
-          <td>Every feature at once, and the browser checks</td>
+          <td>Every feature together, and the browser checks</td>
           <td><a href="https://showcase.transclude.dev">showcase</a></td>
         </tr>
       </tbody>
@@ -117,15 +117,14 @@ npm run dungeon    # http://localhost:1973`,
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/showcase"
       >examples/showcase</a
     >
-    is the opposite of a small example: it uses every feature, and it is what the
-    framework is tested against. Fragments, includes, light and shadow elements,
+    is the opposite of a small example. It uses every feature, and the framework
+    is tested against it. It has fragments, includes, light and shadow elements,
     endpoints, cookies, a feed and a proxy.
   </p>
 
   <p>
-    The browser checks live there too, at <code>/check</code>. A real form, a
-    shadow root and a <code>dataset</code> are things no test in Node can
-    model.
+    The browser checks are there too, at <code>/check</code>. No test in Node can
+    model a real form, a shadow root or a <code>dataset</code>.
   </p>
 
   <h2 id="todomvc">TodoMVC</h2>
@@ -134,25 +133,25 @@ npm run dungeon    # http://localhost:1973`,
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/todomvc"
       >examples/todomvc</a
     >
-    is <a href="https://todomvc.com">TodoMVC</a> with forms and nothing else. Add,
-    edit, toggle, delete, filter and clear, in one <code>.html</code> file,
-    shipping zero bytes of JavaScript.
+    is <a href="https://todomvc.com">TodoMVC</a> built only with forms. You can
+    add, edit, toggle, delete, filter and clear. It is one <code>.html</code>
+    file, and it ships zero bytes of JavaScript.
   </p>
 
   <p>
-    Read it for the shape of a page that changes things. Every control is a
-    submit button in its own form, carrying a hidden <code>intent</code>, so one
+    Read it to see how a page that changes data is built. Every control is a
+    submit button in its own form, with a hidden <code>intent</code>. So one
     <code>POST</code> handler covers seven actions. Editing is a link to
-    <code>?editing=3</code>, which means it survives a reload. Every change ends in a 303 back to the
-    same URL. Adding a todo twice takes two submissions, not one and a
-    refresh.
+    <code>?editing=3</code>, so a reload keeps you in edit mode. Every change
+    ends in a 303 back to the same URL. So a refresh never adds a todo twice.
+    Only a second submission does.
   </p>
 
   <doc-note label="One list, one process">
-    The store is a module holding an array, so everyone looking at the running
-    app sees the same todos. That is wrong for a real app and useful for a demo
-    you open in two windows. Swap that one file for a database and nothing above
-    it changes.
+    The store is a module that contains an array. So everyone who opens the
+    live app sees the same todos. That is wrong for a real app, but useful for a
+    demo you open in two windows. Replace that one file with a database, and no
+    other code changes.
   </doc-note>
 
   <h2 id="lite-brite">Lite-Brite</h2>
@@ -162,30 +161,31 @@ npm run dungeon    # http://localhost:1973`,
       >examples/lite-brite</a
     >
     is a <a href="https://en.wikipedia.org/wiki/Lite-Brite">Lite-Brite</a> board
-    sized to fit the screen, with nothing to scroll. Pick a color, tap a hole,
-    and a peg lights up. Two hundred and forty holes, ten colors, and one page.
+    sized to fit the screen, so you do not scroll. Pick a color, tap a hole,
+    and a peg lights up. It has 240 holes, ten colors and one page.
   </p>
 
   <p>
-    Read it for where the drawing is kept. A hole is a radio group of eleven, so
-    the browser holds the color in it. Nothing on the server knows what anyone
-    drew. Eleven labels are stacked over every hole, and the tray decides which
-    one takes the tap.
+    Read it to see where the drawing is stored. Each hole is a group of eleven
+    radio buttons, so the browser stores the color in it. The server does not
+    know what anyone drew. Eleven labels sit on top of each other over every
+    hole. The color tray decides which label gets the tap.
     <code>.brite:has(#ink-blue:checked) .hole &gt; label.blue</code> gets
-    <code>pointer-events: auto</code>, and the other ten stay inert. Rendering
-    reads the same radios back, one rule per color.
+    <code>pointer-events: auto</code>, and the other ten stay inert. To draw the
+    pegs, CSS reads the same radios back, with one rule per color.
   </p>
 
   <p>
-    Emptying the board is <code>&lt;input type="reset"&gt;</code>, which returns
-    every one of the 2,651 radios to the value its markup declared. The browser
-    already had a button for that.
+    To empty the board, you use <code>&lt;input type="reset"&gt;</code>. It
+    returns all 2,651 radios to the value in their markup. The browser already
+    has a button for that.
   </p>
 
-  <doc-note label="A large page on a small wire">
-    240 holes are 240 copies of the same 23 tags, so 383 KB of markup is 11 KB
-    of brotli. A bigger board costs the parse rather than the download, and the
-    two numbers at the top of the page are what you turn.
+  <doc-note label="A large page, a small download">
+    The 240 holes are 240 copies of the same 23 tags. So 383 KB of markup
+    compresses to 11 KB with brotli. A bigger board costs parse time, not
+    download time. To change the board size, edit the two numbers at the top of
+    the page.
   </doc-note>
 
   <h2 id="dungeon">Dungeon</h2>
@@ -194,36 +194,35 @@ npm run dungeon    # http://localhost:1973`,
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/dungeon"
       >examples/dungeon</a
     >
-    is a crawl through fifteen rooms with no client JavaScript and no session on
-    the server. The path is the room and the query string is everything else:
+    is a game with fifteen rooms. It has no client JavaScript and no session on
+    the server. The path is the room, and the query string is everything else:
     <code
       >/dungeon/vault?have=brass-key,lantern&amp;seen=gate,hall,vault&amp;seed=7f3a</code
     >.
   </p>
 
   <p>
-    Read it for what that buys. Back is undo, a bookmark is a save slot, and a
-    link is your run in somebody else's browser. Two players holding the same
-    things are on the same URL, character for character. Every list is sorted
-    and deduped before it is written. Anything that varies is derived from the
-    seed the links carry, so the second visit to a room reads like the first.
+    Read it to see what that gives you. Back is undo, and a bookmark is a save
+    slot. A link sends your game to somebody else's browser. Two players with
+    the same items have the same URL, character for character. Every list is
+    sorted and deduplicated before it goes into the URL. Details that vary come
+    from the seed in the links. So a second visit to a room reads like the first.
   </p>
 
   <p>
-    A locked door is never a link. An exit that can be walked is an
-    <code>&lt;a&gt;</code>, and one that cannot is text. There is no request to
-    refuse and no dead end to explain. The lock reads <code>have</code> rather
-    than a history. A URL carrying <code>have=brass-key</code> opens the iron
-    door, whether or not anyone went to the vault for it. That is the bargain:
-    the URL is the save file, and a hand-edited save is a cheat rather than an
-    error.
+    A locked door is never a link. An open exit is an <code>&lt;a&gt;</code>,
+    and a locked one is text. So the server never has to refuse a request or
+    explain a dead end. The lock reads <code>have</code>, not a history. A URL
+    with <code>have=brass-key</code> opens the iron door, even if nobody went to
+    the vault for the key. That is the trade: the URL is the save file. So a
+    hand-edited save is a cheat, not an error.
   </p>
 
-  <doc-note label="One route, and it may not be a file">
+  <doc-note label="One route, and it cannot be a file">
     Every room is <code>dungeon/[room].html</code> with
-    <code>export const prerender = false</code>. The static handler keys on the
-    path alone. A file written at build time would answer every run with the
-    state the build had, which is none.
+    <code>export const prerender = false</code>. The static handler looks only at
+    the path. A file written at build time would give every game the state the
+    build had, which is no state.
   </doc-note>
 
   <h2 id="elements">Elements</h2>
@@ -232,22 +231,23 @@ npm run dungeon    # http://localhost:1973`,
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/elements"
       >examples/elements</a
     >
-    puts a light element and a shadow one on the same page, so the difference is
-    visible rather than described. See
+    puts a light element and a shadow element on the same page. So you can see
+    the difference, not only read about it. See
     <a href="/docs/elements">elements</a> for the reference.
   </p>
 
   <p>
-    Three of them. One light with no behavior, which registers nothing in the
-    browser. One light <em>and</em> interactive, which writes a new number into
-    the text node it rendered. One with a boundary, which rebuilds a list from a
-    prop, and that is the line the light ones cannot have.
+    The page has three elements. The first is light with no behavior, so it
+    registers nothing in the browser. The second is light <em>and</em>
+    interactive. It writes a new number into the text node it rendered. The third
+    has a boundary, and it rebuilds a list from a prop. A light element cannot
+    rebuild like that.
   </p>
 
   <doc-note label="Two things to check in a browser">
-    The stylesheet carries a rule for each. The one aimed at the light element
-    lands; the one aimed inside the shadow element does not. Nothing in Node
-    models a boundary, so that pair is the demonstration.
+    The stylesheet has a rule for each element. The rule for the light element
+    applies. The rule for the inside of the shadow element does not. Nothing in
+    Node models a boundary, so only a browser shows this.
   </doc-note>
 
   <h2 id="blog">Blog</h2>
@@ -256,13 +256,13 @@ npm run dungeon    # http://localhost:1973`,
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/blog"
       >examples/blog</a
     >
-    is the other half. Nothing on it changes, so the build writes every page to
-    a file, with a sitemap and a feed beside them.
+    is the opposite case. Its pages never change, so the build writes every page
+    to a file. It also writes a sitemap and a feed.
   </p>
 
   <p>
-    Read it for what a parameter route needs before it can be prerendered.
-    <code>posts/[slug].html</code> exports <code>paths()</code>, and each name
+    Read it to see what a parameter route needs before the build can prerender
+    it. <code>posts/[slug].html</code> exports <code>paths()</code>. Each name
     in that list becomes a file and a sitemap entry. A slug that is not a post
     sets <code>response.status = 404</code>, and the build refuses to write a
     file for it.
@@ -270,14 +270,15 @@ npm run dungeon    # http://localhost:1973`,
 
   <p>
     It also turns <code>precache</code> on, so the build writes
-    <code>/precache.json</code>. That is the list a service worker caches from,
-    and this is the app it is easiest to see the shape on.
+    <code>/precache.json</code>. A service worker caches the files in that list.
+    This app is the clearest place to see that file.
   </p>
 
   <doc-note label="Two files, two sources">
-    <code>/sitemap.xml</code> is built from the route table, which already knows
-    every URL. <code>/feed.xml</code> cannot be. A route table holds paths, and
-    a feed needs titles and dates, so the config supplies the items.
+    The build makes <code>/sitemap.xml</code> from the route table, which already
+    knows every URL. It cannot make <code>/feed.xml</code> that way. A route
+    table contains paths, but a feed needs titles and dates. So the config
+    supplies the feed items.
   </doc-note>
 
   <h2 id="markdown">Markdown</h2>
@@ -286,23 +287,23 @@ npm run dungeon    # http://localhost:1973`,
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/markdown"
       >examples/markdown</a
     >
-    is a <code>.md</code> file that is a page. It answers a URL and it opens with
-    the same <code>&lt;script server&gt;</code> block an HTML page opens with.
-    The element in it is rendered on the server.
+    is a <code>.md</code> file that is a page. It answers a URL. It starts with
+    the same <code>&lt;script server&gt;</code> block that an HTML page starts
+    with. The server renders the element in it.
   </p>
 
   <p>
     Read it for the four lines in <code>app/lib/markdown.js</code>. A page is a
-    template whichever format it was written in, so <code>\${title}</code> in a
-    paragraph reads the loader. In a code fence it should not, because a shell
-    sample is full of <code>\${HOME}</code>. Those four lines escape
-    <code>\${</code> in code and leave prose alone.
+    template in any format. So <code>\${title}</code> in a paragraph reads from
+    the loader. In a code fence it should not, because a shell sample often
+    contains <code>\${HOME}</code>. Those four lines escape <code>\${</code> in
+    code and leave prose unchanged.
   </p>
 
-  <doc-note label="The parser is yours">
-    <code>markdown</code> in the config is a function from source to HTML. This
-    package ships none, so the flavor, the extensions and the highlighter are
-    decisions you make in one file.
+  <doc-note label="You choose the parser">
+    <code>markdown</code> in the config is a function that turns source into
+    HTML. This package ships no parser. So you choose the flavor, the extensions
+    and the highlighter, in one file.
   </doc-note>
 
   <h2 id="search">Search</h2>
@@ -311,20 +312,21 @@ npm run dungeon    # http://localhost:1973`,
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/search"
       >examples/search</a
     >
-    is a fragment doing real work. The results are a fragment, so
-    <code>/?q=form&amp;fragment=results</code> returns the list alone.
+    uses a fragment for real work. The results are a fragment, so
+    <code>/?q=form&amp;fragment=results</code> returns only the list.
   </p>
 
   <p>
-    With no JavaScript the form submits and the whole page comes back. With it,
-    twenty lines fetch the fragment and swap it in. A test asserts the fragment is
-    a substring of the document, which is what keeps the two from drifting.
+    Without JavaScript, the form submits and the server sends the whole page.
+    With JavaScript, twenty lines fetch the fragment and swap it in. A test
+    checks that the fragment is an exact part of the full page. So the two
+    cannot become different.
   </p>
 
   <p>
-    The two details worth stealing are in those twenty lines. A counter drops a
-    slow answer that arrives after a newer one, and
-    <code>history.replaceState</code> keeps the URL in step so a reload works.
+    Those twenty lines contain two details worth copying. A counter drops a slow
+    response that arrives after a newer one. And
+    <code>history.replaceState</code> keeps the URL up to date, so a reload works.
   </p>
 
   <h2 id="htmx">htmx</h2>
@@ -339,25 +341,26 @@ npm run dungeon    # http://localhost:1973`,
   </p>
 
   <p>
-    htmx puts the id it is about to swap in an <code>HX-Target</code> header.
-    Naming that header in the config means the header alone asks for a fragment,
-    so <code>hx-get="/"</code> with <code>hx-target="#people"</code> carries no
+    htmx puts the id of its swap target in an <code>HX-Target</code> header. The
+    config names that header, so the header alone asks for a fragment. So
+    <code>hx-get="/"</code> with <code>hx-target="#people"</code> needs no
     <code>?fragment=</code>. Nothing in the page file mentions htmx.
   </p>
 
-  <doc-note label="A fragment arrives carrying its own id" tone="warn">
-    So every call in that file sets <code>hx-swap="outerHTML"</code>. htmx swaps
-    <code>innerHTML</code> by default, which puts the returned
-    <code>&lt;ul id="people"&gt;</code> inside the one already on the page, and
-    again on the next keystroke. The htmz note on
-    <a href="/docs/fragments">fragments</a> is the same trap in its other form.
+  <doc-note label="A fragment includes its own id" tone="warn">
+    So every call in that file sets <code>hx-swap="outerHTML"</code>. By default,
+    htmx swaps <code>innerHTML</code>. That puts the returned
+    <code>&lt;ul id="people"&gt;</code> inside the one already on the page. The
+    next keystroke nests it again. The htmz note on
+    <a href="/docs/fragments">fragments</a> shows the same problem in another
+    form.
   </doc-note>
 
   <doc-note label="Not from a CDN" tone="warn">
-    <code>csp: true</code> gives <code>script-src 'self'</code>, so a script
-    from anywhere else is refused by the browser with nothing on the page to
-    explain it. htmx is copied out of <code>node_modules</code> into
-    <code>app/public/</code> before the build.
+    <code>csp: true</code> gives <code>script-src 'self'</code>. So the browser
+    blocks a script from any other origin, and the page shows no error. Before
+    the build, a step copies htmx from <code>node_modules</code> into
+    <code>app/public/</code>.
   </doc-note>
 
   <h2 id="includes">Includes</h2>
@@ -366,15 +369,16 @@ npm run dungeon    # http://localhost:1973`,
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/includes"
       >examples/includes</a
     >
-    is the feature this framework is named after, from all three sources: the
-    same page, another route, and another site through the proxy.
+    shows the feature this framework is named after. It includes markup from all
+    three sources: the same page, another route, and another site through the
+    proxy.
   </p>
 
   <p>
-    It is worth reading for one asymmetry. A same-page include drops the
-    <code>id</code> from its copy, because that is always a second copy in one
-    document. A cross-route include keeps it, because that content came from
-    another document and there is one of it here.
+    Read it for one difference. A same-page include removes the
+    <code>id</code> from its copy, because the copy is always a second copy in
+    the same document. A cross-route include keeps the <code>id</code>. Its
+    content came from another document, so this page has only one copy.
   </p>
 
   <h2 id="auth">Auth</h2>
@@ -383,25 +387,24 @@ npm run dungeon    # http://localhost:1973`,
     <a href="https://github.com/transclude-dev/transclude/tree/main/examples/auth"
       >examples/auth</a
     >
-    is a signed-cookie session and one layout that guards everything below it.
-    The guard returns a <code>Response</code>, so nothing under it runs. Not the
-    layout's own markup, and not the page's loader. Pages in
-    <code>admin/</code> check nothing, and forgetting to check is not something
-    you can do.
+    has a signed-cookie session and one layout that guards every page below it.
+    The guard returns a <code>Response</code>, so nothing under it runs. The
+    layout's own markup does not run, and the page's loader does not run. Pages
+    in <code>admin/</code> do no checks, so you cannot forget a check.
   </p>
 
   <p>
-    Signing is what makes the cookie a session. The browser can read the id and
-    cannot invent one: send <code>session=1</code> by hand and the guard turns
-    you away.
+    The signature makes the cookie a session. The browser can read the id, but
+    it cannot invent one. If you send <code>session=1</code> by hand, the guard
+    turns you away.
   </p>
 
-  <doc-note label="A cookie in the root layout costs the whole site" tone="warn">
-    That layout reads the session to decide what the header says. So every page
-    under it has an answer per visitor, and none can be a file. The build names
-    the page, exits non-zero and writes nothing, rather than shipping a
-    signed-out copy of your home page. Read the cookie in a narrower layout and
-    only that section pays.
+  <doc-note label="A cookie in the root layout affects the whole site" tone="warn">
+    That layout reads the session to decide what the header shows. So every page
+    under it is different for each visitor, and no page can be a file. The build
+    names the page, exits non-zero and writes nothing. It does not ship a
+    signed-out copy of your home page. Read the cookie in a narrower layout, and
+    only that section is affected.
   </doc-note>
 
   <h2 id="live">Live</h2>
@@ -412,22 +415,22 @@ npm run dungeon    # http://localhost:1973`,
     >
     pushes updates over server-sent events. An
     <a href="/docs/endpoints">endpoint</a> answers with a stream and never
-    closes it, so an endpoint is not only for JSON.
+    closes it. So an endpoint is not only for JSON.
   </p>
 
   <p>
-    What the stream carries is a nudge, not markup. The list already has a URL,
-    so the client hears one line and asks for
-    <code>/?fragment=feed</code>. Sending rendered HTML down the stream would be
-    a second way to render the same thing.
+    The stream sends a signal, not markup. The list already has a URL. So the
+    client gets one line and then asks for <code>/?fragment=feed</code>. If the
+    stream sent rendered HTML, that would be a second way to render the same
+    thing.
   </p>
 
   <doc-note label="A stream ends two ways" tone="warn">
-    The socket closing fires <code>abort</code> on
-    <code>request.signal</code>. The consumer letting go of the reader runs the
-    stream's own <code>cancel()</code>. Handle one and not the other and you
-    either leak a listener holding a dead connection, or close a controller that
-    is already closed.
+    When the socket closes, <code>abort</code> fires on
+    <code>request.signal</code>. When the consumer releases the reader, the
+    stream's own <code>cancel()</code> runs. You must handle both. If you handle
+    only one, you leak a listener that holds a dead connection. Or you close a
+    controller that is already closed.
   </doc-note>
 
   <h2>Running them</h2>
@@ -435,30 +438,30 @@ npm run dungeon    # http://localhost:1973`,
   ${html(s.run)}
 
   <p>
-    Each one has a port of its own, so they run beside each other.
-    <code>1960</code> is left free on purpose. It is what
-    <a href="/docs/getting-started">a new project</a> gets, and an example
-    sitting there would collide with the first thing you make.
+    Each example has its own port, so they can all run at the same time.
+    <code>1960</code> is free on purpose. It is the port that
+    <a href="/docs/getting-started">a new project</a> gets. An example on that
+    port would collide with the first project you make.
   </p>
 
   <h2>Reading one</h2>
 
   <p>
-    Each is an ordinary project. It has its own
+    Each example is an ordinary project. It has its own
     <code>transclude.config.js</code>, its own <code>package.json</code> and its
-    own tests, and it depends on <code>@transclude/core</code> the way yours
-    does. Copy a directory out of the repository, change the dependency to a
-    version number, and it runs.
+    own tests. It depends on <code>@transclude/core</code> the same way your
+    project does. Copy a directory out of the repository, change the dependency
+    to a version number, and it runs.
   </p>
 
   <p>
-    Nothing is shared between them, so a file you are reading is the whole
-    answer. Every one is built and tested on each commit, so what is written
-    here is what runs.
+    The examples share no code, so each file you read is complete. Every example
+    is built and tested on each commit. So the code you read is the code that
+    runs.
   </p>
 
   <p>
-    <a href="/docs/recipes">Recipes</a> are the short version: one answer at a
-    time, to drop into a project you already have.
+    <a href="/docs/recipes">Recipes</a> are the short version. Each one answers
+    one question, and you can add it to a project you already have.
   </p>
 </doc-page>

@@ -112,12 +112,12 @@
 <title>Includes · transclude</title>
 <meta
   name="description"
-  content="One element, three sources: this page, another route, or a document somebody else wrote."
+  content="One element includes content from three sources: this page, another route, or a document that another person wrote."
 />
 
 <doc-page
   heading="Includes"
-  lede="The same content in more than one place, which is what the word transclusion means. One element, and the src says where from."
+  lede="Transclusion means the same content in more than one place. One element does it, and its src attribute says where the content comes from."
 >
   <div class="scroller">
     <table>
@@ -141,8 +141,8 @@
         </tr>
         <tr>
           <td><code>https://…#reference</code></td>
-          <td>A document somebody else wrote</td>
-          <td>One read, cached</td>
+          <td>A document that another person wrote</td>
+          <td>One read, then cached</td>
         </tr>
       </tbody>
     </table>
@@ -151,8 +151,9 @@
   <h2>A fragment of this page</h2>
 
   <p>
-    The fragment is already a function of the page's data, so including it is a
-    call. One copy of the markup, in two places.
+    The fragment is already a function of the page's data. So to include it, the
+    server calls that function. The markup is in one place, and it renders in
+    two places.
   </p>
 
   ${html(s.same)}
@@ -160,8 +161,8 @@
   ${html(s.sameOut)}
 
   <p>
-    The copy leaves the id behind. Two elements cannot share one, and
-    <code>#pricing</code> should name the fragment a swap replaces.
+    The copy does not get the id. Two elements cannot have the same id. Also,
+    <code>#pricing</code> must point to the fragment that a swap replaces.
   </p>
 
   <h2>A fragment of another route</h2>
@@ -169,59 +170,62 @@
   ${html(s.route)}
 
   <p>
-    That route's loaders run and its layouts' markup does not, the same as when a
-    fragment is asked for over HTTP. It is rendered in this process, not fetched.
-    One route included twice runs its loaders once, even from inside another
-    include. That one load serves every fragment, so its loader reads
-    <code>ctx.fragment</code> as <code>null</code>. The path is matched as a
-    request for it would be, so <code>/notes/</code> reaches <code>/notes</code>.
+    That route's loaders run, but its layouts' markup does not. The same thing
+    happens when a client asks for a fragment over HTTP. The server renders the
+    fragment in the same process. It does not fetch it. If you include one route
+    twice, its loaders run once, even from inside another include. That one load
+    serves every fragment, so its loader reads <code>ctx.fragment</code> as
+    <code>null</code>. The path is matched the same way as a request, so
+    <code>/notes/</code> finds <code>/notes</code>.
   </p>
 
   <p>
-    The copy keeps its id. The fragment lives on the other route, so nothing on
-    this page has the id already. Include the same fragment twice and the page
+    This copy keeps its id. The fragment is on the other route, so no element on
+    this page has that id yet. If you include the same fragment twice, the page
     has it twice.
   </p>
 
-  <doc-note label="Reading spreads" tone="warn">
-    A page that includes a route reading a cookie is personal too. The cache will
-    not hold it, and the build will not write it to a file.
+  <doc-note label="A cookie read spreads" tone="warn">
+    If a page includes a route that reads a cookie, the page is personal too. The
+    cache does not store it, and the build does not write it to a file.
   </doc-note>
 
-  <h2>A document somebody else wrote</h2>
+  <h2>A document that another person wrote</h2>
 
   ${html(s.site)}
 
   <p>
-    The only form that leaves the server, and the only one that needs
-    configuring. A page you did not write marks no fragments, so which piece to
-    take is worked out from its HTML. That is the second half of this page.
-    An empty <code>allow</code> is the same as no <code>proxy</code>.
+    This is the only form that sends a request out of the server. It is also the
+    only form that needs configuration. A page that you did not write marks no
+    fragments. So the server finds the part to take from the page's HTML. The
+    second half of this page explains how. An empty <code>allow</code> is the
+    same as no <code>proxy</code>.
   </p>
 
   <h2>Children are the fallback</h2>
 
   <p>
-    On success they are dropped. If the source cannot be read they render in its
-    place. With no children, a source that fails stops the render.
+    If the include works, the children are removed. If the source cannot be
+    read, the children render in its place. If there are no children, a failed
+    source stops the render.
   </p>
 
   <p>
-    That covers a source being down. A mistake throws instead, and three count:
-    a source nobody allowed, a fragment the other route does not have, and an
-    include that loops.
+    The fallback is for a source that is down. A mistake throws an error
+    instead. Three things count as mistakes: a source that is not allowed, a
+    fragment the other route does not have, and an include that loops.
   </p>
 
   <h2>Resolved before the page renders</h2>
 
   <p>
-    The compiler collects what a page includes, and the server has the answers
-    ready before it renders.
+    The compiler collects the list of includes in a page. The server gets all of
+    them before it renders the page.
   </p>
 
   <p>
-    That is what keeps a page a file: a prerendered page reads its sources once,
-    at build time, and carries the result.
+    So a page can still be a file. A prerendered page reads its sources once, at
+    build time, and keeps the result in the file.
   </p>
 
   <h2>What is refused</h2>
@@ -229,162 +233,174 @@
   ${html(s.refused)}
 
   <p>
-    All three are compile errors. A page that includes itself round two others is
-    caught when it renders, and the error names the way round. So is a chain more
-    than ten deep. A loop may also come back by another fragment of a route:
-    <code>/y#a</code> reaching <code>/z#c</code> reaching <code>/y#d</code>
-    is caught too.
+    All three are compile errors. A page can also include itself through two
+    other pages. The server catches this when it renders, and the error shows
+    the path of the loop. It also catches a chain more than ten levels deep. A
+    loop can also come back through a different fragment of a route. For
+    example, <code>/y#a</code> includes <code>/z#c</code>, which includes
+    <code>/y#d</code>. The server catches that too.
   </p>
 
   <p>
-    An include of a fragment another route does not have, like
-    <code>/notes#nope</code>, is refused when it renders. A route's fragments are
-    fixed when it compiles, so the name is a typo.
+    An include can name a fragment that another route does not have, like
+    <code>/notes#nope</code>. The server refuses it when it renders. A route's
+    fragments are fixed when it compiles, so the name must be a typo.
   </p>
 
-  <h2>Reading a document that marks nothing</h2>
+  <h2>Reading a document with no marked fragments</h2>
 
   <p>
-    Your own pages say what a fragment is. A page somebody else wrote does not.
-    The rest of this is how a piece of one is found and made safe to show.
+    Your own pages mark their fragments. A page that another person wrote does
+    not. The rest of this page explains how the server finds a part of that page
+    and makes it safe to show.
   </p>
 
-  <doc-note label="Someone else's words are still theirs" tone="warn">
-    This copies. Your server reads the document and serves the piece from your
-    origin, as part of your page. A prerendered page carries it in a file that
-    ships with your build. Name a host only when you have the right to republish
-    what it holds. Read its license and its terms first: a share-alike license
-    can put conditions on the page you put the fragment in.
+  <doc-note label="Another person's words still belong to them" tone="warn">
+    An include makes a copy. Your server reads the document and serves the part
+    from your origin, as part of your page. A prerendered page keeps the part in
+    a file that ships with your build. Name a host only when you have the right
+    to republish its content. Read its license and its terms first. A
+    share-alike license can put conditions on the page that contains the
+    fragment.
   </doc-note>
 
   <p>
-    Nothing is attributed for you. Write the credit yourself, next to the
+    The framework adds no credit for you. Write the credit yourself, next to the
     include.
   </p>
 
   ${html(s.credit)}
 
   <p>
-    A license decides what that line has to say. A document does not carry its
-    author or its license anywhere a program can read them. So this one is yours
-    to write.
+    The license decides what that line must say. A document does not give its
+    author or its license in a form that a program can read. So you must write
+    the credit.
   </p>
 
   <h3>Turning it on</h3>
 
   <p>
-    There is no route until a host is named. Default deny, and the list is the
-    part that protects you.
+    There is no route until you name a host. Every host is denied by default,
+    and the allow list is what protects you.
   </p>
 
   ${html(s.config)}
 
-  <h3>How extent is worked out</h3>
+  <h3>How the server finds where a part ends</h3>
 
-  <p>An id says what a thing is, not where it ends. Only what HTML already encodes is used:</p>
+  <p>
+    An id names an element, but it does not say where the part ends. The server
+    uses only the structure that HTML already has:
+  </p>
 
   <ul>
     <li>
-      A heading takes everything after it up to the next heading of its own rank
-      or above. An <code>h2</code> absorbs its <code>h3</code>s; an
+      A heading takes everything after it, up to the next heading of the same
+      rank or higher. An <code>h2</code> includes its <code>h3</code>s. An
       <code>h3</code> stops at the next <code>h3</code> or any <code>h2</code>. A
-      run never crosses out of its parent.
+      run never goes outside its parent element.
     </li>
     <li>A <code>&lt;dt&gt;</code> takes its definitions up to the next term.</li>
-    <li>Everything else is returned as itself, with no inference at all.</li>
+    <li>Any other element is returned on its own. The server guesses nothing more.</li>
   </ul>
 
   <p>
-    An empty inline element is a bookmark for what follows it, which is how
-    anchors are written in older documents. This resolves the heading and its
-    section.
+    An empty inline element is a bookmark for the element after it. Older
+    documents write anchors this way. In this example, the id resolves to the
+    heading and its section.
   </p>
 
   ${html(s.bookmark)}
 
-  <p>One hop only. An element holding text or an image is content.</p>
+  <p>
+    The server follows only one step. An element that contains text or an image
+    is content, not a bookmark.
+  </p>
 
   <h3>Documents with no ids</h3>
 
   <p>
-    A heading with no id gets one from its text, lowercased, punctuation removed,
-    spaces hyphenated. Letters keep their own script rather than folding to
-    ASCII.
+    A heading with no id gets one from its text. The text is lowercased,
+    punctuation is removed, and spaces become hyphens. Letters stay in their own
+    script. They do not change to ASCII.
   </p>
 
   <p>
-    Explicit ids win, and the whole table is worked out before anything is
-    resolved, so a name means the same thing on every request. An id further down
-    the page beats a heading further up, and the heading takes the next name.
+    Explicit ids win. The server makes the full table of names before it
+    resolves anything. So a name means the same thing on every request. An id
+    lower on the page wins over a heading higher up. The heading then gets the
+    next name.
   </p>
 
   <doc-note label="A fragment is a node list">
-    A heading run is several siblings, not one element. It arrives as it appears
-    in the source, so it matches the page it came from.
+    A heading run is several sibling nodes, not one element. It arrives in the
+    same order as in the source, so it matches its original page.
   </doc-note>
 
-  <h3>What arrives</h3>
+  <h3>What is removed and what is kept</h3>
 
   <p>
-    Scripts, frames, plugins and event handlers are removed.
-    <code>javascript:</code> URLs are dropped everywhere; <code>data:</code> survives only
-    on an image source. <code>&lt;base&gt;</code>, <code>&lt;link&gt;</code> and
-    <code>&lt;style&gt;</code> go too, because none of them stop at the fragment.
-    A <code>&lt;base&gt;</code> retargets every relative URL in the page the
-    fragment lands in. The other two restyle that whole page: one pulls a
-    stylesheet from anywhere, and one carries it.
+    The server removes scripts, frames, plugins and event handlers. It removes
+    <code>javascript:</code> URLs everywhere. It keeps a <code>data:</code> URL
+    only on an image source. It also removes <code>&lt;base&gt;</code>,
+    <code>&lt;link&gt;</code> and <code>&lt;style&gt;</code>, because their
+    effect does not stop at the fragment. A <code>&lt;base&gt;</code> changes
+    every relative URL in the page that gets the fragment. The other two change
+    the styles of that whole page. A <code>&lt;link&gt;</code> loads a
+    stylesheet from any location, and a <code>&lt;style&gt;</code> contains one.
   </p>
 
   <p>
-    SVG animation goes with them. <code>&lt;animate&gt;</code> and
-    <code>&lt;set&gt;</code> write an attribute after the cleaning has read it.
-    That is a way to hand an <code>&lt;a&gt;</code> a <code>javascript:</code> URL
-    nothing checked. A tab or a control character inside the scheme is another:
-    <code>href="java&amp;#9;script:…"</code> is a live URL to a browser. The
-    check reads the scheme the way a browser does before it decides.
+    The server also removes SVG animation. <code>&lt;animate&gt;</code> and
+    <code>&lt;set&gt;</code> write an attribute after the cleaning reads it. So
+    they can give an <code>&lt;a&gt;</code> a <code>javascript:</code> URL that
+    nothing checked. A tab or a control character inside the scheme is another
+    way. A browser treats <code>href="java&amp;#9;script:…"</code> as a working
+    URL. So the check reads the scheme the same way a browser does, before it
+    decides.
   </p>
 
   <p>
-    Comments are dropped, and so are the deprecated raw-text elements —
+    The server removes comments and the deprecated raw-text elements:
     <code>&lt;xmp&gt;</code>, <code>&lt;plaintext&gt;</code>,
     <code>&lt;listing&gt;</code>, <code>&lt;noembed&gt;</code> and
-    <code>&lt;noframes&gt;</code>. A parser reads what is inside those as text.
-    The cleaning never sees it, and a browser that reads it as markup would run
-    whatever was hiding there.
+    <code>&lt;noframes&gt;</code>. A parser reads the content of these elements
+    as text. So the cleaning never sees it. A browser that reads it as markup
+    would run any code hidden there.
   </p>
 
   <p>
-    A <code>&lt;template&gt;</code> is cleaned inside, like anything else. Its
-    content is inert on its own. A declarative shadow root is not:
-    <code>shadowrootmode</code> makes it a real shadow tree in your page. A script
-    in there would run on your origin.
+    The server cleans the inside of a <code>&lt;template&gt;</code>, like any
+    other element. Template content is inert on its own. A declarative shadow
+    root is not inert. <code>shadowrootmode</code> makes it a real shadow tree
+    in your page. A script in it would run on your origin.
   </p>
 
   <p>
-    A <code>style</code> attribute is kept, because it paints the element it sits
-    on and nothing else. A highlighted code block carries its colors that way.
-    Set <code>styles: 'strip'</code> to drop them and leave the look to your own
-    CSS.
+    The server keeps a <code>style</code> attribute, because it styles only its
+    own element. A highlighted code block gets its colors that way. Set
+    <code>styles: 'strip'</code> to remove them and use your own CSS.
   </p>
 
   <p>
-    Every relative URL is made absolute against the source, including a hash-only
-    <code>href</code>, which otherwise addresses an id in your page.
-    <code>srcset</code> is parsed, since a candidate URL may contain a comma, and
-    <code>url()</code> is rewritten inside a style attribute.
+    The server makes every relative URL absolute against the source URL. This
+    includes an <code>href</code> that is only a hash. Without this change, it
+    would point to an id in your page. The server parses <code>srcset</code>,
+    because a candidate URL can contain a comma. It also rewrites
+    <code>url()</code> inside a style attribute.
   </p>
 
   <p>
-    A custom element from the source arrives with no definition behind it. It is
-    inert, so a section built out of them will look empty.
+    A custom element from the source arrives with no definition. It is inert, so
+    a section made of custom elements looks empty.
   </p>
 
   <doc-note label="A form in the source still submits" tone="warn">
     A <code>&lt;form&gt;</code> keeps its <code>action</code>, made absolute
-    against the source. Somebody who fills it in on your page posts to the
-    source's host, not yours. The allowlist says what the server may read, not
-    where the markup may point. Ask for a smaller fragment if a form arrives in
-    one you did not want.
+    against the source. If a visitor fills it in on your page, the form posts to
+    the source's host, not yours. The allowlist controls what the server can
+    read. It does not control where the markup points. If a fragment contains a
+    form that you do not want, ask for a smaller fragment.
   </doc-note>
 
   <h3>Limits</h3>
@@ -392,58 +408,62 @@
   ${html(s.tuning)}
 
   <p>
-    A key nothing reads throws, naming it and every key there is, the same way
-    the <a href="/docs/config">config</a> does for its own.
+    An unknown key throws an error. The error names that key and lists every
+    valid key. The <a href="/docs/config">config</a> does the same for its own
+    keys.
   </p>
 
   <p>
-    Redirects are followed one at a time, and every hop is checked again. The
-    check that passed on the URL you configured says nothing about where the
-    third redirect landed. Addresses on the private ranges are refused, including
+    The server follows redirects one at a time, and it checks every step again.
+    A check on your configured URL tells nothing about the target of the third
+    redirect. The server refuses addresses in the private ranges. This includes
     the cloud metadata endpoint and IPv4 addresses written in IPv6 form.
   </p>
 
   <p>
-    <code>maxAge</code> is how long a document already read is used without
-    asking the source again, so several fragments of one page cost one read.
-    After that it is revalidated with <code>ETag</code> and
-    <code>Last-Modified</code>.
+    <code>maxAge</code> is how long the server uses a document it already read,
+    without asking the source again. So several fragments of one page cost one
+    read. After that time, the server revalidates the document with
+    <code>ETag</code> and <code>Last-Modified</code>.
   </p>
 
-  <doc-note label="What the allowlist is holding up" tone="warn">
-    On Node, Bun and Deno a hostname is resolved and every address it answers
-    with is checked. That covers all four spellings that carry an IPv4 address
-    inside an IPv6 one. <code>workerd</code> has no resolver, so there the check
-    does not run and the allowlist is the whole defense.
+  <doc-note label="Why the allowlist matters" tone="warn">
+    On Node, Bun and Deno, the server resolves a hostname and checks every
+    address that comes back. This covers all four ways to write an IPv4 address
+    inside an IPv6 address. <code>workerd</code> has no resolver, so the check
+    does not run there. On <code>workerd</code>, the allowlist is the only
+    defense.
   </doc-note>
 
   <p>
-    Even where it runs, the resolver is asked twice: once for the check, and
-    again by the connection. A record short enough to expire in between can come
-    back different. Nothing this side of the socket closes that window. So the
-    allowlist is what actually holds. Name hosts you trust, and treat a wildcard
-    as trust in everything under it.
+    Where the check runs, the resolver gets the same question twice. The check
+    asks once, and the connection asks again. A DNS record with a short lifetime
+    can expire between the two and return a different address. Nothing before
+    the socket can prevent this. So the allowlist is the real protection. Name
+    only hosts that you trust. A wildcard means that you trust every host under
+    it.
   </p>
 
   <h3>The endpoint</h3>
 
   <p>
-    Naming a host also mounts <code>/_transclude/proxy</code>. Ask it for a
-    fragment of an allowed document from anywhere.
+    When you name a host, the server also mounts
+    <code>/_transclude/proxy</code>. You can ask it for a fragment of an allowed
+    document from anywhere.
   </p>
 
   ${html(s.request)}
 
   <p>
-    With no <code>id</code>, the answer is the document's outline, and what the
-    cleaning removed.
+    With no <code>id</code>, the endpoint returns the document's outline and a
+    list of what the cleaning removed.
   </p>
 
   ${html(s.outline)}
 
   <p>
-    It answers with the fragment, sanitized and rewritten. It is same-origin,
-    which the default <a href="/docs/security">policy</a> requires. That policy
-    names <code>'self'</code> and refuses a cross-origin fetch.
+    The endpoint returns the fragment, sanitized and rewritten. It is on your own
+    origin, as the default <a href="/docs/security">policy</a> requires. That
+    policy names <code>'self'</code> and refuses a cross-origin fetch.
   </p>
 </doc-page>

@@ -354,30 +354,30 @@ test('the notes page lists notes', async () => {
   <h3>A dynamic route</h3>
 
   <p>
-    A bracketed segment is a parameter, and the file name is the URL. It arrives
-    in <code>ctx.params</code>.
+    A segment in brackets is a parameter, and the file name is the URL. The
+    value is in <code>ctx.params</code>.
   </p>
 
   ${html(s.dynamic)}
 
   <h3>Read an external API</h3>
 
-  <p>A loader is a plain async function. Fetch, query a database, read a file.</p>
+  <p>A loader is a plain async function. It can fetch, query a database or read a file.</p>
 
   ${html(s.fetch)}
 
   <h3>Answer 404</h3>
 
   <p>
-    Write to <code>ctx.response</code>. The page still renders, so it can say
-    what was missing.
+    Write to <code>ctx.response</code>. The page still renders, so it can tell
+    the reader what was missing.
   </p>
 
   ${html(s.notFound)}
 
   <h3>Redirect instead of rendering</h3>
 
-  <p>A loader returning a <code>Response</code> answers the request.</p>
+  <p>If a loader returns a <code>Response</code>, that response answers the request.</p>
 
   ${html(s.redirect)}
 
@@ -386,17 +386,17 @@ test('the notes page lists notes', async () => {
   <h3>Handle a submission</h3>
 
   <p>
-    <code>POST</code> is an export beside the loader. It runs, then the loader
-    renders what it left behind.
+    <code>POST</code> is an export next to the loader. It runs first. Then the
+    loader runs, and the page renders the result.
   </p>
 
   ${html(s.form)}
 
-  <h3>Reject one without losing the page</h3>
+  <h3>Reject a submission and keep the page</h3>
 
   <p>
-    Return a value rather than a redirect. It arrives as
-    <code>ctx.action</code> on the render that follows.
+    Return a value instead of a redirect. The next render gets that value as
+    <code>ctx.action</code>.
   </p>
 
   ${html(s.invalid)}
@@ -404,8 +404,8 @@ test('the notes page lists notes', async () => {
   <h3>Two buttons, one form</h3>
 
   <p>
-    A submit button sends its name and value only when it is the one that
-    submitted.
+    A submit button sends its name and value only when the user clicks that
+    button.
   </p>
 
   ${html(s.intent)}
@@ -428,8 +428,8 @@ test('the notes page lists notes', async () => {
   <h3>Keep a session</h3>
 
   <p>
-    A signed cookie can be read by the client and not forged. Put an id in it
-    and keep the rest on the server.
+    The client can read a signed cookie, but it cannot forge one. Put an id in
+    the cookie, and keep the rest of the data on the server.
   </p>
 
   ${html(s.session)}
@@ -437,8 +437,8 @@ test('the notes page lists notes', async () => {
   <h3>Guard a whole section</h3>
 
   <p>
-    A layout loader returning a <code>Response</code> stops everything below it,
-    so the redirect is written once.
+    If a layout loader returns a <code>Response</code>, nothing below it runs.
+    So you write the redirect once.
   </p>
 
   ${html(s.guard)}
@@ -450,7 +450,7 @@ test('the notes page lists notes', async () => {
   <h3>Middleware for a path</h3>
 
   <p>
-    <code>app/server.js</code> gets the Hono app before any route.
+    <code>app/server.js</code> receives the Hono app before any route is added.
   </p>
 
   ${html(s.middleware)}
@@ -459,30 +459,31 @@ test('the notes page lists notes', async () => {
 
   <p>
     <a href="https://x402.org">x402</a> is HTTP 402 with a payload. A request
-    with no payment gets a 402 and the terms. The client pays, and the retry
-    carries a header the server verifies. The seller supplies a receiving
-    address and no private key.
+    with no payment gets a 402 and the terms. The client pays, and then sends
+    the request again with a header that the server verifies. The seller gives
+    an address to receive payment, and no private key.
   </p>
 
   <p>
-    <code>@x402/hono</code> is Hono middleware, and the server here is Hono, so
-    it needs nothing from this framework.
+    <code>@x402/hono</code> is Hono middleware, and this server is Hono. So it
+    needs nothing from this framework.
   </p>
 
   ${html(s.x402)}
   ${html(s.x402Endpoint)}
 
   <p>
-    <code>gated</code> is the half that is ours. Middleware does not run during
-    the build, so without it a paid <em>page</em> is written to a file and given
-    away. An endpoint is never prerendered. This matters the moment you charge
-    for a page or a <a href="/docs/fragments">fragment</a>.
+    <code>gated</code> is the part this framework adds. Middleware does not run
+    during the build. So without <code>gated</code>, the build writes a paid
+    <em>page</em> to a file, and anyone can get it free. An endpoint is never
+    prerendered. So <code>gated</code> matters only when you charge for a page
+    or a <a href="/docs/fragments">fragment</a>.
   </p>
 
-  <doc-note label="Who is on the other end">
-    x402 is aimed at agents and API clients. A person in a browser has no wallet
-    unless they installed one. So a paid page is a worse trade today than a paid
-    endpoint.
+  <doc-note label="Who pays">
+    x402 is for agents and API clients. A person in a browser has no wallet
+    unless they installed one. So a paid endpoint is a better choice than a paid
+    page.
   </doc-note>
 
   <h2>The page</h2>
@@ -490,8 +491,8 @@ test('the notes page lists notes', async () => {
   <h3>Give a fragment its own URL</h3>
 
   <p>
-    <code>/notes?fragment=list</code> then returns the
-    <code>&lt;ul&gt;</code> alone. See <a href="/docs/fragments">fragments</a>.
+    With this markup, <code>/notes?fragment=list</code> returns only the
+    <code>&lt;ul&gt;</code>. See <a href="/docs/fragments">fragments</a>.
   </p>
 
   ${html(s.fragment)}
@@ -499,21 +500,22 @@ test('the notes page lists notes', async () => {
   <h3>Put data in the page for something else to read</h3>
 
   <p>
-    A <code>&lt;script&gt;</code> with a type the browser does not execute is a
-    data block. It is emitted as written, rather than compiled as client code.
+    A <code>&lt;script&gt;</code> with a type that the browser does not run is a
+    data block. The compiler outputs it as written. It does not compile it as
+    client code.
   </p>
 
   ${html(s.dataBlock)}
 
   <p>
-    A plain <code>&lt;script&gt;</code> and one with
-    <code>type="module"</code> are still yours to write, and are still compiled
-    and bundled. The type is what decides.
+    You can still write a plain <code>&lt;script&gt;</code> or one with
+    <code>type="module"</code>. The compiler still compiles and bundles those.
+    The type decides which happens.
   </p>
 
-  <doc-note label="A value cannot be interpolated into one" tone="warn">
+  <doc-note label="You cannot interpolate a value into a data block" tone="warn">
     The contents are raw text, so a <code>${'$'}{…}</code> could close the
-    element or the statement around it. The compiler refuses it. Pass the whole
+    element or the statement around it. So the compiler refuses it. Pass the whole
     block through <code>html()</code>, or put the value in an attribute and read
     it from there.
   </doc-note>
@@ -521,7 +523,7 @@ test('the notes page lists notes', async () => {
   <h3>Show the same content twice</h3>
 
   <p>
-    Resolved on the server, so nothing ships. See
+    The server resolves an include, so no JavaScript ships. See
     <a href="/docs/includes">includes</a>.
   </p>
 
@@ -530,7 +532,8 @@ test('the notes page lists notes', async () => {
   <h3>A reusable element</h3>
 
   <p>
-    Light DOM, so page CSS reaches it and no JavaScript is sent. See
+    It uses light DOM. So page CSS reaches it, and the server sends no
+    JavaScript. See
     <a href="/docs/elements">elements</a>.
   </p>
 
@@ -539,68 +542,72 @@ test('the notes page lists notes', async () => {
   <h3>Open a dialog with no JavaScript</h3>
 
   <p>
-    <code>command</code> and <code>commandfor</code> are the platform's own
-    invoker: a button names what it acts on and what to do. No listener, no
-    script, and the button stays a button for a keyboard and a screen reader.
+    <code>command</code> and <code>commandfor</code> are built into the
+    platform. A button names its target and the action to take. You write no
+    listener and no script. The button still works as a button for a keyboard
+    and a screen reader.
   </p>
 
   ${html(s.popover)}
 
   <p>
-    Animating it needs two things a dialog makes awkward.
-    <code>@starting-style</code> gives the open state somewhere to come from.
-    <code>allow-discrete</code> lets <code>display</code> and the top layer take
-    part in the transition instead of snapping.
+    To animate a dialog, you need two things.
+    <code>@starting-style</code> sets the style that the open state starts from.
+    <code>allow-discrete</code> lets <code>display</code> and the top layer
+    animate in the transition, instead of changing at once.
   </p>
 
   ${html(s.popoverCss)}
 
-  <h3>An accordion where one is open at a time</h3>
+  <h3>An accordion with one section open at a time</h3>
 
   <p>
-    A shared <code>name</code> makes a group of <code>&lt;details&gt;</code>
-    exclusive, the way radio buttons are. Opening one closes the rest, and
-    nothing runs.
+    Give a group of <code>&lt;details&gt;</code> the same <code>name</code>.
+    Then only one can be open, the same as radio buttons. Opening one closes the
+    others, and no script runs.
   </p>
 
   ${html(s.accordion)}
 
-  <h3>Collapsed content that a page search can still find</h3>
+  <h3>Hidden content that page search can still find</h3>
 
   <p>
-    <code>hidden="until-found"</code> hides content but leaves it findable.
-    Ctrl+F reveals it, scrolls to it, and fires <code>beforematch</code> so a
-    <code>&lt;details&gt;</code> around it can open itself.
+    <code>hidden="until-found"</code> hides content, but find in page can still
+    find it. Ctrl+F shows the content and scrolls to it. It also fires
+    <code>beforematch</code>, so a <code>&lt;details&gt;</code> around it can
+    open itself.
   </p>
 
   ${html(s.untilFound)}
 
   <p>
-    Plain <code>hidden</code> takes the text out of the page entirely. A reader
-    searching for a word they know is there is told it is not.
+    Plain <code>hidden</code> removes the text from the page completely.
+    A reader searches for a word they know is there, and the browser finds
+    nothing.
   </p>
 
   <h2>Build and serve</h2>
 
   <h3>Render on every request</h3>
 
-  <p>A page that reads the request cannot be a file.</p>
+  <p>A page that reads the request cannot be a static file.</p>
 
   ${html(s.live)}
 
-  <h3>Hold a render for a while</h3>
+  <h3>Keep a render for a set time</h3>
 
   <p>
-    Between a file and a render each time. Within the window the loader does not
-    run.
+    This is between a static file and a render on every request. During the time
+    window, the loader does not run.
   </p>
 
   ${html(s.revalidate)}
 
-  <h3>Drop a held page when the data changes</h3>
+  <h3>Remove a kept page when the data changes</h3>
 
   <p>
-    Seconds say when a page may be stale. A tag says when it is. See
+    A number of seconds says when a page may be out of date. A tag says when it
+    is out of date. See
     <a href="/docs/production">the production build</a>.
   </p>
 
@@ -609,8 +616,7 @@ test('the notes page lists notes', async () => {
   <h3>A sitemap and a feed</h3>
 
   <p>
-    Both are served by the app and written into the build. The items are yours
-    to supply. See <a href="/docs/feeds">sitemap and feeds</a>.
+    The app serves both, and the build writes both. You supply the items. See <a href="/docs/feeds">sitemap and feeds</a>.
   </p>
 
   ${html(s.feed)}
@@ -618,7 +624,8 @@ test('the notes page lists notes', async () => {
   <h3>Test a route</h3>
 
   <p>
-    The app is a function from a request to a response, with nothing stubbed.
+    The app is a function that takes a request and returns a response. Nothing
+    is stubbed.
     See <a href="/docs/testing">testing</a>.
   </p>
 

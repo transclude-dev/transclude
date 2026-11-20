@@ -52,27 +52,27 @@
   lede="transclude.config.js says where everything in your app lives."
 >
   <p>
-    An unknown key throws, naming it and every key there is. A key nothing reads
-    looks exactly like a key that worked, which is why it is an error rather than
-    a warning.
+    An unknown key throws an error. The error names the key and lists every
+    valid key. A key that nothing reads looks the same as a key that worked. So
+    it is an error, not a warning.
   </p>
 
   <p>
-    Two spellings repeat down the table. A key that names a thing takes
+    Two patterns repeat in the table. A key that names a thing takes
     <code>null</code> for none: a stylesheet, a parser, a secret, a directory. A
-    key that switches a feature takes <code>true</code> or an object that
-    configures it, and <code>false</code> is off.
+    key that turns on a feature takes <code>true</code> or an object that
+    configures it. <code>false</code> turns it off.
   </p>
 
   <p>
-    Paths read from two places. <code>routesDir</code>,
+    Paths are read from two places. <code>routesDir</code>,
     <code>elementsDir</code>, <code>publicDir</code> and <code>iconsDir</code>
-    sit inside <code>appDir</code>, because they are the app.
+    are inside <code>appDir</code>, because they are part of the app.
     <code>outDir</code>, <code>stylesheet</code> and <code>typesFile</code> are
-    read from the project root, because a build output and a generated
-    declarations file are not. Move <code>appDir</code> and the first four
-    follow it. So does the default for <code>typesFile</code>, which is the one
-    root-relative key with a directory in its default.
+    read from the project root. A build output and a generated declarations file
+    are not part of the app. If you move <code>appDir</code>, the first four
+    move with it. The default for <code>typesFile</code> moves too. It is the
+    one root-relative key with a directory in its default.
   </p>
 
   <div class="scroller">
@@ -94,12 +94,11 @@
           <td><code>cache</code></td>
           <td>—</td>
           <td>
-            Where a page held by
-            <a href="/docs/production">revalidate</a> is kept. The default is a
-            bounded map in this process. Anything with the same
-            <code>get</code>, <code>set</code>, <code>delete</code> and
-            <code>deleteByTag</code> works, which is how more than one server
-            shares one.
+            Where the server keeps a page cached by
+            <a href="/docs/production">revalidate</a>. The default is a bounded
+            map in this process. Any object with the same <code>get</code>,
+            <code>set</code>, <code>delete</code> and <code>deleteByTag</code>
+            methods works. That is how several servers share one store.
           </td>
         </tr>
         <tr>
@@ -107,19 +106,19 @@
           <td><code>false</code></td>
           <td>
             <code>true</code> writes
-            <code>&lt;link rel="canonical"&gt;</code> on every page, naming that
+            <code>&lt;link rel="canonical"&gt;</code> on every page, with that
             page's own URL. It needs <code>metadataBase</code>, and says so if it
-            is missing. A page or <a href="/docs/layouts">layout</a> writing its
-            own replaces it.
+            is missing. If a page or <a href="/docs/layouts">layout</a> writes
+            its own link, that link replaces it.
           </td>
         </tr>
         <tr>
           <td><code>cookieSecret</code></td>
           <td><code>null</code></td>
           <td>
-            Signs cookies. Without one, <code>cookies.signed</code> throws. An
-            empty string is refused at startup, because it is a secret that
-            supplies nothing.
+            Signs cookies. Without it, <code>cookies.signed</code> throws. An
+            empty string is refused at startup, because an empty secret protects
+            nothing.
           </td>
         </tr>
         <tr>
@@ -127,7 +126,7 @@
           <td><code>false</code></td>
           <td>
             A Content-Security-Policy in the document, built from the hashes of
-            what it inlines. <code>true</code>, or an object with
+            its inline content. <code>true</code>, or an object with
             <code>directives</code> and <code>reportOnly</code>.
           </td>
         </tr>
@@ -144,14 +143,15 @@
           <td><code>'elements'</code></td>
           <td>
             Custom elements. Relative to <code>appDir</code>. A list names
-            several, read as one set, and a tag in two of them is refused.
+            several directories, read as one set. A tag in two of them is
+            refused.
           </td>
         </tr>
         <tr>
           <td><code>feed</code></td>
           <td><code>false</code></td>
           <td>
-            <code>{ hostname, title, items }</code> mounts a feed and writes it
+            <code>{ hostname, title, items }</code> serves a feed and writes it
             into the build. See
             <a href="/docs/feeds">sitemap and feeds</a>.
           </td>
@@ -169,7 +169,7 @@
           <td><code>'fragment'</code></td>
           <td>
             The query parameter that asks for a fragment. <code>null</code>
-            turns it off, so no URL asks for one.
+            turns it off, so no URL can ask for one.
           </td>
         </tr>
         <tr>
@@ -178,10 +178,10 @@
           <td>
             One SVG file per icon, compiled into <code>/icons.svg</code> as a
             sprite of <code>&lt;symbol&gt;</code>s. Relative to
-            <code>appDir</code>. Point a <code>&lt;use&gt;</code> at one by file
-            name: <code>&lt;use href="/icons.svg#check"&gt;</code> draws
-            <code>icons/check.svg</code>. A list names several, read as one
-            set, and an icon in two of them is refused.
+            <code>appDir</code>. Point a <code>&lt;use&gt;</code> at an icon by
+            its file name: <code>&lt;use href="/icons.svg#check"&gt;</code> draws
+            <code>icons/check.svg</code>. A list names several directories, read
+            as one set. An icon in two of them is refused.
           </td>
         </tr>
         <tr>
@@ -189,28 +189,28 @@
           <td><code>'en'</code></td>
           <td>
             The <code>lang</code> on <code>&lt;html&gt;</code> for every page. A
-            page or <a href="/docs/layouts">layout</a> writing
-            <code>&lt;html lang="cy"&gt;</code> wins over it.
+            page or <a href="/docs/layouts">layout</a> that writes
+            <code>&lt;html lang="cy"&gt;</code> overrides it.
           </td>
         </tr>
         <tr>
           <td><code>markdown</code></td>
           <td><code>null</code></td>
           <td>
-            <code>(source, file) =&gt; html</code>. What makes a
-            <code>.md</code> file under <code>routes/</code> a page. It is
-            converted before anything compiles it, so the page that comes out has
-            a loader, elements and fragments like any other. This package ships
-            no parser, and a <code>.md</code> page without this is an error
-            naming the file. <a href="/docs/markdown">Markdown pages</a> is the
-            rest.
+            <code>(source, file) =&gt; html</code>. This function turns a
+            <code>.md</code> file under <code>routes/</code> into a page. It
+            converts the file before anything compiles it. So the page that
+            comes out has a loader, elements and fragments like any other page.
+            This package ships no parser. Without this key, a <code>.md</code>
+            page is an error that names the file.
+            <a href="/docs/markdown">Markdown pages</a> has the details.
           </td>
         </tr>
         <tr>
           <td><code>metadataBase</code></td>
           <td>—</td>
           <td>
-            The origin <code>ctx.absolute()</code> resolves against, for a
+            The origin that <code>ctx.absolute()</code> resolves against, for a
             canonical URL or an <code>og:image</code>.
           </td>
         </tr>
@@ -218,12 +218,12 @@
           <td><code>onError</code></td>
           <td><code>null</code></td>
           <td>
-            <code>(error, { request, url, method, route, phase })</code> for
-            every request that fails. <code>route</code> names the matched route
-            and its params, and <code>phase</code> says which work failed: page,
-            fragment, action, endpoint, after or revalidate. The 500 page ships
-            either way, and a reporter that throws is caught. Without one, the
-            error is logged.
+            <code>(error, { request, url, method, route, phase })</code>, called
+            for every request that fails. <code>route</code> names the matched
+            route and its params. <code>phase</code> says which work failed:
+            page, fragment, action, endpoint, after or revalidate. The 500 page
+            is sent either way, and a reporter that throws is caught. Without
+            <code>onError</code>, the error is logged.
           </td>
         </tr>
         <tr>
@@ -235,45 +235,48 @@
           <td><code>permissionsPolicy</code></td>
           <td><code>false</code></td>
           <td>
-            A <code>Permissions-Policy</code> header naming the features this app
-            refuses. <code>true</code>, or an object with <code>features</code>.
+            A <code>Permissions-Policy</code> header that lists the features this
+            app blocks. <code>true</code>, or an object with
+            <code>features</code>.
           </td>
         </tr>
         <tr>
           <td><code>port</code></td>
           <td><code>1960</code></td>
           <td>
-            What <code>npm run dev</code> and <code>npm start</code> both listen
-            on. <code>PORT</code> in the environment wins, so a host that assigns
-            one needs no edit.
+            The port that <code>npm run dev</code> and <code>npm start</code>
+            both listen on. <code>PORT</code> in the environment overrides it,
+            so a host that assigns a port needs no edit.
           </td>
         </tr>
         <tr>
           <td><code>precache</code></td>
           <td><code>false</code></td>
           <td>
-            <code>true</code> writes <code>/precache.json</code>: every
-            prerendered page, hashed asset and public file, with what says it
-            changed. A hashed asset has <code>revision: null</code>, because its
-            name is its version. Nothing reads it for you.
+            <code>true</code> writes <code>/precache.json</code>. It lists every
+            prerendered page, hashed asset and public file, with a value that
+            shows when each one changed. A hashed asset has
+            <code>revision: null</code>, because its name is its version. The
+            framework does not read the file for you.
           </td>
         </tr>
         <tr>
           <td><code>proxy</code></td>
           <td><code>false</code></td>
           <td>
-            <code>{ allow: [...] }</code> mounts
-            <code>/_transclude/proxy</code>, which fetches a document from an
-            allowed host and answers with one fragment of it. Default deny: no
-            key, no route. See <a href="/docs/includes">includes</a>.
+            <code>{ allow: [...] }</code> serves
+            <code>/_transclude/proxy</code>. It fetches a document from an
+            allowed host and answers with one fragment of it. It is off by
+            default: with no key, there is no route. See
+            <a href="/docs/includes">includes</a>.
           </td>
         </tr>
         <tr>
           <td><code>publicDir</code></td>
           <td><code>'public'</code></td>
           <td>
-            Copied as-is to the site root. Relative to <code>appDir</code>, like
-            every other directory key.
+            Copied unchanged to the site root. Relative to <code>appDir</code>,
+            like every other directory key.
           </td>
         </tr>
         <tr>
@@ -285,7 +288,7 @@
           <td><code>sitemap</code></td>
           <td><code>false</code></td>
           <td>
-            <code>{ hostname }</code> mounts <code>/sitemap.xml</code> and writes
+            <code>{ hostname }</code> serves <code>/sitemap.xml</code> and writes
             it into the build. See <a href="/docs/feeds">sitemap and feeds</a>.
           </td>
         </tr>
@@ -295,10 +298,10 @@
           <td>
             <code>true</code> writes
             <code>&lt;script type="speculationrules"&gt;</code> into every page.
-            A prerendered URL may be prerendered, because no loader is left to
-            run. A server-rendered route may only be prefetched, because its
-            loader may read a cookie. <code>{ eagerness, exclude }</code> for the
-            rest.
+            The browser may prerender a prerendered URL, because it has no loader
+            left to run. It may only prefetch a server-rendered route, because
+            its loader may read a cookie. <code>{ eagerness, exclude }</code>
+            sets the other options.
           </td>
         </tr>
         <tr>
@@ -313,8 +316,8 @@
           <td><code>trailingSlash</code></td>
           <td><code>'never'</code></td>
           <td>
-            <code>'never'</code> is strict routing and a 301.
-            <code>'ignore'</code> is the loose router.
+            <code>'never'</code> means strict routing and a 301 redirect.
+            <code>'ignore'</code> means the loose router.
           </td>
         </tr>
         <tr>
@@ -330,7 +333,7 @@
           <td><code>false</code></td>
           <td>
             Full TypeScript strictness, in <code>transclude-check</code>, the
-            editor and the dev server's reporting.
+            editor and the dev server's reports.
           </td>
         </tr>
         <tr>
@@ -345,10 +348,10 @@
           <td><code>watchElements</code></td>
           <td><code>false</code></td>
           <td>
-            Puts a script on every page that defines and styles an element
-            arriving in a swap. Worth it when
-            <a href="/docs/fragments">fragments</a> bring in elements the page did not
-            render.
+            Puts a script on every page. The script defines and styles an
+            element that arrives in a swap. Use it when
+            <a href="/docs/fragments">fragments</a> bring in elements that the
+            page did not render.
           </td>
         </tr>
       </tbody>

@@ -55,7 +55,7 @@ npm run dev`,
 <title>transclude</title>
 <meta
   name="description"
-  content="An HTML-first server framework. A page is an .html file, the directory tree is the route table, and any fragment of a page is a URL of its own."
+  content="An HTML-first server framework. A page is an .html file, and the directory tree is the route table. Any fragment of a page has its own URL."
 />
 <link rel="canonical" href="https://transclude.dev/" />
 
@@ -63,7 +63,7 @@ npm run dev`,
 <meta property="og:title" content="transclude" />
 <meta
   property="og:description"
-  content="A page is an .html file, the directory tree is the route table, and any fragment of a page is a URL of its own."
+  content="A page is an .html file, and the directory tree is the route table. Any fragment of a page has its own URL."
 />
 
 <style>
@@ -292,9 +292,10 @@ npm run dev`,
   <h1>HTML is the product.</h1>
 
   <p class="lede">
-    A page is one <code>.html</code> file: the markup, and the server code that
-    loads its data. The directory tree is the route table. Any part of a page
-    can be asked for on a URL of its own, and the server sends HTML either way.
+    A page is one <code>.html</code> file. It contains the markup and the server
+    code that loads its data. The directory tree is the route table. You can
+    request any part of a page at its own URL. The server sends HTML in both
+    cases.
   </p>
 
   <div class="actions">
@@ -306,16 +307,16 @@ npm run dev`,
 
 <div class="band">
   <div class="inner">
-    <h2>Any element can be a URL</h2>
+    <h2>Any element can have its own URL</h2>
 
     <p>
-      A page is one <code>.html</code> file. Put <code>fragment</code> on an
-      element inside it, and that element answers on a URL of its own.
+      A page is one <code>.html</code> file. Add <code>fragment</code> to an
+      element in the page, and that element gets its own URL.
     </p>
 
     ${html(s.page)}
 
-    <p>One word, and the page answers two requests.</p>
+    <p>One attribute gives the page two URLs.</p>
 
     <div class="scroller">
       <table class="urls">
@@ -333,34 +334,34 @@ npm run dev`,
     </div>
 
     <p>
-      Both come from the same compiled markup, so the page and the piece cannot
-      drift apart. That is the whole agreement: a fragment is a resource with a
-      plain HTTP URL.
+      Both responses come from the same compiled markup, so the page and the
+      fragment always match. That is the whole contract: a fragment is a
+      resource with a plain HTTP URL.
     </p>
 
     <p>
-      Nothing here swaps one into a page. <a href="https://htmx.org">htmx</a>,
-      <a href="https://turbo.hotwired.dev">Turbo</a> or a few lines of
-      <code>fetch</code> does that, and the choice stays yours.
+      transclude does not swap a fragment into a page. Use <a
+      href="https://htmx.org">htmx</a>, <a
+      href="https://turbo.hotwired.dev">Turbo</a> or a few lines of
+      <code>fetch</code> for that. You choose which one.
     </p>
 
     <p>
-      The server can put that element in a second place instead.
-      <code>&lt;transclude src="#list"&gt;</code> renders it somewhere else on
-      the page, and <code>src="/notes#list"</code> reaches into another route.
-      Showing the same content in more than one place is what the word
-      <em>transclusion</em> means. It is where the name of this framework comes
-      from.
-      <a href="/docs/includes">Includes</a> covers it.
+      Or the server can put that element in a second place. <code>&lt;transclude
+      src="#list"&gt;</code> renders it in another part of the page.
+      <code>src="/notes#list"</code> gets it from another route. The word
+      <em>transclusion</em> means showing the same content in more than one
+      place. This framework takes its name from that word. <a
+      href="/docs/includes">Includes</a> explains how it works.
     </p>
 
     <div id="demo" fragment class="demo">
       <p><strong>You are reading a fragment.</strong></p>
       <p class="demo-note">
-        This box is part of the page you loaded, and it is also its own URL.
-        <a href="/?fragment=demo"><code>/?fragment=demo</code></a> returns the
-        markup of this box and nothing else. No <code>&lt;head&gt;</code>, no
-        layout, no second template. Open it and compare.
+        This box is part of the page you loaded. It also has its own URL. <a
+        href="/?fragment=demo"><code>/?fragment=demo</code></a> returns only the
+        markup of this box. There is no <code>&lt;head&gt;</code>, no layout and
+        no second template. Open it and compare.
       </p>
     </div>
   </div>
@@ -371,17 +372,16 @@ npm run dev`,
 
   <p>
     <code>app/routes/notes.html</code> responds to <code>/notes</code>. The
-    <code>&lt;script server&gt;</code> block above is the loader: it runs on the
-    server and returns the data the markup reads.
-    <code>export const POST</code>
-    answers the form. No client JavaScript is involved.
+    <code>&lt;script server&gt;</code> block above is the loader. It runs on the
+    server and returns the data for the markup. <code>export const POST</code>
+    handles the form. No client JavaScript runs.
   </p>
 
   <p class="aside">
-    The loader and the markup that reads it change together, so they are one
-    file to open and one file to review. Splitting them would split by
-    technology rather than by concern. The block is compiled into the route and
-    never appears in the page, so none of it reaches the browser.
+    The loader and the markup change together, so you open and review one file.
+    Two files would split the code by technology, not by concern. The build
+    compiles the block into the route. It never appears in the page, so the
+    browser never gets it.
   </p>
 </div>
 
@@ -390,23 +390,23 @@ npm run dev`,
 
   <p>
     You write HTML, CSS and JavaScript. The file you edit is the page that
-    ships, and view source shows what you wrote.
+    ships. View source shows the code you wrote.
   </p>
 
   <p>
-    There is no client application, so nothing holds a second copy of the state
-    and nothing has to run before the text appears.
+    There is no client application. So no second copy of the state exists, and
+    no code has to run before the text appears.
   </p>
 
   <p>
-    Save the file and hot reload does the refresh. That is the loop:
-    Command-R programming, without the Command-R.
+    Save the file, and hot reload refreshes the page. You get the edit and
+    reload loop, but you do not press Command-R.
   </p>
 
   <p class="why-more">
-    <a href="/docs/why">Why this exists</a> goes further. The server returns the
-    HTML, and links and forms are what change the state. That idea is older than
-    the problem it solves.
+    <a href="/docs/why">Why this exists</a> explains more. The server returns
+    the HTML, and links and forms change the state. This idea is older than the
+    problem it solves.
   </p>
 </div>
 
@@ -423,25 +423,27 @@ npm run dev`,
       <h3>Four runtimes, one app</h3>
       <p>
         Node, Bun, Deno and <code>workerd</code>, the runtime behind Cloudflare
-        Workers. The core imports nothing from <code>node:</code> and touches no
-        Node-only global, both of which are tested. This site runs on it.
+        Workers. The core imports nothing from <code>node:</code> and uses no
+        Node-only global. Tests check both. This site runs on
+        <code>workerd</code>.
       </p>
     </div>
     <div class="cell">
       <h3>Types without TypeScript</h3>
       <p>
-        <code>npm run check</code> reads the shapes your loaders already return.
-        A misspelled field in a template is an error rather than a blank space
-        on the page. No annotations, and these pages are checked on every
+        <code>npm run check</code> reads the shape of the data your loaders
+        return. A misspelled field in a template is an error, not a blank space
+        on the page. You write no annotations. These pages get a check on every
         commit.
       </p>
     </div>
     <div class="cell">
-      <h3>Prerendered where it can be</h3>
+      <h3>Prerendered when possible</h3>
       <p>
-        A page that does not read the request is written to a file, compressed
-        once at rest, with a strong ETag per encoding. Everything else is
-        rendered by the server, on the same routes. This site is both.
+        If a page does not read the request, the build writes it to a file. The
+        build compresses the file once and gives each encoding a strong ETag.
+        The server renders all other pages, on the same routes. This site uses
+        both.
       </p>
     </div>
   </div>
@@ -451,10 +453,10 @@ npm run dev`,
   <div class="inner">
     <h2>Start a project</h2>
     <p>
-      Four commands and you have a site running on
-      <code>localhost:1960</code>. It writes a layout, two pages, a 404 and a
-      stylesheet, and nothing you have to delete.
-      <code>--template blank</code> writes one page instead.
+      Run four commands, and you have a site on <code>localhost:1960</code>. The
+      project has a layout, two pages, a 404 page and a stylesheet. You do not
+      have to delete any of it. <code>--template blank</code> writes one page
+      instead.
     </p>
     ${html(s.start)}
   </div>

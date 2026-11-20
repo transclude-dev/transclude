@@ -33,7 +33,7 @@ if (flash) cookies.delete('flash');`,
 
 <doc-page
   heading="Cookies"
-  lede="ctx.cookies reads and writes. A signed cookie can be read by the client and not forged, so use one for a session."
+  lede="ctx.cookies reads and writes cookies. The client can read a signed cookie but cannot forge it. So use a signed cookie for a session."
 >
   ${html(s.read)}
 
@@ -60,67 +60,67 @@ if (flash) cookies.delete('flash');`,
         </tr>
         <tr>
           <td><code>cookies.all()</code></td>
-          <td>Every cookie, on a null-prototype object.</td>
+          <td>Every cookie, in a null-prototype object.</td>
         </tr>
         <tr>
           <td><code>cookies.signed.get(name)</code></td>
-          <td>The value if the signature holds, else <code>undefined</code>.</td>
+          <td>The value if the signature is valid, else <code>undefined</code>.</td>
         </tr>
         <tr>
           <td><code>cookies.signed.set(name, value, options)</code></td>
-          <td>Signs and writes.</td>
+          <td>Signs it and writes it.</td>
         </tr>
       </tbody>
     </table>
   </div>
 
   <p>
-    The write defaults are <code>Path=/</code>, <code>HttpOnly</code>,
+    The default write options are <code>Path=/</code>, <code>HttpOnly</code>,
     <code>SameSite=Lax</code>, and <code>Secure</code> when the request came
-    over TLS. Any option you pass wins. <code>sameSite: 'None'</code> without
-    <code>secure: true</code> is refused, because every browser drops that pair
-    silently.
+    over TLS. An option you pass replaces its default. The framework refuses
+    <code>sameSite: 'None'</code> without <code>secure: true</code>. Every
+    browser silently drops a cookie with that pair.
   </p>
 
   <h2>Signing</h2>
 
   <p>
-    <code>cookies.signed</code> needs <code>cookieSecret</code>. Without one it
-    throws.
+    <code>cookies.signed</code> needs <code>cookieSecret</code>. Without it,
+    <code>cookies.signed</code> throws.
   </p>
 
   ${html(s.secret)}
 
   <p>
-    Use <code>globalThis.process?.env</code>. A runtime with no Node
-    compatibility has no <code>process</code>, and a bare reference throws before
-    anything runs.
+    Use <code>globalThis.process?.env</code>. A runtime without Node
+    compatibility has no <code>process</code>. A bare reference to it throws
+    before anything runs.
   </p>
 
-  <doc-note label="Only dev invents a secret">
-    The dev server signs with a random value for that process and prints a
-    notice. Production does not.
+  <doc-note label="Only the dev server makes up a secret">
+    The dev server signs with a random value for that process, and it prints a
+    notice. Production does not do this.
   </doc-note>
 
-  <h2>A forged cookie is not a missing one</h2>
+  <h2>A forged cookie reads as a missing one</h2>
 
   <p>
-    <code>cookies.signed.get</code> returns <code>undefined</code> for both, so
-    <code>?? fallback</code> cannot slip past a tampered value.
+    <code>cookies.signed.get</code> returns <code>undefined</code> for both. So
+    a tampered value cannot get past <code>?? fallback</code>.
   </p>
 
   <h2>A flash message</h2>
 
   <p>
-    A short-lived signed cookie, read once and then deleted, crosses a redirect
-    exactly once.
+    Use a short-lived signed cookie. Read it once, and then delete it. The
+    message then shows exactly once, after one redirect.
   </p>
 
   ${html(s.flash)}
 
   <doc-note label="Check a flash in a browser" tone="warn">
-    <code>curl -L</code> does not send a cookie the redirect set on the hop it
-    follows. It arrives on the next request instead, so a flash looks broken
-    under curl and works in practice.
+    <code>curl -L</code> does not send a cookie that a redirect set when it
+    follows that redirect. The cookie arrives on the next request instead. So a
+    flash looks broken in curl but works in a browser.
   </doc-note>
 </doc-page>

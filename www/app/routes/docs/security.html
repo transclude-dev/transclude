@@ -74,25 +74,26 @@ export default {
 <title>Security · transclude</title>
 <meta
   name="description"
-  content="A Content-Security-Policy built from the hashes of what each page inlines."
+  content="A Content-Security-Policy built from the hashes of the inline scripts in each page."
 />
 
 <doc-page
   heading="Security"
-  lede="A Content-Security-Policy tells the browser which scripts and styles may run, so a script from a host you did not name never does. Turn it on with a config key."
+  lede="A Content-Security-Policy tells the browser which scripts and styles may run. The browser then blocks a script from a host that you did not name. Turn the policy on with a config key."
 >
   ${html(s.on)}
 
   <p>
-    That is the whole setup. Each page gets a policy built from what that page
-    inlines, and CSRF is already on by default.
+    You need no other setup. Each page gets a policy built from the inline
+    scripts in that page. CSRF protection is on by default.
   </p>
 
   <h2>Escaping</h2>
 
   <p>
-    Every <code>\${…}</code> is escaped. A value carrying markup arrives as
-    text, so a page rendering something a visitor typed cannot run it.
+    The framework escapes every <code>\${…}</code>. A value that contains markup
+    appears as text. So if a page shows text that a visitor typed, that text
+    cannot run.
   </p>
 
   ${html(s.escaped)}
@@ -100,58 +101,60 @@ export default {
   ${html(s.escapedOut)}
 
   <p>
-    <code>html()</code> turns that off for one value. It is a claim that the
-    markup is yours: rendered Markdown you control, or output a library you trust
-    produced.
+    <code>html()</code> turns off escaping for one value. With it, you say that
+    the markup is yours. Use it for rendered Markdown that you control, or for
+    output from a library that you trust.
   </p>
 
   ${html(s.trusted)}
 
-  <doc-note label="It trusts, it does not clean" tone="warn">
-    <code>html()</code> sanitizes nothing. Wrap anything a visitor typed and the
-    page runs somebody else's script. No Content-Security-Policy below will save
-    you. The script came from your own origin, in your own document.
+  <doc-note label="html() trusts the value, but does not clean it" tone="warn">
+    <code>html()</code> removes nothing from the markup. If you wrap text that a
+    visitor typed, the page runs that visitor's script. The
+    Content-Security-Policy below does not stop it. The script comes from your
+    own origin, in your own document.
   </doc-note>
 
   <p>
-    HTML is parsed before any interpolation runs. An escaped value cannot open
-    or close anything structural, and a comment ends where the file ends it. Markup through <code>html()</code> is written where the template put
-    it, and the browser reads it as markup. A <code>&lt;/p&gt;</code> in it
-    closes the paragraph around it.
+    The framework parses the HTML before any interpolation runs. So an escaped
+    value cannot open or close an element or a comment. A comment ends where the
+    file ends it. Markup from <code>html()</code> goes where the template put it,
+    and the browser reads it as markup. A <code>&lt;/p&gt;</code> in it closes
+    the paragraph around it.
   </p>
 
   ${html(s.parseOrder)}
 
-  <h2>Scripts and styles take no expressions</h2>
+  <h2>Scripts and styles cannot contain expressions</h2>
 
   <p>
-    Text in a <code>&lt;script&gt;</code> or a <code>&lt;style&gt;</code> reaches
-    the page as written. Escaping it would change what the browser reads:
-    <code>&amp;amp;</code> is an ampersand in prose and four characters in
-    JavaScript. So a value there lands in code. Both of these are compile
+    Text in a <code>&lt;script&gt;</code> or a <code>&lt;style&gt;</code> goes
+    into the page exactly as written. Escaping it would change what the browser
+    reads. In HTML text, <code>&amp;amp;</code> is one ampersand. In JavaScript,
+    it is five characters. So a value there becomes code. Both of these examples are compile
     errors.
   </p>
 
   ${html(s.refused)}
 
   <p>
-    No escape fixes the first one. A value that closes the string it was written
-    into runs whatever follows it. That is a fact about JavaScript, not about
-    markup.
+    No escape can make the first example safe. If a value closes the string
+    around it, the code after the value runs. This is a fact about JavaScript,
+    not about markup.
   </p>
 
   <p>
-    A <code>&lt;script&gt;</code> at the top level of a page is client code. It
-    is bundled into a file rather than written into the page, and
-    <code>\${…}</code> in it is JavaScript's own template syntax.
+    A <code>&lt;script&gt;</code> at the top level of a page is client code. The
+    build bundles it into a file and does not write it into the page. In it,
+    <code>\${…}</code> is JavaScript's own template syntax.
   </p>
 
   <p>
-    Data is a narrower question, and it has an answer. <code>json()</code> is
-    JSON with the characters that could end the element written as
-    <code>&#92;uXXXX</code>. One <code>json()</code> call, alone, is what a script
-    may carry. For a style, read the value through a custom property. A custom
-    property is an attribute, so it is escaped.
+    Data has a safe path. <code>json()</code> writes JSON, and it writes each
+    character that could end the element as <code>&#92;uXXXX</code>. A script can
+    contain one <code>json()</code> call and nothing else. For a style, read the
+    value through a custom property. A custom property is set in an attribute,
+    so it is escaped.
   </p>
 
   ${html(s.jsonOk)}
@@ -159,151 +162,154 @@ export default {
   <h2>Hashes, not a nonce</h2>
 
   <p>
-    A policy has to name each inline script it allows. There are two ways to do
-    that. A nonce is a random value the server puts on both the tag and the
-    policy. A hash is a digest of the script's own text.
+    A policy must name each inline script that it allows. There are two ways to
+    do this. A nonce is a random value that the server puts on both the tag and
+    the policy. A hash is a digest of the script's text.
   </p>
 
   <p>
-    A nonce has to be different on every request. Most pages here are written to
-    a file at build time and sent as bytes, so there is no request to make one
-    for. A hash is decided when the page renders and stays true afterwards, which
-    is what a file needs.
+    A nonce must be different for each request. The build writes most pages to
+    files, and the server sends those files as bytes. So there is no request to
+    make a nonce for. A hash is set when the page renders, and it stays correct
+    after that. A file needs this.
   </p>
 
   ${html(s.output)}
 
-  <doc-note label="Nothing to write">
-    You do not stamp anything. The policy is built from the document after it
-    renders, so it names what actually shipped rather than what was meant to.
-    That includes a script that reached the output through <code>html()</code>:
-    the policy refuses what is loaded from elsewhere, and is not a second escape.
+  <doc-note label="Nothing for you to add">
+    You do not mark your scripts. The framework builds the policy from the
+    document after it renders. So the policy names the scripts that the page
+    really contains. This includes a script that got into the output through
+    <code>html()</code>. The policy blocks scripts that load from other places.
+    It is not a second escape.
   </doc-note>
 
   <h2>Why styles are not hashed</h2>
 
   <p>
-    <code>script-src</code> carries hashes and <code>style-src</code> does not.
-    That looks inconsistent and is the only combination that works.
+    <code>script-src</code> contains hashes, but <code>style-src</code> does not.
+    This looks inconsistent, but it is the only combination that works.
   </p>
 
   <p>
-    A hash never covers an attribute. <code>style="color:red"</code> on an
-    element is checked against <code>style-src</code>, and a hash there applies
-    to <code>&lt;style&gt;</code> blocks only. Adding
-    <code>'unsafe-inline'</code> alongside does not help either: a directive
-    carrying any hash <em>ignores</em> <code>'unsafe-inline'</code> outright. So
-    hashing styles means no element on the page may carry a
-    <code>style</code> attribute, and
-    <code>style="view-transition-name: …"</code> is an ordinary thing to write.
+    A hash never covers an attribute. The browser checks
+    <code>style="color:red"</code> on an element against <code>style-src</code>.
+    But a hash in <code>style-src</code> applies only to
+    <code>&lt;style&gt;</code> blocks. Adding <code>'unsafe-inline'</code> too
+    does not help. A directive that contains any hash <em>ignores</em>
+    <code>'unsafe-inline'</code> completely. So with hashed styles, no element on
+    the page could have a <code>style</code> attribute. But
+    <code>style="view-transition-name: …"</code> is a common thing to write.
   </p>
 
   <p>
-    Script is where the protection matters, and CSS cannot run code. Put
-    <code>'hashes'</code> in <code>style-src</code> yourself if your pages have
-    no style attributes at all.
+    The protection matters for scripts, and CSS cannot run code. If your pages
+    have no style attributes at all, put <code>'hashes'</code> in
+    <code>style-src</code> yourself.
   </p>
 
   <h2>Directives sent as a header</h2>
 
   <p>
-    <code>frame-ancestors</code>, <code>report-uri</code>,
-    <code>report-to</code> and <code>sandbox</code> are ignored in a
-    <code>&lt;meta&gt;</code> tag, so they ride in a response header. None names
-    a hash, so that header is the same on every page.
+    A browser ignores <code>frame-ancestors</code>, <code>report-uri</code>,
+    <code>report-to</code> and <code>sandbox</code> in a
+    <code>&lt;meta&gt;</code> tag. So the server sends them in a response header.
+    None of them names a hash, so that header is the same on every page.
   </p>
 
   <p>
-    A static host serves the meta half and not the header. Set those directives
-    at the host if you export the site and need them.
+    A static host serves the <code>&lt;meta&gt;</code> tag but not the header. If
+    you export the site and need those directives, set them at the host.
   </p>
 
   <h2>Your own directives</h2>
 
   <p>
-    Pass <code>directives</code> to replace the defaults.
-    <code>'hashes'</code> in a source list is where that page's own digests go,
-    so you decide which directives get them.
+    Pass <code>directives</code> to replace the defaults. Put
+    <code>'hashes'</code> in a source list to add the page's own digests there.
+    So you decide which directives get them.
   </p>
 
   ${html(s.custom)}
 
   <p>
-    A directive left with no sources is dropped rather than written empty. An
-    empty list means <code>'none'</code>. Saying that by accident breaks the page
-    rather than protecting it.
+    If a directive has no sources, the framework leaves it out. It does not
+    write the directive empty. An empty list means <code>'none'</code>. If you
+    say <code>'none'</code> by accident, the page breaks and is no safer.
   </p>
 
   <h2>Report before you enforce</h2>
 
   <p>
-    The browser reports what would have been blocked and blocks nothing, so a
-    policy can be tightened against real traffic first.
+    In report-only mode, the browser reports what the policy would block, but it
+    blocks nothing. So you can test a stricter policy against real traffic first.
   </p>
 
   ${html(s.report)}
 
   <p>
-    The whole policy then rides in a
-    <code>Content-Security-Policy-Report-Only</code> header, this page's hashes
-    included. A browser ignores report-only in a <code>&lt;meta&gt;</code>, so
-    no meta is written.
+    The server then sends the whole policy in a
+    <code>Content-Security-Policy-Report-Only</code> header. The header includes
+    the page's hashes. A browser ignores report-only in a
+    <code>&lt;meta&gt;</code> tag, so the framework writes no meta tag.
   </p>
 
   <doc-note label="A static host reports nothing" tone="warn">
-    The header is set by the server that answers the page. A prerendered page
-    served from <code>dist/static</code> by a host that runs none of this
-    carries no policy at all in report-only mode.
+    The server that sends the page sets the header. A host can serve prerendered
+    pages from <code>dist/static</code> and run none of this code. In report-only
+    mode, a page from that host has no policy at all.
   </doc-note>
 
-  <h2>The features a page refuses</h2>
+  <h2>The features a page turns off</h2>
 
   <p>
-    <code>permissionsPolicy</code> sends a <code>Permissions-Policy</code> header
-    naming what this app never asks for.
+    <code>permissionsPolicy</code> sends a <code>Permissions-Policy</code>
+    header. The header lists the browser features that this app never asks for.
   </p>
 
   ${html(s.permissions)}
 
   <p>
-    <code>true</code> turns off eleven: cameras, microphones, location, the motion
-    sensors, screen capture, MIDI, USB, payment and topic inference. Rendering a
-    document asks for none of them.
+    <code>true</code> turns off eleven features: cameras, microphones, location,
+    the motion sensors, screen capture, MIDI, USB, payment and topic inference. A
+    document needs none of them to render.
   </p>
 
   <p>
-    A page that wants one says so, and <code>features</code> replaces the list
-    rather than adding to it.
+    If a page needs one, list it in <code>features</code>. This list replaces the
+    default list. It does not add to it.
   </p>
 
   ${html(s.features)}
 
   <p>
-    An empty array is nobody, including this page. <code>['self']</code> is this
-    page and no frame it holds.
+    An empty array allows nobody, and that includes this page.
+    <code>['self']</code> allows this page, but no frame in it.
   </p>
 
   <doc-note label="Off unless you ask, and on in a new project">
-    Refusing a camera takes something away from an app that may want one, which
-    is why the default is <code>false</code>. A generated project sets it to
-    <code>true</code>, where the key sits in the config you own and can read.
+    Turning off the camera takes something away from an app that may need it. So
+    the default is <code>false</code>. A generated project sets it to
+    <code>true</code>. There, the key is in a config file that you own and can
+    read.
   </doc-note>
 
-  <h2>The headers left to you</h2>
+  <h2>The headers that you set</h2>
 
   <p>
-    The framework sets what it can judge for every app: the policy and the
-    features above, and <code>X-Content-Type-Options: nosniff</code> on every
-    response. Two more refuse something an app may want and cannot be read from
-    the config, so they are yours to set in
+    The framework sets the headers that are correct for every app. These are the
+    policy and the features above, and
+    <code>X-Content-Type-Options: nosniff</code> on every response. Two more
+    headers block things that an app may need. The framework cannot find the
+    right values in the config. So you set them in
     <a href="/docs/middleware">app/server.js</a>.
   </p>
 
   ${html(s.headers)}
 
   <p>
-    <code>Strict-Transport-Security</code> commits every visitor to HTTPS for a
-    year. <code>Referrer-Policy</code> tightens a browser default that already
-    strips the path cross-origin.
+    <code>Strict-Transport-Security</code> makes every visitor use HTTPS for a
+    year. <code>Referrer-Policy</code> makes a browser default stricter. That
+    default already removes the path from a cross-origin referrer.
   </p>
 </doc-page>

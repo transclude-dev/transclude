@@ -90,14 +90,14 @@
 <title>How transclude works · transclude</title>
 <meta
   name="description"
-  content="One page traced from source to response, with every stage opening the module that does the work."
+  content="One page, followed from source file to response. Each stage links to the module that does the work."
 />
 <link rel="canonical" href="https://transclude.dev/explorer" />
 <meta property="og:type" content="article" />
 <meta property="og:title" content="How transclude works" />
 <meta
   property="og:description"
-  content="One page traced from source to response, with every stage opening the module that does the work."
+  content="One page, followed from source file to response. Each stage links to the module that does the work."
 />
 
 <style>
@@ -224,17 +224,17 @@
   <h1>How transclude works</h1>
 
   <p class="x-lede">
-    One page, traced from the file you write to the bytes a browser gets.
-    Nothing here is written down twice. The compiled module below is the real
-    output for the file beside it, and every stage opens the code that does the
+    This page follows <code>notes.html</code> from the file you write to the
+    bytes the browser gets. Nothing here is copied by hand. The compiled module below is the real
+    output for the file next to it. Each stage links to the code that does the
     work.
   </p>
 
   <h2>The file</h2>
 
   <p>
-    <code>app/routes/notes.html</code> answers <code>/notes</code>. Pick a block
-    to see what it became.
+    <code>app/routes/notes.html</code> responds to <code>/notes</code>. Select a
+    block to see what the compiler makes from it.
   </p>
 
   <ul class="x-chips" id="chips">
@@ -272,16 +272,16 @@
 
   <p class="x-said" id="said" hidden></p>
 
-  <doc-note class="x-wide" label="One template, two answers">
+  <doc-note class="x-wide" label="One template, two responses">
     The <code>&lt;ul&gt;</code> produced <code>regions.list</code> and the body
     of <code>render</code>. ${shared} of those lines are identical, character
-    for character, and the build checks that before this page is written. The
-    document and the fragment cannot disagree, because there is one of them.
+    for character. The build checks this before it writes this page. The
+    document and the fragment cannot differ, because there is only one template.
   </doc-note>
 
   <h2 id="stages">Compiling it</h2>
 
-  <p>This runs once, at build time. Nobody is waiting.</p>
+  <p>This step runs once, at build time. No visitor waits for it.</p>
 
   <div class="x-stages">
     <div class="x-stage" each="stage, i of build">
@@ -297,22 +297,22 @@
   <h2>What the build decides</h2>
 
   <p>
-    The build runs each loader once. A page that reads nothing about the request
-    becomes a file. One that reads a cookie, sets a header or answers with a
-    <code>Response</code> cannot be one file for every visitor. The build names
-    it, says what it did, and exits non-zero.
+    The build runs each loader once. If a page reads nothing from the request,
+    it becomes a file. Some pages read a cookie, set a header or return a
+    <code>Response</code>. Such a page cannot be one file for every visitor. The
+    build names the page, says what the page did, and exits non-zero.
   </p>
 
   <p>
-    <a href="/source/${fate.file}#L${fate.line}">${fate.file.slice(4)}:${fate.line}</a>
-    is where that is decided.
+    The code that decides this is at
+    <a href="/source/${fate.file}#L${fate.line}">${fate.file.slice(4)}:${fate.line}</a>.
   </p>
 
   <h2>Answering a request</h2>
 
   <p>
-    Everything above the route table runs for every request, one that ends at a
-    file included.
+    Each stage before the route table runs for every request. This includes a
+    request that ends at a prebuilt file.
   </p>
 
   <div class="x-stages">
@@ -329,7 +329,8 @@
   <h2>The same module, four ways</h2>
 
   <p>
-    Four requests, one compiled module. Each reads a different part of it.
+    Here are four requests to one compiled module. Each request uses a different
+    part of it.
   </p>
 
   <ul class="x-asks" id="asks">
@@ -354,15 +355,16 @@
   <h2>All of it</h2>
 
   <p>
-    Every module in <code>src/</code>, ${total} files and ${lines} lines. Each
-    one is a page, so a link to it is a link anyone can follow.
+    These are all the modules in <code>src/</code>: ${total} files and ${lines}
+    lines. Each module has its own page, so you can link to any of them.
   </p>
 
-  <doc-note label="Each of those marks its code as a fragment">
+  <doc-note label="Each module page marks its code as a fragment">
     <a href="/source/src/document.js">src/document.js</a> is the page.
     <a href="/source/src/document.js?fragment=code">The same URL with
-    <code>?fragment=code</code></a> is the listing on its own, from the markup
-    the page already holds. Open both and read one inside the other.
+    <code>?fragment=code</code></a> returns only the code listing. It comes from
+    the same markup as the page. Open both and find the fragment inside the
+    page.
   </doc-note>
 
   <div each="group of groups" style="margin-top: 1.5rem">

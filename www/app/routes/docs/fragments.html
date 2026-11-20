@@ -53,18 +53,18 @@ export default (app) => {
 <title>Fragments · transclude</title>
 <meta
   name="description"
-  content="A fragment is a fragment of a page with its own URL."
+  content="A fragment is a part of a page that has its own URL."
 />
 
 <doc-page
   heading="Fragments"
-  lede="A fragment is a part of a page that has its own URL. Ask for that URL and you get that part on its own, from the same compiled markup that renders it in the page."
+  lede="A fragment is a part of a page that has its own URL. When you ask for that URL, you get only that part. The same compiled markup renders it alone and in the page."
 >
   <p>
-    Use one for anything that changes while the rest of the page stays put.
-    Search results as you type. A list after something is added to it. The next
-    page of a table. Fetch the fragment and replace the copy in the page, instead
-    of loading the whole document again.
+    Use a fragment for any part that changes while the rest of the page stays
+    the same. Examples are search results as you type, a list after you add an
+    item, and the next page of a table. Fetch the fragment and replace the old
+    copy in the page. You do not load the whole document again.
   </p>
 
   <h2>Mark a fragment</h2>
@@ -107,7 +107,7 @@ export default (app) => {
   ${html(s.response)}
 
   <p>
-    The <code>id</code> is the name. The URL asks for <code>matches</code>, and
+    The <code>id</code> is the fragment's name. The URL asks for <code>matches</code>, and
     a swap targets <code>#matches</code>. The page and the fragment come from
     one template, so the two always agree.
   </p>
@@ -121,23 +121,23 @@ export default (app) => {
 
   <h2>Ask for one</h2>
 
-  <p>A fragment is an ordinary URL. Anything that fetches HTML can use it.</p>
+  <p>A fragment has an ordinary URL. Any tool that fetches HTML can use it.</p>
 
   <doc-note label="Why a query parameter and not #list">
-    A URL fragment is never sent to a server. The browser keeps everything after
-    the <code>#</code> for itself, so <code>GET /notes#list</code> arrives as
-    <code>GET /notes</code>. The server has no way to know a part was wanted. A
-    query parameter is on the wire, which is why it is the one that asks.
+    A browser never sends the URL fragment to a server. It keeps everything
+    after the <code>#</code> for itself. So <code>GET /notes#list</code> arrives
+    as <code>GET /notes</code>. The server cannot know that you wanted a part. A
+    query parameter is sent with the request, so the parameter does the asking.
   </doc-note>
 
   <p>
-    The <code>#</code> spelling does appear here, in
-    <code>&lt;transclude src="/notes#list"&gt;</code>. That is resolved while the
-    page is rendered, where the whole URL is in hand and nothing has been sent
-    anywhere. <code>&lt;use href="/icons.svg#check"&gt;</code> works for the same
-    reason from the other side: the browser fetches the whole file, then finds
-    the piece. Transferring the whole document is the thing a fragment exists to
-    avoid, so the request has to name the piece.
+    The <code>#</code> form does appear in this framework, in
+    <code>&lt;transclude src="/notes#list"&gt;</code>. The server resolves it
+    while it renders the page. At that point it has the whole URL, and nothing
+    is sent anywhere. <code>&lt;use href="/icons.svg#check"&gt;</code> works for
+    a similar reason. The browser fetches the whole file, then finds the part. A
+    fragment exists so that you do not download the whole document. So the
+    request must name the part it wants.
   </p>
 
   ${html(s.fetch)}
@@ -147,11 +147,12 @@ export default (app) => {
       href="https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTMLUnsafe"
       >setHTMLUnsafe()</a
     >
-    builds a declarative shadow root from the markup it is given, and
-    <code>innerHTML</code> does not. A shadow element arrives in a fragment
-    bare and paints itself on connect, so either one starts it. A fragment that
-    carries a declarative root needs <code>setHTMLUnsafe()</code>: one written
-    by hand, or one an include brought in.
+    builds a declarative shadow root from its markup.
+    <code>innerHTML</code> does not. A shadow element arrives in a fragment with
+    no shadow root, and it renders itself when it connects. So either method
+    starts it. A fragment that contains a declarative root needs
+    <code>setHTMLUnsafe()</code>. That root can be written by hand, or an include
+    can bring it in.
   </doc-note>
 
   <p>
@@ -163,15 +164,15 @@ export default (app) => {
   ${html(s.htmx)}
 
   <p>
-    htmx sends the target's id in an <code>HX-Target</code> header. Name that
-    header in the config and <code>?fragment=</code> becomes optional.
+    htmx sends the target's id in an <code>HX-Target</code> header. If you name
+    that header in the config, <code>?fragment=</code> becomes optional.
   </p>
 
   <doc-note label="Set hx-swap to outerHTML" tone="warn">
-    A fragment arrives carrying its own id, and htmx fills the target rather
-    than replacing it unless told otherwise. So the returned
-    <code>&lt;ul id="list"&gt;</code> lands <em>inside</em> the one already on
-    the page, and again on the next request.
+    A fragment arrives with its own id. By default, htmx fills the target
+    instead of replacing it. So the returned <code>&lt;ul id="list"&gt;</code>
+    goes <em>inside</em> the one already on the page. The next request puts
+    another one inside again.
   </doc-note>
 
   ${html(s.header)}
@@ -179,73 +180,75 @@ export default (app) => {
   <h2>Strict parameter, loose header</h2>
 
   <p>
-    <code>?fragment=nope</code> is a 404. Someone wrote that name into a URL, so
-    getting it wrong says so.
+    <code>?fragment=nope</code> is a 404. A person wrote that name into a URL, so
+    a wrong name gets an error.
   </p>
 
   <p>
-    A header naming a fragment is a hint, and an unknown name is ignored. Client
-    libraries send these headers on every request, including ones that want a
-    whole document. <code>HX-Target</code> from htmx works this way. Naming a
-    header in <code>fragmentHeader</code> adds it to <code>Vary</code>.
+    A header that names a fragment is only a hint. The server ignores an unknown
+    name. Client libraries send these headers on every request, including
+    requests for a whole document. <code>HX-Target</code> from htmx works this
+    way. When you name a header in <code>fragmentHeader</code>, the server adds
+    it to <code>Vary</code>.
   </p>
 
   <h2>Caches and the parameter</h2>
 
   <p>
-    A fragment is a different body at the same path, so a cache has to keep the
-    two apart. It does that on its own: the query string is part of the URL it
-    keys on.
+    A fragment is a different body at the same path, so a cache must keep the
+    two apart. A cache does this without help, because the query string is part
+    of its key.
   </p>
 
   <p>
+    A response can remove that separation with
     <a
       href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/No-Vary-Search"
       ><code>No-Vary-Search</code></a
-    >
-    is how a response takes that apart. It tells a cache which parameters make no
-    difference, which is true of a campaign tag and false of this one. Name the
-    parameters you mean.
+    >. This header tells a cache which parameters do not change the response. A
+    campaign tag does not change it, but <code>fragment</code> does. Name each
+    parameter that a cache can ignore.
   </p>
 
   ${html(s.novary)}
 
   <doc-note label="A header that hides the parameter is refused" tone="warn">
-    <code>except=()</code> is the short way to write "ignore every parameter",
-    and it would let a cache answer <code>?fragment=list</code> with the whole
-    document. A swap would then write the page into the element it should have
-    replaced. The server reads this header on the way out and throws, naming the
-    value it read. It reads a name as a cache does, so <code>fr%61gment</code> is
-    <code>fragment</code>. A value that names <code>params</code> or
-    <code>except</code> in a shape it cannot read is refused too.
+    <code>except=()</code> is the short way to write "ignore every parameter".
+    With it, a cache could answer <code>?fragment=list</code> with the whole
+    document. A swap would then write the whole page into the element it should
+    replace. The server reads this header on each response. It throws an error
+    that names the value it read. It reads a name the same way a cache does, so
+    <code>fr%61gment</code> is <code>fragment</code>. The server also refuses a
+    value with <code>params</code> or <code>except</code> in a form it cannot
+    read.
   </doc-note>
 
   <h2>Actions</h2>
 
   <p>
     <code>POST /?fragment=nope</code> changes nothing and returns 404. The
-    fragment is checked before the action runs.
+    server checks the fragment before the action runs.
   </p>
 
   <p>
-    <code>ctx.fragment</code> tells a form submission from a fetch. The first
-    wants a redirect, the second wants markup.
+    Use <code>ctx.fragment</code> to tell a form submission from a fetch. A form
+    submission wants a redirect. A fetch wants markup.
   </p>
 
   <h2>Styles for swapped-in markup</h2>
 
   <p>
-    A fragment can land on a page that never rendered the elements inside it.
-    Those elements have no definition there and no styles. Set
-    <code>watchElements</code> in the config. Every page then carries a small
-    script that notices a new tag, loads its definition and adds its styles
-    once.
+    A fragment can arrive on a page that never rendered the elements inside it.
+    On that page, those elements have no definition and no styles. Set
+    <code>watchElements</code> in the config. Then every page gets a small
+    script. The script finds each new tag, loads its definition and adds its
+    styles once.
   </p>
 
   <p>
-    It is off by default. It puts that script on every page, and it earns its
-    place only when swaps bring in elements the page did not already render.
-    This site leaves it off.
+    It is off by default, because it puts that script on every page. Turn it on
+    only when swaps bring in elements that the page did not already render. This
+    site leaves it off.
   </p>
 
   <p>

@@ -105,11 +105,11 @@
 </script>
 
 <title>Pages and routes · transclude</title>
-<meta name="description" content="The directory tree is the route table." />
+<meta name="description" content="The path of each file in the routes directory sets its URL." />
 
 <doc-page
   heading="Pages and routes"
-  lede="A file's path is its URL. An .html file is a page, a .js file is an endpoint."
+  lede="A file's path sets its URL. An .html file is a page. A .js file is an endpoint."
 >
   <div class="scroller">
     <table>
@@ -155,29 +155,29 @@
   <h2>Drafts</h2>
 
   <p>
-    A page in the tree is a route, which leaves nowhere to put one that is not
-    finished. This is that.
+    Every page in the tree is a route. To keep an unfinished page out of
+    production, mark it as a draft.
   </p>
 
   ${html(s.draft)}
 
   <p>
-    <code>npm run dev</code> serves it, because the dev server reads the
-    directory. The build leaves it out: no file, no route in the manifest, no
-    line in the sitemap. The deployed site answers that URL with the not-found
-    page. Publishing is deleting the line.
+    <code>npm run dev</code> serves a draft, because the dev server reads the
+    directory. The build leaves it out. It writes no file, no route in the
+    manifest and no line in the sitemap. The deployed site answers that URL with
+    the not-found page. To publish the page, delete the line.
   </p>
 
   <doc-note label="The build says what it skipped" tone="warn">
-    A page absent from production and silent about it is a bad afternoon, so
-    every build prints its drafts under everything it wrote. If you deploy and a
-    page is missing, the reason was on screen when you built it.
+    A page that is missing with no message is hard to find. So every build
+    prints its drafts after the list of files it wrote. If a page is missing
+    after you deploy, look at the build output. The reason is there.
   </doc-note>
 
   <p>
-    Being in dev and not in production is a difference, and differences like it
-    are where the quiet bugs live. This one is the whole point of the feature,
-    which is why the build is loud about it.
+    A page that is in dev but not in production can cause bugs that are hard to
+    see. For a draft, that difference is the purpose of the feature. So the build
+    reports it clearly.
   </p>
 
   <h2>The loader</h2>
@@ -190,15 +190,15 @@
   ${html(s.loader)}
 
   <p>
-    A page that reads nothing needs no block at all. Leave it out rather than
-    exporting a loader that returns an empty object.
+    A page that needs no data needs no block. Leave the block out. Do not export
+    a loader that returns an empty object.
   </p>
 
   <doc-note label="Why it is in the page">
-    The loader and the markup that reads it change together, so they are one
-    file to open and one file to review. The block is compiled into the route
-    and never reaches the browser.
-    <a href="/docs/why">Why transclude</a> makes the longer case.
+    The loader and its markup change together. So they are in one file, and you
+    open and review one file. The block is compiled into the route, and the
+    browser never gets it.
+    <a href="/docs/why">Why transclude</a> gives the full reasons.
   </doc-note>
 
   <h3>The context</h3>
@@ -226,13 +226,13 @@
         <tr>
           <td><code>after</code></td>
           <td>
-            Takes a promise the reader does not wait for. See
+            Takes a promise. The response does not wait for it. See
             <a href="/docs/runtimes">runtimes</a>.
           </td>
         </tr>
         <tr>
           <td><code>cookies</code></td>
-          <td>Read and write, signed or plain.</td>
+          <td>Reads and writes cookies, signed or plain.</td>
         </tr>
         <tr>
           <td><code>fragment</code></td>
@@ -241,7 +241,7 @@
         <tr>
           <td><code>layout</code></td>
           <td>
-            What the loaders above this one returned, merged. See
+            The data that the loaders above this one returned, merged. See
             <a href="/docs/layouts">layouts</a>.
           </td>
         </tr>
@@ -252,8 +252,8 @@
         <tr>
           <td><code>request</code></td>
           <td>
-            The <code>Request</code>. <code>null</code> while prerendering,
-            which is the only time there is none.
+            The <code>Request</code>. It is <code>null</code> only while
+            prerendering.
           </td>
         </tr>
         <tr>
@@ -263,7 +263,7 @@
         <tr>
           <td><code>revalidateTag</code></td>
           <td>
-            Drops every held page carrying a tag. See
+            Removes every cached page that has a given tag. See
             <a href="/docs/production">the production build</a>.
           </td>
         </tr>
@@ -284,71 +284,73 @@
   <h2>Returning a Response</h2>
 
   <p>
-    Return a <code>Response</code> from a loader and that becomes the response.
-    The render is skipped.
+    If a loader returns a <code>Response</code>, the server sends that
+    response. It skips the render.
   </p>
 
   ${html(s.response)}
 
   <h2>Status and headers</h2>
 
-  <p>Write to <code>ctx.response</code> to answer with something other than 200.</p>
+  <p>Write to <code>ctx.response</code> to send a status other than 200.</p>
 
   ${html(s.status)}
 
   <h2>Tags that move into &lt;head&gt;</h2>
 
   <p>
-    Write <code>&lt;title&gt;</code>, <code>&lt;meta&gt;</code>,
+    You can write <code>&lt;title&gt;</code>, <code>&lt;meta&gt;</code>,
     <code>&lt;link&gt;</code> or <code>&lt;base&gt;</code> at the top level of a
-    page and it is moved into <code>&lt;head&gt;</code>. A page keeps its head
-    next to the markup that needs it.
+    page. The tag then moves into <code>&lt;head&gt;</code>. So the head tags
+    stay next to the markup that needs them.
   </p>
 
   ${html(s.head)}
 
   <p>
-    A directive on one of them works, and the tag still lands in
-    <code>&lt;head&gt;</code>. The condition is written there with it, so a
-    <code>&lt;link&gt;</code> whose condition is false is not sent at all.
+    You can put a directive on one of these tags. The tag still moves into
+    <code>&lt;head&gt;</code>, and its condition moves with it. So if the
+    condition on a <code>&lt;link&gt;</code> is false, the server does not send
+    that <code>&lt;link&gt;</code>.
   </p>
 
   <doc-note label="A title takes no directive" tone="warn">
-    Which level's title wins is settled when the page compiles, by whether a
-    level has one at all. A condition would make it a question only the request
-    can answer. A false one would leave the page with no title, and the layout's
-    already ruled out. Interpolate the text instead.
+    The compiler decides which level's title wins. It checks only whether each
+    level has a title. A condition would make the answer depend on the request.
+    A false condition would leave the page with no title, because the layout's
+    title already lost. Interpolate the text instead.
   </doc-note>
 
   <h2>Interpolation</h2>
 
   <p>
-    <code>\${…}</code> reads what the loader returned and is always escaped, so
-    a value carrying <code>&lt;script&gt;</code> arrives as text.
-    <code>html()</code> is the one way out, and it is in scope in every file with
-    nothing to import.
+    <code>\${…}</code> reads the data that the loader returned. Its output is
+    always escaped, so a value that contains <code>&lt;script&gt;</code> shows
+    as text. <code>html()</code> is the only way to skip the escaping. You can
+    use it in every file, with no import.
   </p>
 
   ${html(s.interpolation)}
 
   <doc-note label="html() trusts, it does not clean" tone="warn">
-    It marks a value as markup you vouch for. It sanitizes nothing, so
-    <code>html()</code> around anything a visitor typed is how a page runs
-    somebody else's script. <a href="/docs/security">Security</a> has the rest.
+    <code>html()</code> marks a value as markup that you trust. It does not
+    sanitize anything. If you put <code>html()</code> around text that a visitor
+    typed, your page can run another person's script.
+    <a href="/docs/security">Security</a> has more.
   </doc-note>
 
   <h3>In an attribute</h3>
 
   <p>
-    An attribute value takes <code>${empty}</code> too, whole or in part, as
-    many times as you like.
+    An attribute value can also contain <code>${empty}</code>. It can be the
+    whole value or a part of it, and it can appear many times.
   </p>
 
   ${html(s.attributes)}
 
   <p>
-    The value is escaped by attribute rules, which are not the text rules. What
-    a value is decides what the attribute becomes.
+    The value is escaped with attribute rules, which are different from the text
+    rules. The type of the value decides what the attribute becomes.
   </p>
 
   <div class="scroller">
@@ -362,7 +364,7 @@
       <tbody>
         <tr>
           <td><code>false</code>, <code>null</code>, <code>undefined</code></td>
-          <td>dropped, rather than written as a string</td>
+          <td>removed, not written as a string</td>
         </tr>
         <tr>
           <td><code>true</code></td>
@@ -370,7 +372,7 @@
         </tr>
         <tr>
           <td>an object or an array</td>
-          <td>JSON, which is how an element reads it back</td>
+          <td>JSON, so an element can read it back</td>
         </tr>
         <tr>
           <td>anything else</td>
@@ -380,18 +382,18 @@
     </table>
   </div>
 
-  <doc-note label="Names are written out, values are not" tone="warn">
-    Only a value is read. An interpolation in the attribute <em>name</em> is a
-    compile error, because emitting it would put <code>${empty}</code> into the
-    page as those characters. To pick between two spellings, put the condition
-    in the value.
+  <doc-note label="Only values are read, not names" tone="warn">
+    An interpolation works only in a value. An interpolation in the attribute
+    <em>name</em> is a compile error. Otherwise the page would contain the
+    characters <code>${empty}</code> as they are. To choose between two
+    spellings, put the condition in the value.
   </doc-note>
 
   <h2>Directives</h2>
 
   <p>
-    Four attributes decide whether an element renders and how many times. They
-    are the whole templating language.
+    Four attributes decide if an element renders, and how many times. These four
+    are the complete templating language.
   </p>
 
   <div class="scroller">
@@ -417,29 +419,30 @@
         </tr>
         <tr>
           <td><code>key="expr"</code></td>
-          <td>Which item is which, across a re-render.</td>
+          <td>Identify each item across a re-render.</td>
         </tr>
       </tbody>
     </table>
   </div>
 
   <p>
-    A directive's value is an expression, not a string. There is no
-    <code>${empty}</code> inside one, and no quotes around a name:
+    A directive's value is an expression, not a string. Do not put
+    <code>${empty}</code> inside it, and do not put quotes around a name.
     <code>if="query"</code> reads the field called <code>query</code>.
   </p>
 
   <p>
-    An expression reads data and calls functions. There is no assignment, no
-    arrow function, no object literal and no <code>await</code>. Work like that
-    goes in <code>&lt;script server&gt;</code>, which passes its result in. The
-    same grammar is what <code>${empty}</code> takes, and
-    <a href="/docs/decisions">decisions and limits</a> says why it is small.
+    An expression can read data and call functions. It cannot contain an
+    assignment, an arrow function, an object literal or <code>await</code>. Do
+    that work in <code>&lt;script server&gt;</code>, and return the result.
+    <code>${empty}</code> uses the same grammar.
+    <a href="/docs/decisions">Decisions and limits</a> explains why the grammar
+    is small.
   </p>
 
   <h3>if, else-if, else</h3>
 
-  <p>The first one whose expression is true renders. The others are left out.</p>
+  <p>The first element whose expression is true renders. The others do not.</p>
 
   ${html(s.branch)}
 
@@ -448,21 +451,21 @@
   ${html(s.branchOut)}
 
   <p>
-    The chain is made of neighbors. Whitespace and comments between them are
-    fine, and another element ends it. An <code>else</code> with no
-    <code>if</code> before it is a compile error, rather than an element that
-    never appears.
+    The elements in a chain must be next to each other. Whitespace and comments
+    between them are allowed. Any other element ends the chain. An
+    <code>else</code> with no <code>if</code> before it is a compile error. It
+    does not become an element that never appears.
   </p>
 
   <h3>each</h3>
 
-  <p>The element is repeated, once per item, with the item in scope inside it.</p>
+  <p>The element repeats once for each item. Inside it, the item is in scope.</p>
 
   ${html(s.loop)}
 
   <p>
-    Add a second name for the index, counting from zero. Any name a
-    <code>const</code> can take is a name here, <code>entrée</code> included.
+    Add a second name for the index. The index starts at zero. Any name that is
+    valid for a <code>const</code> is valid here, including <code>entrée</code>.
   </p>
 
   ${html(s.loopIndex)}
@@ -472,15 +475,15 @@
   ${html(s.loopOut)}
 
   <p>
-    The name reaches everything inside the element, attributes included, and a
-    loop inside a loop can read the one around it.
+    You can use the name everywhere inside the element, including its
+    attributes. A loop inside another loop can read the name of the outer loop.
   </p>
 
   ${html(s.loopScope)}
 
   <doc-note label="An empty list renders nothing at all">
-    Not an empty row and not a message. If a list has something to say when it
-    is empty, that is an <code>if</code> beside it.
+    It renders no empty row and no message. To show a message for an empty list,
+    put an element with <code>if</code> next to the loop.
   </doc-note>
 
   ${html(s.loopEmpty)}
@@ -488,17 +491,17 @@
   <h3>key</h3>
 
   <p>
-    <code>key</code> says which item is which, so a re-render can move a row
-    rather than rewrite it. Input values, focus and scroll position survive a
-    reorder.
+    <code>key</code> identifies each item. So a re-render can move a row instead
+    of writing it again. Input values, focus and scroll position stay the same
+    when the order changes.
   </p>
 
   ${html(s.keyed)}
 
   <p>
-    A key matters where markup re-renders in the browser, and that is a
-    <a href="/docs/elements">shadow element</a>. A page is rendered once per
-    request, so a key there changes nothing.
+    A key matters only where markup re-renders in the browser. That happens in a
+    <a href="/docs/elements">shadow element</a>. A page renders once per request,
+    so a key in a page changes nothing.
   </p>
 
   <h3>What is refused</h3>
@@ -508,9 +511,9 @@
   ${html(s.refused)}
 
   <doc-note label="Filtering belongs in the loader">
-    Sorting, filtering and formatting are the loader's job. A template decides
-    what appears, not what the data is. It is also what makes the names a page
-    reads collectible, which is where the
-    <a href="/docs/types">type checking</a> comes from.
+    Do sorting, filtering and formatting in the loader. A template decides what
+    appears. It does not change the data. This rule also lets the compiler
+    collect the names that a page reads. The
+    <a href="/docs/types">type checking</a> uses those names.
   </doc-note>
 </doc-page>

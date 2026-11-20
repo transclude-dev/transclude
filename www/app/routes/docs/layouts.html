@@ -60,99 +60,105 @@
 </script>
 
 <title>Layouts · transclude</title>
-<meta name="description" content="_layout.html wraps every route beside and below it." />
+<meta name="description" content="A _layout.html file wraps every route in its directory and below it." />
 
 <doc-page
   heading="Layouts"
-  lede="A _layout.html wraps every route in its directory and below. Layouts nest, and each one loads its own data."
+  lede="A _layout.html file wraps every route in its directory and in the directories below. Layouts nest. Each layout loads its own data."
 >
   ${html(s.layout)}
 
-  <p>The page renders into <code>&lt;slot&gt;</code>. Name a slot to offer more than one.</p>
+  <p>
+    The page renders into the <code>&lt;slot&gt;</code>. To have more than one
+    slot, give a slot a name.
+  </p>
 
   ${html(s.named)}
 
   <h2>Nesting</h2>
 
   <p>
-    A <code>_layout.html</code> in a subdirectory renders inside the one above
-    it. Put a nav in the root layout and a sidebar in the section layout, and a
-    page in that section gets both.
+    A <code>_layout.html</code> in a subdirectory renders inside the layout
+    above it. Put a nav in the root layout and a sidebar in the section layout.
+    A page in that section then gets both.
   </p>
 
   ${html(nested)}
 
   <p>
-    Each one loads its own data, and each gets its own
-    <code>&lt;slot&gt;</code> filled by whatever is below it. A loader also
-    reads what the chain above it returned, as <code>ctx.layout</code>.
+    Each layout loads its own data. Each layout also has its own
+    <code>&lt;slot&gt;</code>, and the layout or page below it fills that slot.
+    A loader can also read the data that the layouts above it returned, as
+    <code>ctx.layout</code>.
   </p>
 
   <h2>A layout can respond on its own</h2>
 
   <p>
-    Return a <code>Response</code> from a layout loader and it stops there.
-    Nothing below it runs, which is how you write a login redirect once.
+    If a layout loader returns a <code>Response</code>, the request stops there.
+    Nothing below it runs. So you write a login redirect only once.
   </p>
 
   ${html(s.guard)}
 
   <p>
-    The actions are below it too. A <code>POST</code> to a page under
-    this layout runs the guard first, so a signed-out request never reaches the
-    handler. The render that follows asks the layouts again, so each loader runs
-    twice on a request that changes something. That is on purpose: the page
-    renders from what the action just did, not from what was true before it.
+    Actions are also below the layout. A <code>POST</code> to a page under this
+    layout runs the guard first. So a signed-out request never gets to the
+    handler. After the action, the render runs the layout loaders again. So each
+    loader runs twice on a request that changes something. This is on purpose.
+    The page shows the data after the action, not the data from before it.
   </p>
 
   <doc-note label="A page behind a guard is not a file" tone="warn">
-    Give it <code>export const prerender = false</code>. A guard reads a cookie,
-    and a page that reads one has an answer per visitor, so the build refuses to
-    write it. It names the page, says why, and exits non-zero, rather than
-    shipping a signed-out copy.
+    Give the page <code>export const prerender = false</code>. A guard reads a
+    cookie. A page that reads a cookie has a different answer for each visitor,
+    so the build refuses to write it to a file. The build names the page, says
+    why, and exits non-zero. It does not ship a signed-out copy.
   </doc-note>
 
   <p>
     Middleware in <a href="/docs/middleware">app/server.js</a> does not run
-    during the build. Nothing there can stand in for a guard in a layout.
+    during the build. So middleware cannot replace a guard in a layout.
   </p>
 
   <h2>Attributes on &lt;html&gt; and &lt;body&gt;</h2>
 
   <p>
-    The root layout owns the document, so it is where a theme or a text
-    direction belongs. Write <code>&lt;html&gt;</code> and its attributes become
-    the document's, the same way a <code>&lt;title&gt;</code> anywhere in the
-    chain becomes the document's title.
+    The root layout controls the document. So set a theme or a text direction
+    there. If you write <code>&lt;html&gt;</code> in a layout, its attributes go
+    on the document's <code>&lt;html&gt;</code>. A <code>&lt;title&gt;</code>
+    anywhere in the chain works the same way. It becomes the document's title.
   </p>
 
   ${html(s.htmlAttrs)}
 
   <p>
-    They merge by name along the chain, innermost winning, so a root layout can
-    set the theme and a page can set <code>dir</code>. Values are escaped, a bare
-    attribute is <code>true</code>, and <code>false</code> or <code>null</code>
-    drops it. <code>lang</code> is there already and can be overwritten.
+    The attributes merge by name along the chain, and the innermost level wins.
+    So a root layout can set the theme, and a page can set <code>dir</code>.
+    Values are escaped. An attribute with no value is <code>true</code>. A value
+    of <code>false</code> or <code>null</code> removes the attribute.
+    <code>lang</code> is set already, and you can overwrite it.
   </p>
 
   <p>
-    <code>&lt;body&gt;</code> works the same way, and is where a class the page
-    styles itself with belongs.
+    <code>&lt;body&gt;</code> works the same way. Put a class there when the
+    page's CSS uses it.
   </p>
 
   ${html(s.bodyAttrs)}
 
   <doc-note label="Neither tag is written twice">
-    You write one <code>&lt;html&gt;</code> or <code>&lt;body&gt;</code> and the
-    document gets one. The attributes are collected from every level and
-    serialized once. Two <code>class</code> attributes in a tag would leave the
-    parser taking the first, which is the outermost, which is backwards.
+    Many levels can write <code>&lt;html&gt;</code> or <code>&lt;body&gt;</code>,
+    but the document gets only one of each. The server collects the attributes
+    from every level and writes them once. If a tag had two <code>class</code>
+    attributes, the parser would use the first one. That is the outermost one,
+    which is the wrong one.
   </doc-note>
 
   <h2>Sharing the response</h2>
 
   <p>
-    Every loader in the chain holds the same <code>ctx.response</code>, so a
-    layout that sets a status sets the one the server sends.
+    Every loader in the chain gets the same <code>ctx.response</code>. So if a
+    layout sets a status, the server sends that status.
   </p>
 </doc-page>

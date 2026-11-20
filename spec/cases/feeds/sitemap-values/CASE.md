@@ -16,5 +16,9 @@ differently, with the answer decided each time (`spec/DRILLS.md`):
 - A `%` that starts no escape is written as `%25`.
 - `priority: ''` and `changefreq: 0` are written as none.
 - A later `null` clears a field an earlier mention gave.
+- A lone surrogate in a path is written as U+FFFD, `%EF%BF%BD`.
+- An escape's hex is written in capitals, so `/p/caf%c3%a9` is the route URL
+  for `café`, listed once with the entry's priority.
+- `[`, `]`, `|` and `^` are encoded, because RFC 3986 allows none of them.
 
 Source: `/docs/feeds`, "Sitemap". The docs say none of these. The drills did.

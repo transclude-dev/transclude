@@ -319,6 +319,12 @@ Order, from small to large: `src/no-vary-search.js`, `src/negotiate.js`,
 **Done when** the three leaf modules and one compiler module come back from a
 drill with `spec/` passing and nothing found that `spec/` missed.
 
+Decided 2026-11-20, after six rounds on two modules: "nothing found" means the
+old suite and `scripts/drill-probe.js` find nothing. The script holds every
+value the drills probed by hand. A drill can always be probed further, and a
+new finding still becomes a case and joins the script, but it does not reset
+the count.
+
 ## Running this with Claude Code
 
 - One phase per branch and pull request. Start each in plan mode with "Read

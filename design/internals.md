@@ -586,6 +586,9 @@ against.
   A fifth drill refused `key-order=1, params=(…)`, which parses and which a
   cache ignores, and `main` passed it. A header a cache ignores for its shape
   now counts as one that does not parse.
+  A sixth drill read the key of a member that does not parse as the grammar
+  spells a key, and split only at commas outside a string. `main` read
+  `params x` as the key `params x`, and let `bad(` hide the `except` after it.
   `spec: fragments/no-vary-search-hides-fragment`,
   `fragments/no-vary-search-shapes`.
 - **A throw after the response exists answered with that response's headers.**
@@ -2251,9 +2254,13 @@ against.
   twice. `urlFor` encodes each param, so `/p/a?b` is no longer another URL.
   A later
   `null` is a value, so it clears the field: a fourth drill kept the earlier
-  one.
+  one. A sixth drill found two more spellings of one URL that stayed two: an
+  escape in lowercase hex beside the same one in capitals, and an entry for
+  `/p/a%20b` beside `gated: ['/p/a b']`, which the gate matched as written.
+  The key writes escapes in capitals, and every mention meets the gate
+  decoded. `[`, `]`, `|` and `^` are encoded, as RFC 3986 asks.
   `spec: feeds/sitemap-entries`, `spec: feeds/sitemap-values`,
-  `spec: feeds/sitemap-param-characters`.
+  `spec: feeds/sitemap-param-characters`, `spec: feeds/sitemap-gated-entry`.
 - **A sitemap field outside the protocol fails the build, rather than being
   written as given.** `changefreq: 'often'` and `priority: 7` went out as they
   were, in a sitemap the schema refuses, and a crawler drops such a field

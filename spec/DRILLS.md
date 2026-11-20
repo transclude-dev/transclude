@@ -668,3 +668,80 @@ the build found four faults:
   and `a/b` in `feeds/sitemap-param-characters`. The old code fails all
   four. With the request path looked up as Hono gives it, the first fails on
   `50%` and `a?b`.
+
+## Sixth round, 2026-11-20
+
+The same two modules, drilled again from `main` after the fifth round's
+fixes and the `urlFor` change. Each rebuilt module passes all 345 cases in two
+to four spec runs, in 3 to 6 minutes, and neither agent wrote outside its copy.
+
+After this round the rule for a clean drill changed (decided 2026-11-20). A
+drill is clean when the spec, the old suite and `scripts/drill-probe.js` all
+pass against the rebuilt module. The script holds every value the rounds so
+far probed by hand. A new finding still becomes a case, and joins the script,
+but it does not reset the count.
+
+### `src/no-vary-search.js`
+
+The old tests pass, 1569 of 1569. The two agree on all 103 values in the
+script, on 27 of the 28 fifth-round values, the leading tab aside, and on 33
+of 36 new ones.
+
+| `No-Vary-Search` | `main` | Rebuilt |
+| --- | --- | --- |
+| `params x`, `params x=1, bad(` | passes | refused |
+| `bad(, except` | passes | refused |
+
+Neither parses. `main` read a key up to `=` or `;`, so `params x` was the key
+`params x`. It also counted parentheses when it split, and a list that never
+closes hid every member after it.
+
+- **What `spec/` missed:** both rows.
+- **Decided:** take the rebuilt answer on both.
+- **The fix:** a key is what the grammar spells as one, and only a comma
+  outside a string splits a member. A test holds both rows.
+- **Cases added:** two entries in `fragments/no-vary-search-shapes`. The old
+  module fails both.
+- **Under the new rule:** the spec passes, the old suite passes, and the
+  module agrees with `main` on all 148 values in `scripts/drill-probe.js`.
+  The two rows above were found by new probes, so they become cases and join
+  the script, and they do not reset the count. This drill is clean, the
+  fourth module to come back clean.
+
+### `src/sitemap.js`
+
+Four old tests fail. Three reach no `loc`: the declaration file, the order of
+the `Map`, and a `priority` of `null` that `sitemapEntries` leaves out. The
+fourth does: a lone surrogate in an entry path throws a `URIError`, where
+`main` writes U+FFFD. The two agree on 79 of 79 configs in the script, on 15
+of the 16 fifth-round configs, and on 15 of 19 new ones.
+
+| Config | `main` | Rebuilt |
+| --- | --- | --- |
+| a lone surrogate in an entry path | `%EF%BF%BD` | throws |
+| `gated: ['/p/a b']`, and an entry for `/p/a%20b` | listed | left out |
+| an entry for `/p/caf%c3%a9`, beside the route URL for `café` | listed twice | listed once |
+| an entry for `/a[b]` | `/a[b]` | `/a%5Bb%5D` |
+
+`main` gated an entry by its path as written, the bug the fifth round fixed
+for `exclude`. It kept an escape's hex as written, and the URL parser leaves
+`[`, `]`, `|` and `^`, which RFC 3986 does not allow.
+
+- **What `spec/` missed:** all four rows. A test held the first.
+- **Decided:** keep `main` on the first row. Take the rebuilt answer on the
+  other three.
+- **The fix:** every mention meets the gate decoded. The key writes each
+  escape in capitals, and encodes `[`, `]`, `|` and `^`. Three tests hold the
+  rows.
+- **Cases added:** `feeds/sitemap-gated-entry`, and three entries in
+  `feeds/sitemap-values`. The old module fails both cases, and the rebuilt
+  one fails the second.
+- **Under the new rule:** not clean. The old suite catches the lone
+  surrogate.
+
+## Phase 8 is done, 2026-11-20
+
+Four modules came back clean: `src/compiler/directives.js` in the second
+round, `src/negotiate.js` and `src/include.js` in the third, and
+`src/no-vary-search.js` in the sixth. Joe agreed that this meets the
+condition in `design/harness-plan.md`.

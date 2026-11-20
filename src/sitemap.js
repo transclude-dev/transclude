@@ -244,7 +244,29 @@ function checkPaths(route, list) {
  */
 function encodedPath(path) {
   const url = new URL(path.replace(/%(?![0-9A-Fa-f]{2})/g, '%25'), 'http://x');
-  return url.pathname + url.search + url.hash;
+  const parsed = url.pathname + url.search + url.hash;
+  // The parser leaves `[`, `]`, `|` and `^` as they are, and RFC 3986 allows
+  // none of them in a URL.
+  const strict = parsed.replace(/[[\]|^]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+  // It also keeps an escape's hex as written, so `/p/caf%c3%a9` and the route
+  // URL for `café` were two URLs.
+  return strict.replace(/%[0-9a-f]{2}/gi, (escape) => escape.toUpperCase());
+}
+
+/**
+ * An entry's path decoded, for the gate, which a route URL meets decoded too.
+ * Matched as written, `gated: ['/p/a b']` let an entry for `/p/a%20b` into the
+ * sitemap. A path that does not decode is matched as it is.
+ *
+ * @param {string} path
+ * @returns {string}
+ */
+function decodedPath(path) {
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
 }
 
 /**
@@ -286,8 +308,8 @@ export async function sitemapEntries(manifest, pages, { entries = [], exclude = 
   // `manifest.gated` rather than a second config key. A path the app declared
   // not public should not be advertised, and reading it here covers the file the
   // build writes and the `/sitemap.xml` route together. Two lists is two answers
-  // about which URLs a crawler is invited to. A route URL is gated by its path
-  // decoded, as the build gates it, and an entry by its path as written.
+  // about which URLs a crawler is invited to. Every URL is gated by its path
+  // decoded, as the build gates a route's.
   const gated = manifest.gated ?? [];
   const found = [];
 
@@ -311,7 +333,7 @@ export async function sitemapEntries(manifest, pages, { entries = [], exclude = 
   }
 
   const listed = checkEntries(typeof entries === 'function' ? await entries() : entries);
-  const extra = listed.filter((entry) => !isGated(/** @type {{ path: string }} */ (entry).path, gated));
+  const extra = listed.filter((entry) => !isGated(decodedPath(/** @type {{ path: string }} */ (entry).path), gated));
   const all = [...found, ...extra];
 
   // One entry per path, where the path was first named. A later mention of the

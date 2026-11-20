@@ -65,7 +65,7 @@
 
 <doc-page
   heading="Colophon"
-  lede="This site is a transclude app. Every page is one .html file in www/app/routes/, built with the framework it documents."
+  lede="This site is a transclude app. Every page is one .html file in www/app/routes/. The site uses the framework that it documents."
 >
   <h2>What the framework uses</h2>
 
@@ -77,8 +77,8 @@
   </div>
 
   <p>
-    That is the whole list. Nothing else is installed, and the browser downloads
-    none of it.
+    That is the complete list. Nothing else is installed, and the browser
+    downloads none of these packages.
   </p>
 
   <h2>What this site adds</h2>
@@ -91,20 +91,20 @@
   </div>
 
   <p>
-    The type is three stacks rather than three files: Neo-grotesque for the
-    interface, Transitional for prose, Monospace Code for code. The reader's
-    system answers with the first name it has. The page carries no
-    <code>@font-face</code> and asks for no font. It reads a little differently
-    on a Mac and on Windows. That is what a face which came with the machine
-    looks like.
+    The type uses three font stacks, not three font files. Neo-grotesque is for
+    the interface, Transitional is for prose, and Monospace Code is for code.
+    The reader's system uses the first font in the stack that it has. The page
+    has no <code>@font-face</code> and requests no font. So the text looks a
+    little different on a Mac and on Windows. That is normal for fonts that come
+    with the computer.
   </p>
 
   <p>
-    The wordmark is the exception, and it is not type. It was
+    The wordmark is the exception, and it is not text. It shows
     <code>#transclude</code> in IBM Plex Mono Bold.
-    <code>app/elements/site-mark.html</code> draws those same letters as two
-    outlines. That costs about 2.3&nbsp;KB on a compressed page, measured against
-    what this site serves, and it is one shape everywhere.
+    <code>app/elements/site-mark.html</code> draws those letters as two
+    outlines. This adds about 2.3&nbsp;KB to a compressed page, measured on the
+    pages this site serves. The wordmark has the same shape everywhere.
   </p>
 
   <h2>What it ships</h2>
@@ -122,42 +122,42 @@
       <tbody>
         <tr>
           <td>Pages</td>
-          <td>34 rendered to files at build time, and three that answer per request</td>
+          <td>34 rendered to files at build time, and three rendered on each request</td>
         </tr>
         <tr>
           <td>JavaScript</td>
           <td>
-            One inline block, 653 bytes, which applies the theme before the
-            first paint. No runtime of ours. The
-            <a href="/explorer">explorer</a> is the one page that ships a file,
-            for picking a block and reading a module without leaving it
+            One inline block of 653 bytes. It applies the theme before the first
+            paint. No framework runtime. The
+            <a href="/explorer">explorer</a> is the only page that ships a file.
+            With it, you pick a block and read a module on the same page
           </td>
         </tr>
         <tr>
           <td>Fonts</td>
-          <td>None. The wordmark is drawn, and the rest is whatever the reader already has</td>
+          <td>None. The wordmark is drawn, and the rest uses fonts the reader already has</td>
         </tr>
       </tbody>
     </table>
   </div>
 
   <p>
-    Shiki runs in the loader, so highlighting happens once at build time and the
-    browser gets plain markup.
+    Shiki runs in the loader. So highlighting happens once, at build time, and
+    the browser gets plain markup.
   </p>
 
   <h2>Colors and type</h2>
 
   <p>
-    Contrast is measured with
+    This site measures contrast with
     <a href="https://github.com/Myndex/apca-w3">APCA</a>, which reports lightness
-    contrast as Lc. Body text clears Lc 90, everything else that is read clears
-    Lc 75, and code tokens clear Lc 60. A test measures every pairing against the
-    background it is used on.
+    contrast as Lc. Body text reaches at least Lc 90. All other text that people
+    read reaches at least Lc 75. Code tokens reach at least Lc 60. A test
+    measures every color pair against its background.
   </p>
 
   <p>
-    The syntax themes are GitHub's high-contrast pair for the same reason:
-    github-dark draws comments at Lc 28 on this background.
+    The syntax themes are GitHub's high-contrast pair for the same reason. The
+    github-dark theme draws comments at Lc 28 on this background.
   </p>
 </doc-page>

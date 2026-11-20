@@ -531,8 +531,7 @@ against.
   written, neither of which happens here.
 - **The dev check prints on a clean run, and that is not noise.** A checker that
   prints only on failure makes a run that passed and a run that never happened
-  look the same, which is the whole subject of
-  `/blog/no-output-looks-like-good-output`. The same rule is why a missing
+  look the same. The same rule is why a missing
   TypeScript says so once at startup: `typecheck: false` is a decision somebody
   made and needs no line, and an absent optional peer is not.
 - **The dev check writes no `transclude-env.d.ts`, and scheduling comes before

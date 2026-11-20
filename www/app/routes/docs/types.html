@@ -29,21 +29,21 @@
   ${html(s.check)}
 
   <p>
-    With no annotations it catches a misspelled field in a template, an unknown
-    prop on an element, and a prop given the wrong type.
+    With no annotations, it catches a misspelled field in a template, an unknown
+    prop on an element, and a prop with the wrong type.
   </p>
 
   <p>
-    <code>typecheckStrict: true</code> turns on full TypeScript strictness, which also
-    wants a declared type on every parameter.
+    <code>typecheckStrict: true</code> turns on full TypeScript strictness. This
+    also requires a declared type on every parameter.
   </p>
 
   <h2>Where the types come from</h2>
 
   <ol>
-    <li>What the loader's return value infers to.</li>
+    <li>The type of the loader's return value.</li>
     <li>
-      What <code>properties</code> and <code>state</code> declare in
+      The types that <code>properties</code> and <code>state</code> declare in
       <code>&lt;script element&gt;</code>.
     </li>
     <li>JSDoc, where inference is not enough.</li>
@@ -62,67 +62,66 @@
   <h2>transclude-env.d.ts</h2>
 
   <p>
-    Generated from the compiled routes and written where
-    <code>typesFile</code> says. It is an output, so it belongs in
+    This file is generated from the compiled routes. It is written to the path
+    that <code>typesFile</code> names. It is an output, so add it to
     <code>.gitignore</code>.
   </p>
 
   <h2>In your editor</h2>
 
   <p>
-    A new project turns off one setting, in
+    A new project turns off one setting in
     <code>.vscode/settings.json</code>:
   </p>
 
   ${html(s.editor)}
 
   <p>
-    A <code>.html</code> file here holds script blocks that are separate
+    Here, a <code>.html</code> file contains script blocks that are separate
     modules. A page with a <code>&lt;script server&gt;</code> and a client
-    <code>&lt;script&gt;</code> has two of them, each with its own top-level
-    names, which is correct. The editor's built-in HTML support reads every
-    block as one module and reports the overlap as a mistake.
+    <code>&lt;script&gt;</code> has two modules. Each has its own top-level
+    names, and that is correct. But the editor's built-in HTML support reads
+    every block as one module. So it reports the duplicate names as a mistake.
   </p>
 
   <p>
-    Nothing is lost by turning it off. <code>npm run check</code> reads these
-    files the way the compiler does, and so does the language server in the
-    package's <code>editor/</code> directory.
+    You lose nothing when you turn it off. <code>npm run check</code> reads
+    these files the same way the compiler does. So does the language server in
+    the package's <code>editor/</code> directory.
   </p>
 
   <p>
-    A VS Code extension in the package's <code>editor/vscode</code> directory
-    starts that server for any workspace with a
+    A VS Code extension is in the package's <code>editor/vscode</code>
+    directory. It starts that server for any workspace with a
     <code>transclude.config.js</code>. It also highlights
-    <code>${'$'}{…}</code> as the expression it is. The server comes from your
-    project's own installed
-    package, so the diagnostics match the version you build with. Its README
-    says how to package and install it.
+    <code>${'$'}{…}</code> as an expression. The server comes from the package
+    installed in your project, so the diagnostics match the version you build
+    with. The extension's README tells you how to package and install it.
   </p>
 
   <h2>While you work</h2>
 
   <p>
     <code>npm run dev</code> checks in the background and prints what it finds.
-    The page still compiles and the server still sends it. A type error is
-    something you read rather than something that stops you.
+    The page still compiles, and the server still sends it. You see a type
+    error, but it does not stop you.
   </p>
 
   <p>
-    It says how many files it read on every run, a clean one included. A checker
-    that prints only on failure makes a run that passed and a run that never
-    happened look the same.
+    On every run, it says how many files it read, even when the run is clean.
+    If a checker prints only on failure, a run that passed looks the same as a
+    run that never happened.
   </p>
 
   <p>
-    Set <code>typecheck: false</code> to turn it off. It does nothing without
-    TypeScript installed, and says so once at startup.
+    Set <code>typecheck: false</code> to turn it off. Without TypeScript
+    installed, it does nothing, and it says so once at startup.
   </p>
 
   <doc-note label="An existing project adds it by hand">
-    The setting is scaffolded, not applied by the framework, so a project without
-    the file writes it by hand. The symptom is
-    <em>"A module cannot have multiple default exports"</em> on every element
-    with props and state.
+    The setting comes from the project scaffold. The framework does not apply
+    it. So if your project does not have the file, write it by hand. Without it,
+    you see <em>"A module cannot have multiple default exports"</em> on every
+    element with props and state.
   </doc-note>
 </doc-page>

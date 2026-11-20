@@ -6,8 +6,7 @@
 // The page compiles, the server sends it, and this prints beside it.
 //
 // It says something on every run, a clean one included. A checker that prints
-// only on failure makes "passed" and "never ran" look identical, which is the
-// whole subject of /blog/no-output-looks-like-good-output.
+// only on failure makes "passed" and "never ran" look identical.
 //
 // It writes no `transclude-env.d.ts`. That file is `transclude-check`'s to
 // write, and writing it here would land inside `appDir`, wake the watcher and

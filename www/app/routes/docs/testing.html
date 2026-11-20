@@ -65,42 +65,43 @@ assert.ok(whole.includes(markup.trim()));`,
 </script>
 
 <title>Testing · transclude</title>
-<meta name="description" content="Ask the app for a URL and read what comes back." />
+<meta name="description" content="Request a URL from the app and read the response." />
 
 <doc-page
   heading="Testing"
-  lede="The app is a function from a request to a response. A test asks it for a URL and reads what comes back, with nothing stubbed."
+  lede="The app is a function that takes a request and returns a response. A test requests a URL from it and reads the response. Nothing is stubbed."
 >
   <p>
-    <code>transclude/production</code> is the same app <code>npm start</code>
-    serves. Importing it gives you a <code>request</code> method that takes a URL
-    and answers the way the server does.
+    <code>transclude/production</code> is the same app that <code>npm start</code>
+    serves. When you import it, you get a <code>request</code> method. It takes a
+    URL and returns the same response that the server does.
   </p>
 
   ${html(s.request)}
 
   <p>
-    Everything a browser would meet runs: the trailing-slash redirect, CSRF, your
-    own middleware, cookies, the cache and the route table. A test that passes
-    here is about the site rather than about a copy of it.
+    Every step that a browser request goes through also runs here. This includes
+    the trailing-slash redirect, CSRF, your own middleware, cookies, the cache
+    and the route table. A test that passes here tests the real site, not a copy
+    of it.
   </p>
 
-  <h2>It reads a build</h2>
+  <h2>It needs a build</h2>
 
   <p>
-    The app is assembled from <code>dist</code>, so run
-    <code>npm run build</code> first. Skip rather than fail when there is no
-    build, and a fresh clone still gets a useful <code>npm test</code>.
+    The app loads from <code>dist</code>, so run <code>npm run build</code>
+    first. If there is no build, skip the tests instead of failing them. Then
+    <code>npm test</code> is still useful in a fresh clone.
   </p>
 
   ${html(s.guard)}
 
-  <h2>The server's environment is not the test's</h2>
+  <h2>The server and the tests have different environments</h2>
 
   <p>
     <code>npm start</code> passes <code>--env-file-if-exists=.env</code>.
-    <code>node --test</code> does not, so a secret the config reads is missing,
-    and the first page that touches a signed cookie answers 500. Either add the
+    <code>node --test</code> does not. So a secret that the config reads is
+    missing. Then the first page that uses a signed cookie returns 500. Add the
     flag to the test script, or set the value before the first import.
   </p>
 
@@ -111,31 +112,33 @@ assert.ok(whole.includes(markup.trim()));`,
   <h2>What to ask for</h2>
 
   <p>
-    A form post is a real post. Give it an <code>origin</code>, or CSRF refuses
-    it, which is itself worth a test.
+    A form post in a test is a real post. Give it an <code>origin</code>, or CSRF
+    refuses it. That refusal is also worth a test.
   </p>
 
   ${html(s.form)}
 
   <p>
-    A <a href="/docs/fragments">fragment</a> is a URL, so it is read the same way. The
-    useful assertion is that the page and the fragment agree, since one compiled
-    template produces both.
+    A <a href="/docs/fragments">fragment</a> has its own URL, so you read it the
+    same way. One compiled template produces both the page and the fragment. So
+    check that the two agree.
   </p>
 
   ${html(s.region)}
 
-  <h2>What this does not reach</h2>
+  <h2>What these tests cannot check</h2>
 
   <p>
-    Anything that needs a browser: an <a href="/docs/elements">element</a> upgrading,
-    a shadow root, focus surviving an update, a swap. Nothing in Node models
-    those, and a test that says otherwise is describing its own stand-in.
+    They cannot check anything that needs a browser. Examples are an
+    <a href="/docs/elements">element</a> that upgrades, a shadow root, focus that
+    stays after an update, and a swap. Node does not model these. A test that
+    says it does is testing its own fake version.
   </p>
 
   <p>
-    Put those on a page and open it. The showcase keeps its own at
-    <code>/check</code>, which runs its assertions in the browser and posts the
-    result back. Its CI drives that page with headless Chrome on every push.
+    Put those checks on a page and open it in a browser. The showcase has its own
+    checks at <code>/check</code>. That page runs its assertions in the browser
+    and posts the result back. Its CI opens that page in headless Chrome on every
+    push.
   </p>
 </doc-page>

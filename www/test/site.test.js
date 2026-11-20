@@ -174,8 +174,7 @@ function prose(source, { code = true } = {}) {
   // template literals inside `<script server>`, and a sample is not prose.
   //
   // This used to look for `<doc-page>` and start there. That left the landing
-  // page checked for nothing but its lede, and it would have left every blog
-  // post unchecked too, since a post is neither. Naming the thing to remove is
+  // page checked for nothing but its lede. Naming the thing to remove is
   // shorter than listing every shape a page can take.
   const body = source.replace(/<script[\s\S]*?<\/script>/g, '');
   // `<p class="lede">` is prose too. The pattern used to be `<(?:p|doc-note[^>]*)>`,
@@ -204,12 +203,12 @@ function prose(source, { code = true } = {}) {
 }
 
 /**
- * Every page of the site: landing, docs, posts and whatever comes next.
+ * Every page of the site: landing, docs and whatever comes next.
  *
  * The whole tree, because it used to be `[routes, docs]` read one level deep.
- * That named the two directories that existed when it was written, so the first
- * post added under `routes/blog/` was checked by nothing at all. A directory is
- * a thing someone adds without thinking about this file.
+ * That named the two directories that existed when it was written, so a page in
+ * a third would be checked by nothing at all. A directory is a thing someone
+ * adds without thinking about this file.
  *
  * Named by path rather than basename: `index.html` is three different pages.
  */
@@ -465,83 +464,6 @@ test('the ports the examples page lists are the ports they run on', () => {
   assert.deepEqual(wrong, []);
 });
 
-test('every post is a file, and every post file is listed', () => {
-  // Two places name a post: `app/data/posts.js`, which the index and the feed
-  // read, and the route file, which is the writing. Neither can be derived from
-  // the other, so they are checked against each other instead.
-  //
-  // An entry with no file is a link to a 404 and a feed item that goes nowhere.
-  // A file with no entry is a page nothing links to and no feed mentions, which
-  // is the quieter of the two.
-  const dir = path.join(routes, 'blog');
-  const files = fs
-    .readdirSync(dir)
-    .filter((name) => name.endsWith('.html') && !name.startsWith('_') && name !== 'index.html')
-    // A draft is not a post yet. It is deliberately not in `posts.js`, so it is
-    // not in the index and not in the feed, and the build leaves it out of the
-    // site entirely. Publishing it is deleting the export and adding the entry.
-    .filter((name) => !isDraft(path.join(dir, name)))
-    .map((name) => name.replace(/\.html$/, ''))
-    .sort();
-
-  const source = fs.readFileSync(path.join(root, '..', 'app', 'data', 'posts.js'), 'utf8');
-  const listed = [...source.matchAll(/slug:\s*'([^']+)'/g)].map(([, slug]) => slug).sort();
-
-  assert.notEqual(listed.length, 0, 'posts.js lists none');
-  assert.deepEqual(listed, files, 'posts.js and app/routes/blog/ disagree');
-});
-
-/** Whether a page keeps itself out of the build. */
-const isDraft = (file) => /export const draft = true/.test(fs.readFileSync(file, 'utf8'));
-
-/** Every published slug, read from `posts.js`, so a new post is covered by name. */
-function listedPosts() {
-  const source = fs.readFileSync(path.join(root, '..', 'app', 'data', 'posts.js'), 'utf8');
-  return [...source.matchAll(/slug:\s*'([^']+)'/g)].map(([, slug]) => slug);
-}
-
-test('a post says when it was written, in a machine-readable way', () => {
-  // The feed carries the date, and so should the page. A reader arriving from a
-  // search result has no other way to tell how old the writing is.
-  //
-  // A draft has no date because it has no entry in `posts.js` to take one from,
-  // which is the same reason it is not in the feed.
-  const dir = path.join(routes, 'blog');
-
-  for (const name of fs.readdirSync(dir)) {
-    if (!name.endsWith('.html') || name.startsWith('_') || name === 'index.html') continue;
-    if (isDraft(path.join(dir, name))) continue;
-    const source = fs.readFileSync(path.join(dir, name), 'utf8');
-    assert.match(source, /<time[^>]*datetime=/, `${name} has no machine-readable date`);
-  }
-});
-
-describe('a date reads the same to a person and to a machine', () => {
-  // `posts.js` writes `new Date('2026-08-11')`, which is midnight UTC.
-  // `toDateString()` renders in the build machine's zone, so west of UTC the
-  // page said the 10th while its own `datetime` and the feed said the 11th.
-  //
-  // Read from the built output, because the bug was in what the build wrote and
-  // the source looked right. A build machine on UTC cannot see this at all,
-  // which is why it is asserted rather than looked at.
-  const shown = /<time[^>]*datetime="([^"]+)"[^>]*>\s*([^<]+?)\s*<\/time>/g;
-
-  const wrong = [];
-
-  for (const route of ['/blog', ...listedPosts().map((slug) => `/blog/${slug}`)]) {
-    const found = [...built(route).matchAll(shown)];
-    assert.notEqual(found.length, 0, `${route} has no dateline`);
-
-    for (const [, machine, person] of found) {
-      const utc = new Date(machine).toUTCString().split(' ');
-      const expected = `${utc[0].replace(',', '')} ${utc[2]} ${utc[1]} ${utc[3]}`;
-      if (person !== expected) wrong.push(`${route}: shows ${person}, means ${expected}`);
-    }
-  }
-
-  assert.deepEqual(wrong, [], `datelines a person and a machine read differently:\n${wrong.join('\n')}`);
-});
-
 // ---- sharing cards ---------------------------------------------------------
 //
 // What a link looks like when someone posts it. The failure is invisible from
@@ -552,7 +474,7 @@ describe('every page carries the sharing card', () => {
   // The image and the card type never vary, so they are in the root layout and
   // every page inherits them. Checked against the built output rather than the
   // source, because inheriting is the thing that could break.
-  for (const route of ['/', '/docs', '/blog', '/docs/fragments']) {
+  for (const route of ['/', '/docs', '/docs/fragments']) {
     const html = built(route);
 
     for (const tag of [
@@ -581,7 +503,7 @@ describe('the card image is the size every platform crops from', () => {
 describe('a shared page says what it is', () => {
   // `og:title` is the one crawlers are least reliable about falling back for,
   // and LinkedIn is the one that matters most here.
-  for (const route of ['/', '/blog', '/docs/fragments']) {
+  for (const route of ['/', '/docs', '/docs/fragments']) {
     assert.match(built(route), /property="og:title"/, `${route} has no og:title`);
   }
 });
@@ -644,7 +566,7 @@ const MARKUP = /<script server>|<script element>|\seach=|\sif=|<slot|<transclude
 describe('every markup sample on the site compiles', async () => {
   const { compileComponent, compilePage } = await import('@transclude/core/compiler');
 
-  const routes = ['/', ...navLinks(), ...listedPosts().map((slug) => `/blog/${slug}`)];
+  const routes = ['/', ...navLinks()];
   const checked = [];
   const broken = [];
 

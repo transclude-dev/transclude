@@ -136,90 +136,91 @@ export const POST = async ({ request, revalidateTag }) => {
 
 <doc-page
   heading="The production build"
-  lede="transclude-build writes dist/. A route with no per-request state is rendered to a file."
+  lede="transclude-build writes dist/. It renders each route that has no per-request state to a file."
 >
   ${html(s.build)}
 
   <h2>Prerendering</h2>
 
   <p>
-    Every page is rendered to a file at build time. Add this to a page that has
-    to run for each request instead:
+    The build renders every page to a file. If a page must run on each request,
+    add this line to it:
   </p>
 
   ${html(s.prerender)}
 
   <p>
-    A page needs it if it reads the URL, sits behind a guard, or shows data that
+    A page needs it if it reads the URL, is behind a guard, or shows data that
     changes.
   </p>
 
   <p>
-    A page with parameters is written once for each set its <code>paths()</code>
-    export names. Each param is encoded in the URL, so <code>a b</code> is
-    <code>/p/a%20b</code>. The file is written at the decoded path. A param that
-    holds a <code>/</code> stops the build, unless the route is a rest param like
-    <code>[...path].html</code>. So does an empty param, <code>.</code> or
-    <code>..</code>.
+    The build writes a page with parameters once for each set that its
+    <code>paths()</code> export names. Each param is encoded in the URL, so
+    <code>a b</code> becomes <code>/p/a%20b</code>. The file is written at the
+    decoded path. A param that contains a <code>/</code> stops the build, unless
+    the route is a rest param like <code>[...path].html</code>. An empty param,
+    <code>.</code> or <code>..</code> also stops the build.
   </p>
 
   <doc-note label="Forgetting it stops the build">
-    A page that reads a cookie, answers with a <code>Response</code>, or sets a
-    status other than 200 cannot be one file for everyone. The build names it,
-    says which of those it did, and exits non-zero. It does not write a file
-    that would be wrong for every visitor after the first.
+    A page that reads a cookie cannot be one file for everyone. The same is true
+    of a page that answers with a <code>Response</code> or sets a status other
+    than 200. The build names the page, says which of those it did, and exits
+    non-zero. It does not write a file that would be wrong for every visitor
+    after the first.
   </doc-note>
 
   <p>
-    A page that exports an action stops the build the same way. The action is
-    there to change what the page shows. A file keeps what it showed at build
-    time, and a fragment of the page renders live. A page whose action changes
-    nothing it shows can say so with <code>export const prerender = true</code>.
-    A contact form that sends a message and redirects is one.
+    A page that exports an action also stops the build. An action exists to
+    change what the page shows. A file keeps what the page showed at build time.
+    A fragment of the page renders live. If the action changes nothing that the
+    page shows, say so with <code>export const prerender = true</code>. A
+    contact form that sends a message and redirects is an example.
   </p>
 
   <p>
-    A loader or a template that throws during the build fails it the same way.
-    The report names the page, the error, and the line of your
-    <code>.html</code> file it came from.
+    The build also fails if a loader or a template throws during the build. The
+    report names the page, the error, and the line in your <code>.html</code>
+    file where the error came from.
   </p>
 
   <h2>Speculation</h2>
 
   <p>
     Every link is a document request, so every navigation costs a round trip.
-    <code>speculate: true</code> lets the browser pay it early:
+    With <code>speculate: true</code>, the browser can make that trip early:
   </p>
 
   ${html(s.speculate)}
 
   <p>
-    Each page then carries a
-    <code>&lt;script type="speculationrules"&gt;</code> block. Nothing of this
-    framework's runs to make it work, and a browser that does not support it
-    ignores it.
+    Each page then contains a
+    <code>&lt;script type="speculationrules"&gt;</code> block. No code from this
+    framework runs to make it work. A browser that does not support it ignores
+    it.
   </p>
 
-  <h3>What may be run, and what may only be fetched</h3>
+  <h3>What the browser may run, and what it may only fetch</h3>
 
   <p>
-    A prerender runs the page. A page the build wrote to a file has no loader
-    left to run, so running it early costs nothing. Those go in
+    A prerender runs the page. A page that the build wrote to a file has no
+    loader left to run, so running it early costs nothing. These pages go in
     <code>prerender</code>.
   </p>
 
   <p>
-    Every route the server still renders goes in <code>prefetch</code>. Its
-    loader may read a cookie, count a view or hand out a token. Running that for
-    a reader who only hovered a link is wrong rather than slow. Endpoints are in
-    neither.
+    Every route that the server still renders goes in <code>prefetch</code>. Its
+    loader may read a cookie, count a view or give out a token. If the reader
+    only hovers over a link, running that loader is wrong, not only slow.
+    Endpoints are in neither list.
   </p>
 
   ${html(s.speculateOut)}
 
   <p>
-    The build decides this, because the build is what knows which routes became
-    files.
+    The build makes this decision, because only the build knows which routes
+    became files.
   </p>
 
   <h3>Options</h3>
@@ -227,162 +228,163 @@ export const POST = async ({ request, revalidateTag }) => {
   ${html(s.speculateOpts)}
 
   <p>
-    <code>eagerness</code> is <code>moderate</code> by default, which waits for
-    a hover. <code>immediate</code> and <code>eager</code> act before the reader
-    has done anything. <code>exclude</code> is matched against the pattern that
-    is emitted, so a route <code>/docs/:path{.+}</code> is excluded as
+    <code>eagerness</code> is <code>moderate</code> by default, so the browser
+    waits for a hover. <code>immediate</code> and <code>eager</code> act before
+    the reader does anything. <code>exclude</code> is matched against the
+    emitted pattern. So to exclude the route <code>/docs/:path{.+}</code>, write
     <code>/docs/*</code>.
   </p>
 
-  <doc-note label="A page you prerender is a page you visited">
-    Speculation is a hint and the browser may ignore it, but when it acts on
-    one, the page really runs. Anything a loader does that a reader would notice
-    belongs behind <code>prerender = false</code>, which is what keeps it out of
-    that list.
+  <doc-note label="A prerender really runs the page">
+    Speculation is a hint, and the browser may ignore it. But when the browser
+    acts on it, the page really runs. If a loader does something that a reader
+    would notice, put <code>prerender = false</code> on that page. That keeps
+    the page out of the prerender list.
   </doc-note>
 
   <doc-note label="A crawler reads the block too">
-    A pattern in it looks like a URL, and Googlebot asks for one. A route
-    <code>/people/:name</code> is emitted as <code>/people/*</code>, so
-    <code>/people/*</code> arrives as a request, matches the route, names nobody
-    and answers 404. Search Console lists it as a page not found with nothing
-    linking to it. The 404 is the right answer, and
-    <code>exclude</code> is the lever if you would rather the pattern were not
-    in the block.
+    A pattern in the block looks like a URL, so Googlebot requests it. The route
+    <code>/people/:name</code> is emitted as <code>/people/*</code>. So
+    <code>/people/*</code> comes in as a request. It matches the route, names
+    nobody, and gets a 404. Search Console lists it as a page not found, with no
+    links to it. The 404 is the correct answer. If you do not want the pattern
+    in the block, use <code>exclude</code>.
   </doc-note>
 
   <h2>Holding a render</h2>
 
   <p>
-    Between a file written once and a render on every request, there is a page
-    held for a while.
+    A third choice sits between a file written once and a render on every
+    request. The server keeps the rendered page for a set time.
   </p>
 
   ${html(s.revalidate)}
 
   <p>
-    Inside that window a request is answered from the store and the loader does
-    not run. Past it, the page already held goes out
-    <strong>immediately</strong> and a fresh one is rendered behind the
-    response, so nobody waits for a re-render. One render happens at a time per
-    URL, however many requests arrive together.
+    Inside that time, the server answers a request from the store, and the
+    loader does not run. After that time, the server sends the stored page
+    <strong>immediately</strong>. It renders a fresh one behind the response, so
+    nobody waits for a re-render. Only one render runs at a time for each URL,
+    however many requests arrive together.
   </p>
 
   <p>
-    The key is the path and the query, because a page reading
-    <code>?q=</code> renders differently for each one.
+    The key is the path and the query, because a page that reads
+    <code>?q=</code> renders differently for each value.
   </p>
 
   <p>
-    That rebuild is held with <a href="/docs/runtimes">ctx.after</a>, which is
-    <code>waitUntil</code> on <code>workerd</code>. A worker may stop the moment
-    it sends a response, and work nothing holds stops with it. Node, Bun and
-    Deno keep running either way.
+    The server keeps that rebuild alive with
+    <a href="/docs/runtimes">ctx.after</a>. On <code>workerd</code>, that is
+    <code>waitUntil</code>. A worker may stop as soon as it sends a response.
+    Any work that nothing keeps alive stops with it. Node, Bun and Deno keep
+    running either way.
   </p>
 
   <p>
-    A rebuild that throws leaves the held page where it is, so one bad render
-    does not empty the store. The error goes to
-    <a href="/docs/config">onError</a> with the request that started it.
+    If a rebuild throws, the stored page stays in place, so one bad render does
+    not empty the store. The error goes to <a href="/docs/config">onError</a>
+    with the request that started it.
   </p>
 
   <h3>Tags</h3>
 
   <p>
     Seconds say when a page may be out of date. A tag says when it
-    <em>is</em>, so something that changed the data can drop it rather than
-    waiting.
+    <em>is</em> out of date. So the code that changed the data can drop the page
+    instead of waiting.
   </p>
 
   ${html(s.tagged)}
 
   <p>
-    <code>ctx.revalidateTag</code> drops every held page carrying that tag. It
-    is on the context of a page action or an endpoint, so whatever wrote the
-    change is what says the change happened. A prerendered page loader that
-    calls it stops the build, since a build holds nothing yet to drop.
+    <code>ctx.revalidateTag</code> drops every stored page with that tag. It is
+    on the context of a page action or an endpoint. So the code that wrote the
+    change also reports the change. If the loader of a prerendered page calls
+    it, the build stops, because the build has nothing stored to drop yet.
   </p>
 
   ${html(s.drop)}
 
   <doc-note label="What is never held">
-    A page that read a cookie, set a header, answered with a
-    <code>Response</code>, or has a status outside 2xx. A shared cache holding
-    any of those hands one visitor's page, or one visitor's
-    <code>Set-Cookie</code>, to the next. It is the same rule the build uses to
-    decide a route can be a file. The cache sees a cookie read and a header
-    written, and nothing else. A loader that reads <code>Authorization</code> or
-    <code>Accept-Language</code> straight off <code>ctx.request</code> is
-    invisible to it. Such a page must not set <code>revalidate</code>, or must
-    carry what it read in the URL. Set <code>metadataBase</code> too. Without it
-    an absolute URL is built from the request's own host, and a held page would
-    carry whatever host its first visitor sent.
+    The server never keeps a page that read a cookie, set a header, answered
+    with a <code>Response</code>, or has a status outside 2xx. A shared cache
+    that kept one of these would give one visitor's page, or one visitor's
+    <code>Set-Cookie</code>, to the next visitor. The build uses the same rule
+    to decide if a route can be a file. The cache sees only two things: a cookie
+    read and a header written. It does not see a loader that reads
+    <code>Authorization</code> or <code>Accept-Language</code> directly from
+    <code>ctx.request</code>. Such a page must not set <code>revalidate</code>,
+    or it must put what it read in the URL. Also set <code>metadataBase</code>.
+    Without it, an absolute URL is built from the request's own host. A stored
+    page would then contain the host that its first visitor sent.
   </doc-note>
 
   <p>
-    The default store is a bounded map in the process. That is right for one
-    server and wrong for several: each holds its own copy, and
-    <code>revalidateTag</code> reaches only one of them. Give <code>cache</code>
-    in the config anything with the same four methods to put the store
-    somewhere they all share. Each may answer with a promise, as a store
-    across a network does. <code>revalidateTag</code> then returns that
-    promise, so await it before answering.
+    The default store is a bounded map in the process. That works for one
+    server but not for several. Each server keeps its own copy, and
+    <code>revalidateTag</code> reaches only one of them. To put the store in a
+    place they all share, give <code>cache</code> in the config any object with
+    the same four methods. Each method may return a promise, as a store across a
+    network does. <code>revalidateTag</code> then returns that promise, so await
+    it before you answer.
   </p>
 
   <h2>A list of what to cache</h2>
 
   <p>
-    Turn <code>precache</code> on and the build writes
-    <code>/precache.json</code>: everything it produced, with what tells a cache
-    that it changed.
+    Turn on <code>precache</code>, and the build writes
+    <code>/precache.json</code>. It lists everything the build produced, with a
+    value that tells a cache when each item changed.
   </p>
 
   ${html(s.precacheOn)}
   ${html(s.precacheOut)}
 
   <p>
-    A prerendered page and a public file keep the same URL between builds and
-    different bytes, so each carries its ETag. A hashed asset carries
-    <code>revision: null</code>, because its name is its version and the bytes
-    behind it never change.
+    A prerendered page and a public file keep the same URL between builds, but
+    their bytes change. So each one has its ETag. A hashed asset has
+    <code>revision: null</code>, because its name is its version and its bytes
+    never change.
   </p>
 
   <p>
-    <code>version</code> changes when any entry does. Name a cache after it and
-    the previous one is the one to drop, with no list to compare.
+    <code>version</code> changes when any entry changes. Name a cache after it.
+    Then the previous cache is the one to drop, and you do not need to compare
+    lists.
   </p>
 
   <doc-note label="Nothing reads it for you">
-    This framework ships no service worker. The build states what it produced,
-    and something else decides what to do about it. That is the same agreement
-    <a href="/docs/fragments">fragments</a> have.
+    This framework ships no service worker. The build lists what it produced,
+    and other code decides what to do with it.
+    <a href="/docs/fragments">Fragments</a> follow the same rule.
   </doc-note>
 
   <p>
     <a href="https://developer.chrome.com/docs/workbox">Workbox</a> reads this
-    shape directly. So does a service worker you write, which for a site that
-    only needs to work offline is about thirty lines.
+    format directly. So does a service worker that you write. For a site that
+    only needs to work offline, that is about thirty lines.
   </p>
 
   ${html(s.worker)}
 
   <p>
-    It goes in <code>app/public/</code>, so it is served from the root and its
-    scope is the whole site. Register it from a page or a layout.
+    It goes in <code>app/public/</code>, so the server serves it from the root
+    and its scope is the whole site. Register it from a page or a layout.
   </p>
 
   ${html(s.register)}
 
   <doc-note label="It is build output, so dev has none" tone="warn">
-    <code>/precache.json</code> names hashed asset filenames, which only the
-    build knows. <code>npm run dev</code> answers it with a 404 on purpose. A
-    service worker holding anything while you edit is a bug rather than a
-    feature, so register one behind a check for production.
+    <code>/precache.json</code> names hashed asset file names, and only the
+    build knows them. <code>npm run dev</code> answers it with a 404 on purpose.
+    A service worker that caches anything while you edit is a bug. So register
+    it behind a check for production.
   </doc-note>
 
   <h2>Caching</h2>
 
-  <p>Build output is compressed once, and each encoding gets its own ETag.</p>
+  <p>The build compresses its output once, and each encoding gets its own ETag.</p>
 
   <div class="scroller">
     <table>
@@ -404,7 +406,7 @@ export const POST = async ({ request, revalidateTag }) => {
         <tr>
           <td>Server-rendered pages</td>
           <td>
-            The same, and <code>private, no-cache</code> once the render reads a
+            The same, and <code>private, no-cache</code> if the render reads a
             cookie or sets a header
           </td>
         </tr>
@@ -419,49 +421,48 @@ export const POST = async ({ request, revalidateTag }) => {
   <h2>Public files</h2>
 
   <p>
-    <code>app/public/</code> is copied to <code>dist/public</code> and served
-    with byte ranges, so media works.
+    <code>app/public/</code> is copied to <code>dist/public</code>. The server
+    serves it with byte ranges, so media works.
   </p>
 
   <p>
-    The <code>Content-Type</code> comes from the extension, out of one table the
-    build, both servers and workerd all read. It covers what a site serves:
-    audio, video, captions, fonts, images and documents. A kind it does not know
-    goes out as <code>application/octet-stream</code>, and the build prints
-    which kinds those were.
+    The <code>Content-Type</code> comes from the file extension. The build, both
+    servers and workerd all read it from one table. The table covers what a site
+    serves: audio, video, captions, fonts, images and documents. A file of an
+    unknown kind is sent as <code>application/octet-stream</code>, and the build
+    prints which kinds those were.
   </p>
 
-  <doc-note label="A wrong type is silence, not a warning" tone="warn">
-    Every response carries <code>X-Content-Type-Options: nosniff</code>, so a
-    browser may not guess past the type it was given. An
-    <code>&lt;audio&gt;</code> element handed
-    <code>application/octet-stream</code> is forbidden to look at the bytes and
-    find the AAC in them. The clip does not play badly. It does not play.
+  <doc-note label="A wrong type fails with no warning" tone="warn">
+    Every response has <code>X-Content-Type-Options: nosniff</code>, so a
+    browser must not guess a different type. Say an
+    <code>&lt;audio&gt;</code> element gets
+    <code>application/octet-stream</code>. It may not look in the bytes to find
+    the AAC. The clip does not play badly. It does not play at all.
   </doc-note>
 
   <h2>Error pages</h2>
 
   <p>
     <code>404.html</code> and <code>500.html</code> are rendered at build time
-    and served as static files. A page that has to render after a request has
-    already failed can fail too, so these are always bytes.
+    and served as static files. A page that renders after a request has failed
+    can fail too. So these two are always static files.
   </p>
 
   <doc-note label="prerender does not apply to them" tone="warn">
-    They are written whatever they say, so nothing they render may depend on a
-    request. A layout above them reading a cookie stops the build.
-    <code>ctx.request</code> is <code>null</code> while prerendering, and at no
-    other time, which is how a shared layout can skip the part that needs a
-    visitor.
+    The build always writes them, so nothing they render may depend on a
+    request. If a layout above them reads a cookie, the build stops.
+    <code>ctx.request</code> is <code>null</code> during prerendering, and only
+    then. A shared layout can use that to skip the part that needs a visitor.
   </doc-note>
 
   <p>
-    In production the error is logged and kept out of the page. In dev you get
-    the stack instead.
+    In production, the server logs the error and keeps it out of the page. In
+    dev, you see the stack instead.
   </p>
 
   <doc-note label="JavaScript only where it is used">
     A page loads a script only if something on it needs one. A page of plain
-    markup and light elements ships none at all.
+    markup and light elements ships no script.
   </doc-note>
 </doc-page>

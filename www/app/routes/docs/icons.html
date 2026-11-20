@@ -82,95 +82,96 @@ export default {
 
 <doc-page
   heading="Icons"
-  lede="A directory of SVG files, compiled into one sprite the browser fetches once."
+  lede="The build compiles a directory of SVG files into one sprite. The browser downloads it one time."
 >
   <p>
-    <code>app/icons/</code> holds one SVG file per icon. Each is a whole SVG
-    document you can open, edit and diff.
+    <code>app/icons/</code> contains one SVG file per icon. Each file is a
+    complete SVG document that you can open, edit and diff.
   </p>
 
   ${html(s.dir)}
 
   <p>
     The build compiles the directory into <code>/icons.svg</code>, one document
-    of <code>&lt;symbol&gt;</code>s. Point a <code>&lt;use&gt;</code> at one by
-    file name:
+    of <code>&lt;symbol&gt;</code>s. Point a <code>&lt;use&gt;</code> at a
+    symbol by its file name:
   </p>
 
   ${html(s.use)}
 
   <p>
-    That is the whole feature. One request serves every icon in the library, the
-    browser caches it, and the second page costs nothing.
+    That is all there is to the feature. One request serves every icon in the
+    library. The browser caches it, so the second page costs nothing.
   </p>
 
   <h2>Libraries</h2>
 
   <p>
-    A subdirectory of <code>app/icons/</code> is a library of its own, served
-    under its name. An icon set you downloaded is a folder of SVG files, so put
-    the folder here and reference it by library and name.
+    A subdirectory of <code>app/icons/</code> is a separate library, served
+    under its name. A downloaded icon set is a folder of SVG files. So put the
+    folder here, and refer to an icon by library and name.
   </p>
 
   ${html(s.library)}
 
   <p>
-    Files loose at the top are the <code>icons</code> library, which is why they
-    are served at <code>/icons.svg</code>. Two libraries may each have a
-    <code>check</code>: they are different files in different sheets, and neither
-    has to be renamed.
+    Files at the top level are the <code>icons</code> library. So the server
+    sends them at <code>/icons.svg</code>. Two libraries can each have a
+    <code>check</code>. They are different files in different sheets, so you do
+    not rename either one.
   </p>
 
-  <h2>A sheet ships every icon in it</h2>
+  <h2>A sheet sends every icon in it</h2>
 
   <p>
-    A library is one file, and a page that draws one icon fetches all of them.
-    That is the trade a sprite makes: one request, cached once, however many
-    icons the page shows.
-  </p>
-
-  <p>
-    It stops being a good trade at a few hundred icons. A 24-pixel line icon is
-    roughly 150 to 300 bytes in the sheet. A set of 1,500 is a few hundred
-    kilobytes, fetched by every visitor to draw twelve of them.
+    A library is one file. So a page that draws one icon downloads all of them.
+    A sprite makes this trade: one request, cached one time, however many icons
+    the page shows.
   </p>
 
   <p>
-    So copy the icons you use rather than the whole set. A downloaded folder is
-    a good way to start and a bad way to ship. Moving a file out of it later
-    changes nothing but the library name in the URL.
+    The trade stops being good at a few hundred icons. A 24-pixel line icon is
+    about 150 to 300 bytes in the sheet. A set of 1,500 is a few hundred
+    kilobytes. Every visitor downloads all of it to draw twelve icons.
   </p>
 
-  <doc-note label="Nothing prunes this for you" tone="warn">
-    The build writes every file it finds. It cannot work out which icons a page
-    draws. A name can be an expression, a server-rendered route is never
-    prerendered, and markup can arrive from a loader. A sheet is what you put in
-    the directory.
+  <p>
+    So copy only the icons you use, not the whole set. A downloaded folder is a
+    good way to start but a bad way to ship. If you move a file out of it later,
+    only the library name in the URL changes.
+  </p>
+
+  <doc-note label="The build does not remove unused icons" tone="warn">
+    The build writes every file it finds. It cannot tell which icons a page
+    draws. A name can be an expression, and a server-rendered route is never
+    prerendered. Markup can also come from a loader. A sheet contains exactly
+    the files you put in the directory.
   </doc-note>
 
   <h2>What the build writes</h2>
 
   <p>
     <code>check.svg</code> becomes <code>#check</code>. The build reports the
-    count beside the pages it prerendered.
+    icon count next to the pages it prerendered.
   </p>
 
   ${html(s.sprite)}
 
   <p>
-    <code>viewBox</code> is carried over, and so is everything the file says
-    about paint. <code>width</code> and <code>height</code> are dropped, because
-    they would fight whatever CSS sizes the icon.
+    The build keeps <code>viewBox</code> and every paint setting in the file.
+    It removes <code>width</code> and <code>height</code>, because they would
+    conflict with the CSS that sizes the icon.
   </p>
 
   <h2>An element for it</h2>
 
   <p>
-    A new project already has this file. <code>&lt;use&gt;</code> works on its
-    own, and most sites want a name instead of a URL.
+    A new project already has this file. <code>&lt;use&gt;</code> works without
+    it, but most sites want to use a name instead of a URL.
     <code>npm create @transclude</code> writes
-    <code>app/elements/svg-icon.html</code> and leaves it to you. Nothing in the
-    framework defines it, so change the sizing, add a class, or delete it.
+    <code>app/elements/svg-icon.html</code>, and then the file is yours. The
+    framework does not define it. So you can change the sizing, add a class, or
+    delete it.
   </p>
 
   ${html(s.element)}
@@ -178,8 +179,8 @@ export default {
   ${html(s.usage)}
 
   <p>
-    Light DOM, so no JavaScript is shipped and the page's own CSS reaches
-    inside. <code>GET /</code> returns the icon already drawn:
+    It is a light DOM element. So it sends no JavaScript, and the page's own CSS
+    applies inside it. <code>GET /</code> returns the icon already drawn:
   </p>
 
   ${html(s.output)}
@@ -188,8 +189,8 @@ export default {
 
   <p>
     The element above sizes an icon at <code>1em</code>, so it matches the text
-    beside it. Most icon sets draw with <code>stroke="currentColor"</code>, which
-    takes the color of the text too. Both follow from the surrounding rule:
+    next to it. Most icon sets draw with <code>stroke="currentColor"</code>, so
+    the icon also takes the text color. The surrounding rule sets both:
   </p>
 
   ${html(s.color)}
@@ -203,55 +204,56 @@ export default {
 
   ${html(s.config)}
 
-  <h2>Icons more than one app uses</h2>
+  <h2>Icons that several apps share</h2>
 
   <p>
-    <code>iconsDir</code> may name several directories, so a package of shared
-    icons is read with the app's own. Each is a path from <code>appDir</code>,
-    and a path may leave it.
+    <code>iconsDir</code> can list several directories. So the build reads a
+    package of shared icons together with the app's own icons. Each entry is a
+    path from <code>appDir</code>, and a path can go outside it.
   </p>
 
   ${html(s.shared)}
 
   <p>
-    A library of one name is one sheet across them. The app's
+    All libraries with the same name become one sheet. The app's
     <code>lucide/</code> and the package's <code>lucide/</code> are both
-    <code>/lucide.svg</code>. An app adds an icon to a shared set by putting it
-    in its own. An icon is one file. The same icon in two of the
-    directories stops the build and names both files, rather than letting one
-    quietly win.
+    <code>/lucide.svg</code>. To add an icon to a shared set, an app puts the
+    icon in its own directory. Each icon comes from one file. If two of the
+    directories contain the same icon, the build stops and names both files. It
+    does not silently pick one.
   </p>
 
   <doc-note label="An icon needs a viewBox" tone="warn">
-    A symbol scales by its <code>viewBox</code>. A file without one is refused
-    by name rather than built. The icon would otherwise render at some other
-    size and read as a CSS problem.
+    A symbol scales by its <code>viewBox</code>. The build refuses a file
+    without one, and names the file. Otherwise the icon would render at the
+    wrong size, and it would look like a CSS problem.
   </doc-note>
 
   <doc-note label="A library is one flat directory">
-    <code>app/icons/lucide/arrows/up.svg</code> is refused. Flattening it would
-    give two files one id, and skipping it would lose an icon without saying so.
-    Move the directory up to be a library of its own.
+    The build refuses <code>app/icons/lucide/arrows/up.svg</code>. If it
+    flattened the path, two files could get the same id. If it skipped the
+    file, an icon would go missing with no message. Move the directory up, so
+    it becomes a separate library.
   </doc-note>
 
-  <doc-note label="Label an icon that says something">
-    An icon beside its own label repeats it, so the element hides it from a
-    screen reader. Pass <code>label</code> when the icon is the only thing
-    there, as in a button with no text.
+  <doc-note label="Label an icon that has a meaning">
+    An icon next to its own label repeats the label. So the element hides the
+    icon from a screen reader. Pass <code>label</code> when the icon is the only
+    content, as in a button with no text.
   </doc-note>
 
-  <doc-note label="A library claims a URL at the site root">
-    <code>app/icons/lucide/</code> answers for <code>/lucide.svg</code>, so a
-    file you write at <code>app/public/lucide.svg</code> asks for the same URL.
-    Rather than pick a winner, the build and the dev server both stop until one
-    of them is renamed. Every other public file is untouched.
+  <doc-note label="A library uses a URL at the site root">
+    <code>app/icons/lucide/</code> serves <code>/lucide.svg</code>. A file at
+    <code>app/public/lucide.svg</code> would use the same URL. The build and the
+    dev server do not pick one. Both stop until you rename one of the two. This
+    does not affect other public files.
   </doc-note>
 
   <doc-note label="What a use element cannot do">
-    <code>&lt;use&gt;</code> draws the symbol in a tree of its own, so page CSS
-    reaches the whole icon and not one path inside it. An icon that needs two
-    colors under your control is one to paste into the markup by hand.
-    <code>&lt;use href&gt;</code> is also same-origin, so the sprite is served by
-    this app rather than a CDN.
+    <code>&lt;use&gt;</code> draws the symbol in a separate tree. So page CSS
+    applies to the whole icon, not to one path inside it. If an icon needs two
+    colors that you control, paste its SVG into the markup by hand.
+    <code>&lt;use href&gt;</code> is also same-origin. So this app must serve the
+    sprite, not a CDN.
   </doc-note>
 </doc-page>

@@ -27,24 +27,24 @@ site-note {
 <title>Browsers · transclude</title>
 <meta
   name="description"
-  content="The platform features this framework is built on, when each became interoperable, and what happens in a browser without one."
+  content="The platform features this framework uses, when all major browsers shipped each one, and what happens in a browser without it."
 />
 
 <doc-page
   heading="Browsers"
-  lede="A page is HTML, CSS and links, so most of what this framework renders runs in any browser ever shipped. Five features are the exception, and this page names them."
+  lede="A page is HTML, CSS and links. So most of what this framework renders works in any browser, old or new. Five features are the exception, and this page lists them."
 >
-  <h2>The floor</h2>
+  <h2>The minimum browser</h2>
 
   <p>
-    A page of plain markup has no floor. It is a document, and a browser from any
-    year displays it.
+    A page of plain markup has no minimum browser. It is a document, and a
+    browser from any year displays it.
   </p>
 
   <p>
     An element with its own <code>&lt;style&gt;</code> block is the one common
-    thing that does. Those styles are wrapped in <code>@scope</code>, which
-    browsers agreed on in March 2026.
+    case that needs a recent browser. The framework wraps those styles in
+    <code>@scope</code>. Browsers agreed on <code>@scope</code> in March 2026.
   </p>
 
   <div class="scroller">
@@ -53,7 +53,7 @@ site-note {
         <tr>
           <th>Feature</th>
           <th>What needs it</th>
-          <th>Interoperable since</th>
+          <th>In all major browsers since</th>
         </tr>
       </thead>
       <tbody>
@@ -82,7 +82,7 @@ site-note {
               ><code>:state()</code></a
             >
           </td>
-          <td>Styling on a state field</td>
+          <td>CSS that selects on a state field</td>
           <td>May 2024</td>
         </tr>
         <tr>
@@ -110,66 +110,66 @@ site-note {
   </div>
 
   <p>
-    The dates are
-    <a href="https://web-platform-dx.github.io/web-features/">Baseline</a>: when
-    the last of the major engines shipped the feature, rather than when the first
-    one did.
+    The dates come from
+    <a href="https://web-platform-dx.github.io/web-features/">Baseline</a>. Each
+    date is when the last of the major engines shipped the feature, not when the
+    first one did.
   </p>
 
-  <h2>What happens below each</h2>
+  <h2>What happens without each feature</h2>
 
   <p>
-    <strong>No <code>@scope</code>.</strong> The browser skips an at-rule it does
-    not know, and it skips everything inside it. So the element renders with the
-    page's markup and none of its own styles. Nothing errors.
+    <strong>No <code>@scope</code>.</strong> A browser skips an at-rule it does
+    not know, and it skips everything inside it. So the element renders, but with
+    none of its own styles. There is no error.
   </p>
 
   <p>
     <strong>No declarative shadow DOM.</strong> The
     <code>&lt;template&gt;</code> stays a template, and its content never appears.
-    A shadow element renders as an empty tag until its script defines it, and then
-    it paints.
+    A shadow element shows as an empty tag until its script defines it. Then it
+    paints.
   </p>
 
   <p>
-    <strong>No <code>:state()</code>.</strong> The state is still there and the
-    element still works. Only the CSS that selected on it does nothing.
+    <strong>No <code>:state()</code>.</strong> The state still exists, and the
+    element still works. Only the CSS that selects on the state does nothing.
   </p>
 
   <p>
-    <strong>No form association.</strong> The element renders, and its value is
-    left out of the form it sits in.
+    <strong>No form association.</strong> The element renders, but its form does
+    not include its value.
   </p>
 
-  <h2>Styling an element that has to work everywhere</h2>
+  <h2>Styling an element for every browser</h2>
 
-  <p>An element's own style block is scoped, and scoping is the part that is new.</p>
+  <p>An element's own style block is scoped, and scoping is the new part.</p>
 
   ${html(s.styled)}
 
   <p>
-    Move the same rules into the stylesheet and the floor goes away. A light
-    element is in the page's own DOM, so page CSS reaches it, and the tag name is
-    the selector.
+    Move the same rules into the stylesheet, and the minimum browser goes away. A
+    light element is in the page's own DOM. So page CSS reaches it, and the tag
+    name is the selector.
   </p>
 
   ${html(s.global)}
 
   <p>
-    You give up the scoping and get a rule any browser applies. Two elements
-    with a rule of the same name now reach each other, which the scope was
-    stopping.
+    You lose the scoping, but every browser applies the rule. If two elements
+    each have a rule for the same selector, both rules now apply to both
+    elements. The scope prevented that.
   </p>
 
-  <h2>Things that are already optional</h2>
+  <h2>Features that are already optional</h2>
 
   <p>
     <a
       href="https://developer.mozilla.org/en-US/docs/Web/API/Speculation_Rules_API"
       >Speculation rules</a
     >
-    ship in one engine. <code>speculate</code> is off by default, and a browser
-    that does not read the block navigates the ordinary way.
+    ship in one engine. <code>speculate</code> is off by default. A browser that
+    does not read the block navigates in the ordinary way.
   </p>
 
   <p>
@@ -177,28 +177,28 @@ site-note {
     <a href="/docs/elements#pointing-a-label-inside"
       ><code>referenceTarget</code></a
     >
-    ships in one engine. A browser without it ignores the attribute, and a
+    ships in one engine. A browser without it ignores the attribute. Then a
     <code>&lt;label for&gt;</code> that names a shadow element stays
-    unconnected, as it would with no target.
+    unconnected, the same as with no target.
   </p>
 
   <p>
-    A browser that knows no
-    <a href="/docs/security">Content-Security-Policy</a> ignores the one a page
-    carries, which leaves it where it was rather than worse off.
+    A browser that does not know
+    <a href="/docs/security">Content-Security-Policy</a> ignores the policy a
+    page sends. The page is then no less safe than a page with no policy.
   </p>
 
   <h2>The server side</h2>
 
   <p>
     The same app runs on Node, Bun, Deno and workerd. The core imports nothing
-    from <code>node:</code>, and a test reads its whole import graph to keep that
+    from <code>node:</code>. A test reads its whole import graph to keep that
     true. See <a href="/docs/runtimes">runtimes</a>.
   </p>
 
-  <doc-note label="Nothing here sniffs a browser">
+  <doc-note label="Nothing here detects the browser">
     No feature detection runs, and no bundle is built twice. Each of the five
-    above either works or does nothing, which is why this page is a table rather
-    than a build setting.
+    features above either works or does nothing. So this page is a table, not a
+    build setting.
   </doc-note>
 </doc-page>

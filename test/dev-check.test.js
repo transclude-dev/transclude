@@ -48,8 +48,8 @@ const reporterOn = (checker, lines, delay = 5) =>
 // ---- what it says ----------------------------------------------------------
 
 test('a clean run says so, because silence is what a run that never happened looks like', async () => {
-  // `/blog/no-output-looks-like-good-output`. A checker that prints only on
-  // failure makes "passed" and "never ran" the same output.
+  // A checker that prints only on failure makes "passed" and "never ran" the
+  // same output.
   const lines = [];
   await reporterOn(fakeChecker(), lines).run();
 

@@ -45,157 +45,159 @@
 <title>Accessibility · transclude</title>
 <meta
   name="description"
-  content="What the defaults give you, and the markup that is yours to write."
+  content="What the defaults give you, and the markup that you write yourself."
 />
 
 <doc-page
   heading="Accessibility"
-  lede="A page here is a document. Most of what a screen reader and a keyboard need is already in the markup, and the defaults are chosen to keep it there."
+  lede="A page here is a document. The markup already contains most of what a screen reader and a keyboard need. The defaults are chosen to keep it that way."
 >
-  <h2>What the default already does</h2>
+  <h2>What the defaults already do</h2>
 
   <p>
-    A page ships no JavaScript. The text is on screen before any script runs, so
-    a slow network or a blocked bundle changes nothing about what is readable.
+    A page sends no JavaScript. The text is on screen before any script runs. So
+    a slow network or a blocked bundle does not stop anyone from reading it.
   </p>
 
   <p>
-    Navigation is links and forms. Back, forward, find in page, open in new tab
-    and reader mode all work, because nothing replaced them.
+    Navigation uses links and forms. Back, forward, find in page, open in new tab
+    and reader mode all work, because nothing replaces them.
   </p>
 
   <p>
-    An element renders into the page's own DOM. There is no boundary between a
-    label and the input it names, so this works.
+    An element renders into the page's own DOM. So there is no boundary between a
+    label and the input that it names, and this code works.
   </p>
 
   ${html(s.label)}
 
   <doc-note label="A shadow root breaks that pair" tone="warn">
     <code>&lt;label for&gt;</code> cannot cross a shadow boundary. An element with
-    <code>export const shadow = true</code> has to carry the label inside its own
-    root. See <a href="/docs/elements">elements</a> for the rest of what the
-    boundary costs.
+    <code>export const shadow = true</code> must keep the label inside its own
+    root. See <a href="/docs/elements">elements</a> for the other costs of the
+    boundary.
   </doc-note>
 
   <h2>What a new project starts with</h2>
 
   <p>
-    The layout <code>npm create @transclude</code> writes already carries the
-    parts that are hard to add to a page later.
+    <code>npm create @transclude</code> writes a layout. That layout already
+    contains the parts that are hard to add to a page later.
   </p>
 
   ${html(s.skip)}
 
   <p>
-    The skip link is first in the document, so a keyboard reaches it before the
-    nav. It is offscreen until it takes focus.
+    The skip link is first in the document, so a keyboard user reaches it before
+    the nav. It stays off the screen until it gets focus.
   </p>
 
   ${html(s.skipCss)}
 
   <p>
-    <code>position: absolute</code>, not <code>display: none</code>. Nothing
-    hidden the second way can be focused at all, so the link would never appear.
+    Use <code>position: absolute</code>, not <code>display: none</code>. An
+    element hidden with <code>display: none</code> cannot get focus. So the link
+    would never appear.
   </p>
 
   <p>
-    <code>aria-current="page"</code> marks the link you are on. A screen reader
-    announces that one as the current page.
+    <code>aria-current="page"</code> marks the link to the page you are on. A
+    screen reader announces that link as the current page.
   </p>
 
   <h2>The language of the page</h2>
 
   <p>
     <code>lang</code> in <code>transclude.config.js</code> sets
-    <code>&lt;html lang&gt;</code> for every page. A screen reader picks a voice
-    from it, so a wrong value is worse than a missing one.
+    <code>&lt;html lang&gt;</code> for every page. A screen reader uses it to
+    choose a voice. So a wrong value is worse than no value.
   </p>
 
   ${html(s.lang)}
 
   <p>
-    A page that is written in another language sets its own. See
+    A page in another language sets its own value. See
     <a href="/docs/languages">languages</a>.
   </p>
 
   <h2>Icons</h2>
 
   <p>
-    An icon beside its own label repeats it, so <code>svg-icon</code> hides it.
-    Pass <code>label</code> when the icon is the only thing saying what the
-    control does.
+    An icon next to its own text label repeats the label. So
+    <code>svg-icon</code> hides that icon from screen readers. Pass
+    <code>label</code> when the icon is the only thing that says what the control
+    does.
   </p>
 
   ${html(s.icons)}
 
   <p>
-    The two are different elements in the output. A labeled icon is
-    <code>role="img"</code> with an <code>aria-label</code>, and a decorative one
-    is <code>aria-hidden="true"</code>. See <a href="/docs/icons">icons</a>.
+    The output is different for the two icons. A labeled icon gets
+    <code>role="img"</code> and an <code>aria-label</code>. A decorative icon
+    gets <code>aria-hidden="true"</code>. See <a href="/docs/icons">icons</a>.
   </p>
 
-  <h2>Saying something changed</h2>
+  <h2>Announcing a change</h2>
 
   <p>
-    A form submits and the server sends a new page, so a screen reader reads the
-    result the way it reads any document. Nothing has to announce it.
+    When a form submits, the server sends a new page. A screen reader reads the
+    result as it reads any document. Nothing needs to announce it.
   </p>
 
   <p>
-    A fragment swap is different. The browser stayed on the page, and only part of
-    it changed. Put the changed text in a live element, and a screen reader reads
-    it out.
+    A fragment swap is different. The browser stays on the page, and only part of
+    it changes. Put the changed text in a live element, and a screen reader reads
+    it aloud.
   </p>
 
   ${html(s.live)}
 
   <p>
-    <code>role="status"</code> is polite, so it waits for a pause.
-    <code>role="alert"</code> interrupts, so keep it for something that has gone
+    <code>role="status"</code> is polite, so the screen reader waits for a pause.
+    <code>role="alert"</code> interrupts. So use it only when something has gone
     wrong.
   </p>
 
-  <doc-note label="Focus survives an in-place update">
-    A light element writes text and attributes into the nodes already in the
-    page. It never replaces a child, so focus and selection stay where the reader
-    put them. Swapping a whole fragment is your own code, and moving focus after
-    one is yours to do.
+  <doc-note label="Focus stays during an in-place update">
+    A light element writes text and attributes into the nodes that are already in
+    the page. It never replaces a child, so focus and selection stay where the
+    reader put them. Your own code swaps a whole fragment. So moving focus after
+    a swap is also your job.
   </doc-note>
 
   <h2>Color</h2>
 
   <p>
-    The generated stylesheet declares both schemes on <code>:root</code>, and the
-    layout says so in a <code>&lt;meta&gt;</code> that is read before the CSS
-    arrives.
+    The generated stylesheet declares both color schemes on <code>:root</code>.
+    The layout also declares them in a <code>&lt;meta&gt;</code> tag. The browser
+    reads that tag before the CSS arrives.
   </p>
 
   <p>
-    Do not carry meaning in color alone. This site's own warning notes carry an
-    icon as well as a border, because the border is the part some readers cannot
-    use.
+    Do not show meaning with color alone. The warning notes on this site have an
+    icon as well as a border. Some readers cannot use the border, so the icon is
+    there for them.
   </p>
 
-  <h2>What is still yours</h2>
+  <h2>What you must still do</h2>
 
   <p>
-    The framework renders the markup you wrote. It adds no roles, invents no
-    labels and reorders nothing.
+    The framework renders the markup that you wrote. It adds no roles, makes up no
+    labels and changes no order.
   </p>
 
   <ul>
-    <li>Headings in order, one <code>&lt;h1&gt;</code> a page.</li>
-    <li>A name on every control, and on every image that carries meaning.</li>
-    <li>A visible focus style, on everything a keyboard can reach.</li>
-    <li>Contrast that holds in both color schemes.</li>
-    <li>A keyboard path to anything a pointer can do.</li>
+    <li>Headings in order, with one <code>&lt;h1&gt;</code> on each page.</li>
+    <li>A name on every control, and on every image that has meaning.</li>
+    <li>A visible focus style on everything that a keyboard can reach.</li>
+    <li>Enough contrast in both color schemes.</li>
+    <li>A keyboard way to do anything that a pointer can do.</li>
   </ul>
 
   <p>
-    The last one is the one a framework cannot help with. A tab list or a menu is
-    a keyboard contract, and writing one is
-    <a href="https://www.w3.org/WAI/ARIA/apg/patterns/">a pattern to follow</a>
-    rather than a component to install.
+    A framework cannot help with the last one. A tab list or a menu has fixed
+    keyboard rules. To build one, follow
+    <a href="https://www.w3.org/WAI/ARIA/apg/patterns/">a pattern</a>. There is
+    no component to install.
   </p>
 </doc-page>

@@ -173,8 +173,8 @@ would be. Every one of them is deployed, from the same source you would clone.
 | `showcase` | Every feature at once, and where the browser checks live | [showcase.transclude.dev](https://showcase.transclude.dev) |
 
 The browser checks are in `showcase` because they need an app to run against.
-`www/` is the site at transclude.dev: a landing page, the documentation under
-`/docs`, the writing under `/blog`, and itself built with the framework.
+`www/` is the site at transclude.dev: a landing page and the documentation
+under `/docs`, built with the framework.
 
 ### Trying the CLI against this checkout
 

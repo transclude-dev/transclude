@@ -24,26 +24,26 @@ transclude.config.js`),
 </script>
 
 <title>Project layout · transclude</title>
-<meta name="description" content="What each directory holds." />
+<meta name="description" content="What each directory contains." />
 
 <doc-page
   heading="Project layout"
-  lede="Where a file sits says what it is. Nothing inside it does."
+  lede="The directory that contains a file sets what the file is. The content of the file does not."
 >
   ${html(layout)}
 
   <p>
     In <code>routes/</code>, <code>.html</code> is a page and <code>.js</code> is
-    an endpoint. Everything in <code>elements/</code> is a custom element,
-    light DOM unless its own file exports <code>shadow</code>.
+    an endpoint. Every file in <code>elements/</code> is a custom element. It
+    uses light DOM unless its file exports <code>shadow</code>.
   </p>
 
   <doc-note label="A helper in routes/ needs a prefix" tone="warn">
-    A <code>.js</code> file in <code>routes/</code> is a route. Give a helper a
-    <code>_</code> prefix to keep it out of the route table.
+    A <code>.js</code> file in <code>routes/</code> is a route. Start the name
+    of a helper with <code>_</code> so that it is not a route.
   </doc-note>
 
-  <h2>Names with meaning</h2>
+  <h2>Special file names</h2>
 
   <div class="scroller">
     <table>
@@ -56,19 +56,19 @@ transclude.config.js`),
       <tbody>
         <tr>
           <td><code>_layout.html</code></td>
-          <td>Wraps every route in its directory and below.</td>
+          <td>Wraps every route in its directory and in the directories below it.</td>
         </tr>
         <tr>
           <td><code>[name].html</code></td>
-          <td>One segment, in <code>params.name</code>.</td>
+          <td>Matches one path segment. The value is in <code>params.name</code>.</td>
         </tr>
         <tr>
           <td><code>[...path].html</code></td>
-          <td>The rest of the path, in <code>params.path</code>.</td>
+          <td>Matches the rest of the path. The value is in <code>params.path</code>.</td>
         </tr>
         <tr>
           <td><code>404.html</code>, <code>500.html</code></td>
-          <td>Sent when a request finds nothing or fails.</td>
+          <td>Sent when no route matches a request, or when a route fails.</td>
         </tr>
         <tr>
           <td><code>_anything.js</code></td>

@@ -62,54 +62,54 @@ export default defineConfig({
 </script>
 
 <title>Getting started · transclude</title>
-<meta name="description" content="Install it, write a page, run the server." />
+<meta name="description" content="Install the framework, write a page and run the server." />
 
 <doc-page
   heading="Getting started"
-  lede="One command writes a project. A page is an .html file, and the directory it sits in is its URL."
+  lede="One command creates a project. A page is an .html file, and the path of the file gives its URL."
 >
   ${html(s.create)}
 
   <p>
-    That is a layout, two pages, a 404 and a stylesheet. For a heading and a
-    paragraph and nothing else:
+    That command writes a layout, two pages, a 404 page and a stylesheet. To get
+    only a heading and a paragraph, use the blank template:
   </p>
 
   ${html(s.blank)}
 
   <p>
-    Neither one brings a fragment, an include or an element. Those are decisions
-    the project has not made yet, and each one has its own page here when you
-    want it.
+    Neither template contains a fragment, an include or an element. Add them
+    when you need them. Each one has its own page.
   </p>
 
   <h2>Or by hand</h2>
 
   <p>
-    Nothing above is magic, and the rest of this page is what it wrote.
+    The rest of this page shows the files that command wrote, so you can set up
+    a project by hand.
   </p>
 
   ${html(s.install)}
 
   <p>
-    Vite and TypeScript are optional peers, so neither arrives with the
-    framework and both go in your own <code>package.json</code>. Vite builds and
-    it serves in development; TypeScript is what
-    <code>npm run check</code> drives. A built app loads neither, which is why
-    a container that only serves one carries neither.
+    Vite and TypeScript are optional peer dependencies. The framework does not
+    install them, so you add both to your own <code>package.json</code>. Vite
+    builds the app and serves it in development. <code>npm run check</code> runs
+    TypeScript. A built app loads neither of them. A container that only serves
+    the app does not need them.
   </p>
 
   <p>
-    An app is a directory with a <code>transclude.config.js</code> in it. It says
-    where everything lives.
+    An app is a directory that contains a <code>transclude.config.js</code>
+    file. This file tells the framework where each part of the app is.
   </p>
 
   ${html(s.config)}
 
   <p>
-    There is no <code>vite.config.js</code>. The commands above build one, so a
-    project needs none of its own. Write one to add another Vite plugin, and put
-    only that in it.
+    A project does not need a <code>vite.config.js</code>. The commands above
+    make the Vite configuration for you. To add another Vite plugin, write a
+    <code>vite.config.js</code> that contains only that plugin.
   </p>
 
   ${html(s.vite)}
@@ -119,7 +119,7 @@ export default defineConfig({
   <p>
     <code>app/routes/index.html</code> responds to <code>/</code>. The
     <code>&lt;script server&gt;</code> block runs on the server and returns the
-    data the markup reads.
+    data for the markup.
   </p>
 
   ${html(s.page)}
@@ -139,11 +139,11 @@ export default defineConfig({
       <tbody>
         <tr>
           <td><code>transclude-dev</code></td>
-          <td>Runs on 1960. Edits appear without a restart.</td>
+          <td>Starts the server on port 1960. Your edits appear without a restart.</td>
         </tr>
         <tr>
           <td><code>transclude-build</code></td>
-          <td>Writes <code>dist/</code>.</td>
+          <td>Builds the app into <code>dist/</code>.</td>
         </tr>
         <tr>
           <td><code>transclude-serve</code></td>
@@ -158,7 +158,7 @@ export default defineConfig({
   </div>
 
   <doc-note label="Interpolation is escaped">
-    <code>${interpolation}</code> is escaped. Wrap a value in
-    <code>html()</code> to pass markup through.
+    The server escapes every <code>${interpolation}</code>. To output a value as
+    markup, wrap it in <code>html()</code>.
   </doc-note>
 </doc-page>

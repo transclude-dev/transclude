@@ -141,124 +141,127 @@ export default async () => {
   ${html(s.run)}
 
   <p>
-    <code>workerd</code> is the runtime Cloudflare Workers runs on, and the one
-    this framework targets. Cloudflare is where most people meet it, and
-    <code>wrangler</code> is how you deploy there. Anywhere else that runs
-    <code>workerd</code> runs this.
+    <code>workerd</code> is the runtime that Cloudflare Workers runs on, and
+    this framework targets it. Most people use it on Cloudflare, and you deploy
+    there with <code>wrangler</code>. Any other host that runs
+    <code>workerd</code> also runs this framework.
   </p>
 
   <doc-note label="A loader runs wherever the page does" tone="warn">
-    <code>workerd</code> refuses to compile WebAssembly at runtime. A loader that
-    reaches something built on it fails there and nowhere else. A prerendered page
-    never runs its loader in production, which is what hides this until something
-    asks for a fragment. Syntax highlighting is the one that catches people: pick
-    a highlighter that runs on a JavaScript engine.
+    <code>workerd</code> refuses to compile WebAssembly at runtime. So a loader
+    that uses a library built on WebAssembly fails there and nowhere else. A
+    prerendered page never runs its loader in production. So the failure stays
+    hidden until something asks for a fragment. Syntax highlighting is the most
+    common case. Pick a highlighter that runs on a JavaScript engine.
   </doc-note>
 
   <p>
-    The Node, Bun and Deno adapters come from the package and only listen. On
-    Node, a stop signal drains first: the listener closes, work in flight
-    finishes, and the process leaves. <code>worker.js</code> belongs to the
-    app, and this is all of it.
+    The Node, Bun and Deno adapters come from the package, and they only
+    listen. On Node, a stop signal drains the server first. The listener closes,
+    the work in progress finishes, and then the process exits.
+    <code>worker.js</code> belongs to the app. This is the whole file:
   </p>
 
   ${html(s.entry)}
 
   <p>
     The imports stay in the app because a bundler needs a literal path to
-    follow. The wiring behind <code>workerFrom</code> does not, so it lives in
-    the package. It builds the app on the first request, which is when
-    <code>env</code> exists, and reads <code>cookieSecret</code> from
-    <code>env.COOKIE_SECRET</code> when there is one.
+    follow. The wiring behind <code>workerFrom</code> does not need one, so it
+    is in the package. It builds the app on the first request, because
+    <code>env</code> exists only then. It reads <code>cookieSecret</code> from
+    <code>env.COOKIE_SECRET</code> if that is set.
   </p>
 
   <p>
-    An app wanting something else calls <code>createApp</code> from
+    If an app needs something different, it calls <code>createApp</code> from
     <code>@transclude/core/app</code> and does the wiring itself.
   </p>
 
   <h2>Files on the edge</h2>
 
   <p>
-    <code>dist/server/assets.js</code> carries every public file and hashed
-    asset inside the worker, and a worker has a size limit. On Cloudflare, the
-    edge serves files itself instead. Import <code>dist/server/pages.js</code>,
-    which carries the prerendered pages only:
+    <code>dist/server/assets.js</code> puts every public file and hashed asset
+    inside the worker. But a worker has a size limit. On Cloudflare, the edge
+    can serve the files instead. Import <code>dist/server/pages.js</code>, which
+    contains only the prerendered pages:
   </p>
 
   ${html(s.edgeEntry)}
 
-  <p>And point the worker's assets at <code>dist/edge</code>:</p>
+  <p>Then point the worker's assets at <code>dist/edge</code>:</p>
 
   ${html(s.edgeConfig)}
 
   <p>
-    The build writes <code>dist/edge</code>: the public files, the hashed
-    assets, and a <code>_headers</code> file. Cloudflare answers a request for
-    one of those files before the worker runs, so the request costs nothing,
-    and the worker answers everything else. <code>_headers</code> gives each
-    file the headers the server gives every response: <code>nosniff</code>,
-    and the CSP and the permissions policy when the config sets them. A hashed
-    asset also gets the year-long cache. A <code>_headers</code> file in the
-    public directory comes after it.
+    The build writes <code>dist/edge</code>. It contains the public files, the
+    hashed assets, and a <code>_headers</code> file. Cloudflare answers a
+    request for one of those files before the worker runs, so the request costs
+    nothing. The worker answers all other requests. <code>_headers</code> gives
+    each file the headers that the server gives every response. These are
+    <code>nosniff</code>, and also the CSP and the permissions policy when the
+    config sets them. A hashed asset also gets the one-year cache. A
+    <code>_headers</code> file in the public directory is added after the
+    generated rules, and Cloudflare applies both.
   </p>
 
   <doc-note label="Why html_handling is none">
     Cloudflare's default answers <code>/about</code> with
-    <code>about.html</code> and redirects <code>/about.html</code> to
-    <code>/about</code>. The Node server does neither for a public file, and
-    <code>none</code> keeps the two the same.
+    <code>about.html</code>, and redirects <code>/about.html</code> to
+    <code>/about</code>. The Node server does neither for a public file.
+    <code>none</code> makes the two behave the same.
   </doc-note>
 
   <p>
-    The Node, Bun and Deno servers walk up from the working directory to the
+    The Node, Bun and Deno servers search up from the working directory for the
     nearest <code>transclude.config.js</code>. <code>TRANSCLUDE_ROOT</code>
-    starts the walk in a different directory, for a server started outside its
-    project. The build, the dev server and the check read it too.
+    starts the search in a different directory. Use it when you start a server
+    outside its project. The build, the dev server and the check also read it.
   </p>
 
   <p>
-    <code>deno compile</code> makes one binary that carries the app. Include
+    <code>deno compile</code> makes one binary that contains the app. Include
     the config and the build:
   </p>
 
   ${html(s.compile)}
 
   <p>
-    <code>./todomvc</code> serves the pages and public files it carries, from
-    any directory, on the config's port or <code>PORT</code>. It needs no
-    <code>TRANSCLUDE_ROOT</code>. When the config sets <code>outDir</code>,
-    include that directory in place of <code>dist</code>.
+    <code>./todomvc</code> serves the pages and public files inside it. It runs
+    from any directory, on the config's port or on <code>PORT</code>. It needs
+    no <code>TRANSCLUDE_ROOT</code>. If the config sets <code>outDir</code>,
+    include that directory instead of <code>dist</code>.
   </p>
 
   <p>
-    <code>bun build --compile</code> carries only what an import names, and the
-    Bun server finds its project when it starts. So compile the app's
-    <code>worker.js</code>, the entry <code>wrangler</code> deploys:
+    <code>bun build --compile</code> includes only what an import names. Also,
+    the Bun server finds its project when it starts. So compile the app's
+    <code>worker.js</code>, which is the entry that <code>wrangler</code>
+    deploys:
   </p>
 
   ${html(s.bun)}
 
   <p>
-    That binary serves the way workerd does, from memory and from any
-    directory, byte ranges on public files included. It listens on
-    <code>PORT</code>, or on 3000 when that is unset, and not on the config's
-    port.
+    That binary serves the same way workerd does: from memory, from any
+    directory, and with byte ranges on public files. It listens on
+    <code>PORT</code>, or on 3000 if <code>PORT</code> is not set. It does not
+    use the config's port.
   </p>
 
-  <h2>The floor</h2>
+  <h2>Minimum versions</h2>
 
   <p>
-    Node 22 is the oldest Node this runs on, and the <code>engines</code> field
-    in both packages says so. CI runs the suite on 22, on Active LTS and on
-    Current. The floor is tested rather than remembered.
+    Node 22 is the oldest Node version that this runs on. The
+    <code>engines</code> field in both packages says so. CI runs the tests on
+    22, on Active LTS and on Current. So the minimum version is tested, not only
+    written down.
   </p>
 
   <p>
-    Bun, Deno and workerd carry no version floor of their own. On every push, CI
-    builds an app and serves it on the current release of each. The version that
-    works is the one you can install today, and a regression in one of them is
-    caught by that run.
+    Bun, Deno and workerd have no minimum version of their own. On every push,
+    CI builds an app and serves it on the current release of each one. So the
+    version that works is the one you can install today. If one of them has a
+    regression, that run catches it.
   </p>
 
   <h2>What differs</h2>
@@ -300,29 +303,32 @@ export default async () => {
   </div>
 
   <doc-note label="A worker reads its config on the first request" tone="warn">
-    There is no <code>process.env</code> on <code>workerd</code>, so the app is built when the
-    first request comes in and takes its config from <code>env</code>. Reading a
-    secret at import time gives <code>undefined</code>.
+    <code>workerd</code> has no <code>process.env</code>. So the app is built
+    when the first request comes in, and it takes its config from
+    <code>env</code>. If you read a secret at import time, you get
+    <code>undefined</code>.
   </doc-note>
 
   <h2>Bindings</h2>
 
   <p>
-    A KV namespace, a D1 database and a secret all arrive the same way. They are
-    on <code>env</code>, which is the second argument to a worker's
+    A KV namespace, a D1 database and a secret all come in the same way. They
+    are on <code>env</code>, the second argument to a worker's
     <code>fetch</code>.
   </p>
 
   <p>
-    A loader is not handed that. <code>ctx</code> carries the request, the
-    params and the cookies, and nothing that names one runtime.
-    <code>env</code> names one. The other three fill that slot with something
-    else, so a loader reading it would work in a single place.
+    A loader does not get <code>env</code>. <code>ctx</code> contains the
+    request, the params and the cookies, but nothing that belongs to one
+    runtime. <code>env</code> belongs to one runtime. The other three put
+    something different in that place. So a loader that reads it would work in
+    only one place.
   </p>
 
   <p>
-    <code>worker.js</code> belongs to the app and does get <code>env</code>.
-    Hold it there and import it where a loader needs it.
+    <code>worker.js</code> belongs to the app, and it does get
+    <code>env</code>. Store <code>env</code> there, and import it where a loader
+    needs it.
   </p>
 
   ${html(s.bindings)}
@@ -332,62 +338,63 @@ export default async () => {
   ${html(s.use)}
 
   <p>
-    <code>Env</code> is the interface <code>wrangler types</code> writes.
-    Typing the module is what gives a loader autocomplete on a binding, and the
-    framework could not supply that.
+    <code>Env</code> is the interface that <code>wrangler types</code> writes.
+    When you type the module, a loader gets autocomplete on each binding. The
+    framework cannot supply that.
   </p>
 
   <doc-note label="A page that reads a binding cannot be prerendered" tone="warn">
-    The build runs on Node, where nothing calls <code>hold</code>. A page whose
-    loader reads a binding needs <code>export const prerender = false</code>,
-    or the build runs that loader and throws. The same is true of a page calling
-    <code>ctx.after</code>, for a different reason given below.
+    The build runs on Node, and nothing calls <code>hold</code> there. A page
+    whose loader reads a binding needs
+    <code>export const prerender = false</code>. Otherwise the build runs that
+    loader, and the loader throws. A page that calls <code>ctx.after</code>
+    needs it too, for a different reason given below.
   </doc-note>
 
-  <doc-note label="A binding is per isolate, a request is not">
-    Holding <code>env</code> in a module is safe, because it is one object for
-    the life of the isolate. Every request served by that isolate gets the same
-    one. Holding a <code>Request</code> this way is not safe, because two
-    visitors would share whichever arrived last.
+  <doc-note label="A binding belongs to the isolate, but a request does not">
+    You can safely keep <code>env</code> in a module, because it is one object
+    for the life of the isolate. Every request that the isolate serves gets the
+    same one. Keeping a <code>Request</code> this way is not safe. Two visitors
+    would share whichever request arrived last.
   </doc-note>
 
   <p>
-    Nothing calls <code>hold</code> on Node, Bun or Deno, so the throw above is
-    what a loader finds there. An app that runs in more than one place returns
-    its own fallback instead.
+    Nothing calls <code>hold</code> on Node, Bun or Deno. So a loader there gets
+    the error that the code above throws. An app that runs in more than one
+    place returns its own fallback instead.
   </p>
 
   <h2>Work after the response</h2>
 
   <p>
-    <code>ctx.after</code> takes a promise the reader does not have to wait for.
-    A view counted, a webhook sent, a log written.
+    <code>ctx.after</code> takes a promise that the reader does not have to wait
+    for. Examples are a view count, a webhook, or a log entry.
   </p>
 
   ${html(s.after)}
 
   <p>
-    On <code>workerd</code> this is <code>waitUntil</code>, which is how a worker
-    asks to stay up past the response it just sent. Without it the isolate may
-    stop and take the work with it. Node, Bun and Deno keep running either way,
-    so there it changes nothing about when the work finishes.
+    On <code>workerd</code>, this is <code>waitUntil</code>. A worker uses it to
+    stay up after it sends the response. Without it, the isolate may stop and
+    drop the work. Node, Bun and Deno keep running either way. So there, it does
+    not change when the work finishes.
   </p>
 
   <p>
     It takes the promise, not a function that makes one. Call the work and pass
-    what it returns. A function is refused rather than wrapped, because wrapping
-    one would resolve to the function and run nothing.
+    the value it returns. A function is refused, not wrapped. If it were
+    wrapped, the promise would resolve to the function and nothing would run.
   </p>
 
-  <doc-note label="A failure has no request left to fail" tone="warn">
-    Nothing awaits this work, so a rejection would reach the runtime and end the
-    process on Node. It goes to <code>onError</code> instead, with the request
-    that started it. The response is already sent and does not change.
+  <doc-note label="A failure cannot fail the request" tone="warn">
+    Nothing awaits this work. So on Node, a rejection would reach the runtime
+    and end the process. Instead, it goes to <code>onError</code> with the
+    request that started it. The response is already sent and does not change.
   </doc-note>
 
   <p>
-    A prerendered page has no response for the work to outlive, so calling it
-    there stops the build. That is the same <code>prerender = false</code> the
-    sample above carries.
+    A prerendered page has no response for the work to outlive. So if a
+    prerendered page calls it, the build stops. That is why the sample above has
+    <code>prerender = false</code>.
   </p>
 </doc-page>

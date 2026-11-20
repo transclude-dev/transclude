@@ -29,17 +29,17 @@ export default (app) => {
 </script>
 
 <title>Middleware · transclude</title>
-<meta name="description" content="Where an app adds its own middleware, and the order everything runs in." />
+<meta name="description" content="Where an app adds its own middleware, and the order in which each step runs." />
 
 <doc-page
   heading="Middleware"
   lede="The server is Hono. An app adds its own middleware in app/server.js."
 >
   <p>
-    The <code>app</code> you get is a <a href="https://hono.dev/">Hono</a>
-    instance, so anything in its
+    The <code>app</code> that your function gets is a
+    <a href="https://hono.dev/">Hono</a> instance. So everything in the Hono
     <a href="https://hono.dev/docs/guides/middleware">middleware guide</a> works
-    here, including the built-in middleware it ships.
+    here. This includes the middleware that comes with Hono.
   </p>
 
   ${html(s.server)}
@@ -55,43 +55,46 @@ export default (app) => {
   </ol>
 
   <p>
-    <code>app/server.js</code> runs before anything that serves bytes, so a guard
-    covers prerendered pages and public files. Public files come before the route
-    table, so a real file beats a <code>[...path]</code> catch-all.
+    <code>app/server.js</code> runs before any step that sends bytes. So a guard
+    in it also protects prerendered pages and public files. Public files come
+    before the routes. So a real file wins over a <code>[...path]</code>
+    catch-all route.
   </p>
 
   <h2>Paths that are not public</h2>
 
   <p>
-    Middleware does not run during the build. So nothing there can tell a gated
-    page from an open one. A page behind a guard is written to a file in its
-    signed-out state, and any static host then serves it.
+    Middleware does not run during the build. So the build cannot tell a gated
+    page from an open page. The build writes a guarded page to a file as a
+    signed-out visitor sees it. Then any static host serves that file.
   </p>
 
   <p>
-    <code>gated</code> is how the build finds out. It writes no file for those
-    paths and leaves them out of the sitemap. They are still routes, and the
-    middleware still answers them at runtime.
+    The <code>gated</code> export tells the build which paths are guarded. The
+    build writes no file for those paths, and it leaves them out of the sitemap.
+    They are still routes, and the middleware still handles them at runtime.
   </p>
 
   ${html(s.gated)}
 
   <p>
-    A path matches itself. <code>/api/*</code> matches that path and everything
-    under it. An entry that is not a path fails the build. So does one that
-    covers no route, URL or public file. A misspelled path would otherwise fail
-    open, with the file written and the build reporting a success.
+    A path matches only itself. <code>/api/*</code> matches <code>/api</code> and
+    every path under it. An entry that is not a path stops the build with an
+    error. An entry that matches no route, URL or public file also stops the
+    build. Without this check, a misspelled path would fail open. The build would
+    write the file and report success.
   </p>
 
-  <doc-note label="A layout guard is already caught" tone="warn">
-    The build runs layout loaders, and a guard reads a cookie, which the build
-    refuses to write down. Nothing runs <code>app/server.js</code> during a
-    build, which is why this one has to be declared.
+  <doc-note label="The build already catches a guard in a layout" tone="warn">
+    The build runs layout loaders. A guard reads a cookie, and the build refuses
+    to write a page that reads a cookie. But nothing runs
+    <code>app/server.js</code> during a build. So you must declare a guard in it
+    with <code>gated</code>.
   </doc-note>
 
   <h2>Trailing slashes</h2>
 
-  <p><code>trailingSlash</code> sets the router mode and the redirect together.</p>
+  <p><code>trailingSlash</code> sets both the router mode and the redirect.</p>
 
   <div class="scroller">
     <table>
@@ -115,11 +118,11 @@ export default (app) => {
   </div>
 
   <p>
-    <code>'ignore'</code> leaves one page reachable at two URLs, so say which one
-    counts: <code>canonical: true</code> in the
-    <a href="/docs/config">config</a> writes
-    <code>&lt;link rel="canonical"&gt;</code> on every page. The loose router
-    hands the path over with the trailing slash already gone, so the tag names
-    the same URL either way.
+    With <code>'ignore'</code>, one page has two URLs. So say which URL is the
+    main one. Set <code>canonical: true</code> in the
+    <a href="/docs/config">config</a>, and every page gets a
+    <code>&lt;link rel="canonical"&gt;</code>. The loose router removes the
+    trailing slash before it passes on the path. So the tag names the same URL
+    for both.
   </p>
 </doc-page>

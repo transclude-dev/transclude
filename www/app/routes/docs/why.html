@@ -21,7 +21,7 @@
 <title>Why transclude · transclude</title>
 <meta
   name="description"
-  content="A page is an HTML file. The server renders it, and the browser gets markup."
+  content="A page is an HTML file. The server renders it and sends markup to the browser."
 />
 
 <doc-page
@@ -31,57 +31,57 @@
   <h2>The file is the page</h2>
 
   <p>
-    A page here is an <code>.html</code> file. The server renders it, and what
-    arrives is markup a browser already knows how to display.
+    In transclude, a page is an <code>.html</code> file. The server renders it
+    and sends HTML that the browser can display.
   </p>
 
   ${html(s.page)}
 
   <p>
-    That file is the whole page. View source shows what you wrote, and the
-    text is on screen before any script runs.
+    That file is the whole page. View source shows the code you wrote. The text
+    appears on screen before any script runs.
   </p>
 
   <h2>One file, one concern</h2>
 
   <p>
-    Server code in an HTML file looks like a mixing of concerns. It is the
-    opposite. A page's data and the markup that reads it are one concern, and
-    they change together. Splitting them into two files splits by technology.
+    Server code in an HTML file can look like mixed concerns, but it is not. A
+    page's data and the markup that shows it are one concern. They change
+    together. Two files would split the code by technology, not by concern.
   </p>
 
   <p>
-    HTML, CSS and JavaScript are three languages. They were never three
-    concerns. A page that loads notes and lists them is one thing to
-    understand, and it reads from top to bottom.
+    HTML, CSS and JavaScript are three languages, not three concerns. A page
+    that loads notes and lists them is one thing to understand. You read it from
+    top to bottom.
   </p>
 
   <p>
-    The block costs the visitor nothing. It is compiled into the route and
-    never appears in the page, so none of it reaches the browser.
+    The server block adds nothing to the download. The build compiles it into
+    the route. It never appears in the page, so the browser never gets it.
   </p>
 
   <h2>Not another JavaScript framework</h2>
 
   <p>
-    The common shape today is a server that returns JSON and a client that turns
-    it into HTML. That client is a second application. It has its own router,
-    its own copy of the data, and its own idea of what the page currently is.
-    Keeping the two in agreement is most of the work.
+    A common design is a server that returns JSON and a client that turns the
+    JSON into HTML. That client is a second application. It has its own router,
+    its own copy of the data, and its own idea of the current page. Most of the
+    work is to keep the two applications in agreement.
   </p>
 
   <p>
-    Here the server returns the HTML. There is no second copy of the state,
-    because there is no second application. The docs site you are reading ships
-    one inline script, which applies the theme.
+    In transclude, the server returns the HTML. There is no second application,
+    so there is no second copy of the state. This docs site ships one inline
+    script. It applies the theme.
   </p>
 
   <h2>Hypermedia</h2>
 
   <p>
-    The page is the state of your app, and links and forms change it.
-    Follow a link and you have the next state. Nothing on the client had to know
-    what the link meant beforehand.
+    The page is the state of your app. Links and forms change that state. When
+    you follow a link, you get the next state. The client does not need to know
+    in advance what the link does.
   </p>
 
   <p>
@@ -89,119 +89,122 @@
     <a
       href="https://ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm"
       >the chapter of his dissertation that defines REST</a
-    >: hypermedia as the engine of application state. What the client can do
-    next comes from the representation the server just sent, not from knowledge
-    the client was built with. He wrote about how widely that is missed in
+    >: hypermedia as the engine of application state. The last response from the
+    server tells the client what it can do next. The client does not need that
+    knowledge built in. He wrote that many APIs miss this, in
     <a
       href="https://roy.gbiv.com/untangled/2008/rest-apis-must-be-hypertext-driven"
       >REST APIs must be hypertext-driven</a
-    >. An interface that returns JSON and relies on a client that already knows
-    every URL is not doing this.
+    >. An API that returns JSON to a client that already knows every URL does
+    not follow this constraint.
   </p>
 
   <p>
-    <a href="http://www.thetednelson.com/">Ted Nelson</a> coined
-    <em>transclusion</em> in the 1960s: the same piece of writing appearing in
-    more than one document while remaining one piece. That is what this
-    framework is named for, and what <a href="/docs/fragments">fragments</a> are. An
-    element you mark has its own URL, and the same compiled markup serves it
-    inline and alone.
+    <a href="http://www.thetednelson.com/">Ted Nelson</a> created the word
+    <em>transclusion</em> in the 1960s. It means one piece of writing that
+    appears in more than one document but stays one piece. This framework takes
+    its name from that idea, and <a href="/docs/fragments">fragments</a> do it.
+    When you mark an element as a fragment, it gets its own URL. The same
+    compiled markup renders it inside the page and on its own.
   </p>
 
   <p>
-    Carson Gross collects the arguments for building this way in
-    <a href="https://four.htmx.org/essays">the htmx essays</a>. Several of them
-    are case studies of applications moved off a JavaScript client.
+    Carson Gross collects the arguments for this approach in
+    <a href="https://four.htmx.org/essays">the htmx essays</a>. Several essays
+    are case studies of apps that moved away from a JavaScript client.
   </p>
 
   <h2>Does it scale?</h2>
 
   <p>
-    The question is usually about the server doing work a client could have
-    done. Three things about this shape answer most of it, and one thing does
-    not.
+    Usually this question asks about the server doing work that a client could
+    do. Three facts about this design answer most of the question. One part
+    stays open.
   </p>
 
   <p>
-    <strong>A render holds nothing.</strong> A request comes in, a loader reads
-    it, and bytes go out. Nothing is kept between two requests, so a second
-    machine is a copy rather than a coordination problem. That is the constraint
-    Roy Fielding called statelessness, and it is the reason the web scales at
-    all.
+    <strong>A render keeps no state.</strong> A request comes in, a loader reads
+    it, and the server sends bytes back. The server keeps nothing between two
+    requests. So a second machine is a copy of the first, and the machines need
+    no coordination. Roy Fielding called this constraint statelessness. It is
+    the reason that the web can scale.
   </p>
 
   <p>
-    <strong>Most pages are not rendered.</strong> A page that does not read the
-    request is written to a file at build time. It is compressed once, with a
-    strong ETag for each encoding, so serving it is reading bytes off a shelf.
-    The <a href="/docs/production">middle case</a> is a page held for a while.
-    Inside the window the loader does not run. Past it, a stale copy goes out
-    immediately while a fresh one is built behind it.
+    <strong>Most pages are not rendered for each request.</strong> If a page
+    does not read the request, the build writes it to a file. The build compresses it once,
+    with a strong ETag for each encoding. So the server only reads stored bytes
+    to serve it.
+    The <a href="/docs/production">middle case</a> is a page that the server
+    caches for a set time. During that time, the loader does not run. After that
+    time, the server sends the stale copy at once and builds a fresh one in the
+    background.
   </p>
 
   <p>
-    <strong>Nothing grows on the client.</strong> A page ships JavaScript only
-    for the elements it renders, and only when one of them has behavior. The
+    <strong>The client code does not grow.</strong> A page ships JavaScript only
+    for the elements it renders, and only when one of them has behavior. Your
     fiftieth feature does not make the first page slower, because there is no
-    bundle for it to land in. This site's elements ship none at all.
+    shared bundle. This site's elements ship no JavaScript.
   </p>
 
   <doc-note label="What it does not answer" tone="warn">
-    A page render costs more than returning JSON. It is usually a small cost
-    against a database query, and it is a real one. Measure before assuming
-    either way.
+    A page render costs more than returning JSON. Compared to a database query,
+    the cost is usually small. But it is a real cost, so measure it before you
+    decide.
   </doc-note>
 
   <p>
-    The honest limit is not throughput, it is the kind of interface. A map, a
-    spreadsheet, a drawing canvas. Anything answering a stream of events in
-    milliseconds wants its state in the browser, and a round trip per event is
-    the wrong shape. Nothing here stops you writing that with the platform, and
-    nothing here helps.
+    The real limit is the kind of interface, not throughput. Examples are a map,
+    a spreadsheet or a drawing canvas. Such an interface must respond to a
+    stream of events within milliseconds. It needs its state in the browser,
+    because one round trip per event is the wrong design. You can build it with
+    the platform, but this framework does not help.
   </p>
 
   <p class="why-more">
-    Carson Gross makes the longer version of this argument in
+    Carson Gross gives a longer version of this argument in
     <a href="https://four.htmx.org/essays/does-hypermedia-scale"
       >Does Hypermedia Scale?</a
-    >. That includes the part nobody has evidence for yet, which is whether it
-    scales with the size of a team.
+    >. He also covers one open question: does it scale with the size of a team?
+    Nobody has evidence for that yet.
   </p>
 
   <h2>Foundations</h2>
 
   <p>
-    What you learn here is mostly not about this framework. Elements are custom
-    elements. Styles are CSS. A form is a <code>&lt;form&gt;</code>, and it
+    Most of what you learn here is not specific to this framework. Elements are
+    custom elements. Styles are CSS. A form is a <code>&lt;form&gt;</code>, and it
     submits without JavaScript. Routes are files in a directory.
   </p>
 
   <p>
-    That matters for anyone new to the platform. Learning the web and learning a
-    framework are usually two jobs, and the second one expires. Here they are
-    closer to the same job, and the part that lasts is the larger part.
+    This helps people who are new to the web platform. Usually, learning the web
+    and learning a framework are two jobs. Framework knowledge goes out of date.
+    Here the two jobs are almost the same, and most of what you learn stays
+    useful.
   </p>
 
   <h2>What this does not do</h2>
 
   <p>
-    This framework ships nothing that swaps a fragment into a page.
+    This framework has no code that swaps a fragment into a page. Use
     <a href="https://htmx.org">htmx</a>,
     <a href="https://turbo.hotwired.dev">Turbo</a> or a short
-    <code>fetch</code> does that. A fragment has a plain HTTP URL, and that is
-    the whole agreement.
+    <code>fetch</code> for that. A fragment has a plain HTTP URL, and that URL
+    is the whole contract.
   </p>
 
   <p>
     There is no client router, no state store and no data layer for the browser.
-    Those choices are yours. The platform has custom elements,
+    You choose those. The platform gives you custom elements,
     <code>fetch</code>, the History API and view transitions. Every page and
-    fragment here is HTML on a URL, so a client of any size can be built on top.
+    fragment is HTML at a URL. So you can build a client of any size on top.
   </p>
 
   <doc-note label="Where to start">
     <a href="/docs">The overview</a> covers what the framework does.
-    <a href="/docs/getting-started">Getting started</a> is the install and the first
-    page.
+    <a href="/docs/getting-started">Getting started</a> shows how to install it
+    and write the first page.
   </doc-note>
 </doc-page>

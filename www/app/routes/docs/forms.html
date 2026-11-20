@@ -63,45 +63,45 @@ export const DELETE = async (ctx) => { … };`,
 <title>Forms · transclude</title>
 <meta
   name="description"
-  content="A page responds to GET. Export a verb for POST and the rest."
+  content="A page answers GET. Export a verb for POST and the other methods."
 />
 
 <doc-page
   heading="Forms"
-  lede="A form posts to itself. The handler runs, then the loader renders what it left behind. No client JavaScript involved."
+  lede="A form posts to its own page. The handler runs, and then the loader renders the result. No client JavaScript is involved."
 >
   ${html(s.page)}
 
   <h2>One export per method</h2>
 
   <p>
-    Handlers are named for their HTTP method, in uppercase. Endpoints are
-    written the same way, so there is one spelling to learn.
+    Each handler has the name of its HTTP method, in uppercase. Endpoints use
+    the same names, so you learn one spelling.
   </p>
 
   ${html(s.verbs)}
 
   <p>
-    A <code>&lt;form&gt;</code> can only send GET or POST. That is HTML, not a
-    limit here. To delete something from a form, post a hidden field saying so
-    and let <code>POST</code> read it.
+    A <code>&lt;form&gt;</code> can send only GET or POST. HTML sets this limit,
+    not this framework. To delete something from a form, post a hidden field
+    that says so. Then <code>POST</code> reads it.
   </p>
 
   ${html(s.intent)}
 
   <p>
-    From script you can send the method directly, and
+    From a script, you can send the method directly, and
     <code>DELETE</code> runs.
   </p>
 
   ${html(s.fetch)}
 
-  <h2>Answer a mutation with a redirect</h2>
+  <h2>Answer a change with a redirect</h2>
 
   <p>
-    Use a 303, so the URL the browser lands on is a GET and a reload does not
-    submit again. Two things skip it: a rejected submission, which changed
-    nothing, and a fragment request, which asked for markup.
+    Use a 303. The browser then loads the new URL with a GET, so a reload does
+    not submit the form again. Two cases skip the redirect. A rejected
+    submission changed nothing. A fragment request asked for markup.
   </p>
 
   ${html(s.redirect)}
@@ -109,27 +109,28 @@ export const DELETE = async (ctx) => { … };`,
   <h2>Every handler returns the same fields</h2>
 
   <p>
-    <code>ctx.action</code> holds whatever the handler returned, and its type is
-    every handler's return type at once. A field that only one of them sets is
-    missing from the others, so reading it in the loader is a type error.
+    <code>ctx.action</code> contains the value the handler returned. Its type is
+    a union of the return types of every handler. If only one handler sets a
+    field, the others do not have it. So reading that field in the loader is a
+    type error.
   </p>
 
   <p>
-    Give every handler the same fields and leave the ones that do not apply as
+    Give every handler the same fields. Set the fields that do not apply to
     <code>null</code>.
   </p>
 
   <doc-note label="Build a Response in a function, never share one" tone="warn">
-    A body can be read once. A module-level
+    A response body can be read only one time. A module-level
     <code>const badRequest = new Response(…)</code> works for the first request.
-    Every request after it answers 500, because its body is already read.
+    Every later request gets a 500, because the body was already read.
   </doc-note>
 
   <h2>CSRF</h2>
 
   <p>
-    On by default, covering non-GET requests that have a form content type. Set
-    <code>csrf: false</code> to turn it off, or pass an object to allow another
-    origin.
+    CSRF protection is on by default. It covers non-GET requests that have a
+    form content type. Set <code>csrf: false</code> to turn it off, or pass an
+    object to allow another origin.
   </p>
 </doc-page>

@@ -146,47 +146,49 @@ export default (app) => {
 </script>
 
 <title>Endpoints · transclude</title>
-<meta name="description" content="A .js file in routes/ answers with a Response you build." />
+<meta name="description" content="A .js file in routes/ returns a Response that you build." />
 
 <doc-page
   heading="Endpoints"
-  lede="A .js file in the route tree is an endpoint. It answers with a Response you build yourself. A JSON API, a webhook receiver and a file download are all the same kind of file."
+  lede="A .js file in the route tree is an endpoint. It returns a Response that you build. A JSON API, a webhook receiver and a file download all use this kind of file."
 >
   ${html(s.endpoint)}
 
-  <p>That file answers three requests.</p>
+  <p>This is what that file sends back for three requests.</p>
 
   ${html(s.calls)}
 
   <p>
-    One export per verb, uppercase.
+    Export one handler for each verb, with an uppercase name. The verbs are
     <code>GET</code>, <code>HEAD</code>, <code>POST</code>, <code>PUT</code>,
-    <code>PATCH</code>, <code>DELETE</code> and <code>OPTIONS</code>. A verb the
-    file does not export answers 405, with an <code>Allow</code> header naming
-    the ones it does.
+    <code>PATCH</code>, <code>DELETE</code> and <code>OPTIONS</code>. A request
+    with a verb that the file does not export gets 405. Its <code>Allow</code>
+    header lists the verbs that the file exports.
   </p>
 
   <p>
     Each handler returns a
     <a href="https://developer.mozilla.org/en-US/docs/Web/API/Response"
       >Response</a
-    >, the same object the browser's own <code>fetch</code> gives you.
+    >. This is the same object that the browser's own <code>fetch</code> gives you.
+    Use
     <a href="https://developer.mozilla.org/en-US/docs/Web/API/Response/json_static"
       >Response.json()</a
     >
-    covers most of what an API returns.
+    for most API responses.
   </p>
 
-  <doc-note label="A handler has to return one">
-    Returning nothing, or anything that is not a <code>Response</code>, throws
-    and says so. An endpoint has no template to fall back on.
+  <doc-note label="A handler must return a Response">
+    If a handler returns nothing, or a value that is not a <code>Response</code>,
+    the framework throws an error that says so. An endpoint has no template to
+    use instead.
   </doc-note>
 
   <h2>A whole resource</h2>
 
   <p>
-    The path is the route, the same as for a page. A bracketed segment is a
-    parameter, and it arrives in <code>ctx.params</code>.
+    The file path is the route, as it is for a page. A segment in brackets is a
+    parameter. Its value is in <code>ctx.params</code>.
   </p>
 
   ${html(layout)}
@@ -198,22 +200,22 @@ export default (app) => {
   <p>
     <code>ctx.request</code> is a standard
     <a href="https://developer.mozilla.org/en-US/docs/Web/API/Request">Request</a>.
-    Read the body in whichever shape you need.
+    Read the body in the format that you need.
   </p>
 
   ${html(s.body)}
 
   <p>
-    A body can be read once. Take <code>text()</code> and parse it yourself when
-    you need both the string and the object.
+    You can read a body only once. If you need both the string and the object,
+    call <code>text()</code> and parse the string yourself.
   </p>
 
-  <h2>The answer</h2>
+  <h2>The response</h2>
 
   <p>
-    Status and headers go on the <code>Response</code>.
-    <code>ctx.cookies</code> works here the way it does in a loader, and what it
-    sets survives the response you return.
+    Set the status and the headers on the <code>Response</code>.
+    <code>ctx.cookies</code> works here as it does in a loader. The cookies that
+    it sets are kept on the response that you return.
   </p>
 
   ${html(s.response)}
@@ -221,31 +223,31 @@ export default (app) => {
   <h2>Webhooks</h2>
 
   <p>
-    A webhook is an endpoint somebody else calls. Two things about it differ
-    from an API your own pages use.
+    A webhook is an endpoint that another service calls. It is different in two
+    ways from an API that your own pages use.
   </p>
 
   <p>
-    The first is the body. A signature covers the exact bytes that were sent, so
-    verify against <code>request.text()</code> and parse afterwards. Parsing
-    first and re-serializing gives different bytes and a signature that never
-    matches.
+    The first difference is the body. A signature covers the exact bytes that the
+    sender sent. So verify the signature against <code>request.text()</code>, and
+    parse the body after that. If you parse first and serialize again, the bytes
+    change. Then the signature never matches.
   </p>
 
   ${html(s.webhook)}
 
   <p>
-    The second is CSRF. It is on by default and guards every method except
-    <code>GET</code> and <code>HEAD</code>. A guarded request passes when its
-    <code>Origin</code> is your own site, or when it carries a content type no
-    HTML form can send.
+    The second difference is CSRF protection. It is on by default, and it checks
+    every method except <code>GET</code> and <code>HEAD</code>. A checked request
+    passes if its <code>Origin</code> is your own site. It also passes if its
+    content type is one that no HTML form can send.
   </p>
 
   <div class="scroller">
     <table>
       <thead>
         <tr>
-          <th>A POST from somewhere else, sending</th>
+          <th>Content type of a POST from another site</th>
           <th>Reaches your handler</th>
         </tr>
       </thead>
@@ -270,47 +272,48 @@ export default (app) => {
     </table>
   </div>
 
-  <p>A sender posting JSON needs nothing, and most of them do.</p>
+  <p>A sender that posts JSON needs no change. Most senders post JSON.</p>
 
   <doc-note label="No content type counts as text/plain" tone="warn">
-    <code>curl -X POST /api/people</code> sends no content type, so it is
-    refused with 403 before reaching your handler. Add
-    <code>-H 'content-type: application/json'</code> and the same request gets
-    through. This is the usual reason an endpoint looks broken when you test it
+    <code>curl -X POST /api/people</code> sends no content type. So the guard
+    refuses it with 403 before it reaches your handler. Add
+    <code>-H 'content-type: application/json'</code> and the same request passes.
+    This is the most common reason that an endpoint seems broken when you test it
     by hand.
   </doc-note>
 
-  <doc-note label="A form-encoded sender needs a way through" tone="warn">
-    A sender that posts a form body is refused, and the 403 says nothing about
-    why. Give it an origin the guard accepts, or narrow
+  <doc-note label="A sender that posts a form needs a way to pass" tone="warn">
+    The guard refuses a sender that posts a form body. The 403 does not say why.
+    Give the sender an origin that the guard accepts. Or limit
     <a href="/docs/config">csrf</a> to the paths that serve your own forms.
   </doc-note>
 
   <h2>A stream</h2>
 
   <p>
-    A <code>Response</code> takes a
+    A <code>Response</code> can take a
     <a href="https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream"
       >ReadableStream</a
-    >, so an endpoint can answer with one that stays open. Server-sent events
-    are the plain use.
+    >. So an endpoint can return a stream that stays open. Server-sent events are
+    the common use.
   </p>
 
   ${html(s.stream)}
 
-  <doc-note label="A stream ends two ways" tone="warn">
-    The socket closing fires <code>abort</code> on
-    <code>request.signal</code>. A consumer letting go of the reader runs the
-    stream's own <code>cancel()</code>. Unsubscribe in both, or you leak a
-    listener holding a dead connection, or close a controller that is already
-    closed. <a href="/docs/examples">examples/live</a> does both.
+  <doc-note label="A stream ends in two ways" tone="warn">
+    When the socket closes, <code>request.signal</code> fires
+    <code>abort</code>. When a consumer releases the reader, the stream's own
+    <code>cancel()</code> runs. Unsubscribe in both places. If you do not, you
+    leak a listener that holds a dead connection. Or you close a controller that
+    is already closed. <a href="/docs/examples">examples/live</a> handles both.
   </doc-note>
 
   <h2>Calling it from another origin</h2>
 
   <p>
-    Nothing is sent to a browser on another origin unless you say so. CORS is
-    Hono middleware in <a href="/docs/middleware">app/server.js</a>.
+    A browser on another origin gets nothing from your endpoints until you allow
+    it. CORS is Hono middleware, and you add it in
+    <a href="/docs/middleware">app/server.js</a>.
   </p>
 
   ${html(s.cors)}
@@ -318,26 +321,28 @@ export default (app) => {
   <h2>Helpers</h2>
 
   <p>
-    Every <code>.js</code> file in <code>routes/</code> is a route. Give a helper
-    a <code>_</code> prefix and it is not one. The same goes for a directory.
+    Every <code>.js</code> file in <code>routes/</code> is a route. A file whose
+    name starts with <code>_</code> is not a route, so use that prefix for a
+    helper. The same rule applies to a directory.
   </p>
 
   <p>
-    Anything larger belongs outside the route tree, in
-    <code>app/lib/</code> or <code>app/data/</code>, and is imported.
+    Put larger code outside the route tree, in <code>app/lib/</code> or
+    <code>app/data/</code>, and import it.
   </p>
 
-  <h2>What you get for free</h2>
+  <h2>What you get by default</h2>
 
   <p>
-    <code>transclude-check</code> types every handler, so a
-    <code>ctx</code> field that does not exist and a handler that forgets to
-    return are both caught. See <a href="/docs/types">types</a>.
+    <code>transclude-check</code> checks the types of every handler. It catches a
+    <code>ctx</code> field that does not exist and a handler that does not
+    return. See <a href="/docs/types">types</a>.
   </p>
 
   <p>
-    <code>X-Content-Type-Options: nosniff</code> is on every response, an
-    endpoint's included. Its <code>Response</code> goes through the same
-    envelope as everything else, so cookies and headers survive a redirect.
+    Every response has <code>X-Content-Type-Options: nosniff</code>, and that
+    includes the response from an endpoint. An endpoint's <code>Response</code>
+    goes through the same envelope as every other response. So cookies and
+    headers are kept on a redirect.
   </p>
 </doc-page>

@@ -49,49 +49,51 @@
 </script>
 
 <title>Styles · transclude</title>
-<meta name="description" content="One global stylesheet, and what crosses a shadow boundary." />
+<meta name="description" content="One global stylesheet, and the styles that cross a shadow boundary." />
 
 <doc-page
   heading="Styles"
-  lede="One global stylesheet for the site. A &lt;style&gt; block applies to the file it sits in."
+  lede="The site has one global stylesheet. A &lt;style&gt; block applies to the file it is in."
 >
   <p>
-    <code>stylesheet</code> names one file, served through Vite, so nesting,
-    <code>@import</code> and PostCSS work. Set it to <code>null</code> for none.
+    <code>stylesheet</code> names one file. Vite serves it, so nesting,
+    <code>@import</code> and PostCSS work. Set it to <code>null</code> for no
+    stylesheet.
   </p>
 
-  <h2>What crosses a boundary</h2>
+  <h2>What crosses a shadow boundary</h2>
 
   <ul>
     <li>
-      Custom properties inherit, so <code>--rule</code> on <code>:root</code>
-      reaches inside a shadow root.
+      Custom properties inherit. So <code>--rule</code> on <code>:root</code>
+      gets inside a shadow root.
     </li>
     <li>
-      Selectors do not. A global class lands on a page and on a light element,
-      and stops at a shadow root.
+      Selectors do not. A global class applies to a page and to a light element,
+      but it stops at a shadow root.
     </li>
   </ul>
 
   <p>
-    So a global stylesheet themes a shadow element through custom properties. To
-    let it style something inside, the element marks that node with a
-    <code>part</code> attribute, which
+    So a global stylesheet themes a shadow element through custom properties.
+    To let the stylesheet style a node inside, the element marks that node with a
+    <code>part</code> attribute.
     <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/::part"
       ><code>::part()</code></a
     >
-    then selects. The element decides what it exposes.
+    then selects it. The element decides which nodes it exposes.
   </p>
 
   <h2>Styles in a file</h2>
 
   <p>
-    A <code>&lt;style&gt;</code> block in a page or layout is hoisted into
-    <code>&lt;head&gt;</code>. In an element it is scoped to that tag, and
+    A <code>&lt;style&gt;</code> block in a page or layout moves into
+    <code>&lt;head&gt;</code>. In an element, the block is scoped to that tag.
+    Use
     <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/:scope"
       ><code>:scope</code></a
     >
-    is how you style the element itself.
+    to style the element itself.
   </p>
 
   ${html(s.scoped)}
@@ -99,47 +101,48 @@
   <h2>Styles for swapped-in markup</h2>
 
   <p>
-    An element that arrives with a fragment brings its styles with it. They are
-    added to <code>&lt;head&gt;</code> once, on their own. There is nothing to
-    set up.
+    An element that arrives in a fragment brings its styles with it. The styles
+    go into <code>&lt;head&gt;</code> one time, automatically. You do not set
+    anything up.
   </p>
 
   <h3>The element itself</h3>
 
   <p>
-    A light element is styled with
+    You style a light element with
     <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/:scope"
       ><code>:scope</code></a
-    >, a shadow one with
+    >
+    and a shadow element with
     <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/:host"
       ><code>:host</code></a
-    >. Both mean the same thing: the element this stylesheet belongs to.
+    >. Both mean the element that the stylesheet belongs to.
   </p>
 
   ${html(s.selectors)}
 
   <p>
-    They differ in what can reach them. <code>:scope</code> rules are hoisted
-    into <code>&lt;head&gt;</code> inside the <code>transclude</code> cascade
-    layer. Page CSS beats a layered rule at any specificity, so a page can
-    override a light element it did not write. <code>:host</code> lives inside
-    the shadow root. A page rule on the host element beats it, and nothing in
-    the page reaches the nodes inside. <code>:host</code> has very low
+    The difference is which rules can override them. <code>:scope</code> rules
+    move into <code>&lt;head&gt;</code>, inside the <code>transclude</code>
+    cascade layer. Page CSS beats a layered rule at any specificity. So a page
+    can override a light element that it did not write. <code>:host</code> rules
+    stay inside the shadow root. A page rule on the host element beats them, but
+    no page rule reaches the nodes inside. <code>:host</code> has very low
     specificity, so a rule inside the element beats it.
   </p>
 
   <h2>View transitions</h2>
 
   <p>
-    Cross-document view transitions are CSS-only and opt-in. Both documents must
-    carry the rule.
+    Cross-document view transitions use only CSS, and they are off until you
+    turn them on. Both documents must contain the rule.
   </p>
 
   ${html(s.transition)}
 
   <p>
-    A name has to be unique in a document. Derive one from the data when the same
-    element appears in a list and on a detail page.
+    A name must be unique in a document. The same element can appear in a list
+    and on a detail page. In that case, make the name from the data.
   </p>
 
   ${html(s.name)}

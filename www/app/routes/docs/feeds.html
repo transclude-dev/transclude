@@ -68,84 +68,84 @@ export default {
 
 <doc-page
   heading="Sitemap and feeds"
-  lede="Two files for machines. Both are served by the app and written into the build, so a host that runs none of this still has them."
+  lede="Two files for machines. The app serves both, and the build writes both. So a host that runs none of this code still has them."
 >
   <h2>Sitemap</h2>
 
   <p>
-    A hostname mounts <code>/sitemap.xml</code>. Every page route with no
-    parameters is listed. A parameter route is listed as whatever its
-    <code>paths()</code> export names, which is the same list the build
-    prerenders.
+    Set a hostname, and the app serves <code>/sitemap.xml</code>. The sitemap
+    lists every page route with no parameters. A route with parameters is
+    listed as the URLs that its <code>paths()</code> export names. The build
+    prerenders the same list.
   </p>
 
   ${html(s.sitemap)}
 
   <p>
     A route with no <code>paths()</code> is left out, because the pattern itself
-    is not a URL. Anything else goes in <code>entries</code>, as an array or a
-    function, and <code>exclude</code> takes a path or a pattern. Each is tested
-    against the path as the sitemap writes it, encoded. So <code>/p/a b</code>
-    and <code>/p/a%20b</code> leave out the same URL, and a pattern finds
+    is not a URL. Add any other URLs in <code>entries</code>, as an array or a
+    function. <code>exclude</code> takes a path or a pattern. Each one is tested
+    against the encoded path that the sitemap writes. So <code>/p/a b</code> and
+    <code>/p/a%20b</code> leave out the same URL. A pattern finds
     <code>é</code> as <code>%C3%A9</code>. A path begins with <code>/</code>.
-    Anything else in <code>exclude</code> fails the build.
+    Any other value in <code>exclude</code> fails the build.
   </p>
 
   ${html(s.sitemapEntries)}
 
   <p>
-    An entry may name a URL a route already produced. The sitemap lists that URL
-    once and takes the fields of both, which is how a page built from
-    <code>paths()</code> carries a <code>lastmod</code>. The two are compared
+    An entry may name a URL that a route already produced. The sitemap then
+    lists that URL once, with the fields of both. That is how a page built from
+    <code>paths()</code> gets a <code>lastmod</code>. The two are compared
     encoded, so <code>/p/a%20b</code> names the URL of <code>/p/a b</code>.
   </p>
 
   <p>
-    An entry may also carry <code>lastmod</code>, <code>changefreq</code> and
+    An entry may also have <code>lastmod</code>, <code>changefreq</code> and
     <code>priority</code>. A <code>lastmod</code> is a date, a number of
-    milliseconds or a string a date reads, and it is written as the day in UTC.
-    One that is no date is left out. A <code>changefreq</code> is one of
-    <code>always</code>, <code>hourly</code>, <code>daily</code>,
+    milliseconds, or a string that a date can parse. It is written as the day in
+    UTC. A value that is not a date is left out. A <code>changefreq</code> is
+    one of <code>always</code>, <code>hourly</code>, <code>daily</code>,
     <code>weekly</code>, <code>monthly</code>, <code>yearly</code> and
-    <code>never</code>, and a <code>priority</code> is a number from 0 to 1.
-    Anything else in those two fails the build.
+    <code>never</code>. A <code>priority</code> is a number from 0 to 1. Any
+    other value in those two fails the build.
   </p>
 
   <p>
-    The hostname is an origin, like <code>https://acme.com</code>, with no
-    path and no user or password, and an entry's <code>path</code> begins with <code>/</code>. Every
-    URL is joined to the hostname, so anything else fails the build.
+    The hostname is an origin, like <code>https://acme.com</code>, with no path
+    and no user or password. An entry's <code>path</code> begins with
+    <code>/</code>. Every URL is joined to the hostname, so any other value
+    fails the build.
   </p>
 
   <p>
-    Past 50,000 URLs, <code>/sitemap.xml</code> becomes an index, and each
-    slice of the list is a file of its own: <code>/sitemap-0.xml</code>,
-    <code>/sitemap-1.xml</code> and on. The build writes every one, so a static
-    host serves the same files. Lower <code>limit</code> to see it on a small
-    site.
+    Above 50,000 URLs, <code>/sitemap.xml</code> becomes an index. Each part of
+    the list is then a separate file: <code>/sitemap-0.xml</code>,
+    <code>/sitemap-1.xml</code> and so on. The build writes every one, so a
+    static host serves the same files. To see this on a small site, lower
+    <code>limit</code>.
   </p>
 
   <h2>Feeds</h2>
 
   <p>
-    A sitemap comes from the route table, because a URL is all it lists. A feed
-    needs a title, a date and something to read, so the items are yours to pass
-    in.
+    A sitemap comes from the route table, because it lists only URLs. A feed
+    needs a title, a date and something to read. So you pass in the items.
   </p>
 
   ${html(s.feed)}
 
   <p>
-    That mounts <code>/feed.xml</code> as RSS 2.0. Each item needs a
-    <code>title</code> and a <code>path</code>, and an item missing either
-    fails the build. <code>date</code>,
-    <code>description</code>, <code>content</code> and <code>author</code> are
-    optional, and <code>content</code> is where full HTML goes.
+    That serves <code>/feed.xml</code> as RSS 2.0. Each item needs a
+    <code>title</code> and a <code>path</code>. An item without one of them
+    fails the build. <code>date</code>, <code>description</code>,
+    <code>content</code> and <code>author</code> are optional. Put full HTML in
+    <code>content</code>.
   </p>
 
   <p>
-    Items are published newest first and capped at 50. Set <code>limit</code> for
-    a different number.
+    Items are published newest first, with a maximum of 50. Set
+    <code>limit</code> for a different number.
   </p>
 
   <h3>Atom</h3>
@@ -159,27 +159,27 @@ export default {
   ${html(s.atom)}
 
   <doc-note label="Dates come from the items">
-    Nothing here reads the clock. The feed is stamped from its newest item, so a
-    build that changes nothing writes the same bytes. A feed whose items have no
-    dates can set <code>updated</code> itself.
+    Nothing here reads the clock. The feed gets its date from its newest item.
+    So a build that changes nothing writes the same bytes. If the items have no
+    dates, set <code>updated</code> on the feed.
   </doc-note>
 
-  <h3>Telling a reader it is there</h3>
+  <h3>Telling a feed reader where the feed is</h3>
 
   <p>
-    A feed reader looks for a <code>&lt;link&gt;</code> in the page. Nothing here
-    writes one: the config holds the title, and which pages advertise the feed is
-    yours to decide. Put it in the <a href="/docs/layouts">layout</a> over
-    whatever the feed covers.
+    A feed reader looks for a <code>&lt;link&gt;</code> in the page. This
+    framework does not write one. The config contains the title, but you decide
+    which pages show the feed. Put the link in the
+    <a href="/docs/layouts">layout</a> above the pages that the feed covers.
   </p>
 
   ${html(s.discovery)}
 
-  <h2>Where they end up</h2>
+  <h2>Where the files go</h2>
 
   <p>
-    Both are served by the app and both are written into
-    <code>dist/static</code> by the build. A host serving the directory has them
-    without running anything.
+    The app serves both files, and the build writes both into
+    <code>dist/static</code>. A host that serves that directory has them without
+    running any code.
   </p>
 </doc-page>

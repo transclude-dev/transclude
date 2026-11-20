@@ -583,6 +583,9 @@ against.
   a value passes only when neither hides the parameter, and the comments in
   the module say which draft reads what. It also parsed RFC 8941 and refused
   a date.
+  A fifth drill refused `key-order=1, params=(…)`, which parses and which a
+  cache ignores, and `main` passed it. A header a cache ignores for its shape
+  now counts as one that does not parse.
   `spec: fragments/no-vary-search-hides-fragment`,
   `fragments/no-vary-search-shapes`.
 - **A throw after the response exists answered with that response's headers.**

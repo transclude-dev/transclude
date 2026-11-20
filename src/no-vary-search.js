@@ -55,6 +55,10 @@ export function hidesParam(value, param) {
   // that names neither, such as `PARAMS`, hides nothing.
   if (!dictionary) return namesParamsOrExcept(value);
 
+  // A cache also ignores a header whose `key-order` is not a boolean, though it
+  // parses. The same rule holds: one that names `params` or `except` is refused.
+  if (!keyOrderReads(dictionary.get('key-order'))) return dictionary.has('params') || dictionary.has('except');
+
   const params = dictionary.get('params');
   const except = dictionary.get('except');
 
@@ -125,6 +129,12 @@ function exceptHides(params, except, param) {
   const names = stringNames(except);
   if (!names) return true;
   return !names.includes(param);
+}
+
+/** `key-order` absent, bare, `?1` or `?0`. Both drafts ignore the header otherwise. */
+function keyOrderReads(keyOrder) {
+  if (!keyOrder) return true;
+  return keyOrder.type === 'boolean';
 }
 
 function isBoolean(member, wanted) {

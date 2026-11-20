@@ -102,6 +102,19 @@ test('a header that does not parse hides only when it names params or except', (
   assert.equal(hidesParam('Except=()', 'fragment'), false);
 });
 
+test('a key-order that is not a boolean makes the header one a cache ignores', () => {
+  // It parses, but both drafts throw it away. One naming params is refused, as
+  // one that breaks the grammar is.
+  assert.equal(hidesParam('key-order=1, params=("utm_source")', 'fragment'), true);
+  assert.equal(hidesParam('key-order=1', 'fragment'), false);
+  assert.equal(hidesParam('key-order=?0, params=("utm_source")', 'fragment'), false);
+});
+
+test('a comma inside a string starts no member, though the header does not parse', () => {
+  assert.equal(hidesParam('foo="x, params", bad(', 'fragment'), false);
+  assert.equal(hidesParam('foo="x", params, bad(', 'fragment'), true);
+});
+
 test('a date and a display string parse, because the grammar is RFC 9651', () => {
   // RFC 8941 has neither, and a reader of it refuses these headers for naming
   // params in a shape it cannot read.

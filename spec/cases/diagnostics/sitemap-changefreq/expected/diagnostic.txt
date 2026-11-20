@@ -1,0 +1,1 @@
+Error: [transclude] sitemap entry 1 has the changefreq "often". It is one of always, hourly, daily, weekly, monthly, yearly, never.

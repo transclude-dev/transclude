@@ -15,5 +15,6 @@ differently, with the answer decided each time (`spec/DRILLS.md`):
   with the entry's priority.
 - A `%` that starts no escape is written as `%25`.
 - `priority: ''` and `changefreq: 0` are written as none.
+- A later `null` clears a field an earlier mention gave.
 
 Source: `/docs/feeds`, "Sitemap". The docs say none of these. The drills did.

@@ -16,4 +16,5 @@
 <url><loc>https://acme.com/100%25</loc></url>
 <url><loc>https://acme.com/empty-priority</loc></url>
 <url><loc>https://acme.com/zero-changefreq</loc></url>
+<url><loc>https://acme.com/cleared</loc></url>
 </urlset>

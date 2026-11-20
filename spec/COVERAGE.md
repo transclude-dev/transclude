@@ -29,7 +29,7 @@ Complete.
 | A cache keys on the query string | Cache behavior, not the framework's | - |
 | A `No-Vary-Search` naming other parameters passes through | `fragments/no-vary-search-named` | reviewed |
 | A `No-Vary-Search` hiding `?fragment=` is refused, naming the value | `fragments/no-vary-search-hides-fragment`, the 500 and the logged message | reviewed |
-| The header is read as a cache reads it: a bare key with parameters, a list's parameters, a repeated key, a percent escape, `except` beside a list, a header that does not parse anywhere in it, a parameter on an item, and shapes that cannot be read | `fragments/no-vary-search-shapes` | yes |
+| The header is read as a cache reads it: a bare key with parameters, a list's parameters, a repeated key, a percent escape, `except` beside a list, a header that does not parse anywhere in it, a parameter on an item, `except` on its own, a date, and shapes that cannot be read | `fragments/no-vary-search-shapes` | reviewed |
 | `POST /?fragment=nope` changes nothing and answers 404 | `fragments/post-unknown-name` | reviewed |
 | `ctx.fragment` tells a form post from a fetch | `fragments/action-fragment` | reviewed |
 | A fragment request runs the layouts, and the page reads them as `ctx.layout` | `fragments/layout-data` | reviewed |
@@ -342,14 +342,17 @@ Complete.
 | A sheet the index does not name is a 404, and `?p=` is not read | `feeds/sitemap-index` | reviewed |
 | The hostname is an origin, and an entry's path begins with `/`; anything else fails the build | `diagnostics/sitemap-hostname`, `diagnostics/sitemap-entry-path` | reviewed |
 | A hostname with a user or a password fails the build | `diagnostics/sitemap-hostname-credentials` | reviewed |
+| No hostname fails the build with the message a wrong one gets | `diagnostics/sitemap-hostname-missing` | reviewed |
+| A `changefreq` outside the protocol, or a `priority` outside 0 to 1, fails the build | `diagnostics/sitemap-changefreq`, `diagnostics/sitemap-priority` | reviewed |
+| A sitemap with no URLs is an empty `urlset`, with no blank line | `feeds/sitemap-empty` | reviewed |
 | An `exclude` item that is not a path or a pattern fails the build | `diagnostics/sitemap-exclude` | reviewed |
 | A `paths()` that gives something other than a list fails the build, naming the file | `diagnostics/sitemap-paths-not-a-list` | reviewed |
 | `null` from an `entries` function is no entries | `feeds/sitemap-entries-null` | reviewed |
-| A `paths()` param's `%`, `?` and `#` are encoded in the `loc` | `feeds/sitemap-param-characters` | yes |
+| A `paths()` param's `%`, `?` and `#` are encoded in the `loc` | `feeds/sitemap-param-characters` | reviewed |
 | A `limit` outside 1 to 50,000 fails the build | `diagnostics/sitemap-limit` | reviewed |
 | A `limit` of `NaN` is named as `NaN` | `diagnostics/sitemap-limit-nan` | reviewed |
 | The build writes every sheet into `dist/static` | A property of `dist/static` as files. The server answers the same paths from the same list | - |
-| A `lastmod` is the day in UTC; `priority: null` is none; a URL is percent-encoded; `null` from `paths()` is no URLs; a `g` flag excludes every match; a later `undefined` keeps a field; an encoded path is not encoded again; `lastmod: true` is no date; a route URL and its encoded entry are one; a bare `%` is `%25`; an empty priority and `changefreq: 0` are none | `feeds/sitemap-values`. The docs say none of these. The sitemap drill decided them | yes |
+| A `lastmod` is the day in UTC; `priority: null` is none; a URL is percent-encoded; `null` from `paths()` is no URLs; a `g` flag excludes every match; a later `undefined` keeps a field; an encoded path is not encoded again; `lastmod: true` is no date; a route URL and its encoded entry are one; a bare `%` is `%25`; an empty priority and `changefreq: 0` are none; a later `null` clears a field | `feeds/sitemap-values`. The docs say none of these. The sitemap drill decided them | reviewed |
 | `feed` mounts `/feed.xml` as RSS 2.0 | `feeds/feed-rss` | reviewed |
 | Each item needs a `title` and a `path`; the rest is optional; `content` is full HTML | `feeds/feed-rss`, `feeds/feed-item-needs-title` | reviewed |
 | Newest first, capped at 50, or at `limit` | `feeds/feed-rss`, `feeds/feed-limit`, `feeds/feed-limit-set` | reviewed |
@@ -898,7 +901,7 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | State is behavior, so it defines the element. | `elements/state-only-defines` | yes | reviewed |
 | `data()` is what a template sees, and the server has to build it too. | `elements/state-default` | yes | reviewed |
 | Reacting costs a definition, and only a definition. | `elements/javascript-shipped` | yes | reviewed |
-| The `No-Vary-Search` guard reads a header instead of writing one, and it has to run at request time. | `fragments/no-vary-search-hides-fragment` | yes | yes |
+| The `No-Vary-Search` guard reads a header instead of writing one, and it has to run at request time. | `fragments/no-vary-search-hides-fragment` | yes | reviewed |
 | A throw after the response exists answered with that response's headers. | `fragments/no-vary-search-hides-fragment` | yes | reviewed |
 | The swap watcher is opt-in, and used to follow `fragmentParam`. | `fragments/watch-elements`, `routing/index-page` | yes | reviewed |
 | A listener on `document` outlives the element that added it. | `diagnostics/warn-document-listener` | yes | reviewed |
@@ -1003,7 +1006,8 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | The escape was applied to text and not to attributes. | `routing/escape-in-attribute` | yes | reviewed |
 | The build cannot see a gate in `app/server.js`, and the failure looks like a success. | `middleware/gated`, `diagnostics/gated-not-a-path`, `diagnostics/gated-covers-nothing` | yes | reviewed |
 | `gated` reaches the runtime through `routes.json`, not through a second config key. | `middleware/gated` | yes | reviewed |
-| The sitemap merges a path it already has, rather than keeping the first copy of it. | `feeds/sitemap-entries`, `feeds/sitemap-values`, `feeds/sitemap-param-characters` | yes | yes |
+| The sitemap merges a path it already has, rather than keeping the first copy of it. | `feeds/sitemap-entries`, `feeds/sitemap-values`, `feeds/sitemap-param-characters` | yes | reviewed |
+| A sitemap field outside the protocol fails the build, rather than being written as given. | `diagnostics/sitemap-changefreq`, `diagnostics/sitemap-priority` | yes | reviewed |
 | A sitemap's sheets are files, not `?p=`. | `feeds/sitemap-index` | yes | reviewed |
 | An `exclude` pattern is read with `search`, not `test`. | `feeds/sitemap-values`, `diagnostics/sitemap-exclude` | yes | reviewed |
 

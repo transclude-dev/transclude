@@ -100,8 +100,8 @@ function isOrigin(hostname) {
 
 /** @param {SitemapConfig['hostname']} hostname */
 function readHostname(hostname) {
-  if (!hostname) throw new Error('[transclude] sitemap needs a hostname');
-  if (isOrigin(hostname)) return hostname;
+  // No hostname gets the same message as a wrong one, which names `undefined`.
+  if (typeof hostname === 'string' && isOrigin(hostname)) return hostname;
   throw new Error(
     `[transclude] sitemap "hostname" is ${JSON.stringify(hostname)}. It is an origin ` +
       `like 'https://acme.com', with a scheme and no path, because every URL is joined to it.`,
@@ -150,15 +150,60 @@ function checkEntries(list) {
   }
 
   list.forEach((entry, index) => {
-    const path = entry?.path;
-    if (typeof path === 'string' && path.startsWith('/') && !path.startsWith('//')) return;
-    throw new Error(
-      `[transclude] sitemap entry ${index + 1} has the path ${JSON.stringify(path)}. ` +
-        `It is a path on this site, beginning with one "/", like '/press'.`,
-    );
+    checkPath(entry?.path, index);
+    checkChangefreq(entry.changefreq, index);
+    checkPriority(entry.priority, index);
   });
 
   return list;
+}
+
+function checkPath(path, index) {
+  if (typeof path === 'string' && path.startsWith('/') && !path.startsWith('//')) return;
+  throw new Error(
+    `[transclude] sitemap entry ${index + 1} has the path ${JSON.stringify(path)}. ` +
+      `It is a path on this site, beginning with one "/", like '/press'.`,
+  );
+}
+
+/** The values the protocol allows for `changefreq`. */
+const CHANGEFREQ = ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never'];
+
+/**
+ * A `changefreq` outside the protocol fails the build. Written as given,
+ * `often` made a sitemap the schema refuses, and a crawler drops the field
+ * without a word. A falsy one is none. The check reads the value with its
+ * control characters gone, as it is written.
+ */
+function checkChangefreq(changefreq, index) {
+  if (!changefreq) return;
+  if (CHANGEFREQ.includes(xmlSafe(changefreq))) return;
+  throw new Error(
+    `[transclude] sitemap entry ${index + 1} has the changefreq ${JSON.stringify(changefreq)}. ` +
+      `It is one of ${CHANGEFREQ.join(', ')}.`,
+  );
+}
+
+/**
+ * A `priority` outside 0 to 1, or one that is not a number, fails the build,
+ * for the reason a `changefreq` does. The string `'0.5'` is refused too: a
+ * priority read from a file is a string, and saying so once beats guessing
+ * which strings are numbers.
+ */
+function checkPriority(priority, index) {
+  if (isNoPriority(priority)) return;
+  if (typeof priority === 'number' && priority >= 0 && priority <= 1) return;
+  // `String` for a number, because JSON writes `NaN` as `null`.
+  const shown = typeof priority === 'number' ? String(priority) : JSON.stringify(priority);
+  throw new Error(
+    `[transclude] sitemap entry ${index + 1} has the priority ${shown}. ` +
+      `It is a number from 0 to 1, like 0.8.`,
+  );
+}
+
+/** `0` is a priority. `null` and `''` are none: an empty element is not one. */
+function isNoPriority(priority) {
+  return priority === undefined || priority === null || priority === '';
 }
 
 /**
@@ -301,13 +346,13 @@ function urlset(entries, hostname) {
       const when = day(lastmod);
       if (when) parts.push(`<lastmod>${when}</lastmod>`);
       if (changefreq) parts.push(`<changefreq>${escape(changefreq)}</changefreq>`);
-      // `0` is a priority. `null` and `''` are none: an empty element is not one.
-      if (priority !== undefined && priority !== null && priority !== '') parts.push(`<priority>${escape(priority)}</priority>`);
-      return `<url>${parts.join('')}</url>`;
+      if (!isNoPriority(priority)) parts.push(`<priority>${escape(priority)}</priority>`);
+      // Each line ends itself, so a sitemap with no URLs has no blank line.
+      return `<url>${parts.join('')}</url>\n`;
     })
-    .join('\n');
+    .join('');
 
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}</urlset>\n`;
 }
 
 /** Where sheet `n` is served, and where the build writes it. */
@@ -323,6 +368,18 @@ function index(sheets, hostname) {
 }
 
 /**
+ * One URL in `entries`.
+ *
+ * @typedef {object} SitemapEntry
+ * @property {string} path a path on this site, beginning with one `/`
+ * @property {Date|string|number|null} [lastmod] written as the day in UTC. A
+ *   value that is no date is left out
+ * @property {'always'|'hourly'|'daily'|'weekly'|'monthly'|'yearly'|'never'|null} [changefreq]
+ *   any other value fails the build
+ * @property {number|null} [priority] from 0 to 1. Any other value fails the build
+ */
+
+/**
  * The `sitemap` block of a config.
  *
  * @typedef {object} SitemapConfig
@@ -330,9 +387,9 @@ function index(sheets, hostname) {
  *   origin, like `https://acme.com`, with no path
  * @property {number} [limit] URLs per sheet, past which an index is written. A
  *   whole number from 1 to 50000
- * @property {object[]|(() => object[]|Promise<object[]>)} [entries] URLs the
- *   route table cannot know, each with a `path` beginning with `/`. A function,
- *   so an app builds them from its own data rather than listing them.
+ * @property {SitemapEntry[]|(() => SitemapEntry[]|Promise<SitemapEntry[]>)} [entries]
+ *   URLs the route table cannot know. A function, so an app builds them from
+ *   its own data rather than listing them.
  * @property {Array<string|RegExp>} [exclude] a path to leave out, or a pattern
  *   the path has to match. Tested against the path, not the absolute URL.
  */

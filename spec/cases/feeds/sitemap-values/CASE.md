@@ -11,5 +11,9 @@ differently, with the answer decided each time (`spec/DRILLS.md`):
   one.
 - An entry path that is already encoded is not encoded again.
 - `lastmod: true` is no date, so it is dropped.
+- An entry for `/p/a%20b` and the route URL `/p/a b` are one URL, listed once
+  with the entry's priority.
+- A `%` that starts no escape is written as `%25`.
+- `priority: ''` and `changefreq: 0` are written as none.
 
 Source: `/docs/feeds`, "Sitemap". The docs say none of these. The drills did.

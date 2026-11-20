@@ -1,0 +1,8 @@
+<script server>
+  export const prerender = false;
+  export const paths = () => [{ x: '50%' }, { x: 'a?b#c' }];
+
+  export default async ({ params }) => ({ x: params.x });
+</script>
+
+<h1>${x}</h1>

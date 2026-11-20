@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url><loc>https://acme.com/</loc></url>
+<url><loc>https://acme.com/p/50%25</loc></url>
+<url><loc>https://acme.com/p/a%3Fb%23c</loc></url>
+<url><loc>https://acme.com/docs/guide/why%3F</loc></url>
+</urlset>

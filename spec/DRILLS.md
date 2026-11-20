@@ -573,3 +573,98 @@ refuses.
   `feeds/sitemap-empty`, and one entry in `feeds/sitemap-values`. The rebuilt
   module fails the two refusals and the entry. The old module fails the
   refusals, the hostname and the empty sitemap.
+
+## Fifth round, 2026-11-20
+
+The same two modules, drilled again from `main` after the fourth round's
+fixes. Each agent was told to write no scratch file outside its copy, and
+neither did. Each rebuilt module passes all 339 cases in two or three spec
+runs, in 4 to 7 minutes. Beyond the comparison scripts, each was probed with
+values no earlier round tried.
+
+### `src/no-vary-search.js`
+
+The old tests pass, 1557 of 1557, and the two agree on 103 of 103 values in
+the script. Of 28 values in a further probe they agree on 25.
+
+| `No-Vary-Search` | `main` | Rebuilt |
+| --- | --- | --- |
+| `key-order=1, params=("a")` | passes | refused |
+| `foo="x, params", bad(` | passes | refused |
+| a tab before `params` | passes | refused |
+
+Both drafts ignore a header whose `key-order` is not a boolean. `main`
+refuses a header that names `params` and breaks the grammar, but not one
+that names `params` and breaks this rule. The fourth rebuild guessed the same
+and the comparison missed it. The rebuilt module splits a header that does
+not parse at every comma, inside a string too. A `Headers` object strips a
+leading tab, so the third row does not reach the module.
+
+- **What `spec/` missed:** the first two rows.
+- **Decided:** take the rebuilt answer on the first row, and keep `main` on
+  the second.
+- **The fix:** a `key-order` that is not a boolean makes the header one a
+  cache ignores. Two tests hold the rows.
+- **Cases added:** two entries in `fragments/no-vary-search-shapes`. The old
+  module fails the first, and the rebuilt one fails the second.
+
+### `src/sitemap.js`
+
+One old test fails: `sitemapEntries` leaves out a `priority` of `null`
+rather than returning it, which reaches no `loc`. The two agree on 74 of 79
+configs in the script, and on 10 of 16 in a further probe.
+
+| Config | `main` | Rebuilt |
+| --- | --- | --- |
+| `exclude: ['/p/a%20b']` or `[/%C3%A9/]`, for the params `a b` and `é` | nothing left out | both left out |
+| a param `a/b` on `/p/:x` | `/p/a/b` | `/p/a%2Fb` |
+| `limit: null` | refused | 50000 |
+| `exclude: ['admin']` | matches nothing | refused |
+| a control character in an entry path | `%01` | dropped |
+| a lone surrogate in an entry path | U+FFFD | throws |
+| `entries: {}` | one message | another |
+
+`main` tested a rule on each mention as written, before the merge. So
+`exclude: ['/p/a b']` left out the route's mention and kept an entry for
+`/p/a%20b`, and the URL was listed. The rebuilt module tests the merge key.
+
+- **What `spec/` missed:** every row but the fifth and sixth, which are
+  `main`'s answers kept and now held by a test.
+- **Decided:** take the rebuilt answer on the first, third and fourth rows,
+  and `null` is none for `exclude` too. Keep `main` on the fifth, sixth and
+  seventh. The second row is the `urlFor` question, decided on its own branch.
+- **The fix:** a rule is tested on the encoded path, and a string rule is
+  encoded the same way. An `exclude` path begins with `/`. Four tests hold
+  the rows.
+- **Cases added:** `feeds/sitemap-exclude-encoded`,
+  `diagnostics/sitemap-exclude-no-slash` and
+  `diagnostics/sitemap-entries-not-a-list`. The old module fails the first
+  two, and the rebuilt one fails the third.
+
+### `urlFor`
+
+The third round found that `urlFor` joined params as they were, and the
+fifth found the sitemap and the build disagreed on a param `a/b`. A probe of
+the build found four faults:
+
+- The build wrote `a?b` at `p/a?b/index.html` and listed `/p/a?b` as
+  prerendered, so the speculation rules named `/p/a` with a query.
+- A request for `/p/50%25` or `/p/a%3Fb` missed its file and was rendered
+  again, because Hono leaves `%25` and `%3F` encoded in `c.req.path`.
+- A param `a/b` wrote `p/a/b/index.html`, the file of the nested URL.
+- A param `..` wrote `p/../index.html`, over the home page.
+
+- **Decided:** encode each param in the URL, write the file at the decoded
+  path, and refuse a `/` in a param that is not a rest param.
+- **The fix:** `urlFor` encodes each param, and a rest param keeps its
+  slashes. `pathFor` is the path decoded, for the file name and the gate.
+  The prerendered handler decodes each segment of a request path before it
+  looks a page up. `refuseParams` fails the build on a `/` in a param that
+  is not a rest param, and on an empty segment, `.` or `..`. The sitemap's
+  own encoding of `%`, `?` and `#` is gone, because `urlFor` does it. Six
+  tests in `test/prerender.test.js` hold it.
+- **Cases added:** `production/prerender-param-characters`,
+  `diagnostics/prerender-param-slash` and `diagnostics/prerender-param-dot`,
+  and `a/b` in `feeds/sitemap-param-characters`. The old code fails all
+  four. With the request path looked up as Hono gives it, the first fails on
+  `50%` and `a?b`.

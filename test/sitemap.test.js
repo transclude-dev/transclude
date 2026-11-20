@@ -421,3 +421,32 @@ test('a sitemap with no URLs has no blank line in it', async () => {
   const xml = await sitemap({ routes: [] }, {}, { hostname: 'https://x.com' });
   assert.match(xml, /0\.9">\n<\/urlset>\n$/);
 });
+
+test('exclude is tested on the encoded path, so either spelling leaves the URL out', async () => {
+  const manifest = { routes: [{ id: 'p', pattern: '/p/:x', params: ['x'] }] };
+  const pages = { p: { paths: () => [{ x: 'a b' }, { x: '\u00e9' }, { x: 'c' }] } };
+  const entries = [{ path: '/p/a%20b', lastmod: '2026-07-31' }];
+  for (const rule of ['/p/a b', '/p/a%20b']) {
+    const listed = await sitemapEntries(manifest, pages, { entries, exclude: [rule] });
+    assert.deepEqual(listed.map((e) => e.path), ['/p/%C3%A9', '/p/c']);
+  }
+  const byPattern = await sitemapEntries(manifest, pages, { exclude: [/%C3%A9/] });
+  assert.deepEqual(byPattern.map((e) => e.path), ['/p/a%20b', '/p/c']);
+});
+
+test('an exclude path that does not begin with / is refused', async () => {
+  await assert.rejects(
+    () => sitemapEntries({ routes: [] }, {}, { exclude: ['admin'] }),
+    /"exclude" has "admin"\. Each one is a path/,
+  );
+});
+
+test('a null limit or exclude is none', async () => {
+  const xml = await sitemap({ routes: [] }, {}, { hostname: 'https://x.com', limit: null, exclude: null, entries: [{ path: '/a' }] });
+  assert.match(xml, /<loc>https:\/\/x\.com\/a<\/loc>/);
+});
+
+test('a control character in an entry path is escaped, and a lone surrogate is U+FFFD', async () => {
+  const listed = await sitemapEntries({ routes: [] }, {}, { entries: [{ path: '/a\x01b' }, { path: '/c\uD800' }] });
+  assert.deepEqual(listed.map((e) => e.path), ['/a%01b', '/c%EF%BF%BD']);
+});

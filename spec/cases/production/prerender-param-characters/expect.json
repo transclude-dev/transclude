@@ -1,0 +1,7 @@
+[
+  {"request": "GET /p/a%20b", "status": 200, "body": "expected/space.html"},
+  {"request": "GET /p/50%25", "status": 200, "body": "expected/percent.html"},
+  {"request": "GET /p/a%3Fb", "status": 200, "body": "expected/question-mark.html"},
+  {"request": "GET /p/caf%C3%A9", "status": 200, "body": "expected/accent.html"},
+  {"request": "GET /p/a%2Fb", "status": 200, "body": "expected/slash.html"}
+]

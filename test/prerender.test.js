@@ -1,6 +1,6 @@
 // What a page is allowed to be, if it is going to be a file.
 //
-// These seven messages are the build's whole vocabulary for "this URL cannot be
+// These nine messages are the build's whole vocabulary for "this URL cannot be
 // written down". Until this file they were checked by hand: `bin/build.js` runs
 // a build the moment it is imported, so no test could reach them, and every one
 // was verified by breaking an example on purpose and reading the output.
@@ -8,7 +8,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { preloadsOf, prerenderContext, refuseAction, refusePrerender } from '../src/prerender.js';
+import { preloadsOf, prerenderContext, refuseAction, refuseParams, refusePrerender } from '../src/prerender.js';
+import { paramsFor, pathFor, urlFor } from '../src/document.js';
 
 const contextFor = (over = {}) =>
   prerenderContext({ route: { id: 'notes', pattern: '/notes' }, url: '/notes', params: {}, ...over });
@@ -186,4 +187,59 @@ test('only an entry has a list, and an entry with no imports has an empty one', 
 
   assert.deepEqual([...preloads.keys()], ['docs']);
   assert.deepEqual(preloads.get('docs'), []);
+});
+
+// ---- the URL and the file a param names --------------------------------------
+
+const plain = { pattern: '/p/:x', params: ['x'], rel: 'p/[x].html' };
+const rest = { pattern: '/d/:path{.+}', params: ['path'], rel: 'd/[...path].html' };
+
+test('urlFor encodes each param, and paramsFor reads it back', () => {
+  // Joined as they were, `a?b` was `/p/a` with a query and `50%` was no URL.
+  const cases = [
+    ['a b', '/p/a%20b'],
+    ['50%', '/p/50%25'],
+    ['a?b#c', '/p/a%3Fb%23c'],
+    ['a/b', '/p/a%2Fb'],
+    ['caf\u00e9', '/p/caf%C3%A9'],
+  ];
+  for (const [x, url] of cases) {
+    assert.equal(urlFor(plain, { x }), url);
+    assert.deepEqual(paramsFor(plain, url), { x });
+  }
+});
+
+test('a rest param keeps its slashes, and each segment is encoded', () => {
+  assert.equal(urlFor(rest, { path: 'x/y z' }), '/d/x/y%20z');
+  assert.deepEqual(paramsFor(rest, '/d/x/y%20z'), { path: 'x/y z' });
+});
+
+test('pathFor is the same path decoded, where the file is written', () => {
+  assert.equal(pathFor(plain, { x: 'a?b' }), '/p/a?b');
+  assert.equal(pathFor(rest, { path: 'x/y z' }), '/d/x/y z');
+});
+
+test('the prerendered ctx carries the encoded URL and the decoded path', () => {
+  const ctx = prerenderContext({ route: { id: 'p', pattern: '/p/:x' }, url: '/p/a%3Fb', path: '/p/a?b', params: { x: 'a?b' } });
+  assert.equal(new URL(ctx.url).pathname, '/p/a%3Fb');
+  assert.equal(new URL(ctx.url).search, '');
+  assert.equal(ctx.route.path, '/p/a?b');
+});
+
+test('a slash in a param that is not a rest param is refused, naming the file', () => {
+  assert.throws(
+    () => refuseParams(plain, { x: 'a/b' }),
+    /paths\(\) in p\/\[x\]\.html gave x as "a\/b"\. A "\/" makes it the file of another URL\. .*\[\.\.\.x\]\.html/,
+  );
+  assert.doesNotThrow(() => refuseParams(rest, { path: 'a/b' }));
+});
+
+test('an empty segment, "." or ".." is refused, because it names another file', () => {
+  for (const x of ['', '.', '..', undefined]) {
+    assert.throws(() => refuseParams(plain, { x }), /An empty segment, "\." or "\.\." names no file of its own/);
+  }
+  for (const path of ['a//b', 'a/../b', '/a', 'a/']) {
+    assert.throws(() => refuseParams(rest, { path }), /names no file of its own/);
+  }
+  assert.doesNotThrow(() => refuseParams(plain, { x: '...' }));
 });

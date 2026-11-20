@@ -449,20 +449,42 @@ function matcherFor(pattern) {
   return { names, regex: new RegExp(`^${source}$`) };
 }
 
+/** A `:name` in a pattern, and the `{.+}` that makes it a rest param. */
+const PARAM = /:(\w+)(\{[^}]*\})?/g;
+
 /**
- * The URL a route and a set of params name. The other direction from
- * `paramsFor`, and the two have to agree.
+ * The URL a route and a set of params name, each param percent-encoded. The
+ * other direction from `paramsFor`, which decodes, and the two have to agree.
  *
- * The build writes a file at this URL and the sitemap advertises it. Each had
- * its own copy of the substitution, so a pattern shape one handled and the other
- * did not would have meant a sitemap listing URLs that were never written.
+ * The build lists this URL as prerendered and the sitemap advertises it. Joined
+ * as they were, a param `a?b` was the URL `/p/a` with a query, `50%` was no URL
+ * at all, and `a/b` was the URL of a nested page.
  *
  * @param {{ pattern: string }} route
  * @param {Record<string, string>} params
- * @returns {string} the pattern with every `:name` filled in
+ * @returns {string} the pattern with every `:name` filled in, encoded
  */
 export function urlFor(route, params) {
-  return route.pattern.replace(/:(\w+)(\{[^}]*\})?/g, (_, name) => String(params[name] ?? ''));
+  return route.pattern.replace(PARAM, (_, name, rest) => encodeParam(String(params[name] ?? ''), Boolean(rest)));
+}
+
+/**
+ * The same path with each param as it is. The build writes the file here,
+ * because a static host decodes a request before it looks for a file, and a
+ * gate is matched against it, as it was before params were encoded.
+ *
+ * @param {{ pattern: string }} route
+ * @param {Record<string, string>} params
+ * @returns {string} the pattern with every `:name` filled in, not encoded
+ */
+export function pathFor(route, params) {
+  return route.pattern.replace(PARAM, (_, name) => String(params[name] ?? ''));
+}
+
+/** A rest param keeps its slashes, since each one starts a segment. */
+function encodeParam(value, rest) {
+  if (rest) return value.split('/').map(encodeURIComponent).join('/');
+  return encodeURIComponent(value);
 }
 
 /**

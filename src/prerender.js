@@ -27,20 +27,22 @@ import { cookiesOf } from './cookies.js';
  *
  * @param {object} options
  * @param {{ id: string, pattern?: string }} options.route
- * @param {string} options.url the path being written
+ * @param {string} options.url the URL being written, encoded
+ * @param {string} [options.path] the same path decoded, which is what
+ *   `ctx.route.path` is at request time
  * @param {Record<string, string>} options.params
  * @param {string|null} [options.cookieSecret]
  * @param {string} [options.metadataBase]
  * @returns {import('./document.js').Ctx} the same shape a request gets, minus
  *   what a file cannot have
  */
-export function prerenderContext({ route, url, params, cookieSecret = null, metadataBase }) {
+export function prerenderContext({ route, url, path = url, params, cookieSecret = null, metadataBase }) {
   const response = responseOf();
 
   return {
     url: `http://localhost${url}`,
     params,
-    route: { id: route.id, pattern: route.pattern ?? '', path: url },
+    route: { id: route.id, pattern: route.pattern ?? '', path },
     // Null here and at no other time, which is how a shared layout can skip the
     // part that needs a visitor.
     request: null,
@@ -182,4 +184,38 @@ function reachableFrom(entry, byFile) {
     queue.push(...(byFile.get(fileName)?.imports ?? []));
   }
   return urls;
+}
+
+/**
+ * Refuses a param from `paths()` that names no file of its own.
+ *
+ * The build writes each URL at its decoded path. A `/` in a param that is not a
+ * rest param made `a/b` the file of the nested URL `/p/a/b`, and an empty
+ * segment, `.` or `..` is a file somewhere else: `..` wrote over the home page.
+ *
+ * @param {{ pattern: string, params: string[], rel?: string }} route
+ * @param {Record<string, unknown>} params
+ */
+export function refuseParams(route, params) {
+  const where = route.rel ?? route.pattern;
+
+  for (const name of route.params) {
+    const value = String(params[name] ?? '');
+    const rest = route.pattern.includes(`:${name}{`);
+
+    if (!rest && value.includes('/')) {
+      throw new Error(
+        `[transclude] paths() in ${where} gave ${name} as ${JSON.stringify(value)}. A "/" makes ` +
+          `it the file of another URL. A param that holds slashes is a rest param: [...${name}].html.`,
+      );
+    }
+
+    const segments = rest ? value.split('/') : [value];
+    if (segments.some((segment) => segment === '' || segment === '.' || segment === '..')) {
+      throw new Error(
+        `[transclude] paths() in ${where} gave ${name} as ${JSON.stringify(value)}. An empty ` +
+          `segment, "." or ".." names no file of its own.`,
+      );
+    }
+  }
 }

@@ -12,7 +12,7 @@
 // `dist/static`, and a static host ignores a query, so `?p=1` would have been
 // the index again.
 
-import { urlFor } from './document.js';
+import { pathFor, urlFor } from './document.js';
 import { isGated } from './gate.js';
 
 /** The protocol's cap for one file. Past it the response is an index of files. */
@@ -44,20 +44,27 @@ function day(value) {
   return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
 }
 
+// `path` is encoded, the key two mentions of one URL share, so a rule leaves
+// out the URL whichever way a mention spelled it. A string is encoded the same
+// way, and a pattern sees `é` as `%C3%A9`.
+//
 // `search` and not `test`. A pattern with the `g` flag keeps its place between
 // calls to `test`, so `/^\/draft\//g` left out `/draft/a`, kept `/draft/b`
 // and left out `/draft/c`. `search` starts at the beginning every time.
 const excluded = (path, rules) =>
-  rules.some((rule) => (rule instanceof RegExp ? path.search(rule) !== -1 : rule === path));
+  rules.some((rule) => (rule instanceof RegExp ? path.search(rule) !== -1 : encodedPath(rule) === path));
 
 /**
- * `exclude`, checked. Anything but a path or a pattern is refused: `search`
- * reads `5` as the pattern `/5/`, which leaves out every path with a 5 in it.
+ * `exclude`, checked. `null` is none. Anything but a path or a pattern is
+ * refused: `search` reads `5` as the pattern `/5/`, which leaves out every
+ * path with a 5 in it. A path that does not begin with `/` is refused too,
+ * because no path in the sitemap is one it could match.
  *
  * @param {unknown} rules
  * @returns {Array<string|RegExp>}
  */
 function checkExclude(rules) {
+  if (rules === null) return [];
   if (!Array.isArray(rules)) {
     throw new Error(
       `[transclude] sitemap "exclude" is ${JSON.stringify(rules)}. It is a list of paths, ` +
@@ -66,7 +73,8 @@ function checkExclude(rules) {
   }
 
   for (const rule of rules) {
-    if (typeof rule === 'string' || rule instanceof RegExp) continue;
+    if (typeof rule === 'string' && rule.startsWith('/')) continue;
+    if (rule instanceof RegExp) continue;
     throw new Error(
       `[transclude] sitemap "exclude" has ${JSON.stringify(rule)}. Each one is a path, ` +
         `like '/admin', or a pattern, like /^\\/draft\\//.`,
@@ -117,7 +125,8 @@ function readHostname(hostname) {
  * @param {SitemapConfig['limit']} limit
  */
 function readLimit(limit) {
-  if (limit === undefined) return LIMIT;
+  // `null` is none, as it is for `entries`, `exclude` and `paths()`.
+  if (limit === undefined || limit === null) return LIMIT;
   if (Number.isInteger(limit) && limit >= 1 && limit <= LIMIT) return limit;
   // `String` for a number, because JSON writes `NaN` and `Infinity` as `null`.
   const shown = typeof limit === 'number' ? String(limit) : JSON.stringify(limit);
@@ -225,26 +234,6 @@ function checkPaths(route, list) {
 }
 
 /**
- * A param value as it goes into a URL. `%`, `?` and `#` are part of the value,
- * not of the URL, so `50%` is `50%25` and `a?b#c` is `a%3Fb%23c`. Left as they
- * were, the first is no URL and the second is another one. The rest is encoded
- * when the path is joined to the hostname.
- *
- * @param {Record<string, unknown>} params
- * @returns {Record<string, string>}
- */
-function paramsForUrl(params) {
-  const encoded = {};
-  for (const [name, value] of Object.entries(params)) {
-    encoded[name] = String(value ?? '')
-      .replaceAll('%', '%25')
-      .replaceAll('?', '%3F')
-      .replaceAll('#', '%23');
-  }
-  return encoded;
-}
-
-/**
  * A path as the `loc` writes it, which is also the key two mentions of one URL
  * share: `/p/a b` from a route and `/p/a%20b` from an entry are one URL, and
  * were listed twice. A `%` that starts no escape is a `%`, so `/100%` is
@@ -293,13 +282,20 @@ function merge(first, later) {
  */
 export async function sitemapEntries(manifest, pages, { entries = [], exclude = [] } = {}) {
   const rules = checkExclude(exclude);
+
+  // `manifest.gated` rather than a second config key. A path the app declared
+  // not public should not be advertised, and reading it here covers the file the
+  // build writes and the `/sitemap.xml` route together. Two lists is two answers
+  // about which URLs a crawler is invited to. A route URL is gated by its path
+  // decoded, as the build gates it, and an entry by its path as written.
+  const gated = manifest.gated ?? [];
   const found = [];
 
   for (const route of manifest.routes ?? []) {
     const page = pages[route.id];
 
     if (!route.params.length) {
-      found.push({ path: route.pattern });
+      if (!isGated(route.pattern, gated)) found.push({ path: route.pattern });
       continue;
     }
 
@@ -307,19 +303,16 @@ export async function sitemapEntries(manifest, pages, { entries = [], exclude = 
     // listed. Advertising the pattern would advertise `/people/:name`.
     if (typeof page?.paths !== 'function') continue;
 
+    // `urlFor` encodes each param: `50%` is `50%25`, and `a?b` is `a%3Fb`.
     for (const params of checkPaths(route, await page.paths())) {
-      found.push({ path: urlFor(route, paramsForUrl(params)) });
+      if (isGated(pathFor(route, params), gated)) continue;
+      found.push({ path: urlFor(route, params) });
     }
   }
 
-  const extra = checkEntries(typeof entries === 'function' ? await entries() : entries);
+  const listed = checkEntries(typeof entries === 'function' ? await entries() : entries);
+  const extra = listed.filter((entry) => !isGated(/** @type {{ path: string }} */ (entry).path, gated));
   const all = [...found, ...extra];
-
-  // `manifest.gated` rather than a second config key. A path the app declared
-  // not public should not be advertised, and reading it here covers the file the
-  // build writes and the `/sitemap.xml` route together. Two lists is two answers
-  // about which URLs a crawler is invited to.
-  const gated = manifest.gated ?? [];
 
   // One entry per path, where the path was first named. A later mention of the
   // same path is merged onto it rather than dropped, because the two mentions
@@ -328,10 +321,8 @@ export async function sitemapEntries(manifest, pages, { entries = [], exclude = 
   const byPath = new Map();
 
   for (const entry of all) {
-    if (excluded(entry.path, rules)) continue;
-    if (isGated(entry.path, gated)) continue;
-
     const path = encodedPath(entry.path);
+    if (excluded(path, rules)) continue;
     const first = byPath.get(path);
     byPath.set(path, { ...(first ? merge(first, entry) : entry), path });
   }
@@ -385,13 +376,14 @@ function index(sheets, hostname) {
  * @typedef {object} SitemapConfig
  * @property {string} [hostname] every URL is absolute, so this is required. An
  *   origin, like `https://acme.com`, with no path
- * @property {number} [limit] URLs per sheet, past which an index is written. A
+ * @property {number|null} [limit] URLs per sheet, past which an index is written. A
  *   whole number from 1 to 50000
  * @property {SitemapEntry[]|(() => SitemapEntry[]|Promise<SitemapEntry[]>)} [entries]
  *   URLs the route table cannot know. A function, so an app builds them from
  *   its own data rather than listing them.
- * @property {Array<string|RegExp>} [exclude] a path to leave out, or a pattern
- *   the path has to match. Tested against the path, not the absolute URL.
+ * @property {Array<string|RegExp>|null} [exclude] a path to leave out, beginning
+ *   with `/`, or a pattern the path has to match. Tested against the path as
+ *   the `loc` writes it, encoded, and not against the absolute URL.
  */
 
 /**

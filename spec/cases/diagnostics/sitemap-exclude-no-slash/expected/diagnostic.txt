@@ -1,0 +1,1 @@
+Error: [transclude] sitemap "exclude" has "admin". Each one is a path, like '/admin', or a pattern, like /^\/draft\//.

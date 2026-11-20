@@ -29,7 +29,7 @@ Complete.
 | A cache keys on the query string | Cache behavior, not the framework's | - |
 | A `No-Vary-Search` naming other parameters passes through | `fragments/no-vary-search-named` | reviewed |
 | A `No-Vary-Search` hiding `?fragment=` is refused, naming the value | `fragments/no-vary-search-hides-fragment`, the 500 and the logged message | reviewed |
-| The header is read as a cache reads it: a bare key with parameters, a list's parameters, a repeated key, a percent escape, `except` beside a list, a header that does not parse anywhere in it, a parameter on an item, `except` on its own, a date, and shapes that cannot be read | `fragments/no-vary-search-shapes` | reviewed |
+| The header is read as a cache reads it: a bare key with parameters, a list's parameters, a repeated key, a percent escape, `except` beside a list, a header that does not parse anywhere in it, a parameter on an item, `except` on its own, a date, a `key-order` that is not a boolean, a comma inside a string, and shapes that cannot be read | `fragments/no-vary-search-shapes` | reviewed |
 | `POST /?fragment=nope` changes nothing and answers 404 | `fragments/post-unknown-name` | reviewed |
 | `ctx.fragment` tells a form post from a fetch | `fragments/action-fragment` | reviewed |
 | A fragment request runs the layouts, and the page reads them as `ctx.layout` | `fragments/layout-data` | reviewed |
@@ -346,9 +346,12 @@ Complete.
 | A `changefreq` outside the protocol, or a `priority` outside 0 to 1, fails the build | `diagnostics/sitemap-changefreq`, `diagnostics/sitemap-priority` | reviewed |
 | A sitemap with no URLs is an empty `urlset`, with no blank line | `feeds/sitemap-empty` | reviewed |
 | An `exclude` item that is not a path or a pattern fails the build | `diagnostics/sitemap-exclude` | reviewed |
+| An `exclude` path that does not begin with `/` fails the build | `diagnostics/sitemap-exclude-no-slash` | reviewed |
+| `exclude` is tested on the encoded path, so either spelling of a URL is left out; `limit: null` is the default | `feeds/sitemap-exclude-encoded` | reviewed |
+| `entries` that is not a list fails the build, naming what it gave | `diagnostics/sitemap-entries-not-a-list` | reviewed |
 | A `paths()` that gives something other than a list fails the build, naming the file | `diagnostics/sitemap-paths-not-a-list` | reviewed |
 | `null` from an `entries` function is no entries | `feeds/sitemap-entries-null` | reviewed |
-| A `paths()` param's `%`, `?` and `#` are encoded in the `loc` | `feeds/sitemap-param-characters` | reviewed |
+| A `paths()` param's `%`, `?`, `#` and `/` are encoded in the `loc` | `feeds/sitemap-param-characters` | reviewed |
 | A `limit` outside 1 to 50,000 fails the build | `diagnostics/sitemap-limit` | reviewed |
 | A `limit` of `NaN` is named as `NaN` | `diagnostics/sitemap-limit-nan` | reviewed |
 | The build writes every sheet into `dist/static` | A property of `dist/static` as files. The server answers the same paths from the same list | - |
@@ -457,6 +460,8 @@ Complete.
 | A loader that throws fails the build, naming the page, the error and the line | `diagnostics/prerender-throws` | reviewed |
 | A page that exports an action stops the build unless it says `prerender` | `diagnostics/prerender-action` | reviewed |
 | `prerender = true` lets a page with an action be a file, and the action still runs | `production/prerender-true-with-action` | reviewed |
+| Each param `paths()` names is a file, served for its URL encoded: `a b`, `50%`, `a?b`, `café` | `production/prerender-param-characters` | reviewed |
+| A param with a `/` on a route that is not a rest param, or an empty one, `.` or `..`, stops the build | `diagnostics/prerender-param-slash`, `diagnostics/prerender-param-dot` | reviewed |
 | `speculate: true`: prerendered URLs in `prerender`, server routes in `prefetch`, endpoints in neither | `production/speculate` | reviewed |
 | `eagerness` and `exclude`, matched against the emitted pattern | `production/speculate-options` | reviewed |
 | A browser acts on the rules, or ignores them | Browser behavior | - |
@@ -1008,8 +1013,9 @@ fails with the old bug put back. `Snapshot` is as in the sections above.
 | `gated` reaches the runtime through `routes.json`, not through a second config key. | `middleware/gated` | yes | reviewed |
 | The sitemap merges a path it already has, rather than keeping the first copy of it. | `feeds/sitemap-entries`, `feeds/sitemap-values`, `feeds/sitemap-param-characters` | yes | reviewed |
 | A sitemap field outside the protocol fails the build, rather than being written as given. | `diagnostics/sitemap-changefreq`, `diagnostics/sitemap-priority` | yes | reviewed |
+| A param is encoded in its URL and decoded in its file name. | `production/prerender-param-characters`, `diagnostics/prerender-param-slash`, `diagnostics/prerender-param-dot`, `feeds/sitemap-param-characters` | yes | reviewed |
 | A sitemap's sheets are files, not `?p=`. | `feeds/sitemap-index` | yes | reviewed |
-| An `exclude` pattern is read with `search`, not `test`. | `feeds/sitemap-values`, `diagnostics/sitemap-exclude` | yes | reviewed |
+| An `exclude` pattern is read with `search`, not `test`. | `feeds/sitemap-values`, `diagnostics/sitemap-exclude`, `feeds/sitemap-exclude-encoded` | yes | reviewed |
 
 ### Behavioral, case to write (0)
 

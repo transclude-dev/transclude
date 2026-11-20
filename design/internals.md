@@ -583,6 +583,9 @@ against.
   a value passes only when neither hides the parameter, and the comments in
   the module say which draft reads what. It also parsed RFC 8941 and refused
   a date.
+  A fifth drill refused `key-order=1, params=(…)`, which parses and which a
+  cache ignores, and `main` passed it. A header a cache ignores for its shape
+  now counts as one that does not parse.
   `spec: fragments/no-vary-search-hides-fragment`,
   `fragments/no-vary-search-shapes`.
 - **A throw after the response exists answered with that response's headers.**
@@ -2245,8 +2248,8 @@ against.
   `{ lastmod: post.updated }` for a post with no date cleared the date a first
   mention gave. The key is the path as the `loc` writes it, encoded: keyed as
   written, `/p/a b` from `paths()` and `/p/a%20b` from `entries` were listed
-  twice. A param's `%`, `?` and `#` are encoded before the path is built, since
-  `urlFor` joins params as they are and `/p/a?b` is another URL. A later
+  twice. `urlFor` encodes each param, so `/p/a?b` is no longer another URL.
+  A later
   `null` is a value, so it clears the field: a fourth drill kept the earlier
   one.
   `spec: feeds/sitemap-entries`, `spec: feeds/sitemap-values`,
@@ -2260,6 +2263,22 @@ against.
   `'0.5'` too. A falsy `changefreq` and a `priority` of `null` or `''` are
   none, as before.
   `spec: diagnostics/sitemap-changefreq`, `diagnostics/sitemap-priority`.
+- **A param is encoded in its URL and decoded in its file name.** `urlFor`
+  joined params as they were, and two readers disagreed about the result. The
+  build wrote `a?b` to `p/a?b/index.html` and listed `/p/a?b` as prerendered,
+  which a browser reads as `/p/a` with a query. A request for `/p/a%3Fb` or
+  `/p/50%25` missed the file, because Hono leaves `%3F` and `%25` encoded in
+  `c.req.path`, and the server rendered the page again. A param `a/b` wrote
+  the file of the nested URL `/p/a/b`, and `..` wrote over the home page. Now
+  `urlFor` encodes each param, and a rest param keeps its slashes. `pathFor`
+  gives the same path decoded: the build writes the file there and matches a
+  gate against it, as before. The prerendered handler decodes each segment of
+  the request path before it looks a page up. `refuseParams` fails the build
+  on a `/` in a param that is not a rest param, and on an empty segment, `.`
+  or `..`.
+  `spec: production/prerender-param-characters`,
+  `diagnostics/prerender-param-slash`, `diagnostics/prerender-param-dot`,
+  `feeds/sitemap-param-characters`.
 - **A sitemap's sheets are files, not `?p=`.** Past `limit`, the index once
   named `/sitemap.xml?p=0` and on, and the build wrote only the index to
   `dist/static`. A static host ignores a query, so every sheet it served was the
@@ -2273,8 +2292,12 @@ against.
   `/draft/c`. Nothing failed, and the sitemap listed half the drafts. `search`
   starts at the beginning every time. It also reads a number as a pattern, so
   `5` in `exclude` left out every path with a 5 in it. An item that is not a
-  string or a `RegExp` is refused. `spec: feeds/sitemap-values`,
-  `spec: diagnostics/sitemap-exclude`.
+  string or a `RegExp` is refused. A rule was tested on each mention as it was
+  written, before the merge, so `exclude: ['/p/a b']` left out the route's
+  mention and kept the entry for `/p/a%20b`, and the URL was listed. A fifth
+  drill found it. A rule is now tested on the encoded path, the merge key.
+  `spec: feeds/sitemap-values`, `spec: diagnostics/sitemap-exclude`,
+  `spec: feeds/sitemap-exclude-encoded`.
 - **`src/gate.js` has no imports on purpose.** The sitemap reads it at runtime on
   every runtime, so it must not drag `prerender.js` and its context builder into
   a worker bundle. `test/portable.test.js` names every module the core reaches,

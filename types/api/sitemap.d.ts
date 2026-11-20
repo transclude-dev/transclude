@@ -48,17 +48,18 @@ export type SitemapConfig = {
      * URLs per sheet, past which an index is written. A
      * whole number from 1 to 50000
      */
-    limit?: number;
+    limit?: number | null;
     /**
      * URLs the route table cannot know. A function, so an app builds them from
      * its own data rather than listing them.
      */
     entries?: SitemapEntry[] | (() => SitemapEntry[] | Promise<SitemapEntry[]>);
     /**
-     * a path to leave out, or a pattern
-     * the path has to match. Tested against the path, not the absolute URL.
+     * a path to leave out, beginning
+     * with `/`, or a pattern the path has to match. Tested against the path as
+     * the `loc` writes it, encoded, and not against the absolute URL.
      */
-    exclude?: Array<string | RegExp>;
+    exclude?: Array<string | RegExp> | null;
 };
 /**
  * One URL in `entries`.
@@ -77,13 +78,14 @@ export type SitemapConfig = {
  * @typedef {object} SitemapConfig
  * @property {string} [hostname] every URL is absolute, so this is required. An
  *   origin, like `https://acme.com`, with no path
- * @property {number} [limit] URLs per sheet, past which an index is written. A
+ * @property {number|null} [limit] URLs per sheet, past which an index is written. A
  *   whole number from 1 to 50000
  * @property {SitemapEntry[]|(() => SitemapEntry[]|Promise<SitemapEntry[]>)} [entries]
  *   URLs the route table cannot know. A function, so an app builds them from
  *   its own data rather than listing them.
- * @property {Array<string|RegExp>} [exclude] a path to leave out, or a pattern
- *   the path has to match. Tested against the path, not the absolute URL.
+ * @property {Array<string|RegExp>|null} [exclude] a path to leave out, beginning
+ *   with `/`, or a pattern the path has to match. Tested against the path as
+ *   the `loc` writes it, encoded, and not against the absolute URL.
  */
 /**
  * Every file the sitemap is, by the path it is served at.

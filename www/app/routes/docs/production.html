@@ -154,6 +154,15 @@ export const POST = async ({ request, revalidateTag }) => {
     changes.
   </p>
 
+  <p>
+    A page with parameters is written once for each set its <code>paths()</code>
+    export names. Each param is encoded in the URL, so <code>a b</code> is
+    <code>/p/a%20b</code>. The file is written at the decoded path. A param that
+    holds a <code>/</code> stops the build, unless the route is a rest param like
+    <code>[...path].html</code>. So does an empty param, <code>.</code> or
+    <code>..</code>.
+  </p>
+
   <doc-note label="Forgetting it stops the build">
     A page that reads a cookie, answers with a <code>Response</code>, or sets a
     status other than 200 cannot be one file for everyone. The build names it,

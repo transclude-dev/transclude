@@ -187,23 +187,28 @@ function decodeKey(name) {
 /**
  * Whether a header that does not parse names `params` or `except` as a key.
  *
- * It does not parse, so this splits it at the commas between members, minding
- * quotes and parentheses, and reads each key up to `=` or `;`. `utmparams`
- * is not `params`, and `PARAMS` is not either.
+ * It does not parse, so this splits it at the commas outside a string, and
+ * reads each member's key as the grammar spells one: a lowercase letter or
+ * `*`, then lowercase letters, digits and `_-.*`. So `params x` names
+ * `params`. `utmparams` is not `params`, and `PARAMS` is no key at all.
  *
  * @param {string} value
  */
 function namesParamsOrExcept(value) {
   for (const member of splitMembers(value)) {
-    const key = member.split(/[=;]/)[0].trim();
+    const key = member.replace(/^[ \t]+/, '').match(KEY)?.[0];
     if (key === 'params' || key === 'except') return true;
   }
   return false;
 }
 
+/** A key at the start of a member, RFC 9651, section 3.1.2. */
+const KEY = /^[a-z*][a-z0-9_.*-]*/;
+
 /**
- * The header cut at each comma that is outside a quoted string and outside a
- * list. A backslash in a quoted string escapes the next character.
+ * The header cut at each comma that is outside a quoted string. A backslash in
+ * a quoted string escapes the next character. Parentheses are not counted: in
+ * `bad(, except` the list never closes, and counting it hid the `except`.
  *
  * @param {string} value
  * @returns {string[]}
@@ -212,7 +217,6 @@ function splitMembers(value) {
   const members = [];
   let current = '';
   let inString = false;
-  let depth = 0;
 
   for (let i = 0; i < value.length; i++) {
     const char = value[i];
@@ -223,10 +227,8 @@ function splitMembers(value) {
       continue;
     }
     if (char === '"') inString = !inString;
-    if (!inString && char === '(') depth++;
-    if (!inString && char === ')') depth--;
 
-    if (!inString && depth === 0 && char === ',') {
+    if (!inString && char === ',') {
       members.push(current);
       current = '';
       continue;

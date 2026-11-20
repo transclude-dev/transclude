@@ -586,6 +586,9 @@ against.
   A fifth drill refused `key-order=1, params=(…)`, which parses and which a
   cache ignores, and `main` passed it. A header a cache ignores for its shape
   now counts as one that does not parse.
+  A sixth drill read the key of a member that does not parse as the grammar
+  spells a key, and split only at commas outside a string. `main` read
+  `params x` as the key `params x`, and let `bad(` hide the `except` after it.
   `spec: fragments/no-vary-search-hides-fragment`,
   `fragments/no-vary-search-shapes`.
 - **A throw after the response exists answered with that response's headers.**

@@ -110,6 +110,15 @@ test('a key-order that is not a boolean makes the header one a cache ignores', (
   assert.equal(hidesParam('key-order=?0, params=("utm_source")', 'fragment'), false);
 });
 
+test('in a header that does not parse, a key is what the grammar spells as one', () => {
+  // A key is a lowercase letter or `*`, then `a-z0-9_-.*`. `params x` names params.
+  assert.equal(hidesParam('params x', 'fragment'), true);
+  assert.equal(hidesParam('params x=1, bad(', 'fragment'), true);
+  assert.equal(hidesParam('foo;params, bad(', 'fragment'), false);
+  // A list that never closes does not hide the members after it.
+  assert.equal(hidesParam('bad(, except', 'fragment'), true);
+});
+
 test('a comma inside a string starts no member, though the header does not parse', () => {
   assert.equal(hidesParam('foo="x, params", bad(', 'fragment'), false);
   assert.equal(hidesParam('foo="x", params, bad(', 'fragment'), true);
